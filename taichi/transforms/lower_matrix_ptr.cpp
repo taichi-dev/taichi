@@ -8,6 +8,48 @@
 
 namespace taichi::lang {
 
+class LowerAOSGlobalPtrStmt : public BasicStmtVisitor {
+ public:
+  ImmediateIRModifier immediate_modifier_;
+  DelayedIRModifier delayed_modifier_;
+
+  explicit LowerAOSGlobalPtrStmt(IRNode *node) : immediate_modifier_(node) {
+    node->accept(this);
+
+    delayed_modifier_.modify_ir();
+  }
+
+  void visit(MatrixOfGlobalPtrStmt *stmt) override {
+    auto ret_type = stmt->ret_type;
+    auto indices = stmt->indices;
+    auto snodes = stmt->snodes;
+
+    bool is_continuous_addr = true;
+    SNode *parent_snode = snodes[0]->parent;
+    for (auto snode : snodes) {
+      TI_ASSERT(snode->type == SNodeType::place);
+      if (snode->parent != parent_snode ||
+          parent_snode->type != SNodeType::dense) {
+        is_continuous_addr = false;
+        break;
+      }
+    }
+
+    if (is_continuous_addr) {
+      auto new_stmt = std::make_unique<GlobalPtrStmt>(snodes[0], indices);
+      new_stmt->ret_type = ret_type;
+      new_stmt->ret_type.set_is_pointer(true);
+
+      stmt->replace_usages_with(new_stmt.get());
+      delayed_modifier_.insert_before(stmt, std::move(new_stmt));
+      delayed_modifier_.erase(stmt);
+    }
+  }
+
+ private:
+  using BasicStmtVisitor::visit;
+};
+
 class ScalarizeMatrixPtr : public BasicStmtVisitor {
  public:
   ImmediateIRModifier immediate_modifier_;
@@ -504,6 +546,8 @@ namespace irpass {
 
 void lower_matrix_ptr(IRNode *root) {
   TI_AUTO_PROF;
+
+  LowerAOSGlobalPtrStmt lower_aos_global_ptr_stmt_pass(root);
 
   ScalarizeMatrixPtr scalarize_matrix_ptr_pass(root);
   LowerMatrixPtr::run(root);

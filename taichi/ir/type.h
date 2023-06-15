@@ -3,6 +3,7 @@
 #include "taichi/common/core.h"
 #include "taichi/util/bit.h"
 #include "taichi/util/hash.h"
+#include "signal.h"
 
 namespace taichi::lang {
 
@@ -45,6 +46,10 @@ class TI_DLL_EXPORT Type {
   template <typename T>
   T *as() {
     auto p = dynamic_cast<T *>(this);
+
+    if (!p)
+      raise(SIGSEGV);
+
     TI_ASSERT_INFO(p != nullptr, "Cannot treat {} as {}", this->to_string(),
                    typeid(T).name());
     return p;

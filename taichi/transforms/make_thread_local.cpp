@@ -110,7 +110,7 @@ void make_thread_local_offload(OffloadedStmt *offload) {
           // loss[None] (0-D fields) for now.
           // No TLS on quant types.
           return (dest->snode->type == SNodeType::place) &&
-                 dest->indices.empty() && dest->snode->dt->is<PrimitiveType>();
+                 dest->indices.empty() && dest->ret_type->is<PrimitiveType>();
         });
     auto valid_global_tmps =
         find_global_reduction_destinations<GlobalTemporaryStmt>(

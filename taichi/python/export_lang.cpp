@@ -717,6 +717,7 @@ void export_lang(py::module &m) {
   py::class_<Function>(m, "Function")
       .def("insert_scalar_param", &Function::insert_scalar_param)
       .def("insert_arr_param", &Function::insert_arr_param)
+      .def("insert_ndarray_param", &Function::insert_ndarray_param)
       .def("insert_texture_param", &Function::insert_texture_param)
       .def("insert_pointer_param", &Function::insert_pointer_param)
       .def("insert_rw_texture_param", &Function::insert_rw_texture_param)

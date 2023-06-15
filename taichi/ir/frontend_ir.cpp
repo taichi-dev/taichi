@@ -1672,7 +1672,7 @@ std::vector<Expr> ASTBuilder::expand_exprs(const std::vector<Expr> &exprs) {
   for (auto expr : exprs) {
     TI_ASSERT_TYPE_CHECKED(expr);
 
-    auto expand_tensor_or_scalar = [&](Expr expr) {
+    auto expand_tensor_or_scalar = [&](const Expr &expr) {
       if (!expr->ret_type.ptr_removed()->is<TensorType>()) {
         expanded_exprs.push_back(expr);
       } else {

@@ -259,6 +259,10 @@ class Func:
                 elif isinstance(anno, primitive_types.RefType):
                     non_template_args.append(_ti_core.make_reference(args[i].ptr))
                 elif isinstance(anno, ndarray_type.NdarrayType):
+                    if not isinstance(args[i], AnyArray):
+                        raise TaichiTypeError(
+                            f"Expected ndarray in the kernel argument for argument {kernel_arg.name}, got {args[i]}"
+                        )
                     non_template_args.append(args[i].ptr)
                 else:
                     non_template_args.append(args[i])

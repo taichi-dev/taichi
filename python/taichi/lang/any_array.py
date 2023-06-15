@@ -41,7 +41,7 @@ class AnyArray:
     @taichi_scope
     def grad(self):
         """Returns the gradient of this array."""
-        return AnyArray(_ti_core.make_external_tensor_grad_expr(self.ptr))
+        return AnyArray(_ti_core.make_external_tensor_grad_expr(self.ptr), self.element_type)
 
     @property
     @taichi_scope

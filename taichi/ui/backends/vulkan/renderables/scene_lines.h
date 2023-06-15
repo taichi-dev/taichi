@@ -31,7 +31,7 @@ class SceneLines final : public Renderable {
 
   void update_data(const SceneLinesInfo &info);
 
-  void update_scene_data(DevicePtr ubo_ptr);
+  void update_scene_data(DevicePtr ssbo_ptr, DevicePtr ubo_ptr) override;
 
   void record_prepass_this_frame_commands(
       taichi::lang::CommandList *command_list) override;
@@ -40,6 +40,7 @@ class SceneLines final : public Renderable {
       taichi::lang::CommandList *command_list) override;
 
  private:
+  DevicePtr lights_ssbo_ptr;
   DevicePtr scene_ubo_ptr;
 
   struct UBORenderable {

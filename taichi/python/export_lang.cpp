@@ -1125,7 +1125,7 @@ void export_lang(py::module &m) {
 #if defined(TI_WITH_LLVM)
     return LLVM_VERSION_STRING;
 #else
-        return "targets unsupported";
+    return "targets unsupported";
 #endif
   });
   m.def("test_printf", [] { printf("test_printf\n"); });
@@ -1141,7 +1141,7 @@ void export_lang(py::module &m) {
 #if defined(TI_WITH_CUDA)
       return CUDAContext::get_instance().get_compute_capability();
 #else
-          TI_NOT_IMPLEMENTED
+     TI_NOT_IMPLEMENTED
 #endif
     } else {
       TI_ERROR("Key {} not supported in query_int64", key);

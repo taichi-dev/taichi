@@ -1671,62 +1671,84 @@ std::vector<Expr> ASTBuilder::expand_exprs(const std::vector<Expr> &exprs) {
   std::vector<Expr> expanded_exprs;
   for (auto expr : exprs) {
     TI_ASSERT_TYPE_CHECKED(expr);
-    if (auto struct_type = expr->ret_type.ptr_removed()->cast<StructType>()) {
-      auto num_elem = struct_type->elements().size();
-      for (int i = 0; i < num_elem; i++) {
-        std::vector<int> indices = {i};
-        auto elem = Expr(std::make_shared<GetElementExpression>(expr, indices));
-        elem.expr->ret_type = struct_type->get_element_type(indices);
-        expanded_exprs.push_back(elem);
-      }
-    } else if (!expr->ret_type.ptr_removed()->is<TensorType>()) {
-      expanded_exprs.push_back(expr);
-    } else {
-      // Expand TensorType expr
-      /*
-        Before:
-          TensorType<4 x i32> index = Expr;
 
-        After:
-          TensorType<4 x i32>* id_expr = FrontendAllocaStmt(TensorType<4 x i32>)
-          i32 ind0 = IndexExpression(id_expr, 0)
-          i32 ind1 = IndexExpression(id_expr, 1)
-          i32 ind2 = IndexExpression(id_expr, 2)
-          i32 ind3 = IndexExpression(id_expr, 3)
-
-          return {ind0, ind1, ind2, ind3}
-
-      */
-      auto tensor_type = expr->ret_type.ptr_removed()->cast<TensorType>();
-
-      Expr id_expr;
-      if (expr.is<IdExpression>()) {
-        id_expr = expr;
+    auto expand_tensor_or_scalar = [&](const Expr &expr) {
+      if (!expr->ret_type.ptr_removed()->is<TensorType>()) {
+        expanded_exprs.push_back(expr);
       } else {
-        id_expr = make_var(expr, expr->tb);
-      }
-      auto shape = tensor_type->get_shape();
-      if (shape.size() == 1) {
-        for (int i = 0; i < shape[0]; i++) {
-          auto ind = Expr(std::make_shared<IndexExpression>(
-              id_expr, ExprGroup(Expr(i)), expr->tb));
-          ind->type_check(nullptr);
-          expanded_exprs.push_back(ind);
+        // Expand TensorType expr
+        // clang-format off
+        /*
+          Before:
+            TensorType<4 x i32> index = Expr;
+
+          After:
+            TensorType<4 x i32>* id_expr = FrontendAllocaStmt(TensorType<4 x i32>)
+            i32 ind0 = IndexExpression(id_expr, 0)
+            i32 ind1 = IndexExpression(id_expr, 1)
+            i32 ind2 = IndexExpression(id_expr, 2)
+            i32 ind3 = IndexExpression(id_expr, 3)
+
+            return {ind0, ind1, ind2, ind3}
+
+         */
+        // clang-format on
+        auto tensor_type = expr->ret_type.ptr_removed()->cast<TensorType>();
+
+        Expr id_expr;
+        if (expr.is<IdExpression>()) {
+          id_expr = expr;
+        } else {
+          id_expr = make_var(expr, expr->tb);
         }
-      } else {
-        TI_ASSERT(shape.size() == 2);
-        for (int i = 0; i < shape[0]; i++) {
-          for (int j = 0; j < shape[1]; j++) {
+        auto shape = tensor_type->get_shape();
+        if (shape.size() == 1) {
+          for (int i = 0; i < shape[0]; i++) {
             auto ind = Expr(std::make_shared<IndexExpression>(
-                id_expr, ExprGroup(Expr(i), Expr(j)), expr->tb));
+                id_expr, ExprGroup(Expr(i)), expr->tb));
             ind->type_check(nullptr);
             expanded_exprs.push_back(ind);
           }
+        } else {
+          TI_ASSERT(shape.size() == 2);
+          for (int i = 0; i < shape[0]; i++) {
+            for (int j = 0; j < shape[1]; j++) {
+              auto ind = Expr(std::make_shared<IndexExpression>(
+                  id_expr, ExprGroup(Expr(i), Expr(j)), expr->tb));
+              ind->type_check(nullptr);
+              expanded_exprs.push_back(ind);
+            }
+          }
         }
       }
+    };
+
+    std::function<void(const Expr &, const StructType *, std::vector<int> &)>
+        expand_struct = [&](const Expr &expr, const StructType *struct_type,
+                            std::vector<int> &indices) {
+          auto num_elem = struct_type->elements().size();
+          for (int i = 0; i < num_elem; i++) {
+            indices.push_back(i);
+            auto element_type = struct_type->get_element_type({i});
+            if (auto element_struct_type = element_type->cast<StructType>()) {
+              expand_struct(expr, element_struct_type, indices);
+            } else {
+              auto elem =
+                  Expr(std::make_shared<GetElementExpression>(expr, indices));
+              elem.expr->ret_type = element_type;
+              expand_tensor_or_scalar(elem);
+            }
+            indices.pop_back();
+          }
+        };
+    auto type = expr->ret_type.ptr_removed();
+    if (auto struct_type = type->cast<StructType>()) {
+      std::vector<int> indices;
+      expand_struct(expr, struct_type, indices);
+    } else {
+      expand_tensor_or_scalar(expr);
     }
   }
-
   return expanded_exprs;
 }
 

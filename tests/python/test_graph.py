@@ -369,9 +369,9 @@ def test_texture():
 
     @ti.kernel
     def paint(
-            t: ti.f32,
-            pixels: ti.types.ndarray(ndim=2),
-            tex: ti.types.texture(num_dimensions=2),
+        t: ti.f32,
+        pixels: ti.types.ndarray(ndim=2),
+        tex: ti.types.texture(num_dimensions=2),
     ):
         for i, j in pixels:
             uv = ti.Vector([i / res[0], j / res[1]])

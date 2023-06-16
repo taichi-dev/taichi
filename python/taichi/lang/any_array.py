@@ -15,9 +15,8 @@ class AnyArray:
         layout (Layout): Memory layout.
     """
 
-    def __init__(self, ptr, element_type):
+    def __init__(self, ptr):
         assert ptr.is_external_tensor_expr()
-        self.element_type = element_type
         self.ptr = ptr
         self.ptr.type_check(impl.get_runtime().prog.config())
 
@@ -34,14 +33,14 @@ class AnyArray:
 
     def get_type(self):
         return NdarrayTypeMetadata(
-            self.element_type, None, _ti_core.get_external_tensor_needs_grad(self.ptr)
+            _ti_core.get_external_tensor_element_type(self.ptr), None, _ti_core.get_external_tensor_needs_grad(self.ptr)
         )  # AnyArray can take any shape
 
     @property
     @taichi_scope
     def grad(self):
         """Returns the gradient of this array."""
-        return AnyArray(_ti_core.make_external_tensor_grad_expr(self.ptr), self.element_type)
+        return AnyArray(_ti_core.make_external_tensor_grad_expr(self.ptr))
 
     @property
     @taichi_scope

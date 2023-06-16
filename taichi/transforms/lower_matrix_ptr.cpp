@@ -42,12 +42,12 @@ class GatherValidAOSGlobalPtrStmt : public BasicStmtVisitor {
     if (stmt->origin->is<MatrixOfGlobalPtrStmt>()) {
       auto origin = stmt->origin->as<MatrixOfGlobalPtrStmt>();
 
-      if (is_quant(stmt->ret_type.ptr_removed())) {
+      if (is_quant(origin->snodes[0]->dt)) {
         invalid_aos_global_ptr_stmts_.insert(stmt->origin);
       }
 
-      if (origin->snodes[0]->type == SNodeType::bit_struct ||
-          origin->snodes[0]->type == SNodeType::quant_array) {
+      if (origin->snodes[0]->dt->is<PointerType>() &&
+          origin->snodes[0]->dt->as<PointerType>()->is_bit_pointer()) {
         invalid_aos_global_ptr_stmts_.insert(stmt->origin);
       }
 

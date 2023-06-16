@@ -1,7 +1,6 @@
 #include "taichi/ir/type_factory.h"
 
 #include "taichi/ir/type_utils.h"
-#include "signal.h"
 
 namespace taichi::lang {
 
@@ -246,9 +245,6 @@ DataType promoted_primitive_type(DataType x, DataType y) {
 
 DataType promoted_type(DataType a, DataType b) {
   if (a->is<TensorType>() || b->is<TensorType>()) {
-    if (!(a->is<TensorType>() && b->is<TensorType>())) {
-      raise(SIGSEGV);
-    }
     TI_ASSERT_INFO(a->is<TensorType>() && b->is<TensorType>(),
                    "a = {}, b = {}, only one of them is a tensor type",
                    a->to_string(), b->to_string());

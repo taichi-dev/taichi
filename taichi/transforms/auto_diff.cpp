@@ -2430,7 +2430,6 @@ class GloablDataAccessRuleChecker : public BasicStmtVisitor {
     snode = snode->get_adjoint_checkbit();
     auto global_ptr =
         stmt->insert_after_me(Stmt::make<GlobalPtrStmt>(snode, src->indices));
-    global_ptr->ret_type = src->ret_type;
     auto dtype = global_ptr->ret_type.ptr_removed();
 
     auto one = insert_const(dtype, global_ptr, 1, false /*insert_before_me*/);
@@ -2446,7 +2445,6 @@ class GloablDataAccessRuleChecker : public BasicStmtVisitor {
     snode = snode->get_adjoint_checkbit();
     auto global_ptr =
         stmt->insert_before_me(Stmt::make<GlobalPtrStmt>(snode, dest->indices));
-    global_ptr->ret_type = dest->ret_type;
     auto global_load =
         stmt->insert_before_me(Stmt::make<GlobalLoadStmt>(global_ptr));
     auto dtype = global_ptr->ret_type.ptr_removed();

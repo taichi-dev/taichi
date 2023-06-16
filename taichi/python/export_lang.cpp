@@ -624,67 +624,65 @@ void export_lang(py::module &m) {
       .def("seq", &GraphBuilder::seq, py::return_value_policy::reference);
 
   py::class_<aot::CompiledGraph>(m, "CompiledGraph")
-      .def("jit_run",
-           [](aot::CompiledGraph *self, const CompileConfig &compile_config,
-              const py::dict &pyargs) {
-             std::unordered_map<std::string, aot::IValue> args;
-             auto insert_scalar_arg = [&args](std::string arg_name,
-                                              DataType expected_dtype,
-                                              py::object pyarg) {
-               auto type_id = expected_dtype->as<PrimitiveType>()->type;
-               switch (type_id) {
+      .def("jit_run", [](aot::CompiledGraph *self,
+                         const CompileConfig &compile_config,
+                         const py::dict &pyargs) {
+        std::unordered_map<std::string, aot::IValue> args;
+        auto insert_scalar_arg = [&args](std::string arg_name,
+                                         DataType expected_dtype,
+                                         py::object pyarg) {
+          auto type_id = expected_dtype->as<PrimitiveType>()->type;
+          switch (type_id) {
 #define PER_C_TYPE(type, ctype)                                           \
   case PrimitiveTypeID::type:                                             \
     args.insert({arg_name, aot::IValue::create(py::cast<ctype>(pyarg))}); \
     break;
 #include "taichi/inc/data_type_with_c_type.inc.h"
 #undef PER_C_TYPE
-                 default:
-                   TI_ERROR("Unsupported scalar type {}", type_id);
-               }
-             };
+            default:
+              TI_ERROR("Unsupported scalar type {}", type_id);
+          }
+        };
 
-             std::vector<std::unique_ptr<char[]>> matrix_buffers;
-             std::vector<Matrix> matrices;
-             for (const auto &[arg_name, arg] : self->args) {
-               auto tag = arg.tag;
-               TI_ASSERT(pyargs.contains(arg_name.c_str()));
-               auto pyarg = pyargs[arg_name.c_str()];
-               if (tag == aot::ArgKind::kNdarray) {
-                 auto &val = pyarg.cast<Ndarray &>();
-                 args.insert({arg_name, aot::IValue::create(val)});
-               } else if (tag == aot::ArgKind::kTexture ||
-                          tag == aot::ArgKind::kRWTexture) {
-                 auto &val = pyarg.cast<Texture &>();
-                 args.insert({arg_name, aot::IValue::create(val)});
-               } else if (tag == aot::ArgKind::kScalar) {
-                 auto expected_dtype = arg.dtype();
-                 insert_scalar_arg(arg_name, expected_dtype, pyarg);
-               } else if (tag == aot::ArgKind::kMatrix) {
-                 auto type_id = arg.dtype()->as<PrimitiveType>()->type;
-                 switch (type_id) {
-                   case PrimitiveTypeID::f16: {
-                     auto arr = pyarg.cast<py::array_t<float32>>();
-                     py::buffer_info buffer_info = arr.request();
-                     auto length = buffer_info.size;
-                     auto ptr = reinterpret_cast<intptr_t>(buffer_info.ptr);
+        std::vector<std::unique_ptr<char[]>> matrix_buffers;
+        std::vector<Matrix> matrices;
+        for (const auto &[arg_name, arg] : self->args) {
+          auto tag = arg.tag;
+          TI_ASSERT(pyargs.contains(arg_name.c_str()));
+          auto pyarg = pyargs[arg_name.c_str()];
+          if (tag == aot::ArgKind::kNdarray) {
+            auto &val = pyarg.cast<Ndarray &>();
+            args.insert({arg_name, aot::IValue::create(val)});
+          } else if (tag == aot::ArgKind::kTexture ||
+                     tag == aot::ArgKind::kRWTexture) {
+            auto &val = pyarg.cast<Texture &>();
+            args.insert({arg_name, aot::IValue::create(val)});
+          } else if (tag == aot::ArgKind::kScalar) {
+            auto expected_dtype = arg.dtype();
+            insert_scalar_arg(arg_name, expected_dtype, pyarg);
+          } else if (tag == aot::ArgKind::kMatrix) {
+            auto type_id = arg.dtype()->as<PrimitiveType>()->type;
+            switch (type_id) {
+              case PrimitiveTypeID::f16: {
+                auto arr = pyarg.cast<py::array_t<float32>>();
+                py::buffer_info buffer_info = arr.request();
+                auto length = buffer_info.size;
+                auto ptr = reinterpret_cast<intptr_t>(buffer_info.ptr);
 
-                     std::unique_ptr<char[]> data(new char[128]);
-                     for (uint32_t i = 0; i < length; i++) {
-                       uint16 half = fp16_ieee_from_fp32_value(
-                           reinterpret_cast<float32*>(ptr)[i]);
-                       reinterpret_cast<uint16*>(data.get())[i] = half;
-                     }
-                     matrix_buffers.emplace_back(std::move(data));
+                std::unique_ptr<char[]> data(new char[128]);
+                for (uint32_t i = 0; i < length; i++) {
+                  uint16 half = fp16_ieee_from_fp32_value(
+                      reinterpret_cast<float32 *>(ptr)[i]);
+                  reinterpret_cast<uint16 *>(data.get())[i] = half;
+                }
+                matrix_buffers.emplace_back(std::move(data));
 
-                     matrices.emplace_back(
-                         Matrix(length, arg.dtype(),
-                                reinterpret_cast<intptr_t>(
-                                    matrix_buffers.back().get())));
-                     args.insert({arg_name,
-                                  aot::IValue::create(matrices.back())});
-                     break;
-                   }
+                matrices.emplace_back(Matrix(
+                    length, arg.dtype(),
+                    reinterpret_cast<intptr_t>(matrix_buffers.back().get())));
+                args.insert({arg_name, aot::IValue::create(matrices.back())});
+                break;
+              }
 #define PER_C_TYPE(type, ctype)                                           \
   case PrimitiveTypeID::type: {                                           \
     auto arr = pyarg.cast<py::array_t<ctype>>();                          \
@@ -693,30 +691,29 @@ void export_lang(py::module &m) {
     auto ptr = reinterpret_cast<intptr_t>(buffer_info.ptr);               \
                                                                           \
     std::unique_ptr<char[]> data(new char[128]);                          \
-    std::memcpy(data.get(), reinterpret_cast<char*>(ptr),                 \
+    std::memcpy(data.get(), reinterpret_cast<char *>(ptr),                \
                 sizeof(ctype) * length);                                  \
     matrix_buffers.emplace_back(std::move(data));                         \
                                                                           \
     matrices.emplace_back(                                                \
         Matrix(length, arg.dtype(),                                       \
                reinterpret_cast<intptr_t>(matrix_buffers.back().get()))); \
-    args.insert({arg_name,                                                \
-                 aot::IValue::create(matrices.back())});                  \
+    args.insert({arg_name, aot::IValue::create(matrices.back())});        \
     break;                                                                \
   }
 #include "taichi/inc/data_type_with_c_type.inc.h"
 #undef PER_C_TYPE
-                   default:
-                     TI_ERROR("Unsupported scalar type {}", type_id);
-                 }
-               } else {
-                 TI_NOT_IMPLEMENTED;
-               }
-             }
-             self->jit_run(compile_config, args);
-             matrix_buffers.clear();
-             matrices.clear();
-           });
+              default:
+                TI_ERROR("Unsupported scalar type {}", type_id);
+            }
+          } else {
+            TI_NOT_IMPLEMENTED;
+          }
+        }
+        self->jit_run(compile_config, args);
+        matrix_buffers.clear();
+        matrices.clear();
+      });
 
   py::class_<Kernel>(m, "Kernel")
       .def("no_activate",

@@ -279,6 +279,8 @@ class Func:
             return Expr(_ti_core.make_get_element_expr(func_call.ptr, (0,)))
         if isinstance(self.return_type, StructType):
             return self.return_type.from_taichi_object(func_call, (0,))
+        if isinstance(self.return_type, MatrixType):
+            return self.return_type.from_taichi_object(func_call, (0,))
         raise TaichiTypeError(f"Unsupported return type: {self.return_type}")
 
     def do_compile(self, key, args, arg_features):

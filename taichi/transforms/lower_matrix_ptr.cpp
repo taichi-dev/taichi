@@ -8,34 +8,72 @@
 
 namespace taichi::lang {
 
+bool is_aos_matrix_of_global_ptr(MatrixOfGlobalPtrStmt *stmt) {
+  auto ret_type = stmt->ret_type;
+  auto indices = stmt->indices;
+  auto snodes = stmt->snodes;
+
+  bool is_continuous_addr = true;
+  SNode *parent_snode = snodes[0]->parent;
+  for (auto snode : snodes) {
+    TI_ASSERT(snode->type == SNodeType::place);
+    if (snode->parent != parent_snode ||
+        parent_snode->type != SNodeType::dense) {
+      is_continuous_addr = false;
+      break;
+    }
+  }
+
+  return is_continuous_addr;
+}
+
+class GatherValidAOSGlobalPtrStmt : public BasicStmtVisitor {
+ public:
+  DelayedIRModifier modifier_;
+  std::unordered_set<Stmt *> invalid_aos_global_ptr_stmts_;
+
+  explicit GatherValidAOSGlobalPtrStmt(IRNode *node) {
+    node->accept(this);
+
+    modifier_.modify_ir();
+  }
+
+  void visit(MatrixPtrStmt *stmt) override {
+    if (stmt->origin->is<MatrixOfGlobalPtrStmt>()) {
+      if (!stmt->offset->is<ConstStmt>()) {
+        invalid_aos_global_ptr_stmts_.insert(stmt->origin);
+      }
+    }
+  }
+
+ private:
+  using BasicStmtVisitor::visit;
+};
+
 class LowerAOSGlobalPtrStmt : public BasicStmtVisitor {
  public:
   ImmediateIRModifier immediate_modifier_;
   DelayedIRModifier delayed_modifier_;
+  std::unordered_set<Stmt *> invalid_aos_global_ptr_stmts_;
 
-  explicit LowerAOSGlobalPtrStmt(IRNode *node) : immediate_modifier_(node) {
+  explicit LowerAOSGlobalPtrStmt(
+      IRNode *node,
+      std::unordered_set<Stmt *> &invalid_aos_global_ptr_stmts)
+      : immediate_modifier_(node),
+        invalid_aos_global_ptr_stmts_(invalid_aos_global_ptr_stmts) {
     node->accept(this);
 
     delayed_modifier_.modify_ir();
   }
 
   void visit(MatrixOfGlobalPtrStmt *stmt) override {
+    bool is_aos = is_aos_matrix_of_global_ptr(stmt);
     auto ret_type = stmt->ret_type;
     auto indices = stmt->indices;
     auto snodes = stmt->snodes;
 
-    bool is_continuous_addr = true;
-    SNode *parent_snode = snodes[0]->parent;
-    for (auto snode : snodes) {
-      TI_ASSERT(snode->type == SNodeType::place);
-      if (snode->parent != parent_snode ||
-          parent_snode->type != SNodeType::dense) {
-        is_continuous_addr = false;
-        break;
-      }
-    }
-
-    if (is_continuous_addr) {
+    if (is_aos && invalid_aos_global_ptr_stmts_.find(stmt) ==
+                      invalid_aos_global_ptr_stmts_.end()) {
       auto new_stmt = std::make_unique<GlobalPtrStmt>(snodes[0], indices);
       new_stmt->ret_type = ret_type;
       new_stmt->ret_type.set_is_pointer(true);
@@ -547,7 +585,10 @@ namespace irpass {
 void lower_matrix_ptr(IRNode *root) {
   TI_AUTO_PROF;
 
-  LowerAOSGlobalPtrStmt lower_aos_global_ptr_stmt_pass(root);
+  GatherValidAOSGlobalPtrStmt gather_valid_aos_global_ptr_pass(root);
+
+  LowerAOSGlobalPtrStmt lower_aos_global_ptr_stmt_pass(
+      root, gather_valid_aos_global_ptr_pass.invalid_aos_global_ptr_stmts_);
 
   ScalarizeMatrixPtr scalarize_matrix_ptr_pass(root);
   LowerMatrixPtr::run(root);

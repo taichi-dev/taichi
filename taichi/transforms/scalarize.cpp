@@ -1271,9 +1271,9 @@ class FuseMatrixPtr : public BasicStmtVisitor {
       return;
     }
 
-    if (stmt->origin->is<GetChStmt>()) {
+    if (stmt->origin->is<GetChStmt>() &&
+        stmt->origin->ret_type.ptr_removed()->is<TensorType>()) {
       auto origin = stmt->origin->as<GetChStmt>();
-      TI_ASSERT(origin->ret_type.ptr_removed()->is<TensorType>());
 
       if (!stmt->offset->is<ConstStmt>()) {
         return;

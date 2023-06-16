@@ -45,7 +45,6 @@ class TI_DLL_EXPORT Type {
   template <typename T>
   T *as() {
     auto p = dynamic_cast<T *>(this);
-
     TI_ASSERT_INFO(p != nullptr, "Cannot treat {} as {}", this->to_string(),
                    typeid(T).name());
     return p;

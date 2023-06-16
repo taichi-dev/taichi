@@ -772,9 +772,7 @@ class AssociateContinueScope : public BasicStmtVisitor {
 void offload(IRNode *root, const CompileConfig &config) {
   TI_AUTO_PROF;
   auto offloaded_ranges = Offloader::run(root, config);
-
   type_check(root, config);
-
   {
     auto stmt_to_offloaded = StmtToOffloaded::run(root);
     const auto local_to_global_offset = IdentifyValuesUsedInOtherOffloads::run(
@@ -788,7 +786,6 @@ void offload(IRNode *root, const CompileConfig &config) {
   // TODO(k-ye): Move this into its own pass. However, we need to wait for all
   // backends to integrate with https://github.com/taichi-dev/taichi/pull/700
   AssociateContinueScope::run(root);
-
   type_check(root, config);
   re_id(root);
 }

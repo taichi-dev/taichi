@@ -2449,7 +2449,7 @@ class GloablDataAccessRuleChecker : public BasicStmtVisitor {
     global_ptr->ret_type = dest->ret_type;
     auto global_load =
         stmt->insert_before_me(Stmt::make<GlobalLoadStmt>(global_ptr));
-    auto dtype = global_ptr->ret_type;
+    auto dtype = global_ptr->ret_type.ptr_removed();
     auto zero = insert_const(dtype, stmt, 0, /*insert_before_me=*/true);
     auto check_equal = stmt->insert_before_me(
         Stmt::make<BinaryOpStmt>(BinaryOpType::cmp_eq, global_load, zero));

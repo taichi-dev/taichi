@@ -1678,20 +1678,22 @@ std::vector<Expr> ASTBuilder::expand_exprs(const std::vector<Expr> &exprs) {
         expanded_exprs.push_back(expr);
       } else {
         // Expand TensorType expr
+        // clang-format off
         /*
           Before:
             TensorType<4 x i32> index = Expr;
 
-      After:
-        TensorType<4 x i32>* id_expr = FrontendAllocaStmt(TensorType<4 x i32>)
+          After:
+            TensorType<4 x i32>* id_expr = FrontendAllocaStmt(TensorType<4 x i32>)
             i32 ind0 = IndexExpression(id_expr, 0)
-                i32 ind1 = IndexExpression(id_expr, 1)
-                    i32 ind2 = IndexExpression(id_expr, 2)
-                        i32 ind3 = IndexExpression(id_expr, 3)
+            i32 ind1 = IndexExpression(id_expr, 1)
+            i32 ind2 = IndexExpression(id_expr, 2)
+            i32 ind3 = IndexExpression(id_expr, 3)
 
-                                       return {ind0, ind1, ind2, ind3}
+            return {ind0, ind1, ind2, ind3}
 
-                                           */
+         */
+        // clang-format on
         auto tensor_type = expr->ret_type.ptr_removed()->cast<TensorType>();
 
         Expr id_expr;

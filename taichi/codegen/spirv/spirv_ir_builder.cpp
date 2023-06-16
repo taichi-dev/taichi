@@ -248,18 +248,21 @@ PhiValue IRBuilder::make_phi(const SType &out_type, uint32_t num_incoming) {
 Value IRBuilder::int_immediate_number(const SType &dtype,
                                       int64_t value,
                                       bool cache) {
+  TI_ASSERT(is_integral(dtype.dt));
   return get_const(dtype, reinterpret_cast<uint64_t *>(&value), cache);
 }
 
 Value IRBuilder::uint_immediate_number(const SType &dtype,
                                        uint64_t value,
                                        bool cache) {
+  TI_ASSERT(is_integral(dtype.dt));
   return get_const(dtype, &value, cache);
 }
 
 Value IRBuilder::float_immediate_number(const SType &dtype,
                                         double value,
                                         bool cache) {
+  TI_ASSERT(is_real(dtype.dt));
   if (data_type_bits(dtype.dt) == 64) {
     return get_const(dtype, reinterpret_cast<uint64_t *>(&value), cache);
   } else if (data_type_bits(dtype.dt) == 32) {
@@ -570,8 +573,7 @@ SType IRBuilder::get_array_type(const SType &_value_type, uint32_t num_elems) {
   arr_type.element_type_id = value_type.id;
 
   if (num_elems != 0) {
-    Value length = uint_immediate_number(
-        get_primitive_type(get_data_type<uint32>()), num_elems);
+    Value length = uint_immediate_number(t_uint32_, num_elems);
     ib_.begin(spv::OpTypeArray)
         .add_seq(arr_type, value_type, length)
         .commit(&global_);
@@ -1494,7 +1496,9 @@ Value IRBuilder::get_const(const SType &dtype,
     }
   }
 
-  TI_ASSERT(dtype.flag == TypeKind::kPrimitive);
+  TI_WARN_IF(dtype.flag != TypeKind::kPrimitive,
+            "Trying to get const with dtype.flag={} , .dt={}", dtype.flag,
+            dtype.dt.to_string());
   Value ret = new_value(dtype, ValueKind::kConstant);
   if (dtype.dt->is_primitive(PrimitiveTypeID::u1)) {
     // bool type

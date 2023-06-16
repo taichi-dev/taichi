@@ -40,6 +40,17 @@ class GatherValidAOSGlobalPtrStmt : public BasicStmtVisitor {
 
   void visit(MatrixPtrStmt *stmt) override {
     if (stmt->origin->is<MatrixOfGlobalPtrStmt>()) {
+      auto origin = stmt->origin->as<MatrixOfGlobalPtrStmt>();
+
+      if (is_quant(stmt->ret_type.ptr_removed())) {
+        invalid_aos_global_ptr_stmts_.insert(stmt->origin);
+      }
+
+      if (origin->snodes[0]->type == SNodeType::bit_struct ||
+          origin->snodes[0]->type == SNodeType::quant_array) {
+        invalid_aos_global_ptr_stmts_.insert(stmt->origin);
+      }
+
       if (!stmt->offset->is<ConstStmt>()) {
         invalid_aos_global_ptr_stmts_.insert(stmt->origin);
       }

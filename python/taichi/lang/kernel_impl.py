@@ -12,6 +12,7 @@ import numpy as np
 import taichi.lang
 from taichi._lib import core as _ti_core
 from taichi.lang import impl, ops, runtime_ops
+from taichi.lang.any_array import AnyArray
 from taichi.lang._wrap_inspect import getsourcefile, getsourcelines
 from taichi.lang.argpack import ArgPackType, ArgPack
 from taichi.lang.ast import (
@@ -226,12 +227,12 @@ class Func:
         if self.is_real_function:
             if impl.get_runtime().current_kernel.autodiff_mode != AutodiffMode.NONE:
                 raise TaichiSyntaxError("Real function in gradient kernels unsupported.")
-            instance_id, _ = self.mapper.lookup(args)
+            instance_id, arg_features = self.mapper.lookup(args)
             key = _ti_core.FunctionKey(self.func.__name__, self.func_id, instance_id)
             if self.compiled is None:
                 self.compiled = {}
             if key.instance_id not in self.compiled:
-                self.do_compile(key=key, args=args)
+                self.do_compile(key=key, args=args, arg_features=arg_features)
             return self.func_call_rvalue(key=key, args=args)
         tree, ctx = _get_tree_and_ctx(
             self,
@@ -257,6 +258,12 @@ class Func:
                     non_template_args.append(ops.cast(args[i], anno))
                 elif isinstance(anno, primitive_types.RefType):
                     non_template_args.append(_ti_core.make_reference(args[i].ptr))
+                elif isinstance(anno, ndarray_type.NdarrayType):
+                    if not isinstance(args[i], AnyArray):
+                        raise TaichiTypeError(
+                            f"Expected ndarray in the kernel argument for argument {kernel_arg.name}, got {args[i]}"
+                        )
+                    non_template_args.append(args[i].ptr)
                 else:
                     non_template_args.append(args[i])
         non_template_args = impl.make_expr_group(non_template_args, real_func_arg=True)
@@ -274,8 +281,10 @@ class Func:
             return self.return_type.from_taichi_object(func_call, (0,))
         raise TaichiTypeError(f"Unsupported return type: {self.return_type}")
 
-    def do_compile(self, key, args):
-        tree, ctx = _get_tree_and_ctx(self, is_kernel=False, args=args, is_real_function=self.is_real_function)
+    def do_compile(self, key, args, arg_features):
+        tree, ctx = _get_tree_and_ctx(
+            self, is_kernel=False, args=args, arg_features=arg_features, is_real_function=self.is_real_function
+        )
         fn = impl.get_runtime().prog.create_function(key)
 
         def func_body():
@@ -403,6 +412,10 @@ class TaichiCallableTemplateMapper:
                 anno.check_matched(arg.get_type(), arg_name)
                 needs_grad = (arg.grad is not None) if anno.needs_grad is None else anno.needs_grad
                 return arg.element_type, len(arg.shape), needs_grad, anno.boundary
+            if isinstance(arg, AnyArray):
+                ty = arg.get_type()
+                anno.check_matched(arg.get_type(), arg_name)
+                return ty.element_type, len(arg.shape), ty.needs_grad, anno.boundary
             # external arrays
             shape = getattr(arg, "shape", None)
             if shape is None:

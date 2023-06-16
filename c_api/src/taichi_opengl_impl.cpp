@@ -32,7 +32,8 @@ void ti_export_opengl_runtime(TiRuntime runtime,
                               TiOpenglRuntimeInteropInfo *interop_info) {
   TI_CAPI_TRY_CATCH_BEGIN();
   // FIXME: (penguinliogn)
-  interop_info->get_proc_addr = taichi::lang::opengl::kGetOpenglProcAddr.value();
+  interop_info->get_proc_addr =
+      taichi::lang::opengl::kGetOpenglProcAddr.value();
   TI_CAPI_TRY_CATCH_END();
 }
 

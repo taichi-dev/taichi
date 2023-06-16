@@ -29,7 +29,7 @@ static bool context_with_glfw = false;
 std::optional<void *> kGetOpenglProcAddr;
 std::optional<void *> imported_process_address;
 namespace {
-  static std::optional<bool> use_gles_override;
+static std::optional<bool> use_gles_override;
 };
 
 void set_gles_override(bool value) {
@@ -64,7 +64,8 @@ bool initialize_opengl(bool use_gles, bool error_tolerance) {
 
 #ifndef ANDROID
   // If imported_process_address has been set, then use that.
-  if (!imported_process_address.has_value() && window_system::glfw_context_acquire()) {
+  if (!imported_process_address.has_value() &&
+      window_system::glfw_context_acquire()) {
     // Compute Shader requires OpenGL 4.3+ (or OpenGL ES 3.1+)
     if (use_gles) {
       glfwWindowHint(GLFW_CLIENT_API, GLFW_OPENGL_ES_API);

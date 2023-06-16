@@ -645,7 +645,7 @@ class ASTTransformer(Builder):
         def transform_as_kernel():
             # Treat return type
             if node.returns is not None:
-                kernel_arguments.decl_ret(ctx.func.return_type, ctx.is_real_function)
+                kernel_arguments.decl_ret(ctx.func.return_type)
             impl.get_runtime().compiling_callable.finalize_rets()
 
             for i, arg in enumerate(args.args):

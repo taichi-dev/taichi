@@ -248,3 +248,16 @@ def test_return_type_mismatch_3():
 
     with pytest.raises(ti.TaichiCompilationError):
         bar()
+
+
+@test_utils.test()
+def test_func_scalar_return_cast():
+    @ti.func
+    def bar(a: ti.f32) -> ti.i32:
+        return a
+
+    @ti.kernel
+    def foo(a: ti.f32) -> ti.f32:
+        return bar(a)
+
+    assert foo(1.5) == 1.0

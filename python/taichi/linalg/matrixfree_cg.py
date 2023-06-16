@@ -122,3 +122,160 @@ def MatrixFreeCG(A, b, x, tol=1e-6, maxiter=5000, quiet=True):
     solve()
     vector_fields_snode_tree.destroy()
     scalar_snode_tree.destroy()
+
+
+def MatrixFreeBICGSTAB(A, b, x, tol=1e-6, maxiter=5000, quiet=True):
+    """Matrix-free biconjugate-gradient stabilized solver (BiCGSTAB).
+
+    Use BiCGSTAB method to solve the linear system Ax = b, where A is implicitly
+    represented as a LinearOperator.
+
+    Args:
+        A (LinearOperator): The coefficient matrix A of the linear system.
+        b (Field): The right-hand side of the linear system.
+        x (Field): The initial guess for the solution.
+        maxiter (int): Maximum number of iterations.
+        atol: Tolerance(absolute) for convergence.
+        quiet (bool): Switch to turn on/off iteration log.
+    """
+
+    if b.dtype != x.dtype:
+        raise TaichiTypeError(f"Dtype mismatch b.dtype({b.dtype}) != x.dtype({x.dtype}).")
+    if str(b.dtype) == "f32":
+        solver_dtype = ti.f32
+    elif str(b.dtype) == "f64":
+        solver_dtype = ti.f64
+    else:
+        raise TaichiTypeError(f"Not supported dtype: {b.dtype}")
+    if b.shape != x.shape:
+        raise TaichiRuntimeError(f"Dimension mismatch b.shape{b.shape} != x.shape{x.shape}.")
+
+    size = b.shape
+    vector_fields_builder = ti.FieldsBuilder()
+    p = ti.field(dtype=solver_dtype)
+    p_hat = ti.field(dtype=solver_dtype)
+    r = ti.field(dtype=solver_dtype)
+    r_tld = ti.field(dtype=solver_dtype)
+    s = ti.field(dtype=solver_dtype)
+    s_hat = ti.field(dtype=solver_dtype)
+    t = ti.field(dtype=solver_dtype)
+    Ap = ti.field(dtype=solver_dtype)
+    Ashat = ti.field(dtype=solver_dtype)
+    if len(size) == 1:
+        axes = ti.i
+    elif len(size) == 2:
+        axes = ti.ij
+    elif len(size) == 3:
+        axes = ti.ijk
+    else:
+        raise TaichiRuntimeError(f"MatrixFreeBICGSTAB only support 1D, 2D, 3D inputs; your inputs is {len(size)}-D.")
+    vector_fields_builder.dense(axes, size).place(p, p_hat, r, r_tld, s, s_hat, t, Ap, Ashat)
+    vector_fields_snode_tree = vector_fields_builder.finalize()
+
+    scalar_builder = ti.FieldsBuilder()
+    alpha = ti.field(dtype=solver_dtype)
+    beta = ti.field(dtype=solver_dtype)
+    omega = ti.field(dtype=solver_dtype)
+    rho = ti.field(dtype=solver_dtype)
+    rho_1 = ti.field(dtype=solver_dtype)
+    scalar_builder.place(alpha, beta, omega, rho, rho_1)
+    scalar_snode_tree = scalar_builder.finalize()
+    
+    @ti.kernel
+    def init():
+        for I in ti.grouped(x):
+            r[I] = b[I]
+            r_tld[I] = b[I]
+            p[I] = 0.0
+            Ap[I] = 0.0
+            Ashat[I] = 0.0
+        rho[None] = 0.0
+        rho_1[None] = 1.0
+        alpha[None] = 1.0
+        beta[None] = 1.0
+        omega[None] = 1.0
+
+    @ti.kernel
+    def reduce(p: ti.template(), q: ti.template()) -> solver_dtype:
+        result = 0.0
+        for I in ti.grouped(p):
+            result += p[I] * q[I]
+        return result
+
+    @ti.kernel
+    def copy(orig:ti.template(), dest:ti.template()):
+        for I in ti.grouped(orig):
+            dest[I] = orig[I]
+
+    @ti.kernel
+    def update_p():
+        for I in ti.grouped(p):
+            p[I] = r[I] + beta[None]*(p[I] - omega[None] * Ap[I])
+
+    @ti.kernel
+    def update_phat():
+        for I in ti.grouped(p_hat):
+            p_hat[I] = p[I]  
+            
+    @ti.kernel
+    def update_s():
+        for I in ti.grouped(s):
+            s[I] = r[I] - alpha[None] * Ap[I]
+
+    @ti.kernel
+    def update_shat():
+        for I in ti.grouped(s_hat):
+            s_hat[I] = s[I]
+
+    @ti.kernel
+    def update_x():
+        for I in ti.grouped(x):
+            x[I] += alpha[None] * p_hat[I] + omega[None] * s_hat[I]
+    
+    @ti.kernel
+    def update_r():
+        for I in ti.grouped(r):
+            r[I] = s[I] - omega[None] * t[I]            
+            
+    def solve():
+        init()
+        initial_rTr = reduce(r, r)
+        if not quiet:
+            print(f">>> Initial residual = {initial_rTr:e}")
+        for i in range(maxiter):
+            rho[None] = reduce(r, r_tld)
+            if rho[None] == 0.0:
+                print('>>> BICGSTAB failed because r@r_tld = 0.')
+                break
+            if i == 0:
+                copy(orig=r, dest=p)
+            else:
+                beta[None] = (rho[None] / rho_1[None]) * (alpha[None] / omega[None])
+                update_p()
+            update_phat()
+            A._matvec(p, Ap)
+            alpha_lower = reduce(r_tld, Ap)
+            alpha[None] = rho[None] / alpha_lower
+            update_s()
+            update_shat()
+            A._matvec(s_hat, Ashat)
+            copy(orig=Ashat, dest=t)
+            omega_upper = reduce(t, s)
+            omega_lower = reduce(t, t)
+            omega[None] = omega_upper / (omega_lower + 1e-16) if omega_lower == 0.0 \
+                else omega_upper / omega_lower
+            update_x()
+            update_r()
+            rTr = reduce(r, r)
+            if not quiet:
+                print(f">>> Iter = {i+1:4}, Residual = {sqrt(rTr):e}")
+            if sqrt(rTr) < tol:
+                if not quiet:
+                    print(f'>>> BICGSTAB method converged at #iterations {i}')
+                break
+            rho_1[None] = rho[None]
+            
+    solve()
+    vector_fields_snode_tree.destroy()
+    scalar_snode_tree.destroy()
+    

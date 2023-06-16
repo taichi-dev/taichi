@@ -22,7 +22,7 @@ void compile_to_offloads(IRNode *ir,
                          bool start_from_ast) {
   TI_AUTO_PROF;
 
-  auto print = make_pass_printer(true, kernel->get_name(), ir);
+  auto print = make_pass_printer(verbose, kernel->get_name(), ir);
   print("Initial IR");
 
   if (!verbose && config.print_preprocessed_ir && start_from_ast) {

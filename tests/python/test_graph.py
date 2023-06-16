@@ -212,44 +212,96 @@ def build_graph_matrix(N, dtype):
     return graph
 
 
-@test_utils.test(arch=supported_archs_cgraph)
-def test_matrix_int():
+def matrix_int_with_type(dtype):
     n = 4
-    A = ti.Matrix([4, 5] * n)
-    res = ti.ndarray(ti.i32, shape=(1,))
-    graph = build_graph_matrix(n, dtype=ti.i32)
+    A = ti.Matrix([4, 5] * n, dtype)
+    res = ti.ndarray(dtype, shape=(1,))
+    graph = build_graph_matrix(n, dtype=dtype)
     graph.run({"mat": A, "res": res})
     assert res.to_numpy()[0] == 36
 
 
-@test_utils.test(arch=supported_archs_cgraph)
-def test_matrix_float():
+def matrix_float_with_type(dtype):
     n = 4
-    A = ti.Matrix([4.2, 5.7] * n)
-    res = ti.ndarray(ti.f32, shape=(1))
-    graph = build_graph_matrix(n, dtype=ti.f32)
+    A = ti.Matrix([4.2, 5.7] * n, dtype)
+    res = ti.ndarray(dtype, shape=(1))
+    graph = build_graph_matrix(n, dtype=dtype)
     graph.run({"mat": A, "res": res})
     assert res.to_numpy()[0] == test_utils.approx(39.6, rel=1e-5)
 
 
 @test_utils.test(arch=supported_archs_cgraph)
-def test_vector_int():
+def test_matrix_int():
+    matrix_int_with_type(ti.u8)
+    matrix_int_with_type(ti.u16)
+    matrix_int_with_type(ti.u32)
+    matrix_int_with_type(ti.u64)
+    matrix_int_with_type(ti.i8)
+    matrix_int_with_type(ti.i16)
+    matrix_int_with_type(ti.i32)
+    matrix_int_with_type(ti.i64)
+
+
+@test_utils.test(arch=supported_archs_cgraph)
+def test_matrix_float():
+    matrix_float_with_type(ti.f32)
+    matrix_float_with_type(ti.f64)
+
+
+@test_utils.test(arch=supported_archs_cgraph)
+def test_matrix_float16():
+    n = 4
+    A = ti.Matrix([4.0, 5.0] * n, ti.f16)
+    res = ti.ndarray(ti.f16, shape=(1))
+    graph = build_graph_matrix(n, dtype=ti.f16)
+    graph.run({"mat": A, "res": res})
+    assert res.to_numpy()[0] == test_utils.approx(36.0, rel=1e-5)
+
+
+def vector_int_with_type(dtype):
     n = 12
-    A = ti.Vector([1, 3, 13, 4, 5, 6, 7, 2, 3, 4, 1, 25])
-    res = ti.ndarray(ti.i32, shape=(1,))
-    graph = build_graph_vector(n, dtype=ti.i32)
+    A = ti.Vector([1, 3, 13, 4, 5, 6, 7, 2, 3, 4, 1, 25], dtype)
+    res = ti.ndarray(dtype, shape=(1,))
+    graph = build_graph_vector(n, dtype=dtype)
     graph.run({"mat": A, "res": res})
     assert res.to_numpy()[0] == 87
 
 
-@test_utils.test(arch=supported_archs_cgraph)
-def test_vector_float():
+def vector_float_with_type(dtype):
     n = 8
-    A = ti.Vector([1.4, 3.7, 13.2, 4.5, 5.6, 6.1, 7.2, 2.6])
-    res = ti.ndarray(ti.f32, shape=(1,))
-    graph = build_graph_vector(n, dtype=ti.f32)
+    A = ti.Vector([1.4, 3.7, 13.2, 4.5, 5.6, 6.1, 7.2, 2.6], dtype)
+    res = ti.ndarray(dtype, shape=(1,))
+    graph = build_graph_vector(n, dtype=dtype)
     graph.run({"mat": A, "res": res})
     assert res.to_numpy()[0] == test_utils.approx(57.5, rel=1e-5)
+
+
+@test_utils.test(arch=supported_archs_cgraph)
+def test_vector_int():
+    vector_int_with_type(ti.u8)
+    vector_int_with_type(ti.u16)
+    vector_int_with_type(ti.u32)
+    vector_int_with_type(ti.u64)
+    vector_int_with_type(ti.i8)
+    vector_int_with_type(ti.i16)
+    vector_int_with_type(ti.i32)
+    vector_int_with_type(ti.i64)
+
+
+@test_utils.test(arch=supported_archs_cgraph)
+def test_vector_float():
+    vector_float_with_type(ti.f32)
+    vector_float_with_type(ti.f64)
+
+
+@test_utils.test(arch=supported_archs_cgraph)
+def test_vector_float16():
+    n = 4
+    A = ti.Vector([1.4, 3.7, 13.2, 4.5], ti.f16)
+    res = ti.ndarray(ti.f16, shape=(1,))
+    graph = build_graph_vector(n, dtype=ti.f16)
+    graph.run({"mat": A, "res": res})
+    assert res.to_numpy()[0] == test_utils.approx(36.0, rel=1e-2)
 
 
 @pytest.mark.parametrize("dt", supported_floating_types)
@@ -317,9 +369,9 @@ def test_texture():
 
     @ti.kernel
     def paint(
-        t: ti.f32,
-        pixels: ti.types.ndarray(ndim=2),
-        tex: ti.types.texture(num_dimensions=2),
+            t: ti.f32,
+            pixels: ti.types.ndarray(ndim=2),
+            tex: ti.types.texture(num_dimensions=2),
     ):
         for i, j in pixels:
             uv = ti.Vector([i / res[0], j / res[1]])

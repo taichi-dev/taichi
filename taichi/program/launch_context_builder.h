@@ -2,6 +2,7 @@
 #include <taichi/program/callable.h>
 #include "taichi/program/ndarray.h"
 #include "taichi/program/texture.h"
+#include "taichi/program/matrix.h"
 
 namespace taichi::lang {
 
@@ -79,6 +80,8 @@ class LaunchContextBuilder {
                                intptr_t alloc_ptr,
                                const std::array<int, 3> &shape);
   void set_arg_rw_texture(int arg_id, const Texture &tex);
+
+  void set_arg_matrix(int arg_id, const Matrix &matrix);
 
   TypedConstant fetch_ret(const std::vector<int> &index);
   float64 get_struct_ret_float(const std::vector<int> &index);

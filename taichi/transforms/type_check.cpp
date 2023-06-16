@@ -139,11 +139,8 @@ class TypeCheck : public IRVisitor {
 
     if (!stmt->ret_type.ptr_removed().get_element_type()->is_primitive(
             PrimitiveTypeID::unknown)) {
-      // Infer data type for alloca
-      return;
-    }
-
-    if (stmt->snode) {
+      // pass
+    } else if (stmt->snode) {
       stmt->ret_type =
           TypeFactory::get_instance().get_pointer_type(stmt->snode->dt);
     } else

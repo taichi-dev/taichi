@@ -993,7 +993,7 @@ def test_ib_global_load():
         assert a.grad[i] == i
 
 
-@test_utils.test()
+@test_utils.test(require=ti.extension.adstack)
 def test_for_loop_index():
     N = 2
     M = 2

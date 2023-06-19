@@ -425,6 +425,7 @@ class SceneV2:
         """
         self.scene.ambient_light(tuple(color))
 
+
 class Scene:
     """The 3D scene class, which can contain meshes and particles,
     and can be rendered on a canvas.

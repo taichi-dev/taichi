@@ -242,10 +242,10 @@ def test_matrix_int():
     matrix_int_with_type(ti.i64)
 
 
+@pytest.mark.parametrize("dt", supported_floating_types)
 @test_utils.test(arch=supported_archs_cgraph)
-def test_matrix_float():
-    matrix_float_with_type(ti.f32)
-    matrix_float_with_type(ti.f64)
+def test_matrix_float(dt):
+    matrix_float_with_type(dt)
 
 
 @test_utils.test(arch=supported_archs_cgraph)
@@ -288,10 +288,10 @@ def test_vector_int():
     vector_int_with_type(ti.i64)
 
 
+@pytest.mark.parametrize("dt", supported_floating_types)
 @test_utils.test(arch=supported_archs_cgraph)
-def test_vector_float():
-    vector_float_with_type(ti.f32)
-    vector_float_with_type(ti.f64)
+def test_vector_float(dt):
+    vector_float_with_type(dt)
 
 
 @test_utils.test(arch=supported_archs_cgraph)

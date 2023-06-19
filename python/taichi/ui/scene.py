@@ -77,18 +77,14 @@ def gen_normals(vertices, indices):
     return normals
 
 
-class Scene:
+class SceneV2:
     """The 3D scene class, which can contain meshes and particles,
     and can be rendered on a canvas.
     """
 
-    def __init__(self):
+    def __init__(self, scene) -> None:
         check_ggui_availability()
-        self.scene = _ti_core.PyScene()
-        warnings.warn(
-                "Instantiating ti.ui.Scene directly is deprecated, use the get_scene() function from a taichi.ui.Window object instead.",
-                DeprecationWarning,
-            )
+        self.scene = scene
 
     def set_camera(self, camera):
         """Set the camera for this scene.
@@ -429,14 +425,18 @@ class Scene:
         """
         self.scene.ambient_light(tuple(color))
 
-class SceneV2:
+class Scene:
     """The 3D scene class, which can contain meshes and particles,
     and can be rendered on a canvas.
     """
 
-    def __init__(self, scene) -> None:
+    def __init__(self):
         check_ggui_availability()
-        self.scene = scene
+        self.scene = _ti_core.PyScene()
+        warnings.warn(
+                "Instantiating ti.ui.Scene directly is deprecated, use the get_scene() function from a taichi.ui.Window object instead.",
+                DeprecationWarning,
+            )
 
     def set_camera(self, camera):
         """Set the camera for this scene.

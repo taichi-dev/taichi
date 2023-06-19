@@ -1,3 +1,4 @@
+import warnings
 from taichi._lib import core as _ti_core
 from taichi.lang.impl import field
 from taichi.lang.kernel_impl import kernel
@@ -84,6 +85,10 @@ class Scene:
     def __init__(self):
         check_ggui_availability()
         self.scene = _ti_core.PyScene()
+        warnings.warn(
+                "Instantiating ti.ui.Scene directly is deprecated, use the get_scene() function from a taichi.ui.Window object instead.",
+                DeprecationWarning,
+            )
 
     def set_camera(self, camera):
         """Set the camera for this scene.

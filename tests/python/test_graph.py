@@ -230,6 +230,7 @@ def matrix_float_with_type(dtype):
     assert res.to_numpy()[0] == test_utils.approx(39.6, rel=1e-5)
 
 
+@pytest.mark.sm70
 @test_utils.test(arch=supported_archs_cgraph)
 def test_matrix_int():
     matrix_int_with_type(ti.u8)
@@ -248,6 +249,7 @@ def test_matrix_float(dt):
     matrix_float_with_type(dt)
 
 
+@pytest.mark.sm70
 @test_utils.test(arch=supported_archs_cgraph)
 def test_matrix_float16():
     n = 4
@@ -276,6 +278,7 @@ def vector_float_with_type(dtype):
     assert res.to_numpy()[0] == test_utils.approx(57.5, rel=1e-5)
 
 
+@pytest.mark.sm70
 @test_utils.test(arch=supported_archs_cgraph)
 def test_vector_int():
     vector_int_with_type(ti.u8)
@@ -294,6 +297,7 @@ def test_vector_float(dt):
     vector_float_with_type(dt)
 
 
+@pytest.mark.sm70
 @test_utils.test(arch=supported_archs_cgraph)
 def test_vector_float16():
     n = 4

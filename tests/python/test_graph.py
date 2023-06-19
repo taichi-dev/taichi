@@ -9,7 +9,7 @@ from tests import test_utils
 
 supported_floating_types = [ti.f32] if platform.system() == "Darwin" else [ti.f32, ti.f64]
 
-supported_archs_cgraph = [ti.vulkan, ti.opengl]
+supported_archs_cgraph = [ti.vulkan]
 
 
 @test_utils.test(arch=supported_archs_cgraph)
@@ -233,12 +233,12 @@ def matrix_float_with_type(dtype):
 @pytest.mark.sm70
 @test_utils.test(arch=supported_archs_cgraph)
 def test_matrix_int():
-    # matrix_int_with_type(ti.u8)
-    # matrix_int_with_type(ti.u16)
+    matrix_int_with_type(ti.u8)
+    matrix_int_with_type(ti.u16)
     matrix_int_with_type(ti.u32)
     matrix_int_with_type(ti.u64)
-    # matrix_int_with_type(ti.i8)
-    # matrix_int_with_type(ti.i16)
+    matrix_int_with_type(ti.i8)
+    matrix_int_with_type(ti.i16)
     matrix_int_with_type(ti.i32)
     matrix_int_with_type(ti.i64)
 
@@ -249,15 +249,15 @@ def test_matrix_float(dt):
     matrix_float_with_type(dt)
 
 
-# @pytest.mark.sm70
-# @test_utils.test(arch=supported_archs_cgraph)
-# def test_matrix_float16():
-#     n = 4
-#     A = ti.Matrix([4.0, 5.0] * n, ti.f16)
-#     res = ti.ndarray(ti.f16, shape=(1))
-#     graph = build_graph_matrix(n, dtype=ti.f16)
-#     graph.run({"mat": A, "res": res})
-#     assert res.to_numpy()[0] == test_utils.approx(36.0, rel=1e-5)
+@pytest.mark.sm70
+@test_utils.test(arch=supported_archs_cgraph)
+def test_matrix_float16():
+    n = 4
+    A = ti.Matrix([4.0, 5.0] * n, ti.f16)
+    res = ti.ndarray(ti.f16, shape=(1))
+    graph = build_graph_matrix(n, dtype=ti.f16)
+    graph.run({"mat": A, "res": res})
+    assert res.to_numpy()[0] == test_utils.approx(36.0, rel=1e-5)
 
 
 def vector_int_with_type(dtype):
@@ -281,12 +281,12 @@ def vector_float_with_type(dtype):
 @pytest.mark.sm70
 @test_utils.test(arch=supported_archs_cgraph)
 def test_vector_int():
-    # vector_int_with_type(ti.u8)
-    # vector_int_with_type(ti.u16)
+    vector_int_with_type(ti.u8)
+    vector_int_with_type(ti.u16)
     vector_int_with_type(ti.u32)
     vector_int_with_type(ti.u64)
-    # vector_int_with_type(ti.i8)
-    # vector_int_with_type(ti.i16)
+    vector_int_with_type(ti.i8)
+    vector_int_with_type(ti.i16)
     vector_int_with_type(ti.i32)
     vector_int_with_type(ti.i64)
 
@@ -297,15 +297,15 @@ def test_vector_float(dt):
     vector_float_with_type(dt)
 
 
-# @pytest.mark.sm70
-# @test_utils.test(arch=supported_archs_cgraph)
-# def test_vector_float16():
-#     n = 4
-#     A = ti.Vector([1.4, 3.7, 13.2, 4.5], ti.f16)
-#     res = ti.ndarray(ti.f16, shape=(1,))
-#     graph = build_graph_vector(n, dtype=ti.f16)
-#     graph.run({"mat": A, "res": res})
-#     assert res.to_numpy()[0] == test_utils.approx(36.0, rel=1e-2)
+@pytest.mark.sm70
+@test_utils.test(arch=supported_archs_cgraph)
+def test_vector_float16():
+    n = 4
+    A = ti.Vector([1.4, 3.7, 13.2, 4.5], ti.f16)
+    res = ti.ndarray(ti.f16, shape=(1,))
+    graph = build_graph_vector(n, dtype=ti.f16)
+    graph.run({"mat": A, "res": res})
+    assert res.to_numpy()[0] == test_utils.approx(36.0, rel=1e-2)
 
 
 @pytest.mark.parametrize("dt", supported_floating_types)

@@ -324,7 +324,7 @@ class ArgLoadExpression : public Expression {
    */
   bool create_load;
 
-  ArgLoadExpression(const std::vector<int>& arg_id,
+  ArgLoadExpression(const std::vector<int> &arg_id,
                     DataType dt,
                     bool is_ptr = false,
                     bool create_load = true)
@@ -354,7 +354,7 @@ class TexturePtrExpression : public Expression {
   BufferFormat format{BufferFormat::unknown};
   int lod{0};
 
-  explicit TexturePtrExpression(const std::vector<int>& arg_id, int num_dims)
+  explicit TexturePtrExpression(const std::vector<int> &arg_id, int num_dims)
       : arg_id(arg_id),
         num_dims(num_dims),
         is_storage(false),
@@ -362,7 +362,10 @@ class TexturePtrExpression : public Expression {
         lod(0) {
   }
 
-  TexturePtrExpression(const std::vector<int>& arg_id, int num_dims, BufferFormat format, int lod)
+  TexturePtrExpression(const std::vector<int> &arg_id,
+                       int num_dims,
+                       BufferFormat format,
+                       int lod)
       : arg_id(arg_id),
         num_dims(num_dims),
         is_storage(true),
@@ -481,7 +484,7 @@ class ExternalTensorExpression : public Expression {
 
   ExternalTensorExpression(const DataType &dt,
                            int ndim,
-                           const std::vector<int>& arg_id,
+                           const std::vector<int> &arg_id,
                            bool needs_grad = false,
                            BoundaryMode boundary = BoundaryMode::kUnsafe) {
     init(dt, ndim, arg_id, needs_grad, boundary);
@@ -512,7 +515,7 @@ class ExternalTensorExpression : public Expression {
 
   void init(const DataType &dt,
             int ndim,
-            const std::vector<int>& arg_id,
+            const std::vector<int> &arg_id,
             bool needs_grad,
             BoundaryMode boundary) {
     this->dt = dt;

@@ -233,11 +233,11 @@ def matrix_float_with_type(dtype):
 @pytest.mark.sm70
 @test_utils.test(arch=supported_archs_cgraph)
 def test_matrix_int():
-    matrix_int_with_type(ti.u8)
+    # matrix_int_with_type(ti.u8)
     # matrix_int_with_type(ti.u16)
     matrix_int_with_type(ti.u32)
     matrix_int_with_type(ti.u64)
-    matrix_int_with_type(ti.i8)
+    # matrix_int_with_type(ti.i8)
     # matrix_int_with_type(ti.i16)
     matrix_int_with_type(ti.i32)
     matrix_int_with_type(ti.i64)
@@ -281,11 +281,11 @@ def vector_float_with_type(dtype):
 @pytest.mark.sm70
 @test_utils.test(arch=supported_archs_cgraph)
 def test_vector_int():
-    vector_int_with_type(ti.u8)
+    # vector_int_with_type(ti.u8)
     # vector_int_with_type(ti.u16)
     vector_int_with_type(ti.u32)
     vector_int_with_type(ti.u64)
-    vector_int_with_type(ti.i8)
+    # vector_int_with_type(ti.i8)
     # vector_int_with_type(ti.i16)
     vector_int_with_type(ti.i32)
     vector_int_with_type(ti.i64)

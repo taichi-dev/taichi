@@ -8,7 +8,7 @@ namespace vulkan {
 
 class TI_DLL_EXPORT SceneV2 final : public SceneBase {
  public:
-  friend class Renderer; // later, Renderer wont need to be friend
+  friend class Renderer;  // later, Renderer wont need to be friend
   friend class Particles;
   friend class Mesh;
   friend class SceneLines;

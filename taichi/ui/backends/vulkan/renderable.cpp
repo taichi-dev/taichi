@@ -190,9 +190,7 @@ void Renderable::update_data(const RenderableInfo &info) {
 }
 
 void Renderable::update_scene_data(DevicePtr ssbo_ptr, DevicePtr ubo_ptr) {
-  
 }
-
 
 Pipeline &Renderable::pipeline() {
   return *pipeline_;

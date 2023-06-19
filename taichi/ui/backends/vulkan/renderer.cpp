@@ -148,13 +148,12 @@ void Renderer::scene_v2(SceneBase *scene) {
 
   for (auto renderable_ : render_queue_) {
     if (renderable_->is_3d_renderable) {
-      renderable_->update_scene_data(lights_ssbo_->get_ptr(0), 
+      renderable_->update_scene_data(lights_ssbo_->get_ptr(0),
                                      scene_ubo_->get_ptr(0));
     }
   }
 
   scene->point_lights_.clear();
-
 }
 
 void Renderer::scene(SceneBase *scene) {
@@ -197,7 +196,7 @@ void Renderer::scene(SceneBase *scene) {
 
   for (auto renderable_ : render_queue_) {
     if (renderable_->is_3d_renderable) {
-      renderable_->update_scene_data(lights_ssbo_->get_ptr(0), 
+      renderable_->update_scene_data(lights_ssbo_->get_ptr(0),
                                      scene_ubo_->get_ptr(0));
     }
   }

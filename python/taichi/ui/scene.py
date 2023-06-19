@@ -86,9 +86,9 @@ class Scene:
         check_ggui_availability()
         self.scene = _ti_core.PyScene()
         warnings.warn(
-                "Instantiating ti.ui.Scene directly is deprecated, use the get_scene() function from a taichi.ui.Window object instead.",
-                DeprecationWarning,
-            )
+            "Instantiating ti.ui.Scene directly is deprecated, use the get_scene() function from a taichi.ui.Window object instead.",
+            DeprecationWarning,
+        )
 
     def set_camera(self, camera):
         """Set the camera for this scene.
@@ -428,6 +428,7 @@ class Scene:
             >>> scene.ambient_light([0.2, 0.2, 0.2])
         """
         self.scene.ambient_light(tuple(color))
+
 
 class SceneV2:
     """The 3D scene class, which can contain meshes and particles,

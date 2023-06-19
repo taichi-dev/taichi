@@ -698,7 +698,7 @@ void export_ggui(py::module &m) {
       .def("mesh_instance", &PyScene::mesh_instance)
       .def("point_light", &PyScene::point_light)
       .def("ambient_light", &PyScene::ambient_light);
-  
+
   py::class_<PySceneV2>(m, "PySceneV2")
       .def("set_camera", &PySceneV2::set_camera)
       .def("lines", &PySceneV2::lines)

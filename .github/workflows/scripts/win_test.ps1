@@ -88,7 +88,7 @@ if ("$env:TI_RUN_RELEASE_TESTS" -eq "1") {
     Invoke pip install PyYAML
     Invoke git clone https://github.com/taichi-dev/taichi-release-tests
     Push-Location taichi-release-tests
-    Invoke git checkout 20230608
+    Invoke git checkout 20230619
     mkdir -p repos/taichi/python/taichi
     $EXAMPLES = & python -c 'import taichi.examples as e; print(e.__path__._path[0])' | Select-Object -Last 1
     Push-Location repos
@@ -96,31 +96,10 @@ if ("$env:TI_RUN_RELEASE_TESTS" -eq "1") {
     Invoke git clone --depth=1 https://github.com/taichi-dev/difftaichi
     Invoke git clone --depth=1 https://github.com/taichi-dev/games201
     Invoke git clone --depth=1 https://github.com/taichiCourse01/--Galaxy
-    Invoke git clone --depth=1 https://github.com/taichiCourse01/--Diffuse
     Invoke git clone --depth=1 https://github.com/taichiCourse01/--Shadertoys
     Invoke git clone --depth=1 https://github.com/taichiCourse01/taichi_ray_tracing
-    Invoke git clone --depth=1 https://github.com/taichiCourse01/--Deformables
-    Invoke git clone --depth=1 https://github.com/taichiCourse01/taichi_sph
     Pop-Location
     Push-Location repos/difftaichi
-    Invoke pip install -r requirements.txt
-    Pop-Location
-    Push-Location repos/--Galaxy
-    Invoke pip install -r requirements.txt
-    Pop-Location
-    Push-Location repos/--Diffuse
-    Invoke pip install -r requirements.txt
-    Pop-Location
-    Push-Location repos/--Shadertoys
-    Invoke pip install -r requirements.txt
-    Pop-Location
-    Push-Location repos/taichi_ray_tracing
-    Invoke pip install -r requirements.txt
-    Pop-Location
-    Push-Location repos/--Deformables
-    Invoke pip install -r requirements.txt
-    Pop-Location
-    Push-Location repos/taichi_sph
     Invoke pip install -r requirements.txt
     Pop-Location
     Invoke python run.py --log=DEBUG --runners 1 timelines

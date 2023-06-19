@@ -41,7 +41,7 @@ if [ "$TI_RUN_RELEASE_TESTS" == "1" ]; then
     python3 -m pip install PyYAML
     git clone https://github.com/taichi-dev/taichi-release-tests
     pushd taichi-release-tests
-    git checkout 20230608
+    git checkout 20230619
     mkdir -p repos/taichi/python/taichi
     EXAMPLES=$(cat <<EOF | python3 | tail -n 1
 import taichi.examples
@@ -54,38 +54,11 @@ EOF
     git clone --depth=1 https://github.com/taichi-dev/difftaichi
     git clone --depth=1 https://github.com/taichi-dev/games201
     git clone --depth=1 https://github.com/taichiCourse01/--Galaxy
-    git clone --depth=1 https://github.com/taichiCourse01/--Diffuse
     git clone --depth=1 https://github.com/taichiCourse01/--Shadertoys
     git clone --depth=1 https://github.com/taichiCourse01/taichi_ray_tracing
-    git clone --depth=1 https://github.com/taichiCourse01/--Deformables
-    git clone --depth=1 https://github.com/taichiCourse01/taichi_sph
     popd
 
     pushd repos/difftaichi
-    pip install -r requirements.txt
-    popd
-
-    pushd repos/--Galaxy
-    pip install -r requirements.txt
-    popd
-
-    pushd repos/--Diffuse
-    pip install -r requirements.txt
-    popd
-
-    pushd repos/--Shadertoys
-    pip install -r requirements.txt
-    popd
-
-    pushd repos/taichi_ray_tracing
-    pip install -r requirements.txt
-    popd
-
-    pushd repos/--Deformables
-    pip install -r requirements.txt
-    popd
-
-    pushd repos/taichi_sph
     pip install -r requirements.txt
     popd
 

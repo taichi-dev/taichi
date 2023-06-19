@@ -242,6 +242,6 @@ class Canvas:
         # FIXME: (penguinliong) Add a point light to ensure the allocation of light source SSBO.
         scene.point_light((0.0, 0.0, 0.0), (0.0, 0.0, 0.0))
         if isinstance(scene, SceneV2):
-            self.canvas.scene_v2(scene.scene) # pass in PySceneV2
+            self.canvas.scene_v2(scene.scene)  # pass in PySceneV2
         else:
-            self.canvas.scene(scene.scene) # pass in PyScene
+            self.canvas.scene(scene.scene)  # pass in PyScene

@@ -645,7 +645,7 @@ class ASTTransformer(Builder):
         def transform_as_kernel():
             # Treat return type
             if node.returns is not None:
-                kernel_arguments.decl_ret(ctx.func.return_type, ctx.is_real_function)
+                kernel_arguments.decl_ret(ctx.func.return_type)
             impl.get_runtime().compiling_callable.finalize_rets()
 
             for i, arg in enumerate(args.args):
@@ -737,6 +737,11 @@ class ASTTransformer(Builder):
                         ctx.create_variable(arg.arg, impl.expr_init_func(data))
                         continue
 
+                    if id(ctx.func.arguments[i].annotation) in primitive_types.type_ids:
+                        ctx.create_variable(
+                            arg.arg, impl.expr_init_func(ti_ops.cast(data, ctx.func.arguments[i].annotation))
+                        )
+                        continue
                     # Create a copy for non-template arguments,
                     # so that they are passed by value.
                     ctx.create_variable(arg.arg, impl.expr_init_func(data))
@@ -781,9 +786,9 @@ class ASTTransformer(Builder):
             elif isinstance(ctx.func.return_type, MatrixType):
                 values = node.value.ptr
                 if isinstance(values, Matrix):
-                    if len(values.get_shape()) != ctx.func.return_type.ndim:
+                    if values.ndim != ctx.func.return_type.ndim:
                         raise TaichiRuntimeTypeError(
-                            f"Return matrix ndim mismatch, expecting={ctx.func.return_type.ndim}, got={len(values.get_shape())}."
+                            f"Return matrix ndim mismatch, expecting={ctx.func.return_type.ndim}, got={values.ndim}."
                         )
                     elif ctx.func.return_type.get_shape() != values.get_shape():
                         raise TaichiRuntimeTypeError(
@@ -815,7 +820,7 @@ class ASTTransformer(Builder):
                         )
                     elif ctx.func.return_type.get_shape() != values.get_shape():
                         raise TaichiRuntimeTypeError(
-                            f"Return matrix ndim mismatch, expecting={ctx.func.return_type.ndim}, got={len(values.get_shape())}."
+                            f"Return matrix shape mismatch, expecting={ctx.func.return_type.get_shape()}, got={values.get_shape()}."
                         )
                     values = [values]
                 else:
@@ -855,6 +860,8 @@ class ASTTransformer(Builder):
             # only need to replace the object part, i.e. args[0].value
         else:
             ctx.return_data = node.value.ptr
+            if id(ctx.func.return_type) in primitive_types.type_ids:
+                ctx.return_data = ti_ops.cast(ctx.return_data, ctx.func.return_type)
         if not ctx.is_real_function:
             ctx.returned = ReturnStatus.ReturnedValue
         return None

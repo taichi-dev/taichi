@@ -157,7 +157,7 @@ class TI_DLL_EXPORT Callable : public CallableBase {
   [[nodiscard]] virtual std::string get_name() const = 0;
 
  private:
-  std::vector<int> add_parameter(const Parameter& param);
+  std::vector<int> add_parameter(const Parameter &param);
   // Note: These two stacks are used for inserting params inside argpacks. When
   // we call finalize_params(), all of them are required to be empty then.
   std::vector<int> temp_indices_stack_;

@@ -160,6 +160,7 @@ class TI_DLL_EXPORT Callable : public CallableBase {
   std::vector<int> add_parameter(const Parameter &param);
   // Note: These two stacks are used for inserting params inside argpacks. When
   // we call finalize_params(), all of them are required to be empty then.
+  std::stack<std::vector<Parameter>> temp_argpack_stack_;
   std::vector<int> temp_indices_stack_;
   std::stack<std::string> temp_argpack_name_stack_;
 };

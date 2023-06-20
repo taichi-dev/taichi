@@ -1147,21 +1147,25 @@ class ASTTransformer(Builder):
                 raise TaichiSyntaxError(f"Group for should have 1 loop target, found {len(targets)}")
             target = targets[0]
             iter_time = 0
+            if ti_unroll_limit:
+                for value in impl.grouped(ndrange_arg):
+                    iter_time += 1
+                    if iter_time > ti_unroll_limit:
+                        warnings.warn_explicit(
+                            f"loop unrolling only support under {ti_unroll_limit}",
+                            SyntaxWarning,
+                            ctx.file,
+                            node.lineno + ctx.lineno_offset,
+                            module="taichi",
+                        )
+
+                        node.iter.func = node.iter.args[0].func
+                        node.iter.args = node.iter.args[0].args
+                        return ASTTransformer.build_For(ctx, node)
+            else:
+                pass
+
             for value in impl.grouped(ndrange_arg):
-                iter_time += 1
-                if ti_unroll_limit and iter_time > ti_unroll_limit:
-                    warnings.warn_explicit(
-                        f"loop unrolling only support under {ti_unroll_limit}",
-                        SyntaxWarning,
-                        ctx.file,
-                        node.lineno + ctx.lineno_offset,
-                        module="taichi",
-                    )
-
-                    node.iter.func = node.iter.args[0].func
-                    node.iter.args = node.iter.args[0].args
-                    return ASTTransformer.build_For(ctx, node)
-
                 with ctx.variable_scope_guard():
                     ctx.create_variable(target, value)
                     build_stmts(ctx, node.body)
@@ -1174,22 +1178,23 @@ class ASTTransformer(Builder):
             build_stmt(ctx, node.iter)
             targets = ASTTransformer.get_for_loop_targets(node)
             iter_time = 0
+            if ti_unroll_limit:
+                for target_values in node.iter.ptr:
+                    iter_time += 1
+                    if iter_time > ti_unroll_limit:
+                        warnings.warn_explicit(
+                            f"loop unrolling only support under {ti_unroll_limit}",
+                            SyntaxWarning,
+                            ctx.file,
+                            node.lineno + ctx.lineno_offset,
+                            module="taichi",
+                        )
+
+                        node.iter.func = node.iter.args[0].func
+                        node.iter.args = node.iter.args[0].args
+                        return ASTTransformer.build_For(ctx, node)
 
             for target_values in node.iter.ptr:
-                iter_time += 1
-                if ti_unroll_limit and iter_time > ti_unroll_limit:
-                    warnings.warn_explicit(
-                        f"loop unrolling only support under {ti_unroll_limit}",
-                        SyntaxWarning,
-                        ctx.file,
-                        node.lineno + ctx.lineno_offset,
-                        module="taichi",
-                    )
-
-                    node.iter.func = node.iter.args[0].func
-                    node.iter.args = node.iter.args[0].args
-                    return ASTTransformer.build_For(ctx, node)
-
                 if not isinstance(target_values, collections.abc.Sequence) or len(targets) == 1:
                     target_values = [target_values]
                 with ctx.variable_scope_guard():

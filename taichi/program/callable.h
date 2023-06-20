@@ -126,7 +126,8 @@ class TI_DLL_EXPORT Callable : public CallableBase {
   Callable();
   virtual ~Callable();
 
-  std::vector<int> insert_scalar_param(const DataType &dt, const std::string &name = "");
+  std::vector<int> insert_scalar_param(const DataType &dt,
+                                       const std::string &name = "");
   std::vector<int> insert_arr_param(const DataType &dt,
                                     int total_dim,
                                     std::vector<int> element_shape,
@@ -135,8 +136,10 @@ class TI_DLL_EXPORT Callable : public CallableBase {
                                         int ndim,
                                         const std::string &name = "",
                                         bool needs_grad = false);
-  std::vector<int> insert_texture_param(int total_dim, const std::string &name = "");
-  std::vector<int> insert_pointer_param(const DataType &dt, const std::string &name = "");
+  std::vector<int> insert_texture_param(int total_dim,
+                                        const std::string &name = "");
+  std::vector<int> insert_pointer_param(const DataType &dt,
+                                        const std::string &name = "");
   std::vector<int> insert_rw_texture_param(int total_dim,
                                            BufferFormat format,
                                            const std::string &name = "");
@@ -152,9 +155,11 @@ class TI_DLL_EXPORT Callable : public CallableBase {
   void finalize_params();
 
   [[nodiscard]] virtual std::string get_name() const = 0;
+
  private:
-  std::vector<int> add_parameter(const Parameter& param);
-  // Note: These two stacks are used for inserting params inside argpacks. When we call finalize_params(), all of them
+  std::vector<int> add_parameter(const Parameter &param);
+  // Note: These two stacks are used for inserting params inside argpacks. When
+  // we call finalize_params(), all of them
   //       are required to be empty then.
   std::stack<std::vector<Parameter>> temp_argpack_stack_;
   std::vector<int> temp_indices_stack_;

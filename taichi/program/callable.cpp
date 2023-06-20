@@ -8,7 +8,8 @@ Callable::Callable() = default;
 
 Callable::~Callable() = default;
 
-std::vector<int> Callable::insert_scalar_param(const DataType &dt, const std::string &name) {
+std::vector<int> Callable::insert_scalar_param(const DataType &dt,
+                                               const std::string &name) {
   auto p = Parameter(dt->get_compute_type(), /*is_array=*/false);
   p.name = name;
   p.ptype = ParameterType::kScalar;
@@ -24,7 +25,8 @@ std::vector<int> Callable::insert_arr_param(const DataType &dt,
                                             int total_dim,
                                             std::vector<int> element_shape,
                                             const std::string &name) {
-  auto p = Parameter(dt->get_compute_type(), /*is_array=*/true, 0, total_dim, element_shape);
+  auto p = Parameter(dt->get_compute_type(), /*is_array=*/true, 0, total_dim,
+                     element_shape);
   p.name = name;
   return add_parameter(p);
 }
@@ -44,21 +46,20 @@ std::vector<int> Callable::insert_ndarray_param(const DataType &dt,
   // If we could avoid using parameter_list in codegen it'll be fine
   auto *type = TypeFactory::get_instance().get_ndarray_struct_type(dtype, ndim,
                                                                    needs_grad);
-  auto p = Parameter(type, /*is_array=*/true,
-                     0, ndim + element_shape.size(),
+  auto p = Parameter(type, /*is_array=*/true, 0, ndim + element_shape.size(),
                      element_shape, BufferFormat::unknown, needs_grad);
   p.name = name;
   p.ptype = ParameterType::kNdarray;
   return add_parameter(p);
 }
 
-std::vector<int> Callable::insert_texture_param(int total_dim, const std::string &name) {
+std::vector<int> Callable::insert_texture_param(int total_dim,
+                                                const std::string &name) {
   // FIXME: we shouldn't abuse is_array for texture parameters
   // FIXME: using rwtexture struct type for texture parameters because C-API
   // does not distinguish between texture and rwtexture.
   auto *type = TypeFactory::get_instance().get_rwtexture_struct_type();
-  auto p = Parameter(type, /*is_array=*/true, 0, total_dim,
-                     std::vector<int>{});
+  auto p = Parameter(type, /*is_array=*/true, 0, total_dim, std::vector<int>{});
   p.name = name;
   p.ptype = ParameterType::kTexture;
   return add_parameter(p);
@@ -76,14 +77,15 @@ std::vector<int> Callable::insert_rw_texture_param(int total_dim,
                                                    const std::string &name) {
   // FIXME: we shouldn't abuse is_array for texture parameters
   auto *type = TypeFactory::get_instance().get_rwtexture_struct_type();
-  auto p = Parameter(type, /*is_array=*/true, 0, total_dim,
-                     std::vector<int>{}, format);
+  auto p = Parameter(type, /*is_array=*/true, 0, total_dim, std::vector<int>{},
+                     format);
   p.name = name;
   p.ptype = ParameterType::kRWTexture;
   return add_parameter(p);
 }
 
-std::vector<int> Callable::insert_argpack_param_and_push(const std::string &name) {
+std::vector<int> Callable::insert_argpack_param_and_push(
+    const std::string &name) {
   TI_ASSERT(temp_argpack_stack_.size() == temp_indices_stack_.size() &&
             temp_argpack_name_stack_.size() == temp_indices_stack_.size());
   if (temp_argpack_stack_.size() > 0) {
@@ -97,7 +99,8 @@ std::vector<int> Callable::insert_argpack_param_and_push(const std::string &name
 
 void Callable::pop_argpack_stack() {
   // Compile argpack members to a struct.
-  TI_ASSERT(temp_argpack_stack_.size() > 0 && temp_indices_stack_.size() > 0 && temp_argpack_name_stack_.size() > 0);
+  TI_ASSERT(temp_argpack_stack_.size() > 0 && temp_indices_stack_.size() > 0 &&
+            temp_argpack_name_stack_.size() > 0);
   std::vector<Parameter> argpack_params = temp_argpack_stack_.top();
   std::vector<StructMember> members;
   members.reserve(argpack_params.size());
@@ -120,7 +123,7 @@ void Callable::pop_argpack_stack() {
   temp_argpack_name_stack_.pop();
 }
 
-std::vector<int> Callable::add_parameter(const Parameter& param) {
+std::vector<int> Callable::add_parameter(const Parameter &param) {
   TI_ASSERT(temp_argpack_stack_.size() == temp_indices_stack_.size() &&
             temp_argpack_name_stack_.size() == temp_indices_stack_.size());
   if (temp_argpack_stack_.size() == 0) {
@@ -148,7 +151,9 @@ void Callable::finalize_rets() {
 }
 
 void Callable::finalize_params() {
-  TI_ASSERT(temp_argpack_stack_.size() == 0 && temp_indices_stack_.size() == 0 && temp_argpack_name_stack_.size() == 0);
+  TI_ASSERT(temp_argpack_stack_.size() == 0 &&
+            temp_indices_stack_.size() == 0 &&
+            temp_argpack_name_stack_.size() == 0);
   std::vector<StructMember> members;
   members.reserve(parameter_list.size());
   for (int i = 0; i < parameter_list.size(); i++) {

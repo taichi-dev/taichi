@@ -1159,12 +1159,6 @@ class ASTTransformer(Builder):
                             module="taichi",
                         )
 
-                        node.iter.func = node.iter.args[0].func
-                        node.iter.args = node.iter.args[0].args
-                        return ASTTransformer.build_For(ctx, node)
-            else:
-                pass
-
             for value in impl.grouped(ndrange_arg):
                 with ctx.variable_scope_guard():
                     ctx.create_variable(target, value)
@@ -1189,10 +1183,6 @@ class ASTTransformer(Builder):
                             node.lineno + ctx.lineno_offset,
                             module="taichi",
                         )
-
-                        node.iter.func = node.iter.args[0].func
-                        node.iter.args = node.iter.args[0].args
-                        return ASTTransformer.build_For(ctx, node)
 
             for target_values in node.iter.ptr:
                 if not isinstance(target_values, collections.abc.Sequence) or len(targets) == 1:

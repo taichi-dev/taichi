@@ -1005,15 +1005,48 @@ def test_type_hint_vector():
 @test_utils.test(arch=supported_archs_taichi_ndarray)
 def test_pass_ndarray_to_func():
     @ti.func
-    def bar(weight: ti.types.ndarray(ti.f32, ndim=3)):
-        pass
+    def bar(weight: ti.types.ndarray(ti.f32, ndim=3)) -> ti.f32:
+        return weight[1, 1, 1]
 
     @ti.kernel
-    def foo(weight: ti.types.ndarray(ti.f32, ndim=3)):
-        bar(weight)
+    def foo(weight: ti.types.ndarray(ti.f32, ndim=3)) -> ti.f32:
+        return bar(weight)
 
     weight = ti.ndarray(dtype=ti.f32, shape=(2, 2, 2))
-    foo(weight)
+    weight.fill(42.0)
+    assert foo(weight) == 42.0
+
+
+@test_utils.test(arch=[ti.cpu, ti.cuda])
+def test_pass_ndarray_to_real_func():
+    @ti.experimental.real_func
+    def bar(weight: ti.types.ndarray(ti.f32, ndim=3)) -> ti.f32:
+        return weight[1, 1, 1]
+
+    @ti.kernel
+    def foo(weight: ti.types.ndarray(ti.f32, ndim=3)) -> ti.f32:
+        return bar(weight)
+
+    weight = ti.ndarray(dtype=ti.f32, shape=(2, 2, 2))
+    weight.fill(42.0)
+    assert foo(weight) == 42.0
+
+
+@test_utils.test(arch=[ti.cpu, ti.cuda])
+def test_pass_ndarray_outside_kernel_to_real_func():
+    weight = ti.ndarray(dtype=ti.f32, shape=(2, 2, 2))
+
+    @ti.experimental.real_func
+    def bar(weight: ti.types.ndarray(ti.f32, ndim=3)) -> ti.f32:
+        return weight[1, 1, 1]
+
+    @ti.kernel
+    def foo() -> ti.f32:
+        return bar(weight)
+
+    weight.fill(42.0)
+    with pytest.raises(ti.TaichiTypeError, match=r"Expected ndarray in the kernel argument for argument weight"):
+        foo()
 
 
 @test_utils.test(arch=supported_archs_taichi_ndarray)

@@ -1842,9 +1842,12 @@ void TaskCodeGenLLVM::visit(GetChStmt *stmt) {
 void TaskCodeGenLLVM::visit(MatrixPtrStmt *stmt) {
   if (stmt->offset_used_as_index()) {
     auto type = tlctx->get_data_type(stmt->origin->ret_type.ptr_removed());
-    llvm_val[stmt] =
-        builder->CreateGEP(type, llvm_val[stmt->origin],
-                           {tlctx->get_constant(0), llvm_val[stmt->offset]});
+
+    auto casted_ptr = builder->CreateBitCast(llvm_val[stmt->origin],
+                                             llvm::PointerType::get(type, 0));
+
+    llvm_val[stmt] = builder->CreateGEP(
+        type, casted_ptr, {tlctx->get_constant(0), llvm_val[stmt->offset]});
   } else {
     // Access PtrOffset via: base_ptr + offset
     auto origin_address = builder->CreatePtrToInt(

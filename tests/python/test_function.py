@@ -493,7 +493,7 @@ def test_real_func_struct_ret():
     assert foo() == pytest.approx(123 * 1.2345e300)
 
 
-@test_utils.test(arch=[ti.cpu, ti.cuda])
+@test_utils.test(arch=[ti.cpu, ti.cuda], print_full_traceback=True)
 def test_real_func_struct_ret_with_matrix():
     s0 = ti.types.struct(a=ti.math.vec3, b=ti.i16)
     s1 = ti.types.struct(a=ti.f32, b=s0)

@@ -207,6 +207,37 @@ def test_struct_ret_with_matrix():
     assert ret.b.b == 1
 
 
+@test_utils.test(arch=[ti.cpu, ti.cuda], debug=True)
+def test_real_func_multiple_ret():
+    s0 = ti.types.struct(a=ti.math.vec3, b=ti.i16)
+    s1 = ti.types.struct(a=ti.f32, b=s0)
+
+    @ti.experimental.real_func
+    def foo() -> tuple[ti.f32, s0]:
+        return 1, s0(a=ti.math.vec3([100, 0.2, 3]), b=65537)
+
+    @ti.kernel
+    def bar():
+        ret_a, ret_b = foo()
+        assert ret_a == 1
+        assert ret_b.a[0] == 100
+        assert ret_b.a[1] == 0.2
+        assert ret_b.a[2] == 3
+        assert ret_b.b == 1
+
+    bar()
+    # ret = foo()
+    # assert ret.a == approx(1)
+    # assert ret.b.a[0] == approx(100)
+    # assert ret.b.a[1] == approx(0.2)
+    # assert ret.b.a[2] == approx(3)
+    # assert ret.b.b == 1
+
+
+# ti.init(print_ir=True)
+# test_real_func_multiple_ret()
+
+
 @test_utils.test()
 def test_return_type_mismatch_1():
     with pytest.raises(ti.TaichiCompilationError):

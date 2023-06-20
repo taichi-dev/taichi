@@ -600,7 +600,13 @@ class ASTTransformer(Builder):
             if ASTTransformer.is_external_func(ctx, node.func.ptr):
                 args_has_expr = any([isinstance(arg, Expr) for arg in args])
                 if args_has_expr and (module == math or module == np):
-                    msg += f"\nDid you mean to use `ti.{func.__name__}` instead of `{module.__name__}.{func.__name__}`?"
+                    exec_str = f"from taichi import {func.__name__}"
+                    try:
+                        exec(exec_str, {})
+                    except:
+                        pass
+                    else:
+                        msg += f"\nDid you mean to use `ti.{func.__name__}` instead of `{module.__name__}.{func.__name__}`?"```
             raise TaichiTypeError(msg)
 
         if getattr(func, "_is_taichi_function", False):

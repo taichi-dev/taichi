@@ -95,6 +95,7 @@ std::vector<int> Callable::insert_argpack_param_and_push(
   }
   temp_argpack_stack_.push(std::vector<Parameter>());
   temp_argpack_name_stack_.push(name);
+  return temp_indices_stack_;
 }
 
 void Callable::pop_argpack_stack() {

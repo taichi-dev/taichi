@@ -1,6 +1,6 @@
 # ./taichi/ui/CMakeLists.txt
 
-add_library(taichi_ui OBJECT
+add_library(taichi_ui
     gui/gui.cpp
     gui/android.cpp
     gui/cocoa.cpp
@@ -24,7 +24,6 @@ target_include_directories(taichi_ui
     ${PROJECT_SOURCE_DIR}/external/glm
   )
 
-target_link_libraries(taichi_ui PRIVATE taichi_core)
 target_link_libraries(taichi_ui PRIVATE taichi_common)
 
 
@@ -53,8 +52,6 @@ if(TI_WITH_GGUI)
 
   target_include_directories(imgui PUBLIC ${IMGUI_DIR} ${IMGUI_DIR}/backends ..)
   target_include_directories(imgui PUBLIC ${PROJECT_SOURCE_DIR}/external/Vulkan-Headers/include)
-
-  target_link_libraries(taichi_ui PRIVATE imgui)
 
   add_subdirectory(backends/vulkan)
   target_link_libraries(taichi_ui PUBLIC taichi_ui_vulkan)

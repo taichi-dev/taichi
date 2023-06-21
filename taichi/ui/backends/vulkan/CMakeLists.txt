@@ -39,7 +39,6 @@ target_include_directories(taichi_ui_vulkan
     ${PROJECT_SOURCE_DIR}/external/glfw/include
   )
 
-target_link_libraries(taichi_ui_vulkan PRIVATE taichi_core)
 target_link_libraries(taichi_ui_vulkan PRIVATE taichi_common)
-target_link_libraries(taichi_ui_vulkan PRIVATE imgui)
-target_link_libraries(taichi_ui_vulkan PRIVATE ti_device_api)
+target_link_libraries(taichi_ui_vulkan PUBLIC imgui)
+target_link_libraries(taichi_ui_vulkan PUBLIC ti_device_api)

@@ -905,7 +905,6 @@ class Kernel:
                 ret.append(self.construct_kernel_ret(launch_ctx, ret_type, (i,)))
             if len(ret_dt) == 1:
                 ret = ret[0]
-            # ret = self.construct_kernel_ret(launch_ctx, ret_dt, () if isinstance(ret_dt, tuple) else (0,))
         if callbacks:
             for c in callbacks:
                 c()
@@ -913,8 +912,6 @@ class Kernel:
         return ret
 
     def construct_kernel_ret(self, launch_ctx, ret_type, index=()):
-        # if isinstance(ret_type, tuple):
-        #     return tuple([self.construct_kernel_ret(launch_ctx, ret_type[i], index + (i,)) for i in range(len(ret_type))])
         if isinstance(ret_type, CompoundType):
             return ret_type.from_kernel_struct_ret(launch_ctx, index)
         if ret_type in primitive_types.integer_types:

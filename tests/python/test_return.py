@@ -1,7 +1,6 @@
 import sys
 
 import pytest
-import typing
 from pytest import approx
 
 import taichi as ti

@@ -2805,7 +2805,7 @@ StreamSemaphore VulkanSurface::acquire_next_image() {
         device_->vk_device(), swapchain_, uint64_t(4 * 1e9),
         image_available_->semaphore, VK_NULL_HANDLE, &image_index_);
     if (res != VK_SUCCESS && res != VK_SUBOPTIMAL_KHR) {
-      BAIL_ON_VK_BAD_RESULT_NO_RETURN(res, "vkAcquireNextImageKHR failed");      
+      BAIL_ON_VK_BAD_RESULT_NO_RETURN(res, "vkAcquireNextImageKHR failed");
     }
     return std::make_shared<VulkanStreamSemaphoreObject>(image_available_);
   }

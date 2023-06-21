@@ -583,7 +583,6 @@ class ASTTransformer(Builder):
             node.ptr = func(node.func.caller, *args, **keywords)
             return node.ptr
         ASTTransformer.warn_if_is_external_func(ctx, node)
-        print(func)
         node.ptr = func(*args, **keywords)
 
         if getattr(func, "_is_taichi_function", False):

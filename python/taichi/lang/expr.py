@@ -136,7 +136,7 @@ def make_var_list(size, ast_builder=None):
     return exprs
 
 
-def make_expr_group(*exprs, real_func_arg=False):
+def make_expr_group(*exprs):
     from taichi.lang.matrix import Matrix  # pylint: disable=C0415
 
     if len(exprs) == 1:

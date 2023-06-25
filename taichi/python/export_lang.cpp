@@ -120,6 +120,13 @@ void export_lang(py::module &m) {
       .def(
           "get_ptr", [](DataType *dtype) -> Type * { return *dtype; },
           py::return_value_policy::reference)
+      .def("__call__",
+           [](DataType *dtype, py::args args, const py::kwargs &kwargs) {
+             // Defining __call__ here to make DataType callable in Python,
+             // which enables us to write `typing.Tuple[ti.i32, ti.i32]`.
+             throw TaichiSyntaxError(
+                 "Taichi data types cannot be called outside Taichi kernels.");
+           })
       .def(py::pickle(
           [](const DataType &dt) {
             // Note: this only works for primitive types, which is fine for now.

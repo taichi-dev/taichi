@@ -786,9 +786,9 @@ class ASTTransformer(Builder):
             elif isinstance(ctx.func.return_type, MatrixType):
                 values = node.value.ptr
                 if isinstance(values, Matrix):
-                    if len(values.get_shape()) != ctx.func.return_type.ndim:
+                    if values.ndim != ctx.func.return_type.ndim:
                         raise TaichiRuntimeTypeError(
-                            f"Return matrix ndim mismatch, expecting={ctx.func.return_type.ndim}, got={len(values.get_shape())}."
+                            f"Return matrix ndim mismatch, expecting={ctx.func.return_type.ndim}, got={values.ndim}."
                         )
                     elif ctx.func.return_type.get_shape() != values.get_shape():
                         raise TaichiRuntimeTypeError(
@@ -820,7 +820,7 @@ class ASTTransformer(Builder):
                         )
                     elif ctx.func.return_type.get_shape() != values.get_shape():
                         raise TaichiRuntimeTypeError(
-                            f"Return matrix ndim mismatch, expecting={ctx.func.return_type.ndim}, got={len(values.get_shape())}."
+                            f"Return matrix shape mismatch, expecting={ctx.func.return_type.get_shape()}, got={values.get_shape()}."
                         )
                     values = [values]
                 else:

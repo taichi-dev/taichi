@@ -10,7 +10,7 @@ User interface:
 import taichi as ti
 import taichi.math as tm
 
-ti.init(arch=ti.gpu)
+ti.init(arch=ti.cuda)
 
 grid_n = 20
 dx = 1 / grid_n

@@ -67,7 +67,6 @@ void KernelLauncher::launch_llvm_kernel(Handle handle,
         }
         ctx.set_ndarray_ptrs(key, (uint64)device_ptrs[data_ptr_idx],
                              (uint64)ctx.array_ptrs[grad_ptr_idx]);
-
       } else if (arr_sz > 0) {  // why use arr_sz constrain?
         // Ndarray
         DeviceAllocation *ptr = static_cast<DeviceAllocation *>(data_ptr);

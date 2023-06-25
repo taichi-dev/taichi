@@ -1104,6 +1104,9 @@ class TaskCodegen : public IRVisitor {
     const auto rhs_name = bin->rhs->raw_name();
     const auto bin_name = bin->raw_name();
     const auto op_type = bin->op_type;
+    if (op_type == BinaryOpType::add) {
+      TI_INFO("performing add: lhs = {}, rhs = {}, bin_name = {}", lhs_name, rhs_name, bin_name);
+    }
 
     spirv::SType dst_type = ir_->get_primitive_type(bin->element_type());
     spirv::Value lhs_value = ir_->query_value(lhs_name);
@@ -2280,7 +2283,7 @@ class TaskCodegen : public IRVisitor {
     std::unordered_map<std::vector<int>, const tinyir::Type *,
                        hashing::Hasher<std::vector<int>>>
         element_types;
-    std::unordered_map<std::vector<int>, const Type *,
+    std::unordered_map<std::vector<int>, const taichi::lang::Type *,
                        hashing::Hasher<std::vector<int>>>
         element_taichi_types;
     std::vector<const tinyir::Type *> root_element_types;
@@ -2340,6 +2343,7 @@ class TaskCodegen : public IRVisitor {
       spirv::SType spirv_type;
       spirv_type.id = ir2spirv_map.at(element.second);
       spirv_type.dt = element_taichi_types[element.first];
+      args_struct_types_[element.first] = spirv_type;
     }
 
     args_buffer_value_ =

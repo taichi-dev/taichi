@@ -136,13 +136,6 @@ def _get_tree_and_ctx(
     func_body.decorator_list = []
 
     global_vars = _get_global_vars(self.func)
-    for i, arg in enumerate(func_body.args.args):
-        anno = arg.annotation
-        if isinstance(anno, ast.Name):
-            global_vars[anno.id] = self.arguments[i].annotation
-
-    if isinstance(func_body.returns, ast.Name):
-        global_vars[func_body.returns.id] = self.return_type
 
     if is_kernel or is_real_function:
         # inject template parameters into globals

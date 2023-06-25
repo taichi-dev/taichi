@@ -239,6 +239,8 @@ class ScalarizeMatrixPtr : public BasicStmtVisitor {
         auto load_stmt = std::make_unique<LocalLoadStmt>(matrix_ptr_stmt.get());
         load_stmt->ret_type = primitive_type;
 
+        std::cout << (matrix_of_matrix_ptr_stmt->stmts[i] == nullptr)
+                  << std::endl;
         auto store_stmt = std::make_unique<T>(
             matrix_of_matrix_ptr_stmt->stmts[i], load_stmt.get());
 

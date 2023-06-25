@@ -294,6 +294,9 @@ void offload_to_executable(IRNode *ir,
        !get_custom_cuda_library_path().empty());
   if (config.real_matrix_scalarize) {
     if (irpass::scalarize(ir, half2_optimization_enabled)) {
+      irpass::die(ir);
+      print("DIE");
+
       // Remove redundant MatrixInitStmt inserted during scalarization
       irpass::full_simplify(
           ir, config,

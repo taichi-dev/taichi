@@ -740,7 +740,6 @@ Type::jsonserde_ptr_io(const T *&ptr,
     }
   }
 }
-
 }  // namespace taichi::lang
 
 namespace taichi::hashing {

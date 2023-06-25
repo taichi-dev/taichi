@@ -9,6 +9,7 @@ User interface:
 """
 import taichi as ti
 import taichi.math as tm
+import typing
 
 ti.init(arch=ti.cuda)
 
@@ -52,7 +53,7 @@ def refresh_scene():
 
 
 @ti.experimental.real_func
-def find_nearest_point(p: tm.vec2) -> tuple[float, tm.vec2]:
+def find_nearest_point(p: tm.vec2) -> typing.Tuple[float, tm.vec2]:
     x, y = coord_to_index(p)
     dmin = 1e5
     nearest = iMouse[None]

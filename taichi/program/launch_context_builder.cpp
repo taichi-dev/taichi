@@ -33,7 +33,7 @@ LaunchContextBuilder::LaunchContextBuilder(CallableBase *kernel)
 
 void LaunchContextBuilder::set_arg_float(const std::vector<int> &arg_id,
                                          float64 d) {
-  auto dt = kernel_->args_type->get_element_type({arg_id});
+  auto dt = kernel_->args_type->get_element_type(arg_id);
   TI_ASSERT_INFO(dt->is<PrimitiveType>(),
                  "Assigning scalar value to external (numpy) array argument is "
                  "not allowed.");
@@ -106,7 +106,7 @@ template void LaunchContextBuilder::set_struct_arg(std::vector<int> arg_indices,
 
 void LaunchContextBuilder::set_arg_int(const std::vector<int> &arg_id,
                                        int64 d) {
-  auto dt = kernel_->args_type->get_element_type({arg_id});
+  auto dt = kernel_->args_type->get_element_type(arg_id);
 
   TI_ASSERT_INFO(dt->is<PrimitiveType>(),
                  "Assigning scalar value to external (numpy) array argument is "
@@ -271,7 +271,7 @@ RuntimeContext &LaunchContextBuilder::get_context() {
 
 void LaunchContextBuilder::set_arg_texture_impl(const std::vector<int> &arg_id,
                                                 intptr_t alloc_ptr) {
-  array_ptrs[{arg_id}] = (void *)alloc_ptr;
+  array_ptrs[arg_id] = (void *)alloc_ptr;
   set_array_device_allocation_type(arg_id, DevAllocType::kTexture);
 }
 
@@ -279,7 +279,7 @@ void LaunchContextBuilder::set_arg_rw_texture_impl(
     const std::vector<int> &arg_id,
     intptr_t alloc_ptr,
     const std::array<int, 3> &shape) {
-  array_ptrs[{arg_id}] = (void *)alloc_ptr;
+  array_ptrs[arg_id] = (void *)alloc_ptr;
   set_array_device_allocation_type(arg_id, DevAllocType::kRWTexture);
   TI_ASSERT(shape.size() <= taichi_max_num_indices);
   for (int i = 0; i < shape.size(); ++i) {

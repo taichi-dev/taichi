@@ -818,11 +818,13 @@ class Kernel:
                 else:
                     raise ValueError(f"Argument type mismatch. Expecting {needed}, got {type(v)}.")
 
+        template_num = 0
         for i, val in enumerate(args):
             needed_ = self.arguments[i].annotation
             if isinstance(needed_, template):
+                template_num += 1
                 continue
-            recursive_set_args(needed_, type(val), val, (i,))
+            recursive_set_args(needed_, type(val), val, (i - template_num,))
 
         if exceed_max_arg_num:
             raise TaichiRuntimeError(

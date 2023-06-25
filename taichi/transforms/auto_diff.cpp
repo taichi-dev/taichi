@@ -1564,6 +1564,7 @@ class MakeAdjoint : public ADTransform {
       TI_ASSERT(snode->get_adjoint() != nullptr);
       snode = snode->get_adjoint();
       auto adj_ptr = insert<GlobalPtrStmt>(snode, src->indices);
+      adj_ptr->ret_type = src->ret_type;
       if (is_ptr_offset) {
         adj_ptr = insert<MatrixPtrStmt>(adj_ptr,
                                         stmt->src->as<MatrixPtrStmt>()->offset);
@@ -1633,6 +1634,7 @@ class MakeAdjoint : public ADTransform {
       TI_ASSERT(snode->get_adjoint() != nullptr);
       snode = snode->get_adjoint();
       adjoint_ptr = insert<GlobalPtrStmt>(snode, dest->indices);
+      adjoint_ptr->ret_type = dest->ret_type;
       if (is_ptr_offset) {
         adjoint_ptr = insert<MatrixPtrStmt>(
             adjoint_ptr, stmt->dest->as<MatrixPtrStmt>()->offset);
@@ -1708,6 +1710,7 @@ class MakeAdjoint : public ADTransform {
       TI_ASSERT(snode->get_adjoint() != nullptr);
       snode = snode->get_adjoint();
       auto adjoint_ptr = insert<GlobalPtrStmt>(snode, dest->indices);
+      adjoint_ptr->ret_type = dest->ret_type;
       if (is_ptr_offset) {
         adjoint_ptr = insert<MatrixPtrStmt>(
             adjoint_ptr, stmt->dest->as<MatrixPtrStmt>()->offset);
@@ -2110,6 +2113,7 @@ class MakeDual : public ADTransform {
     TI_ASSERT(snode->get_dual() != nullptr);
     snode = snode->get_dual();
     auto dual_ptr = insert<GlobalPtrStmt>(snode, src->indices);
+    dual_ptr->ret_type = src->ret_type;
     if (is_ptr_offset) {
       dual_ptr = insert<MatrixPtrStmt>(dual_ptr,
                                        stmt->src->as<MatrixPtrStmt>()->offset);
@@ -2134,6 +2138,7 @@ class MakeDual : public ADTransform {
     TI_ASSERT(snode->get_dual() != nullptr);
     snode = snode->get_dual();
     auto dual_ptr = insert<GlobalPtrStmt>(snode, dest->indices);
+    dual_ptr->ret_type = dest->ret_type;
     if (is_ptr_offset) {
       dual_ptr = insert<MatrixPtrStmt>(dual_ptr,
                                        stmt->dest->as<MatrixPtrStmt>()->offset);
@@ -2158,6 +2163,7 @@ class MakeDual : public ADTransform {
     TI_ASSERT(snode->get_dual() != nullptr);
     snode = snode->get_dual();
     auto dual_ptr = insert<GlobalPtrStmt>(snode, dest->indices);
+    dual_ptr->ret_type = dest->ret_type;
     if (is_ptr_offset) {
       dual_ptr = insert<MatrixPtrStmt>(dual_ptr,
                                        stmt->dest->as<MatrixPtrStmt>()->offset);
@@ -2425,8 +2431,8 @@ class GloablDataAccessRuleChecker : public BasicStmtVisitor {
     auto global_ptr =
         stmt->insert_after_me(Stmt::make<GlobalPtrStmt>(snode, src->indices));
     auto dtype = global_ptr->ret_type.ptr_removed();
-    auto one = global_ptr->insert_after_me(
-        Stmt::make<ConstStmt>(TypedConstant(dtype, 1)));
+
+    auto one = insert_const(dtype, global_ptr, 1, false /*insert_before_me*/);
     one->insert_after_me(Stmt::make<GlobalStoreStmt>(global_ptr, one));
   }
 
@@ -2441,7 +2447,7 @@ class GloablDataAccessRuleChecker : public BasicStmtVisitor {
         stmt->insert_before_me(Stmt::make<GlobalPtrStmt>(snode, dest->indices));
     auto global_load =
         stmt->insert_before_me(Stmt::make<GlobalLoadStmt>(global_ptr));
-    auto dtype = global_ptr->ret_type;
+    auto dtype = global_ptr->ret_type.ptr_removed();
     auto zero = insert_const(dtype, stmt, 0, /*insert_before_me=*/true);
     auto check_equal = stmt->insert_before_me(
         Stmt::make<BinaryOpStmt>(BinaryOpType::cmp_eq, global_load, zero));

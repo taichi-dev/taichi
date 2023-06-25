@@ -131,7 +131,6 @@ std::vector<int> Callable::add_parameter(const Parameter &param) {
     parameter_list.push_back(param);
     return std::vector<int>{(int)parameter_list.size() - 1};
   }
-  TI_ASSERT(temp_argpack_stack_.size() > 0);
   temp_argpack_stack_.top().push_back(param);
   std::vector<int> ret = temp_indices_stack_;
   ret.push_back(temp_argpack_stack_.top().size() - 1);

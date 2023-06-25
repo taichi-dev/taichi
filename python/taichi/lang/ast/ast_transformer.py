@@ -535,7 +535,7 @@ class ASTTransformer(Builder):
 
     @staticmethod
     def build_Call(ctx, node):
-        if ASTTransformer.get_decorator(ctx, node) == "static":
+        if ASTTransformer.get_decorator(ctx, node) in ["static", "static_assert"]:
             with ctx.static_scope_guard():
                 build_stmt(ctx, node.func)
                 build_stmts(ctx, node.args)
@@ -1116,6 +1116,7 @@ class ASTTransformer(Builder):
             return ""
         for wanted, name in [
             (impl.static, "static"),
+            (impl.static_assert, "static_assert"),
             (impl.grouped, "grouped"),
             (ndrange, "ndrange"),
         ]:

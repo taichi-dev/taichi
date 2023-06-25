@@ -1161,6 +1161,7 @@ class ASTTransformer(Builder):
                             node.lineno + ctx.lineno_offset,
                             module="taichi",
                         )
+                        break
 
             for value in impl.grouped(ndrange_arg):
                 with ctx.variable_scope_guard():
@@ -1189,6 +1190,7 @@ class ASTTransformer(Builder):
                             node.lineno + ctx.lineno_offset,
                             module="taichi",
                         )
+                        break
 
             for target_values in node.iter.ptr:
                 if not isinstance(target_values, collections.abc.Sequence) or len(targets) == 1:

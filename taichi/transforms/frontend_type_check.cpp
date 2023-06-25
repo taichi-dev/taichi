@@ -6,13 +6,31 @@
 namespace taichi::lang {
 
 class FrontendTypeCheck : public IRVisitor {
-  void check_cond_type(const Expr &cond, std::string stmt_name) {
-    auto cond_type = cond.get_rvalue_type();
-    if (!cond_type->is<PrimitiveType>() || !is_integral(cond_type))
-      throw TaichiTypeError(fmt::format(
-          "`{0}` conditions must be an integer; found {1}. Consider using "
-          "`{0} x != 0` instead of `{0} x` for float values.",
-          stmt_name, cond_type->to_string()));
+  void check_cond_type(const Stmt *stmt) {
+    Expr cond;
+    std::string stmt_name;
+    if (stmt->is<FrontendAssertStmt>()) {
+      stmt_name = "assert";
+      cond = stmt->as<FrontendAssertStmt>()->cond;
+    } else if (stmt->is<FrontendIfStmt>()) {
+      stmt_name = "if";
+      cond = stmt->as<FrontendIfStmt>()->condition;
+    } else if (stmt->is<FrontendWhileStmt>()) {
+      stmt_name = "while";
+      cond = stmt->as<FrontendWhileStmt>()->cond;
+    } else {
+      TI_STOP;
+    }
+
+    DataType cond_type = cond.get_rvalue_type();
+    if (!cond_type->is<PrimitiveType>() || !is_integral(cond_type)) {
+      ErrorEmitter(
+          TaichiTypeError(), stmt,
+          fmt::format("`{0}` conditions must be an integer; found {1}. "
+                      "Consider using "
+                      "`{0} x != 0` instead of `{0} x` for float values.",
+                      stmt_name, cond_type->to_string()));
+    }
   }
 
  public:
@@ -46,29 +64,25 @@ class FrontendTypeCheck : public IRVisitor {
   }
 
   void visit(FrontendAssertStmt *stmt) override {
-    check_cond_type(stmt->cond, "assert");
+    check_cond_type(stmt);
   }
 
   void visit(FrontendAssignStmt *stmt) override {
     auto lhs_type = stmt->lhs->ret_type.ptr_removed();
     auto rhs_type = stmt->rhs->ret_type.ptr_removed();
 
-    auto error = [&]() {
-      throw TaichiTypeError(fmt::format("{}cannot assign '{}' to '{}'",
-                                        stmt->tb, rhs_type->to_string(),
-                                        lhs_type->to_string()));
-    };
-
     // No implicit cast at frontend for now
     if (is_tensor(lhs_type) && is_tensor(rhs_type) &&
         lhs_type.get_shape() != rhs_type.get_shape()) {
-      error();
+      ErrorEmitter(TaichiTypeError(), stmt,
+                   fmt::format("cannot assign '{}' to '{}'",
+                               rhs_type->to_string(), lhs_type->to_string()));
     }
   }
 
   void visit(FrontendIfStmt *stmt) override {
     // TODO: use PrimitiveType::u1 when it's supported
-    check_cond_type(stmt->condition, "if");
+    check_cond_type(stmt);
     if (stmt->true_statements)
       stmt->true_statements->accept(this);
     if (stmt->false_statements)
@@ -108,8 +122,9 @@ class FrontendTypeCheck : public IRVisitor {
       constexpr std::string_view real_group = "fFeEaAgG";
 
       if (unsupported_group.find(conversion) != std::string::npos) {
-        throw TaichiTypeError(fmt::format("{}conversion '{}' is not supported.",
-                                          stmt->tb, conversion));
+        ErrorEmitter(
+            TaichiTypeError(), stmt,
+            fmt::format("conversion '{}' is not supported.", conversion));
       }
 
       if ((real_group.find(conversion) != std::string::npos &&
@@ -118,9 +133,9 @@ class FrontendTypeCheck : public IRVisitor {
            !(is_integral(data_type) && is_signed(data_type))) ||
           (unsigned_group.find(conversion) != std::string::npos &&
            !(is_integral(data_type) && is_unsigned(data_type)))) {
-        throw TaichiTypeError(fmt::format("{} '{}' doesn't match '{}'.",
-                                          stmt->tb, format_spec,
-                                          data_type->to_string()));
+        ErrorEmitter(TaichiTypeError(), stmt,
+                     fmt::format("'{}' doesn't match '{}'.", format_spec,
+                                 data_type->to_string()));
       }
     }
   }
@@ -143,7 +158,7 @@ class FrontendTypeCheck : public IRVisitor {
   }
 
   void visit(FrontendWhileStmt *stmt) override {
-    check_cond_type(stmt->cond, "while");
+    check_cond_type(stmt);
     stmt->body->accept(this);
   }
 

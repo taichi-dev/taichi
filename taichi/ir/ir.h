@@ -268,8 +268,10 @@ class IRNode {
   std::unique_ptr<IRNode> clone();
 };
 
-#define TI_DEFINE_ACCEPT \
-  void accept(IRVisitor *visitor) override { visitor->visit(this); }
+#define TI_DEFINE_ACCEPT                     \
+  void accept(IRVisitor *visitor) override { \
+    visitor->visit(this);                    \
+  }
 
 #define TI_DEFINE_CLONE                                             \
   std::unique_ptr<Stmt> clone() const override {                    \
@@ -387,6 +389,11 @@ class StmtFieldManager {
   mark_fields_registered(); \
   io(field_manager)
 
+struct Location {
+  int line_number;
+  std::string var_name;
+};
+
 class Stmt : public IRNode {
  protected:
   std::vector<Stmt **> operands;
@@ -401,6 +408,7 @@ class Stmt : public IRNode {
   bool fields_registered;
   std::string tb;
   DataType ret_type;
+  Location src_location;
 
   Stmt();
   Stmt(const Stmt &stmt);
@@ -498,6 +506,16 @@ class Stmt : public IRNode {
 
   static void reset_counter() {
     instance_id_counter = 0;
+  }
+};
+
+struct ErrorEmitter {
+  template <typename T>
+  [[noreturn]] ErrorEmitter(T &&error,
+                            const Stmt *stmt,
+                            std::string &&error_msg) {
+    error.msg_ = stmt->tb + error_msg;
+    throw error;
   }
 };
 

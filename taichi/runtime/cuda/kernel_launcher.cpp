@@ -52,9 +52,9 @@ void KernelLauncher::launch_llvm_kernel(Handle handle,
   ctx.get_context().runtime = executor->get_llvm_runtime();
 
   for (int i = 0; i < (int)parameters.size(); i++) {
-    const auto& kv = parameters[i];
-    const auto& key = kv.first;
-    const auto& parameter = kv.second;
+    const auto &kv = parameters[i];
+    const auto &key = kv.first;
+    const auto &parameter = kv.second;
     if (parameter.is_array) {
       const auto arr_sz = ctx.array_runtime_sizes[key];
       // Note: both numpy and PyTorch support arrays/tensors with zeros

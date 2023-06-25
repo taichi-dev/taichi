@@ -746,7 +746,7 @@ class Kernel:
                                 tmp.element_size() * tmp.nelement(),
                                 array_shape,
                                 int(v.grad.data_ptr()) if v.grad is not None else 0,
-                                )
+                            )
                         else:
                             raise TaichiRuntimeTypeError.get(indices, needed.to_string(), v)
                     elif has_paddle():

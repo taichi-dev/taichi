@@ -7,14 +7,15 @@
 namespace taichi::lang {
 
 namespace {
-template<typename T>
-  inline std::vector<T> concatenate_vector(const std::vector<T>& lhs, const std::vector<T>& rhs) {
-    std::vector<T> result;
-    result.assign(lhs.begin(), lhs.end());
-    result.insert(result.end(), rhs.begin(), rhs.end());
-    return result;
-  }
+template <typename T>
+inline std::vector<T> concatenate_vector(const std::vector<T> &lhs,
+                                         const std::vector<T> &rhs) {
+  std::vector<T> result;
+  result.assign(lhs.begin(), lhs.end());
+  result.insert(result.end(), rhs.begin(), rhs.end());
+  return result;
 }
+}  // namespace
 
 LaunchContextBuilder::LaunchContextBuilder(CallableBase *kernel)
     : kernel_(kernel),
@@ -30,7 +31,8 @@ LaunchContextBuilder::LaunchContextBuilder(CallableBase *kernel)
   ctx_->arg_buffer = arg_buffer_.get();
 }
 
-void LaunchContextBuilder::set_arg_float(const std::vector<int> &arg_id, float64 d) {
+void LaunchContextBuilder::set_arg_float(const std::vector<int> &arg_id,
+                                         float64 d) {
   auto dt = kernel_->args_type->get_element_type({arg_id});
   TI_ASSERT_INFO(dt->is<PrimitiveType>(),
                  "Assigning scalar value to external (numpy) array argument is "
@@ -102,7 +104,8 @@ template void LaunchContextBuilder::set_struct_arg(std::vector<int> arg_indices,
 template void LaunchContextBuilder::set_struct_arg(std::vector<int> arg_indices,
                                                    float64 v);
 
-void LaunchContextBuilder::set_arg_int(const std::vector<int> &arg_id, int64 d) {
+void LaunchContextBuilder::set_arg_int(const std::vector<int> &arg_id,
+                                       int64 d) {
   auto dt = kernel_->args_type->get_element_type({arg_id});
 
   TI_ASSERT_INFO(dt->is<PrimitiveType>(),
@@ -133,12 +136,14 @@ void LaunchContextBuilder::set_arg_int(const std::vector<int> &arg_id, int64 d) 
   }
 }
 
-void LaunchContextBuilder::set_arg_uint(const std::vector<int> &arg_id, uint64 d) {
+void LaunchContextBuilder::set_arg_uint(const std::vector<int> &arg_id,
+                                        uint64 d) {
   set_arg_int(arg_id, d);
 }
 
 template <>
-void LaunchContextBuilder::set_arg<TypedConstant>(const std::vector<int> &i, TypedConstant d) {
+void LaunchContextBuilder::set_arg<TypedConstant>(const std::vector<int> &i,
+                                                  TypedConstant d) {
   if (is_real(d.dt)) {
     set_arg_float(i, d.val_float());
   } else {
@@ -181,19 +186,21 @@ T LaunchContextBuilder::get_ret(int i) {
   return taichi_union_cast_with_different_sizes<T>(ctx_->result_buffer[i]);
 }
 
-#define PER_C_TYPE(type, ctype)                                                    \
-  template void LaunchContextBuilder::set_struct_arg_impl(                         \
-      std::vector<int> arg_indices, ctype v);                                      \
-  template ctype LaunchContextBuilder::get_arg(const std::vector<int> &i);         \
-  template ctype LaunchContextBuilder::get_struct_arg(                             \
-      std::vector<int> arg_indices);                                               \
-  template void LaunchContextBuilder::set_arg(const std::vector<int> &i, ctype v); \
+#define PER_C_TYPE(type, ctype)                                            \
+  template void LaunchContextBuilder::set_struct_arg_impl(                 \
+      std::vector<int> arg_indices, ctype v);                              \
+  template ctype LaunchContextBuilder::get_arg(const std::vector<int> &i); \
+  template ctype LaunchContextBuilder::get_struct_arg(                     \
+      std::vector<int> arg_indices);                                       \
+  template void LaunchContextBuilder::set_arg(const std::vector<int> &i,   \
+                                              ctype v);                    \
   template ctype LaunchContextBuilder::get_ret(int i);
 #include "taichi/inc/data_type_with_c_type.inc.h"
 PER_C_TYPE(gen, void *)  // Register void* as a valid type
 #undef PER_C_TYPE
 
-void LaunchContextBuilder::set_array_runtime_size(const std::vector<int> &i, uint64 size) {
+void LaunchContextBuilder::set_array_runtime_size(const std::vector<int> &i,
+                                                  uint64 size) {
   array_runtime_sizes[i] = size;
 }
 
@@ -215,25 +222,30 @@ void LaunchContextBuilder::set_arg_external_array_with_shape(
 
   TI_ASSERT_INFO(shape.size() <= taichi_max_num_indices,
                  "External array cannot have > {max_num_indices} indices");
-  array_ptrs[concatenate_vector<int>(arg_id, {TypeFactory::DATA_PTR_POS_IN_NDARRAY})] = (void *)ptr;
-  array_ptrs[concatenate_vector<int>(arg_id, {TypeFactory::GRAD_PTR_POS_IN_NDARRAY})] = (void *)grad_ptr;
+  array_ptrs[concatenate_vector<int>(
+      arg_id, {TypeFactory::DATA_PTR_POS_IN_NDARRAY})] = (void *)ptr;
+  array_ptrs[concatenate_vector<int>(
+      arg_id, {TypeFactory::GRAD_PTR_POS_IN_NDARRAY})] = (void *)grad_ptr;
   set_array_runtime_size(arg_id, size);
   set_array_device_allocation_type(arg_id, DevAllocType::kNone);
   for (uint64 i = 0; i < shape.size(); ++i) {
-    set_struct_arg(concatenate_vector<int>(arg_id, {0, (int32)i}), (int32)shape[i]);
+    set_struct_arg(concatenate_vector<int>(arg_id, {0, (int32)i}),
+                   (int32)shape[i]);
   }
 }
 
-void LaunchContextBuilder::set_arg_ndarray(const std::vector<int> &arg_id, const Ndarray &arr) {
+void LaunchContextBuilder::set_arg_ndarray(const std::vector<int> &arg_id,
+                                           const Ndarray &arr) {
   intptr_t ptr = arr.get_device_allocation_ptr_as_int();
   TI_ASSERT_INFO(arr.shape.size() <= taichi_max_num_indices,
                  "External array cannot have > {max_num_indices} indices");
   set_arg_ndarray_impl(arg_id, ptr, arr.shape);
 }
 
-void LaunchContextBuilder::set_arg_ndarray_with_grad(const std::vector<int> &arg_id,
-                                                     const Ndarray &arr,
-                                                     const Ndarray &arr_grad) {
+void LaunchContextBuilder::set_arg_ndarray_with_grad(
+    const std::vector<int> &arg_id,
+    const Ndarray &arr,
+    const Ndarray &arr_grad) {
   intptr_t ptr = arr.get_device_allocation_ptr_as_int();
   intptr_t ptr_grad = arr_grad.get_device_allocation_ptr_as_int();
   TI_ASSERT_INFO(arr.shape.size() <= taichi_max_num_indices,
@@ -241,12 +253,14 @@ void LaunchContextBuilder::set_arg_ndarray_with_grad(const std::vector<int> &arg
   set_arg_ndarray_impl(arg_id, ptr, arr.shape, ptr_grad);
 }
 
-void LaunchContextBuilder::set_arg_texture(const std::vector<int> &arg_id, const Texture &tex) {
+void LaunchContextBuilder::set_arg_texture(const std::vector<int> &arg_id,
+                                           const Texture &tex) {
   intptr_t ptr = tex.get_device_allocation_ptr_as_int();
   set_arg_texture_impl(arg_id, ptr);
 }
 
-void LaunchContextBuilder::set_arg_rw_texture(const std::vector<int> &arg_id, const Texture &tex) {
+void LaunchContextBuilder::set_arg_rw_texture(const std::vector<int> &arg_id,
+                                              const Texture &tex) {
   intptr_t ptr = tex.get_device_allocation_ptr_as_int();
   set_arg_rw_texture_impl(arg_id, ptr, tex.get_size());
 }
@@ -278,10 +292,11 @@ void LaunchContextBuilder::set_arg_ndarray_impl(const std::vector<int> &arg_id,
                                                 const std::vector<int> &shape,
                                                 intptr_t devalloc_ptr_grad) {
   // Set array ptr
-  array_ptrs[concatenate_vector<int>(arg_id, {TypeFactory::DATA_PTR_POS_IN_NDARRAY})] =
-      (void *)devalloc_ptr;
+  array_ptrs[concatenate_vector<int>(
+      arg_id, {TypeFactory::DATA_PTR_POS_IN_NDARRAY})] = (void *)devalloc_ptr;
   if (devalloc_ptr != 0) {
-    array_ptrs[concatenate_vector<int>(arg_id, {TypeFactory::GRAD_PTR_POS_IN_NDARRAY})] =
+    array_ptrs[concatenate_vector<int>(
+        arg_id, {TypeFactory::GRAD_PTR_POS_IN_NDARRAY})] =
         (void *)devalloc_ptr_grad;
   }
   // Set device allocation type and runtime size
@@ -289,7 +304,8 @@ void LaunchContextBuilder::set_arg_ndarray_impl(const std::vector<int> &arg_id,
   TI_ASSERT(shape.size() <= taichi_max_num_indices);
   size_t total_size = 1;
   for (int i = 0; i < shape.size(); i++) {
-    set_struct_arg(concatenate_vector<int>(arg_id, {0, (int32)i}), (int32)shape[i]);
+    set_struct_arg(concatenate_vector<int>(arg_id, {0, (int32)i}),
+                   (int32)shape[i]);
     total_size *= shape[i];
   }
   set_array_runtime_size(arg_id, total_size);

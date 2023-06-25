@@ -15,27 +15,25 @@ void KernelLauncher::launch_llvm_kernel(Handle handle,
   // |DeviceAllocation|, CPU backend actually want to use the raw ptr here.
   const auto &parameters = launcher_ctx.parameters;
   for (int i = 0; i < (int)parameters.size(); i++) {
-    const auto& kv = parameters[i];
-    const auto& key = kv.first;
-    const auto& parameter = kv.second;
+    const auto &kv = parameters[i];
+    const auto &key = kv.first;
+    const auto &parameter = kv.second;
     std::vector<int> data_ptr_idx = key;
     data_ptr_idx.push_back(TypeFactory::DATA_PTR_POS_IN_NDARRAY);
     std::vector<int> grad_ptr_idx = key;
     grad_ptr_idx.push_back(TypeFactory::GRAD_PTR_POS_IN_NDARRAY);
 
-    if (parameter.is_array &&
-        ctx.device_allocation_type[key] ==
-            LaunchContextBuilder::DevAllocType::kNone) {
-      ctx.set_ndarray_ptrs(
-          key, (uint64)ctx.array_ptrs[data_ptr_idx],
-          (uint64)ctx.array_ptrs[grad_ptr_idx]);
+    if (parameter.is_array && ctx.device_allocation_type[key] ==
+                                  LaunchContextBuilder::DevAllocType::kNone) {
+      ctx.set_ndarray_ptrs(key, (uint64)ctx.array_ptrs[data_ptr_idx],
+                           (uint64)ctx.array_ptrs[grad_ptr_idx]);
     }
     if (parameter.is_array &&
         ctx.device_allocation_type[key] !=
             LaunchContextBuilder::DevAllocType::kNone &&
         ctx.array_runtime_sizes[key] > 0) {
-      DeviceAllocation *ptr = static_cast<DeviceAllocation *>(
-          ctx.array_ptrs[data_ptr_idx]);
+      DeviceAllocation *ptr =
+          static_cast<DeviceAllocation *>(ctx.array_ptrs[data_ptr_idx]);
       uint64 host_ptr = (uint64)executor->get_ndarray_alloc_info_ptr(*ptr);
       ctx.set_array_device_allocation_type(
           key, LaunchContextBuilder::DevAllocType::kNone);

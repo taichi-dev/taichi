@@ -41,8 +41,13 @@ class HostDeviceContextBlitter {
   }
 
   void host_to_device(
-      const std::unordered_map<std::vector<int>, DeviceAllocation, hashing::Hasher<std::vector<int>>> &ext_arrays,
-      const std::unordered_map<std::vector<int>, size_t, hashing::Hasher<std::vector<int>>> &ext_arr_size) {
+      const std::unordered_map<std::vector<int>,
+                               DeviceAllocation,
+                               hashing::Hasher<std::vector<int>>> &ext_arrays,
+      const std::unordered_map<std::vector<int>,
+                               size_t,
+                               hashing::Hasher<std::vector<int>>>
+          &ext_arr_size) {
     if (!ctx_attribs_->has_args()) {
       return;
     }
@@ -61,7 +66,7 @@ class HostDeviceContextBlitter {
             ext_arr_size.at(indices)) {
           // Only need to blit ext arrs (host array)
           uint32_t access = 0;
-          for (const auto& acc : ctx_attribs_->arr_access) {
+          for (const auto &acc : ctx_attribs_->arr_access) {
             if (acc.first == indices) {
               access = static_cast<uint32_t>(acc.second);
               break;
@@ -74,8 +79,7 @@ class HostDeviceContextBlitter {
                       RhiResult::success);
             auto data_ptr_idx = indices;
             data_ptr_idx.push_back(TypeFactory::DATA_PTR_POS_IN_NDARRAY);
-            const void *host_ptr =
-                host_ctx_.array_ptrs[data_ptr_idx];
+            const void *host_ptr = host_ctx_.array_ptrs[data_ptr_idx];
             std::memcpy(device_arr_ptr, host_ptr, ext_arr_size.at(indices));
             device_->unmap(buffer);
           }
@@ -93,9 +97,7 @@ class HostDeviceContextBlitter {
           auto grad_ptr_idx = indices;
           grad_ptr_idx.push_back(TypeFactory::GRAD_PTR_POS_IN_NDARRAY);
           host_ctx_.set_ndarray_ptrs(
-              indices, addr,
-              (uint64)host_ctx_
-                  .array_ptrs[grad_ptr_idx]);
+              indices, addr, (uint64)host_ctx_.array_ptrs[grad_ptr_idx]);
         }
       }
     }
@@ -108,8 +110,13 @@ class HostDeviceContextBlitter {
 
   bool device_to_host(
       CommandList *cmdlist,
-      const std::unordered_map<std::vector<int>, DeviceAllocation, hashing::Hasher<std::vector<int>>> &ext_arrays,
-      const std::unordered_map<std::vector<int>, size_t, hashing::Hasher<std::vector<int>>> &ext_arr_size) {
+      const std::unordered_map<std::vector<int>,
+                               DeviceAllocation,
+                               hashing::Hasher<std::vector<int>>> &ext_arrays,
+      const std::unordered_map<std::vector<int>,
+                               size_t,
+                               hashing::Hasher<std::vector<int>>>
+          &ext_arr_size) {
     if (ctx_attribs_->empty()) {
       return false;
     }
@@ -128,7 +135,7 @@ class HostDeviceContextBlitter {
               LaunchContextBuilder::DevAllocType::kNone &&
           ext_arr_size.at(indices)) {
         uint32_t access = 0;
-        for (const auto& acc : ctx_attribs_->arr_access) {
+        for (const auto &acc : ctx_attribs_->arr_access) {
           if (acc.first == indices) {
             access = static_cast<uint32_t>(acc.second);
             break;
@@ -389,12 +396,18 @@ void GfxRuntime::launch_kernel(KernelHandle handle,
       args_buffer.get(), ret_buffer.get());
 
   // `any_arrays` contain both external arrays and NDArrays
-  std::unordered_map<std::vector<int>, DeviceAllocation, hashing::Hasher<std::vector<int>>> any_arrays;
+  std::unordered_map<std::vector<int>, DeviceAllocation,
+                     hashing::Hasher<std::vector<int>>>
+      any_arrays;
   // `ext_array_size` only holds the size of external arrays (host arrays)
   // As buffer size information is only needed when it needs to be allocated
   // and transferred by the host
-  std::unordered_map<std::vector<int>, size_t, hashing::Hasher<std::vector<int>>> ext_array_size;
-  std::unordered_map<std::vector<int>, DeviceAllocation, hashing::Hasher<std::vector<int>>> textures;
+  std::unordered_map<std::vector<int>, size_t,
+                     hashing::Hasher<std::vector<int>>>
+      ext_array_size;
+  std::unordered_map<std::vector<int>, DeviceAllocation,
+                     hashing::Hasher<std::vector<int>>>
+      textures;
 
   // Prepare context buffers & arrays
   if (ctx_blitter) {
@@ -403,8 +416,8 @@ void GfxRuntime::launch_kernel(KernelHandle handle,
 
     const auto &args = ti_kernel->ti_kernel_attribs().ctx_attribs.args();
     for (auto &kv : args) {
-      const auto& indices = kv.first;
-      const auto& arg = kv.second;
+      const auto &indices = kv.first;
+      const auto &arg = kv.second;
       if (arg.is_array) {
         if (host_ctx.device_allocation_type[indices] !=
             LaunchContextBuilder::DevAllocType::kNone) {
@@ -413,7 +426,8 @@ void GfxRuntime::launch_kernel(KernelHandle handle,
           data_ptr_indices.push_back(TypeFactory::DATA_PTR_POS_IN_NDARRAY);
           // NDArray
           if (host_ctx.array_ptrs.count(data_ptr_indices)) {
-            devalloc = *(DeviceAllocation *)(host_ctx.array_ptrs[data_ptr_indices]);
+            devalloc =
+                *(DeviceAllocation *)(host_ctx.array_ptrs[data_ptr_indices]);
           }
           // Texture
           if (host_ctx.array_ptrs.count(indices)) {
@@ -436,7 +450,8 @@ void GfxRuntime::launch_kernel(KernelHandle handle,
         } else {
           ext_array_size[indices] = host_ctx.array_runtime_sizes[indices];
           uint32_t access = 0;
-          for (const auto &acc : ti_kernel->ti_kernel_attribs().ctx_attribs.arr_access) {
+          for (const auto &acc :
+               ti_kernel->ti_kernel_attribs().ctx_attribs.arr_access) {
             if (acc.first == indices) {
               access = uint32_t(acc.second);
               break;

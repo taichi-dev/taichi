@@ -51,13 +51,14 @@ KernelContextAttributes::KernelContextAttributes(
     const Kernel &kernel,
     const DeviceCapabilityConfig *caps)
     : args_bytes_(0), rets_bytes_(0) {
-  arr_access.reserve(kernel.parameter_list.size());  // irpass::ExternalPtrAccess(0)
+  arr_access.reserve(
+      kernel.parameter_list.size());  // irpass::ExternalPtrAccess(0)
   arg_attribs_vec_.reserve(kernel.parameter_list.size());
   // TODO: We should be able to limit Kernel args and rets to be primitive types
   // as well but let's leave that as a followup up PR.
   for (const auto &kv : kernel.not_flattened_parameters) {
-    const auto& k = kv.first;
-    const auto& ka = kv.second;
+    const auto &k = kv.first;
+    const auto &ka = kv.second;
     ArgAttributes aa;
     aa.name = ka.name;
     aa.is_array = ka.is_array;

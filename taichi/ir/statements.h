@@ -192,7 +192,10 @@ class ArgLoadStmt : public Stmt {
 
   bool create_load;
 
-  ArgLoadStmt(const std::vector<int> &arg_id, const DataType &dt, bool is_ptr, bool create_load)
+  ArgLoadStmt(const std::vector<int> &arg_id,
+              const DataType &dt,
+              bool is_ptr,
+              bool create_load)
       : arg_id(arg_id), is_ptr(is_ptr), create_load(create_load) {
     this->ret_type = dt;
     TI_STMT_REG_FIELDS;

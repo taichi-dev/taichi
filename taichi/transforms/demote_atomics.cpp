@@ -13,7 +13,10 @@ namespace taichi::lang {
 class DemoteAtomics : public BasicStmtVisitor {
  private:
   std::unordered_map<const SNode *, GlobalPtrStmt *> loop_unique_ptr_;
-  std::unordered_map<std::vector<int>, ExternalPtrStmt *, hashing::Hasher<std::vector<int>>> loop_unique_arr_ptr_;
+  std::unordered_map<std::vector<int>,
+                     ExternalPtrStmt *,
+                     hashing::Hasher<std::vector<int>>>
+      loop_unique_arr_ptr_;
 
  public:
   using BasicStmtVisitor::visit;

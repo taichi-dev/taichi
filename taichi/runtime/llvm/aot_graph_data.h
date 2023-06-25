@@ -15,7 +15,7 @@ class KernelImpl : public aot::Kernel {
     ret_type = kernel_data_.ret_type;
     ret_size = kernel_data_.ret_size;
     not_flattened_parameters.reserve(kernel_data_.args.size());
-    for (const auto& kv: kernel_data_.args) {
+    for (const auto &kv : kernel_data_.args) {
       not_flattened_parameters[kv.first] = kv.second;
     }
     args_type = kernel_data_.args_type;

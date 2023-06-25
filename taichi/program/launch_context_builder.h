@@ -31,7 +31,8 @@ class LaunchContextBuilder {
 
   void set_array_runtime_size(const std::vector<int> &i, uint64 size);
 
-  void set_array_device_allocation_type(const std::vector<int> &i, DevAllocType usage);
+  void set_array_device_allocation_type(const std::vector<int> &i,
+                                        DevAllocType usage);
 
   template <typename T>
   void set_arg(const std::vector<int> &i, T v);
@@ -47,7 +48,9 @@ class LaunchContextBuilder {
   template <typename T>
   void set_struct_arg(std::vector<int> arg_indices, T v);
 
-  void set_ndarray_ptrs(const std::vector<int> &arg_id, uint64 data_ptr, uint64 grad_ptr);
+  void set_ndarray_ptrs(const std::vector<int> &arg_id,
+                        uint64 data_ptr,
+                        uint64 grad_ptr);
 
   template <typename T>
   T get_arg(const std::vector<int> &i);
@@ -58,27 +61,27 @@ class LaunchContextBuilder {
   template <typename T>
   T get_ret(int i);
 
-  void set_arg_external_array_with_shape(const std::vector<int> & arg_id,
+  void set_arg_external_array_with_shape(const std::vector<int> &arg_id,
                                          uintptr_t ptr,
                                          uint64 size,
                                          const std::vector<int64> &shape,
                                          uintptr_t grad_ptr = 0);
 
-  void set_arg_ndarray_impl(const std::vector<int> & arg_id,
+  void set_arg_ndarray_impl(const std::vector<int> &arg_id,
                             intptr_t devalloc_ptr,
                             const std::vector<int> &shape,
                             intptr_t devalloc_ptr_grad = 0);
-  void set_arg_ndarray(const std::vector<int> & arg_id, const Ndarray &arr);
-  void set_arg_ndarray_with_grad(const std::vector<int> & arg_id,
+  void set_arg_ndarray(const std::vector<int> &arg_id, const Ndarray &arr);
+  void set_arg_ndarray_with_grad(const std::vector<int> &arg_id,
                                  const Ndarray &arr,
                                  const Ndarray &arr_grad);
 
-  void set_arg_texture_impl(const std::vector<int> & arg_id, intptr_t alloc_ptr);
-  void set_arg_texture(const std::vector<int> & arg_id, const Texture &tex);
-  void set_arg_rw_texture_impl(const std::vector<int> & arg_id,
+  void set_arg_texture_impl(const std::vector<int> &arg_id, intptr_t alloc_ptr);
+  void set_arg_texture(const std::vector<int> &arg_id, const Texture &tex);
+  void set_arg_rw_texture_impl(const std::vector<int> &arg_id,
                                intptr_t alloc_ptr,
                                const std::array<int, 3> &shape);
-  void set_arg_rw_texture(const std::vector<int> & arg_id, const Texture &tex);
+  void set_arg_rw_texture(const std::vector<int> &arg_id, const Texture &tex);
 
   TypedConstant fetch_ret(const std::vector<int> &index);
   float64 get_struct_ret_float(const std::vector<int> &index);
@@ -111,10 +114,15 @@ class LaunchContextBuilder {
 
   // `array_runtime_size` records the runtime size of the
   // corresponding array arguments.
-  std::unordered_map<std::vector<int>, uint64, hashing::Hasher<std::vector<int>>> array_runtime_sizes;
+  std::
+      unordered_map<std::vector<int>, uint64, hashing::Hasher<std::vector<int>>>
+          array_runtime_sizes;
   // `device_allocation_type` is set iff i-th arg is a `DeviceAllocation*`,
   // otherwise it is set to DevAllocType::kNone
-  std::unordered_map<std::vector<int>, DevAllocType, hashing::Hasher<std::vector<int>>> device_allocation_type;
+  std::unordered_map<std::vector<int>,
+                     DevAllocType,
+                     hashing::Hasher<std::vector<int>>>
+      device_allocation_type;
 
   std::
       unordered_map<std::vector<int>, void *, hashing::Hasher<std::vector<int>>>

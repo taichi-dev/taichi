@@ -60,7 +60,7 @@ struct TaskAttributes {
       using std::string;
 
       size_t hash_result = hash<BufferType>()(buf.type);
-      for (const int& element : buf.root_id)
+      for (const int &element : buf.root_id)
         hash_result ^= element;
       return hash_result;
     }
@@ -227,17 +227,20 @@ class KernelContextAttributes {
     return !arg_attribs_vec_.empty();
   }
 
-  inline const std::vector<std::pair<std::vector<int>, ArgAttributes>> &args() const {
+  inline const std::vector<std::pair<std::vector<int>, ArgAttributes>> &args()
+      const {
     return arg_attribs_vec_;
   }
 
   inline const ArgAttributes &arg_at(const std::vector<int> &indices) const {
-    for (const auto& element : arg_attribs_vec_) {
+    for (const auto &element : arg_attribs_vec_) {
       if (element.first == indices) {
         return element.second;
       }
     }
-    TI_ERROR(fmt::format("Unexpected bug: ArgAttributes with indices ({}) not found.", fmt::join(indices, ", ")));
+    TI_ERROR(fmt::format(
+        "Unexpected bug: ArgAttributes with indices ({}) not found.",
+        fmt::join(indices, ", ")));
     return arg_attribs_vec_[0].second;
   }
 
@@ -287,7 +290,8 @@ class KernelContextAttributes {
     return rets_type_;
   }
 
-  std::vector<std::pair<std::vector<int>, irpass::ExternalPtrAccess>> arr_access;
+  std::vector<std::pair<std::vector<int>, irpass::ExternalPtrAccess>>
+      arr_access;
 
   TI_IO_DEF(arg_attribs_vec_,
             ret_attribs_vec_,

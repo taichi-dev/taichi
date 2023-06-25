@@ -38,9 +38,9 @@ void KernelLauncher::launch_llvm_kernel(Handle handle,
       std::max(ctx.result_buffer_size, sizeof(uint64)));
 
   for (int i = 0; i < (int)parameters.size(); i++) {
-    const auto& kv = parameters[i];
-    const auto& key = kv.first;
-    const auto& parameter = kv.second;
+    const auto &kv = parameters[i];
+    const auto &key = kv.first;
+    const auto &parameter = kv.second;
     if (parameter.is_array) {
       const auto arr_sz = ctx.array_runtime_sizes[key];
       if (arr_sz == 0)
@@ -65,9 +65,8 @@ void KernelLauncher::launch_llvm_kernel(Handle handle,
           AMDGPUDriver::get_instance().memcpy_host_to_device(
               (void *)device_ptrs[data_ptr_idx], data_ptr, arr_sz);
         }
-        ctx.set_ndarray_ptrs(
-            key, (uint64)device_ptrs[data_ptr_idx],
-            (uint64)ctx.array_ptrs[grad_ptr_idx]);
+        ctx.set_ndarray_ptrs(key, (uint64)device_ptrs[data_ptr_idx],
+                             (uint64)ctx.array_ptrs[grad_ptr_idx]);
 
       } else if (arr_sz > 0) {  // why use arr_sz constrain?
         // Ndarray
@@ -75,9 +74,8 @@ void KernelLauncher::launch_llvm_kernel(Handle handle,
         // Unwrapped raw ptr on device
         device_ptrs[data_ptr_idx] = executor->get_ndarray_alloc_info_ptr(*ptr);
 
-        ctx.set_ndarray_ptrs(
-            key, (uint64)device_ptrs[data_ptr_idx],
-            (uint64)ctx.array_ptrs[grad_ptr_idx]);
+        ctx.set_ndarray_ptrs(key, (uint64)device_ptrs[data_ptr_idx],
+                             (uint64)ctx.array_ptrs[grad_ptr_idx]);
       }
     }
   }

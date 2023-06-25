@@ -43,7 +43,8 @@ std::string buffer_instance_name(BufferInfo b) {
   // https://www.khronos.org/opengl/wiki/Interface_Block_(GLSL)#Syntax
   switch (b.type) {
     case BufferType::Root:
-      return std::string(kRootBufferName) + "_" + fmt::format("{}", fmt::join(b.root_id, "_"));
+      return std::string(kRootBufferName) + "_" +
+             fmt::format("{}", fmt::join(b.root_id, "_"));
     case BufferType::GlobalTmps:
       return kGlobalTmpsBufferName;
     case BufferType::Args:
@@ -53,7 +54,8 @@ std::string buffer_instance_name(BufferInfo b) {
     case BufferType::ListGen:
       return kListgenBufferName;
     case BufferType::ExtArr:
-      return std::string(kExtArrBufferName) + "_" + fmt::format("{}", fmt::join(b.root_id, "_"));
+      return std::string(kExtArrBufferName) + "_" +
+             fmt::format("{}", fmt::join(b.root_id, "_"));
     default:
       TI_NOT_IMPLEMENTED;
       break;
@@ -115,7 +117,10 @@ class TaskCodegen : public IRVisitor {
   struct Result {
     std::vector<uint32_t> spirv_code;
     TaskAttributes task_attribs;
-    std::unordered_map<std::vector<int>, irpass::ExternalPtrAccess, hashing::Hasher<std::vector<int>>> arr_access;
+    std::unordered_map<std::vector<int>,
+                       irpass::ExternalPtrAccess,
+                       hashing::Hasher<std::vector<int>>>
+        arr_access;
   };
 
   Result run() {
@@ -586,8 +591,9 @@ class TaskCodegen : public IRVisitor {
       bool is_bool = arg_type->is_primitive(PrimitiveTypeID::u1);
       const auto val_type =
           is_bool ? ir_->i32_type() : args_struct_types_[arg_id];
-      spirv::Value buffer_val =
-          ir_->make_access_chain(ir_->get_pointer_type(val_type, spv::StorageClassUniform), buffer_value, arg_id);
+      spirv::Value buffer_val = ir_->make_access_chain(
+          ir_->get_pointer_type(val_type, spv::StorageClassUniform),
+          buffer_value, arg_id);
       buffer_val.flag = ValueKind::kVariablePtr;
       if (!stmt->create_load) {
         ir_->register_value(stmt->raw_name(), buffer_val);
@@ -2271,35 +2277,41 @@ class TaskCodegen : public IRVisitor {
 
     // Generate struct IR
     tinyir::Block blk;
-    std::unordered_map<std::vector<int>, const tinyir::Type *, hashing::Hasher<std::vector<int>>> element_types;
-    std::unordered_map<std::vector<int>, const Type *, hashing::Hasher<std::vector<int>>> element_taichi_types;
+    std::unordered_map<std::vector<int>, const tinyir::Type *,
+                       hashing::Hasher<std::vector<int>>>
+        element_types;
+    std::unordered_map<std::vector<int>, const Type *,
+                       hashing::Hasher<std::vector<int>>>
+        element_taichi_types;
     std::vector<const tinyir::Type *> root_element_types;
     bool has_buffer_ptr =
         caps_->get(DeviceCapability::spirv_has_physical_storage_buffer);
-    std::function<void(const std::vector<int> &indices, const Type* type)> add_types_to_element_types =
-        [&](const std::vector<int> &indices, const Type* type) {
-      auto spirv_type = translate_ti_type(blk, type, has_buffer_ptr);
-      if (auto struct_type = type->cast<taichi::lang::StructType>()) {
-        for (int j = 0; j < struct_type->elements().size(); ++j) {
-          std::vector<int> indices_copy = indices;
-          indices_copy.push_back(j);
-          add_types_to_element_types(indices_copy, struct_type->elements()[j].type);
-        }
-      }
-      element_taichi_types[indices] = type;
-      element_types[indices] = spirv_type;
-    };
+    std::function<void(const std::vector<int> &indices, const Type *type)>
+        add_types_to_element_types =
+            [&](const std::vector<int> &indices, const Type *type) {
+              auto spirv_type = translate_ti_type(blk, type, has_buffer_ptr);
+              if (auto struct_type = type->cast<taichi::lang::StructType>()) {
+                for (int j = 0; j < struct_type->elements().size(); ++j) {
+                  std::vector<int> indices_copy = indices;
+                  indices_copy.push_back(j);
+                  add_types_to_element_types(indices_copy,
+                                             struct_type->elements()[j].type);
+                }
+              }
+              element_taichi_types[indices] = type;
+              element_types[indices] = spirv_type;
+            };
     for (int i = 0; i < ctx_attribs_->args_type()->elements().size(); i++) {
-       auto *type = ctx_attribs_->args_type()->elements()[i].type;
-       auto spirv_type = translate_ti_type(blk, type, has_buffer_ptr);
-       element_types[{i}] = spirv_type;
-       element_taichi_types[{i}] = type;
-       root_element_types.push_back(spirv_type);
-       if (auto struct_type = type->cast<taichi::lang::StructType>()) {
+      auto *type = ctx_attribs_->args_type()->elements()[i].type;
+      auto spirv_type = translate_ti_type(blk, type, has_buffer_ptr);
+      element_types[{i}] = spirv_type;
+      element_taichi_types[{i}] = type;
+      root_element_types.push_back(spirv_type);
+      if (auto struct_type = type->cast<taichi::lang::StructType>()) {
         for (int j = 0; j < struct_type->elements().size(); ++j) {
           add_types_to_element_types({i, j}, struct_type->elements()[j].type);
         }
-       }
+      }
     }
     const tinyir::Type *struct_type =
         blk.emplace_back<StructType>(root_element_types);
@@ -2427,7 +2439,10 @@ class TaskCodegen : public IRVisitor {
   spirv::SType args_struct_type_;
   spirv::Value args_buffer_value_;
 
-  std::unordered_map<std::vector<int>, spirv::SType, hashing::Hasher<std::vector<int>>> args_struct_types_;
+  std::unordered_map<std::vector<int>,
+                     spirv::SType,
+                     hashing::Hasher<std::vector<int>>>
+      args_struct_types_;
   std::vector<spirv::SType> rets_struct_types_;
 
   spirv::SType ret_struct_type_;
@@ -2469,7 +2484,8 @@ class TaskCodegen : public IRVisitor {
   std::unordered_map<int, GetRootStmt *>
       root_stmts_;  // maps root id to get root stmt
   std::unordered_map<const Stmt *, BufferInfo> ptr_to_buffers_;
-  std::unordered_map<std::vector<int>, Value, hashing::Hasher<std::vector<int>>> argid_to_tex_value_;
+  std::unordered_map<std::vector<int>, Value, hashing::Hasher<std::vector<int>>>
+      argid_to_tex_value_;
 };
 }  // namespace
 
@@ -2565,7 +2581,7 @@ void KernelCodegen::run(TaichiKernelAttributes &kernel_attribs,
     auto task_res = cgen.run();
 
     for (auto &[id, access] : task_res.arr_access) {
-      for (auto& arr_access_element : ctx_attribs_.arr_access) {
+      for (auto &arr_access_element : ctx_attribs_.arr_access) {
         if (arr_access_element.first == id) {
           arr_access_element.second = arr_access_element.second | access;
         }

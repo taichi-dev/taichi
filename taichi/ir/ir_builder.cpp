@@ -178,7 +178,9 @@ RandStmt *IRBuilder::create_rand(DataType value_type) {
   return insert(Stmt::make_typed<RandStmt>(value_type));
 }
 
-ArgLoadStmt *IRBuilder::create_arg_load(const std::vector<int> &arg_id, DataType dt, bool is_ptr) {
+ArgLoadStmt *IRBuilder::create_arg_load(const std::vector<int> &arg_id,
+                                        DataType dt,
+                                        bool is_ptr) {
   return insert(
       Stmt::make_typed<ArgLoadStmt>(arg_id, dt, is_ptr, /*create_load*/ true));
 }

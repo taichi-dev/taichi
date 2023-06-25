@@ -606,7 +606,7 @@ class ASTTransformer(Builder):
                     except:
                         pass
                     else:
-                        msg += f"\nDid you mean to use `ti.{func.__name__}` instead of `{module.__name__}.{func.__name__}`?"```
+                        msg += f"\nDid you mean to use `ti.{func.__name__}` instead of `{module.__name__}.{func.__name__}`?"
             raise TaichiTypeError(msg)
 
         if getattr(func, "_is_taichi_function", False):

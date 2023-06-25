@@ -249,18 +249,18 @@ class LowerAST : public IRVisitor {
       new_for->mem_access_opt = stmt->mem_access_opt;
       fctx.push_back(std::move(new_for));
     } else if (stmt->external_tensor) {
-      int arg_id = -1;
+      std::vector<int> arg_id;
       std::vector<Stmt *> shape;
       if (stmt->external_tensor.is<ExternalTensorExpression>()) {
         auto tensor = stmt->external_tensor.cast<ExternalTensorExpression>();
-        arg_id = tensor->arg_id[0];
+        arg_id = tensor->arg_id;
         for (int i = 0; i < tensor->ndim; i++) {
           shape.push_back(
               fctx.push_back<ExternalTensorShapeAlongAxisStmt>(i, arg_id));
         }
       } else if (stmt->external_tensor.is<TexturePtrExpression>()) {
         auto rw_texture = stmt->external_tensor.cast<TexturePtrExpression>();
-        arg_id = rw_texture->arg_id[0];
+        arg_id = rw_texture->arg_id;
         for (size_t i = 0; i < rw_texture->num_dims; ++i) {
           shape.emplace_back(
               fctx.push_back<ExternalTensorShapeAlongAxisStmt>(i, arg_id));
@@ -276,7 +276,7 @@ class LowerAST : public IRVisitor {
       auto &&new_for = std::make_unique<RangeForStmt>(
           begin, end, std::move(stmt->body), stmt->is_bit_vectorized,
           stmt->num_cpu_threads, stmt->block_dim, stmt->strictly_serialized,
-          /*range_hint=*/fmt::format("arg {}", arg_id));
+          /*range_hint=*/fmt::format("arg ({})", fmt::join(arg_id, ", ")));
       VecStatement new_statements;
       Stmt *loop_index =
           new_statements.push_back<LoopIndexStmt>(new_for.get(), 0);

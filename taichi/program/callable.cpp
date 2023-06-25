@@ -129,11 +129,14 @@ std::vector<int> Callable::add_parameter(const Parameter &param) {
             temp_argpack_name_stack_.size() == temp_indices_stack_.size());
   if (temp_argpack_stack_.size() == 0) {
     parameter_list.push_back(param);
-    return std::vector<int>{(int)parameter_list.size() - 1};
+    auto indices = std::vector<int>{(int)parameter_list.size() - 1};
+    not_flattened_parameters[indices] = param;
+    return indices;
   }
   temp_argpack_stack_.top().push_back(param);
   std::vector<int> ret = temp_indices_stack_;
   ret.push_back(temp_argpack_stack_.top().size() - 1);
+  not_flattened_parameters[ret] = param;
   return ret;
 }
 

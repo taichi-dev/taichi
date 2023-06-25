@@ -32,7 +32,7 @@ TEST(Scalarize, ScalarizeGlobalStore) {
       TypeFactory::get_instance().get_ndarray_struct_type(tensor_type, 1);
 
   auto argload_stmt =
-      block->push_back<ArgLoadStmt>(0 /*arg_id*/, type, /*is_ptr*/ true,
+      block->push_back<ArgLoadStmt>(std::vector<int>{0} /*arg_id*/, type, /*is_ptr*/ true,
                                     /*create_load*/ false);
 
   std::vector<Stmt *> indices = {};
@@ -97,7 +97,7 @@ TEST(Scalarize, ScalarizeGlobalLoad) {
       TypeFactory::get_instance().get_ndarray_struct_type(tensor_type, 1);
 
   auto argload_stmt =
-      block->push_back<ArgLoadStmt>(0 /*arg_id*/, type, /*is_ptr*/ true,
+      block->push_back<ArgLoadStmt>(std::vector<int>{0} /*arg_id*/, type, /*is_ptr*/ true,
                                     /*create_load*/ false);
 
   std::vector<Stmt *> indices = {};

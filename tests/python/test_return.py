@@ -223,7 +223,6 @@ def test_real_func_tuple_ret_39():
     def bar() -> tuple[ti.f32, s0]:
         return foo()
 
-    # bar()
     ret_a, ret_b = bar()
     assert ret_a == approx(1)
     assert ret_b.a[0] == approx(100)
@@ -244,7 +243,6 @@ def test_real_func_tuple_ret_typing_tuple():
     def bar() -> Tuple[ti.f32, s0]:
         return foo()
 
-    # bar()
     ret_a, ret_b = bar()
     assert ret_a == approx(1)
     assert ret_b.a[0] == approx(100)

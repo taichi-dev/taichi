@@ -1105,7 +1105,8 @@ class TaskCodegen : public IRVisitor {
     const auto bin_name = bin->raw_name();
     const auto op_type = bin->op_type;
     if (op_type == BinaryOpType::add) {
-      TI_INFO("performing add: lhs = {}, rhs = {}, bin_name = {}", lhs_name, rhs_name, bin_name);
+      TI_INFO("performing add: lhs = {}, rhs = {}, bin_name = {}", lhs_name,
+              rhs_name, bin_name);
     }
 
     spirv::SType dst_type = ir_->get_primitive_type(bin->element_type());

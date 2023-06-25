@@ -41,8 +41,8 @@ Once argument packs are created and initialized, they can be easily used as kern
 # @ti.kernel
 # def p(view_params: view_params_tmpl) -> ti.f32:
 #     return view_params.far
-# 
-# 
+#
+#
 # print(p(view_params))  # 1.0
 ```
 

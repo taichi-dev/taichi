@@ -568,7 +568,7 @@ class Kernel:
                     self.return_type = self.return_type.__args__
             if not isinstance(self.return_type, (list, tuple)):
                 self.return_type = (self.return_type,)
-            for i, return_type in enumerate(self.return_type):
+            for return_type in self.return_type:
                 if return_type is Ellipsis:
                     raise TaichiSyntaxError("Ellipsis is not supported in return type annotations")
         params = sig.parameters

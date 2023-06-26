@@ -83,3 +83,12 @@ def test_remove_is_is_not():
             ti.static(1 is 2)
 
         func()
+
+@pytest.mark.skipif(not _ti_core.GGUI_AVAILABLE, reason="GGUI Not Available")
+@test_utils.test()
+def test_deprecate_initialization_of_scene():
+    with pytest.warns(
+        DeprecationWarning,
+        match=r"Instantiating ti.ui.Scene directly is deprecated, use the get_scene\(\) function from a taichi.ui.Window object instead.",
+    ):
+        ti.ui.Scene()

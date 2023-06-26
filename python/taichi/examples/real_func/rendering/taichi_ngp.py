@@ -34,7 +34,7 @@ def depth2img(depth):
     return depth_img
 
 
-arch = ti.cuda if ti._lib.core.with_cuda() else ti.vulkan
+arch = ti.cuda
 
 if platform.system() == "Darwin":
     block_dim = 64

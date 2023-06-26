@@ -84,6 +84,7 @@ def test_remove_is_is_not():
 
         func()
 
+
 @pytest.mark.skipif(not _ti_core.GGUI_AVAILABLE, reason="GGUI Not Available")
 @test_utils.test()
 def test_deprecate_initialization_of_scene():

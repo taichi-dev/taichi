@@ -123,6 +123,7 @@ def test_geometry_2d():
     verify_image(window.get_image_buffer_as_numpy(), "test_geometry_2d", tolerance=0.05)
     window.destroy()
 
+
 @pytest.mark.skipif(not _ti_core.GGUI_AVAILABLE, reason="GGUI Not Available")
 @test_utils.test(arch=supported_archs)
 def test_geometry_3d():
@@ -239,6 +240,7 @@ def test_geometry_3d():
     render()
     verify_image(window.get_image_buffer_as_numpy(), "test_geometry_3d")
     window.destroy()
+
 
 @pytest.mark.skipif(not _ti_core.GGUI_AVAILABLE, reason="GGUI Not Available")
 @test_utils.test(arch=supported_archs)
@@ -357,6 +359,7 @@ def test_geometry_3d_old():
     verify_image(window.get_image_buffer_as_numpy(), "test_geometry_3d")
     window.destroy()
 
+
 @pytest.mark.skipif(not _ti_core.GGUI_AVAILABLE, reason="GGUI Not Available")
 @test_utils.test(arch=supported_archs)
 def test_draw_3d_lines():
@@ -412,6 +415,7 @@ def test_draw_3d_lines():
     render()
     verify_image(window.get_image_buffer_as_numpy(), "test_draw_3d_lines")
     window.destroy()
+
 
 @pytest.mark.skipif(not _ti_core.GGUI_AVAILABLE, reason="GGUI Not Available")
 @test_utils.test(arch=supported_archs)
@@ -592,6 +596,7 @@ def test_imgui():
 def test_exit_without_showing():
     window = ti.ui.Window("Taichi", (256, 256), show_window=False)
 
+
 @pytest.mark.skipif(not _ti_core.GGUI_AVAILABLE, reason="GGUI Not Available")
 @test_utils.test(arch=supported_archs)
 def test_get_camera_view_and_projection_matrix():
@@ -616,6 +621,7 @@ def test_get_camera_view_and_projection_matrix():
     assert abs(projection_matrix[2, 3] + 1.0000000) <= 1e-5
     assert abs(projection_matrix[3, 2] - 1.0001000e-1) <= 1e-5
     window.destroy()
+
 
 @pytest.mark.skipif(not _ti_core.GGUI_AVAILABLE, reason="GGUI Not Available")
 @test_utils.test(arch=supported_archs)
@@ -667,6 +673,7 @@ def test_fetching_color_attachment():
     render()
     verify_image(window.get_image_buffer_as_numpy(), "test_set_image")
     window.destroy()
+
 
 @pytest.mark.skipif(not _ti_core.GGUI_AVAILABLE, reason="GGUI Not Available")
 @test_utils.test(arch=supported_archs)
@@ -725,6 +732,7 @@ def test_fetching_depth_attachment_old():
     verify_image(window.get_depth_buffer_as_numpy(), "test_depth")
     window.destroy()
 
+
 @pytest.mark.parametrize("offset", [None, (0, 0), (-256, -256), (256, -256), (-256, 256), (256, 256), (23333, 233333)])
 @pytest.mark.skipif(not _ti_core.GGUI_AVAILABLE, reason="GGUI Not Available")
 @test_utils.test(arch=supported_archs)
@@ -757,6 +765,7 @@ def test_get_depth_buffer_with_offset(offset):
     verify_image(depth_buffer_field, "test_depth")
     window.destroy()
 
+
 @pytest.mark.parametrize("offset", [None, (0, 0), (-256, -256), (256, -256), (-256, 256), (256, 256), (23333, 233333)])
 @pytest.mark.skipif(not _ti_core.GGUI_AVAILABLE, reason="GGUI Not Available")
 @test_utils.test(arch=supported_archs)
@@ -788,6 +797,7 @@ def test_get_depth_buffer_with_offset_old(offset):
     window.get_depth_buffer(depth_buffer_field)
     verify_image(depth_buffer_field, "test_depth")
     window.destroy()
+
 
 @pytest.mark.skipif(not _ti_core.GGUI_AVAILABLE, reason="GGUI Not Available")
 @test_utils.test(arch=supported_archs)
@@ -828,6 +838,7 @@ def test_draw_lines():
     verify_image(window.get_image_buffer_as_numpy(), "test_draw_lines")
     window.destroy()
 
+
 @pytest.mark.skipif(not _ti_core.GGUI_AVAILABLE, reason="GGUI Not Available")
 @test_utils.test(arch=supported_archs)
 def test_draw_lines_old():
@@ -866,6 +877,7 @@ def test_draw_lines_old():
     render()
     verify_image(window.get_image_buffer_as_numpy(), "test_draw_lines")
     window.destroy()
+
 
 @pytest.mark.skipif(not _ti_core.GGUI_AVAILABLE, reason="GGUI Not Available")
 @test_utils.test(arch=supported_archs)
@@ -911,6 +923,7 @@ def test_draw_part_of_particles():
     verify_image(window.get_image_buffer_as_numpy(), "test_draw_part_of_particles")
     window.destroy()
 
+
 @pytest.mark.skipif(not _ti_core.GGUI_AVAILABLE, reason="GGUI Not Available")
 @test_utils.test(arch=supported_archs)
 def test_draw_part_of_particles_old():
@@ -954,6 +967,7 @@ def test_draw_part_of_particles_old():
     render()
     verify_image(window.get_image_buffer_as_numpy(), "test_draw_part_of_particles")
     window.destroy()
+
 
 @pytest.mark.skipif(not _ti_core.GGUI_AVAILABLE, reason="GGUI Not Available")
 @test_utils.test(arch=supported_archs)
@@ -1013,6 +1027,7 @@ def test_draw_part_of_particles_per_vertex_rad_and_col():
     verify_image(window.get_image_buffer_as_numpy(), "test_draw_part_of_particles_per_vertex_rad_and_col")
     window.destroy()
 
+
 @pytest.mark.skipif(not _ti_core.GGUI_AVAILABLE, reason="GGUI Not Available")
 @test_utils.test(arch=supported_archs)
 def test_draw_part_of_particles_per_vertex_rad_and_col_old():
@@ -1070,6 +1085,7 @@ def test_draw_part_of_particles_per_vertex_rad_and_col_old():
     render()
     verify_image(window.get_image_buffer_as_numpy(), "test_draw_part_of_particles_per_vertex_rad_and_col")
     window.destroy()
+
 
 @pytest.mark.skipif(not _ti_core.GGUI_AVAILABLE, reason="GGUI Not Available")
 @test_utils.test(arch=supported_archs)
@@ -1162,6 +1178,7 @@ def test_draw_part_of_mesh():
     verify_image(window.get_image_buffer_as_numpy(), "test_draw_part_of_mesh")
     window.destroy()
 
+
 @pytest.mark.skipif(not _ti_core.GGUI_AVAILABLE, reason="GGUI Not Available")
 @test_utils.test(arch=supported_archs)
 def test_draw_part_of_mesh_old():
@@ -1253,6 +1270,7 @@ def test_draw_part_of_mesh_old():
     verify_image(window.get_image_buffer_as_numpy(), "test_draw_part_of_mesh")
     window.destroy()
 
+
 @pytest.mark.skipif(not _ti_core.GGUI_AVAILABLE, reason="GGUI Not Available")
 @test_utils.test(arch=supported_archs, exclude=[(ti.vulkan, "Darwin")])
 def test_draw_part_of_lines():
@@ -1298,6 +1316,7 @@ def test_draw_part_of_lines():
     verify_image(window.get_image_buffer_as_numpy(), "test_draw_part_of_lines")
     window.destroy()
 
+
 @pytest.mark.skipif(not _ti_core.GGUI_AVAILABLE, reason="GGUI Not Available")
 @test_utils.test(arch=supported_archs, exclude=[(ti.vulkan, "Darwin")])
 def test_draw_part_of_lines_old():
@@ -1342,6 +1361,7 @@ def test_draw_part_of_lines_old():
     render()
     verify_image(window.get_image_buffer_as_numpy(), "test_draw_part_of_lines")
     window.destroy()
+
 
 @pytest.mark.skipif(not _ti_core.GGUI_AVAILABLE, reason="GGUI Not Available")
 @test_utils.test(arch=supported_archs)
@@ -1458,6 +1478,7 @@ def test_draw_mesh_instances():
     verify_image(window.get_image_buffer_as_numpy(), "test_draw_mesh_instances")
     window.destroy()
 
+
 @pytest.mark.skipif(not _ti_core.GGUI_AVAILABLE, reason="GGUI Not Available")
 @test_utils.test(arch=supported_archs)
 def test_draw_mesh_instances_old():
@@ -1573,6 +1594,7 @@ def test_draw_mesh_instances_old():
     verify_image(window.get_image_buffer_as_numpy(), "test_draw_mesh_instances")
     window.destroy()
 
+
 @pytest.mark.skipif(not _ti_core.GGUI_AVAILABLE, reason="GGUI Not Available")
 @test_utils.test(arch=supported_archs)
 def test_draw_part_of_mesh_instances():
@@ -1681,6 +1703,7 @@ def test_draw_part_of_mesh_instances():
     render()
     verify_image(window.get_image_buffer_as_numpy(), "test_draw_part_of_mesh_instances")
     window.destroy()
+
 
 @pytest.mark.skipif(not _ti_core.GGUI_AVAILABLE, reason="GGUI Not Available")
 @test_utils.test(arch=supported_archs)
@@ -1791,6 +1814,7 @@ def test_draw_part_of_mesh_instances_old():
     verify_image(window.get_image_buffer_as_numpy(), "test_draw_part_of_mesh_instances")
     window.destroy()
 
+
 @pytest.mark.skipif(not _ti_core.GGUI_AVAILABLE, reason="GGUI Not Available")
 @test_utils.test(arch=supported_archs)
 def test_wireframe_mode():
@@ -1880,6 +1904,7 @@ def test_wireframe_mode():
     render()
     verify_image(window.get_image_buffer_as_numpy(), "test_wireframe_mode")
     window.destroy()
+
 
 @pytest.mark.skipif(not _ti_core.GGUI_AVAILABLE, reason="GGUI Not Available")
 @test_utils.test(arch=supported_archs)

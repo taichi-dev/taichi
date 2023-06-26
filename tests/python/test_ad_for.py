@@ -991,3 +991,40 @@ def test_ib_global_load():
     compute.grad()
     for i in range(N):
         assert a.grad[i] == i
+
+
+@test_utils.test(require=ti.extension.adstack)
+def test_mutable_loop_index():
+    NUM = 5
+    x = ti.field(dtype=float)
+    y = ti.field(dtype=float)
+    ti.root.dense(ti.i, NUM).place(x, y)
+    loss = ti.field(dtype=float, shape=())
+    ti.root.lazy_grad()
+
+    @ti.kernel
+    def initialize():
+        for i in x:
+            x[i] = i
+            y[i] = 0
+        loss[None] = 0
+
+    @ti.kernel
+    def compute_loss():
+        for i in range(NUM):
+            l = 0.0
+            for j in range(i):
+                for k in range(j):
+                    l += x[j] * x[k]
+            y[i] = l
+
+        for i in range(NUM):
+            loss[None] += y[i]
+
+    initialize()
+    with ti.ad.Tape(loss=loss):
+        compute_loss()
+
+    refs = [10., 7., 5., 3., 0.]
+    for i in range(NUM):
+        assert x.grad[i] == refs[i]

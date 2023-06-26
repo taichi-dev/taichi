@@ -5,6 +5,8 @@ import operator
 import re
 import sys
 import textwrap
+import typing
+import types
 import warnings
 import weakref
 
@@ -72,7 +74,7 @@ def func(fn, is_real_function=False):
         >>> def run():
         >>>     print(foo(40))  # 42
     """
-    is_classfunc = _inside_class(level_of_class_stackframe=3)
+    is_classfunc = _inside_class(level_of_class_stackframe=3 + is_real_function)
 
     fun = Func(fn, _classfunc=is_classfunc, is_real_function=is_real_function)
 
@@ -136,13 +138,6 @@ def _get_tree_and_ctx(
     func_body.decorator_list = []
 
     global_vars = _get_global_vars(self.func)
-    for i, arg in enumerate(func_body.args.args):
-        anno = arg.annotation
-        if isinstance(anno, ast.Name):
-            global_vars[anno.id] = self.arguments[i].annotation
-
-    if isinstance(func_body.returns, ast.Name):
-        global_vars[func_body.returns.id] = self.return_type
 
     if is_kernel or is_real_function:
         # inject template parameters into globals
@@ -266,7 +261,7 @@ class Func:
                     non_template_args.append(args[i].ptr)
                 else:
                     non_template_args.append(args[i])
-        non_template_args = impl.make_expr_group(non_template_args, real_func_arg=True)
+        non_template_args = impl.make_expr_group(non_template_args)
         func_call = (
             impl.get_runtime()
             .compiling_callable.ast_builder()
@@ -275,13 +270,18 @@ class Func:
         if self.return_type is None:
             return None
         func_call = Expr(func_call)
-        if id(self.return_type) in primitive_types.type_ids:
-            return Expr(_ti_core.make_get_element_expr(func_call.ptr, (0,)))
-        if isinstance(self.return_type, StructType):
-            return self.return_type.from_taichi_object(func_call, (0,))
-        if isinstance(self.return_type, MatrixType):
-            return self.return_type.from_taichi_object(func_call, (0,))
-        raise TaichiTypeError(f"Unsupported return type: {self.return_type}")
+        ret = []
+
+        for i, return_type in enumerate(self.return_type):
+            if id(return_type) in primitive_types.type_ids:
+                ret.append(Expr(_ti_core.make_get_element_expr(func_call.ptr, (i,))))
+            elif isinstance(return_type, (StructType, MatrixType)):
+                ret.append(return_type.from_taichi_object(func_call, (i,)))
+            else:
+                raise TaichiTypeError(f"Unsupported return type for return value {i}: {return_type}")
+        if len(ret) == 1:
+            return ret[0]
+        return tuple(ret)
 
     def do_compile(self, key, args, arg_features):
         tree, ctx = _get_tree_and_ctx(
@@ -304,6 +304,20 @@ class Func:
         sig = inspect.signature(self.func)
         if sig.return_annotation not in (inspect.Signature.empty, None):
             self.return_type = sig.return_annotation
+            if sys.version_info >= (3, 9):
+                if (
+                    isinstance(self.return_type, (types.GenericAlias, typing._GenericAlias))
+                    and self.return_type.__origin__ is tuple
+                ):
+                    self.return_type = self.return_type.__args__
+            else:
+                if isinstance(self.return_type, typing._GenericAlias) and self.return_type.__origin__ is tuple:
+                    self.return_type = self.return_type.__args__
+            if not isinstance(self.return_type, (list, tuple)):
+                self.return_type = (self.return_type,)
+            for i, return_type in enumerate(self.return_type):
+                if return_type is Ellipsis:
+                    raise TaichiSyntaxError("Ellipsis is not supported in return type annotations")
         params = sig.parameters
         arg_names = params.keys()
         for i, arg_name in enumerate(arg_names):
@@ -543,6 +557,20 @@ class Kernel:
         sig = inspect.signature(self.func)
         if sig.return_annotation not in (inspect._empty, None):
             self.return_type = sig.return_annotation
+            if sys.version_info >= (3, 9):
+                if (
+                    isinstance(self.return_type, (types.GenericAlias, typing._GenericAlias))
+                    and self.return_type.__origin__ is tuple
+                ):
+                    self.return_type = self.return_type.__args__
+            else:
+                if isinstance(self.return_type, typing._GenericAlias) and self.return_type.__origin__ is tuple:
+                    self.return_type = self.return_type.__args__
+            if not isinstance(self.return_type, (list, tuple)):
+                self.return_type = (self.return_type,)
+            for return_type in self.return_type:
+                if return_type is Ellipsis:
+                    raise TaichiSyntaxError("Ellipsis is not supported in return type annotations")
         params = sig.parameters
         arg_names = params.keys()
         for i, arg_name in enumerate(arg_names):
@@ -872,7 +900,11 @@ class Kernel:
             runtime_ops.sync()
 
         if has_ret:
-            ret = self.construct_kernel_ret(launch_ctx, ret_dt, () if isinstance(ret_dt, tuple) else (0,))
+            ret = []
+            for i, ret_type in enumerate(ret_dt):
+                ret.append(self.construct_kernel_ret(launch_ctx, ret_type, (i,)))
+            if len(ret_dt) == 1:
+                ret = ret[0]
         if callbacks:
             for c in callbacks:
                 c()
@@ -880,8 +912,6 @@ class Kernel:
         return ret
 
     def construct_kernel_ret(self, launch_ctx, ret_type, index=()):
-        if isinstance(ret_type, tuple):
-            return [self.construct_kernel_ret(launch_ctx, ret_type[i], index + (i,)) for i in range(len(ret_type))]
         if isinstance(ret_type, CompoundType):
             return ret_type.from_kernel_struct_ret(launch_ctx, index)
         if ret_type in primitive_types.integer_types:

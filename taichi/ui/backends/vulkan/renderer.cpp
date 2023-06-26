@@ -63,27 +63,23 @@ void Renderer::circles(const CirclesInfo &info) {
   render_queue_.push_back(circles);
 }
 
-void Renderer::scene_lines(const SceneLinesInfo &info, SceneBase *scene) {
+void Renderer::scene_lines(const SceneLinesInfo &info) {
   SceneLines *scene_lines =
       get_renderable_of_type<SceneLines>(info.renderable_info.vbo_attrs);
   scene_lines->update_data(info);
-  scene_lines->update_scene_data(scene_ubo_->get_ptr(0));
   render_queue_.push_back(scene_lines);
 }
 
-void Renderer::mesh(const MeshInfo &info, SceneBase *scene) {
+void Renderer::mesh(const MeshInfo &info) {
   Mesh *mesh = get_renderable_of_type<Mesh>(info.renderable_info.vbo_attrs);
   mesh->update_data(info);
-  mesh->update_scene_data(lights_ssbo_->get_ptr(0), scene_ubo_->get_ptr(0));
   render_queue_.push_back(mesh);
 }
 
-void Renderer::particles(const ParticlesInfo &info, SceneBase *scene) {
+void Renderer::particles(const ParticlesInfo &info) {
   Particles *particles =
       get_renderable_of_type<Particles>(info.renderable_info.vbo_attrs);
   particles->update_data(info);
-  particles->update_scene_data(lights_ssbo_->get_ptr(0),
-                               scene_ubo_->get_ptr(0));
   render_queue_.push_back(particles);
 }
 
@@ -142,6 +138,24 @@ void Renderer::update_scene_data(SceneBase *scene) {
   }
 }
 
+void Renderer::scene_v2(SceneBase *scene) {
+  if (scene->point_lights_.size() == 0) {
+    TI_WARN("warning, there are no light sources in the scene.\n");
+  }
+  float aspect_ratio = swap_chain_.width() / (float)swap_chain_.height();
+  scene->update_ubo(aspect_ratio);
+  update_scene_data(scene);
+
+  for (auto renderable_ : render_queue_) {
+    if (renderable_->is_3d_renderable) {
+      renderable_->update_scene_data(lights_ssbo_->get_ptr(0),
+                                     scene_ubo_->get_ptr(0));
+    }
+  }
+
+  scene->point_lights_.clear();
+}
+
 void Renderer::scene(SceneBase *scene) {
   if (scene->point_lights_.size() == 0) {
     TI_WARN("warning, there are no light sources in the scene.\n");
@@ -159,18 +173,18 @@ void Renderer::scene(SceneBase *scene) {
   for (int i = 0; i < object_count; ++i) {
     if (mesh_id < scene->mesh_infos_.size() &&
         scene->mesh_infos_[mesh_id].object_id == i) {
-      mesh(scene->mesh_infos_[mesh_id], scene);
+      mesh(scene->mesh_infos_[mesh_id]);
       ++mesh_id;
     }
     if (particles_id < scene->particles_infos_.size() &&
         scene->particles_infos_[particles_id].object_id == i) {
-      particles(scene->particles_infos_[particles_id], scene);
+      particles(scene->particles_infos_[particles_id]);
       ++particles_id;
     }
     // Scene Lines
     if (scene_lines_id < scene->scene_lines_infos_.size() &&
         scene->scene_lines_infos_[scene_lines_id].object_id == i) {
-      scene_lines(scene->scene_lines_infos_[scene_lines_id], scene);
+      scene_lines(scene->scene_lines_infos_[scene_lines_id]);
       ++scene_lines_id;
     }
   }
@@ -179,6 +193,13 @@ void Renderer::scene(SceneBase *scene) {
   scene->particles_infos_.clear();
   scene->scene_lines_infos_.clear();
   scene->point_lights_.clear();
+
+  for (auto renderable_ : render_queue_) {
+    if (renderable_->is_3d_renderable) {
+      renderable_->update_scene_data(lights_ssbo_->get_ptr(0),
+                                     scene_ubo_->get_ptr(0));
+    }
+  }
 }
 
 Renderer::~Renderer() {

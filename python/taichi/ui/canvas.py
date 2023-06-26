@@ -1,6 +1,7 @@
 from taichi._lib import core as _ti_core
 from taichi.lang import impl
 from taichi.lang._texture import Texture
+from .scene import SceneV2
 
 from .staging_buffer import copy_all_to_vbo, copy_all_to_vbo_particle, get_indices_field, get_vbo_field, to_rgba8
 from .utils import get_field_info
@@ -240,4 +241,7 @@ class Canvas:
         """
         # FIXME: (penguinliong) Add a point light to ensure the allocation of light source SSBO.
         scene.point_light((0.0, 0.0, 0.0), (0.0, 0.0, 0.0))
-        self.canvas.scene(scene.scene)
+        if isinstance(scene, SceneV2):
+            self.canvas.scene_v2(scene.scene)  # pass in PySceneV2
+        else:
+            self.canvas.scene(scene.scene)  # pass in PyScene

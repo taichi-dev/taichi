@@ -31,7 +31,7 @@ class Particles final : public Renderable {
 
   void update_data(const ParticlesInfo &info);
 
-  void update_scene_data(DevicePtr ssbo_ptr, DevicePtr ubo_ptr);
+  void update_scene_data(DevicePtr ssbo_ptr, DevicePtr ubo_ptr) override;
 
   void record_this_frame_commands(lang::CommandList *command_list) override;
 

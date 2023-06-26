@@ -74,7 +74,7 @@ def func(fn, is_real_function=False):
         >>> def run():
         >>>     print(foo(40))  # 42
     """
-    is_classfunc = _inside_class(level_of_class_stackframe=3)
+    is_classfunc = _inside_class(level_of_class_stackframe=3 + is_real_function)
 
     fun = Func(fn, _classfunc=is_classfunc, is_real_function=is_real_function)
 

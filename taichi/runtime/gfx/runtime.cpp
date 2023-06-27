@@ -65,13 +65,14 @@ class HostDeviceContextBlitter {
                 LaunchContextBuilder::DevAllocType::kNone &&
             ext_arr_size.at(indices)) {
           // Only need to blit ext arrs (host array)
-          uint32_t access = 0;
-          for (const auto &acc : ctx_attribs_->arr_access) {
-            if (acc.first == indices) {
-              access = static_cast<uint32_t>(acc.second);
-              break;
-            }
-          }
+          auto access_it = std::find_if(
+              ctx_attribs_->arr_access.begin(),
+              ctx_attribs_->arr_access.end(),
+              [indices](const auto& pair) -> bool {
+            return pair.first == indices;
+          });
+          TI_ASSERT(access_it != ctx_attribs_->arr_access.end());
+          uint32_t access = uint32_t(access_it->second);
           if (access & uint32_t(irpass::ExternalPtrAccess::READ)) {
             DeviceAllocation buffer = ext_arrays.at(indices);
             void *device_arr_ptr{nullptr};
@@ -134,13 +135,14 @@ class HostDeviceContextBlitter {
           host_ctx_.device_allocation_type[indices] ==
               LaunchContextBuilder::DevAllocType::kNone &&
           ext_arr_size.at(indices)) {
-        uint32_t access = 0;
-        for (const auto &acc : ctx_attribs_->arr_access) {
-          if (acc.first == indices) {
-            access = static_cast<uint32_t>(acc.second);
-            break;
-          }
-        }
+        auto access_it = std::find_if(
+            ctx_attribs_->arr_access.begin(),
+            ctx_attribs_->arr_access.end(),
+            [indices](const auto& pair) -> bool {
+              return pair.first == indices;
+            });
+        TI_ASSERT(access_it != ctx_attribs_->arr_access.end());
+        uint32_t access = uint32_t(access_it->second);
         if (access & uint32_t(irpass::ExternalPtrAccess::WRITE)) {
           // Only need to blit ext arrs (host array)
           readback_dev_ptrs.push_back(ext_arrays.at(indices).get_ptr(0));
@@ -449,14 +451,14 @@ void GfxRuntime::launch_kernel(KernelHandle handle,
           }
         } else {
           ext_array_size[indices] = host_ctx.array_runtime_sizes[indices];
-          uint32_t access = 0;
-          for (const auto &acc :
-               ti_kernel->ti_kernel_attribs().ctx_attribs.arr_access) {
-            if (acc.first == indices) {
-              access = uint32_t(acc.second);
-              break;
-            }
-          }
+          auto arr_access = ti_kernel->ti_kernel_attribs().ctx_attribs.arr_access;
+          auto access_it = std::find_if(
+              arr_access.begin(), arr_access.end(),
+              [indices](const auto& pair) -> bool {
+                return pair.first == indices;
+              });
+          TI_ASSERT(access_it != arr_access.end());
+          uint32_t access = uint32_t(access_it->second);
           // Alloc ext arr
           size_t alloc_size = std::max(size_t(32), ext_array_size.at(indices));
           bool host_write = access & uint32_t(irpass::ExternalPtrAccess::READ);

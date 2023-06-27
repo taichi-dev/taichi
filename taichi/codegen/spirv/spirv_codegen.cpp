@@ -756,7 +756,6 @@ class TaskCodegen : public IRVisitor {
     if (caps_->get(DeviceCapability::spirv_has_physical_storage_buffer)) {
       std::vector<int> indices = arg_id;
       indices.push_back(1);
-
       spirv::Value addr_ptr = ir_->make_access_chain(
           ir_->get_pointer_type(ir_->u64_type(), spv::StorageClassUniform),
           get_buffer_value(BufferType::Args, PrimitiveType::i32), indices);

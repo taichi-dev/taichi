@@ -239,7 +239,7 @@ class KernelContextAttributes {
       }
     }
     TI_ERROR(fmt::format(
-        "Unexpected bug: ArgAttributes with indices ({}) not found.",
+        "Unexpected error: ArgAttributes with indices ({}) not found.",
         fmt::join(indices, ", ")));
     return arg_attribs_vec_[0].second;
   }

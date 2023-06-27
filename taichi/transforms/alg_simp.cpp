@@ -10,6 +10,8 @@ namespace taichi::lang {
 
 // Algebraic Simplification and Strength Reduction
 class AlgSimp : public BasicStmtVisitor {
+  static constexpr int max_weaken_exponent = 32;
+
  private:
   void cast_to_result_type(Stmt *&a, Stmt *stmt) {
     if (stmt->ret_type != a->ret_type) {
@@ -22,23 +24,271 @@ class AlgSimp : public BasicStmtVisitor {
   }
 
   void replace_with_zero(Stmt *stmt) {
-    auto zero = Stmt::make<ConstStmt>(TypedConstant(stmt->ret_type));
-    stmt->replace_usages_with(zero.get());
-    modifier.insert_before(stmt, std::move(zero));
+    auto stmts = get_const_stmt_with_value(stmt->ret_type, 0);
+    auto zero = stmts.back().get();
+
+    for (auto &s : stmts) {
+      modifier.insert_before(stmt, std::move(s));
+    }
+    stmt->replace_usages_with(zero);
     modifier.erase(stmt);
   }
 
   void replace_with_one(Stmt *stmt) {
-    auto one = Stmt::make<ConstStmt>(TypedConstant(1));
-    auto one_raw = one.get();
-    modifier.insert_before(stmt, std::move(one));
-    cast_to_result_type(one_raw, stmt);
-    stmt->replace_usages_with(one_raw);
+    auto stmts = get_const_stmt_with_value(stmt->ret_type, 1);
+    auto one = stmts.back().get();
+
+    for (auto &s : stmts) {
+      modifier.insert_before(stmt, std::move(s));
+    }
+    stmt->replace_usages_with(one);
     modifier.erase(stmt);
   }
 
+  std::vector<float64> get_exponent_values(BinaryOpStmt *stmt) {
+    std::vector<float64> rets;
+    if (stmt->rhs->is<ConstStmt>()) {
+      rets.push_back(stmt->rhs->as<ConstStmt>()->val.val_cast_to_float64());
+      return rets;
+    } else if (stmt->rhs->is<MatrixInitStmt>()) {
+      auto matrix_init = stmt->rhs->as<MatrixInitStmt>();
+      for (auto &value : matrix_init->values) {
+        if (value->is<ConstStmt>()) {
+          rets.push_back(value->as<ConstStmt>()->val.val_cast_to_float64());
+        } else {
+          return {};
+        }
+      }
+      return rets;
+    }
+    return {};
+  }
+
+  Stmt *get_inverse(BinaryOpStmt *stmt) {
+    auto rhs = stmt->rhs;
+    if (rhs->is<ConstStmt>()) {
+      auto reciprocal =
+          Stmt::make_typed<ConstStmt>(TypedConstant(rhs->ret_type));
+      if (rhs->ret_type->is_primitive(PrimitiveTypeID::f64)) {
+        reciprocal->val.val_float64() =
+            (float64)1.0 / rhs->as<ConstStmt>()->val.val_float64();
+      } else if (rhs->ret_type->is_primitive(PrimitiveTypeID::f32)) {
+        reciprocal->val.val_float32() =
+            (float32)1.0 / rhs->as<ConstStmt>()->val.val_float32();
+      } else {
+        TI_NOT_IMPLEMENTED
+      }
+      Stmt *reciprocal_ptr = reciprocal.get();
+      modifier.insert_before(stmt, std::move(reciprocal));
+      return reciprocal_ptr;
+    } else {
+      auto matrix_rhs = rhs->cast<MatrixInitStmt>();
+      TI_ASSERT(matrix_rhs != nullptr);
+      std::vector<Stmt *> values;
+      for (auto scalar_stmt : matrix_rhs->values) {
+        auto const_stmt = scalar_stmt->cast<ConstStmt>();
+        TI_ASSERT(const_stmt != nullptr);
+        auto reciprocal =
+            Stmt::make_typed<ConstStmt>(TypedConstant(scalar_stmt->ret_type));
+        if (scalar_stmt->ret_type->is_primitive(PrimitiveTypeID::f64)) {
+          reciprocal->val.val_float64() =
+              (float64)1.0 / const_stmt->val.val_float64();
+        } else if (scalar_stmt->ret_type->is_primitive(PrimitiveTypeID::f32)) {
+          reciprocal->val.val_float32() =
+              (float32)1.0 / const_stmt->val.val_float32();
+        } else {
+          TI_NOT_IMPLEMENTED
+        }
+        values.push_back(reciprocal.get());
+        modifier.insert_before(stmt, std::move(reciprocal));
+      }
+      auto new_rhs = Stmt::make<MatrixInitStmt>(values);
+      new_rhs->ret_type = rhs->ret_type;
+
+      Stmt *new_rhs_ptr = new_rhs.get();
+      modifier.insert_before(stmt, std::move(new_rhs));
+      return new_rhs_ptr;
+    }
+  }
+
+  Stmt *get_log2rhs(BinaryOpStmt *stmt) {
+    auto rhs = stmt->rhs;
+    if (auto const_rhs = stmt->rhs->cast<ConstStmt>()) {
+      int log2rhs =
+          bit::log2int((uint64)rhs->as<ConstStmt>()->val.val_as_int64());
+      auto new_rhs =
+          Stmt::make<ConstStmt>(TypedConstant(stmt->lhs->ret_type, log2rhs));
+      Stmt *new_rhs_ptr = new_rhs.get();
+      modifier.insert_before(stmt, std::move(new_rhs));
+      return new_rhs_ptr;
+    } else {
+      auto matrix_rhs = rhs->cast<MatrixInitStmt>();
+      TI_ASSERT(matrix_rhs != nullptr);
+
+      std::vector<Stmt *> values;
+      for (auto scalar_stmt : matrix_rhs->values) {
+        auto const_stmt = scalar_stmt->cast<ConstStmt>();
+        TI_ASSERT(const_stmt != nullptr);
+        int log2int = bit::log2int((uint64)const_stmt->val.val_as_int64());
+        auto log2int_stmt = Stmt::make<ConstStmt>(
+            TypedConstant(scalar_stmt->ret_type, log2int));
+
+        values.push_back(log2int_stmt.get());
+        modifier.insert_before(stmt, std::move(log2int_stmt));
+      }
+
+      auto new_rhs = Stmt::make<MatrixInitStmt>(values);
+      new_rhs->ret_type = rhs->ret_type;
+
+      Stmt *new_rhs_ptr = new_rhs.get();
+      modifier.insert_before(stmt, std::move(new_rhs));
+      return new_rhs_ptr;
+    }
+  }
+
+  bool exponent_one_optimize(BinaryOpStmt *stmt) {
+    auto exponents = get_exponent_values(stmt);
+    if (exponents.empty()) {
+      return false;
+    }
+
+    for (auto exponent : exponents) {
+      if (exponent != 1) {
+        return false;
+      }
+    }
+
+    stmt->replace_usages_with(stmt->lhs);
+    modifier.erase(stmt);
+    return true;
+  }
+
+  bool exponent_zero_optimize(BinaryOpStmt *stmt) {
+    auto exponents = get_exponent_values(stmt);
+    if (exponents.empty()) {
+      return false;
+    }
+
+    for (auto exponent : exponents) {
+      if (exponent != 0) {
+        return false;
+      }
+    }
+
+    replace_with_one(stmt);
+    return true;
+  }
+
+  bool exponent_half_optimize(BinaryOpStmt *stmt) {
+    auto exponents = get_exponent_values(stmt);
+    if (exponents.empty()) {
+      return false;
+    }
+
+    for (auto exponent : exponents) {
+      if (exponent != 0.5) {
+        return false;
+      }
+    }
+    auto a = stmt->lhs;
+    cast_to_result_type(a, stmt);
+    auto result = Stmt::make<UnaryOpStmt>(UnaryOpType::sqrt, a);
+    result->ret_type = a->ret_type;
+    stmt->replace_usages_with(result.get());
+    modifier.insert_before(stmt, std::move(result));
+    modifier.erase(stmt);
+    return true;
+  }
+
+  bool exponent_n_optimize(BinaryOpStmt *stmt) {
+    auto exponents = get_exponent_values(stmt);
+    if (exponents.empty()) {
+      return false;
+    }
+
+    // Equal exponents
+    for (auto exponent : exponents) {
+      if (exponent != exponents[0]) {
+        return false;
+      }
+    }
+
+    float64 exponent = exponents[0];
+
+    // a ** n -> Exponentiation by squaring
+    auto a = stmt->lhs;
+    cast_to_result_type(a, stmt);
+    const int exp = exponent;
+    Stmt *result = nullptr;
+    auto a_power_of_2 = a;
+    int current_exponent = 1;
+    while (true) {
+      if (exp & current_exponent) {
+        if (!result)
+          result = a_power_of_2;
+        else {
+          auto new_result =
+              Stmt::make<BinaryOpStmt>(BinaryOpType::mul, result, a_power_of_2);
+          new_result->ret_type = a->ret_type;
+          result = new_result.get();
+          modifier.insert_before(stmt, std::move(new_result));
+        }
+      }
+      current_exponent <<= 1;
+      if (current_exponent > exp)
+        break;
+      auto new_a_power = Stmt::make<BinaryOpStmt>(BinaryOpType::mul,
+                                                  a_power_of_2, a_power_of_2);
+      new_a_power->ret_type = a->ret_type;
+      a_power_of_2 = new_a_power.get();
+      modifier.insert_before(stmt, std::move(new_a_power));
+    }
+    stmt->replace_usages_with(result);
+    modifier.erase(stmt);
+    return true;
+  }
+
+  bool exponent_negative_optimize(BinaryOpStmt *stmt) {
+    auto exponents = get_exponent_values(stmt);
+    if (exponents.empty()) {
+      return false;
+    }
+
+    // All negative exponent
+    for (auto exponent : exponents) {
+      if (!(exponent == std::round(exponent) && exponent < 0 &&
+            exponent >= -max_weaken_exponent)) {
+        return false;
+      }
+    }
+
+    if (is_integral(stmt->lhs->ret_type.get_element_type())) {
+      TI_ERROR("Negative exponent in pow(int, int) is not allowed.");
+    }
+
+    auto stmts = get_const_stmt_with_value(stmt->ret_type, 1);
+    auto one = stmts.back().get();
+
+    for (auto &s : stmts) {
+      modifier.insert_before(stmt, std::move(s));
+    }
+
+    cast_to_result_type(one, stmt);
+    auto new_exponent = Stmt::make<UnaryOpStmt>(UnaryOpType::neg, stmt->rhs);
+    auto a_to_n = Stmt::make<BinaryOpStmt>(BinaryOpType::pow, stmt->lhs,
+                                           new_exponent.get());
+    a_to_n->ret_type = stmt->ret_type;
+    auto result =
+        Stmt::make<BinaryOpStmt>(BinaryOpType::div, one, a_to_n.get());
+    stmt->replace_usages_with(result.get());
+    modifier.insert_before(stmt, std::move(new_exponent));
+    modifier.insert_before(stmt, std::move(a_to_n));
+    modifier.insert_before(stmt, std::move(result));
+    modifier.erase(stmt);
+    return true;
+  }
+
  public:
-  static constexpr int max_weaken_exponent = 32;
   using BasicStmtVisitor::visit;
   bool fast_math;
   DelayedIRModifier modifier;
@@ -100,8 +350,8 @@ class AlgSimp : public BasicStmtVisitor {
 
   bool optimize_multiplication(BinaryOpStmt *stmt) {
     // return true iff the IR is modified
-    auto lhs = stmt->lhs->cast<ConstStmt>();
-    auto rhs = stmt->rhs->cast<ConstStmt>();
+    auto lhs = stmt->lhs;
+    auto rhs = stmt->rhs;
     TI_ASSERT(stmt->op_type == BinaryOpType::mul);
     if (alg_is_one(lhs) || alg_is_one(rhs)) {
       // 1 * a -> a, a * 1 -> a
@@ -109,27 +359,27 @@ class AlgSimp : public BasicStmtVisitor {
       modifier.erase(stmt);
       return true;
     }
-    if ((fast_math || is_integral(stmt->ret_type)) &&
+    if ((fast_math || is_integral(stmt->ret_type.get_element_type())) &&
         (alg_is_zero(lhs) || alg_is_zero(rhs))) {
       // fast_math or integral operands: 0 * a -> 0, a * 0 -> 0
       replace_with_zero(stmt);
       return true;
     }
-    if (is_integral(stmt->ret_type) && (alg_is_pot(lhs) || alg_is_pot(rhs))) {
+    if (is_integral(stmt->ret_type.get_element_type()) &&
+        (alg_is_pot(lhs) || alg_is_pot(rhs))) {
       // a * pot -> a << log2(pot)
       if (alg_is_pot(lhs)) {
         std::swap(stmt->lhs, stmt->rhs);
         std::swap(lhs, rhs);
       }
-      int log2rhs = bit::log2int((uint64)rhs->val.val_as_int64());
-      auto new_rhs =
-          Stmt::make<ConstStmt>(TypedConstant(stmt->lhs->ret_type, log2rhs));
-      auto result = Stmt::make<BinaryOpStmt>(BinaryOpType::bit_shl, stmt->lhs,
-                                             new_rhs.get());
+
+      Stmt *new_rhs = get_log2rhs(stmt);
+      auto result =
+          Stmt::make<BinaryOpStmt>(BinaryOpType::bit_shl, stmt->lhs, new_rhs);
       result->ret_type = stmt->ret_type;
+
       result->set_tb(stmt->tb);
       stmt->replace_usages_with(result.get());
-      modifier.insert_before(stmt, std::move(new_rhs));
       modifier.insert_before(stmt, std::move(result));
       modifier.erase(stmt);
       return true;
@@ -153,58 +403,50 @@ class AlgSimp : public BasicStmtVisitor {
 
   bool optimize_division(BinaryOpStmt *stmt) {
     // return true iff the IR is modified
-    auto rhs = stmt->rhs->cast<ConstStmt>();
+    auto rhs = stmt->rhs;
     TI_ASSERT(stmt->op_type == BinaryOpType::div ||
               stmt->op_type == BinaryOpType::floordiv);
-    if (alg_is_one(rhs) && !(is_real(stmt->lhs->ret_type) &&
+    if (alg_is_one(rhs) && !(is_real(stmt->lhs->ret_type.get_element_type()) &&
                              stmt->op_type == BinaryOpType::floordiv)) {
       // a / 1 -> a
       stmt->replace_usages_with(stmt->lhs);
       modifier.erase(stmt);
       return true;
     }
-    if ((fast_math || is_integral(stmt->ret_type)) &&
+    if ((fast_math || is_integral(stmt->ret_type.get_element_type())) &&
         irpass::analysis::same_value(stmt->lhs, stmt->rhs)) {
       // fast_math or integral operands: a / a -> 1
       replace_with_one(stmt);
       return true;
     }
-    if (fast_math && rhs && is_real(rhs->ret_type) &&
+    if (fast_math && alg_is_optimizable(rhs) &&
+        is_real(rhs->ret_type.get_element_type()) &&
         stmt->op_type != BinaryOpType::floordiv) {
       if (alg_is_zero(rhs)) {
         TI_WARN("Potential division by 0\n{}", stmt->tb);
       } else {
         // a / const -> a * (1 / const)
-        auto reciprocal =
-            Stmt::make_typed<ConstStmt>(TypedConstant(rhs->ret_type));
-        if (rhs->ret_type->is_primitive(PrimitiveTypeID::f64)) {
-          reciprocal->val.val_float64() = (float64)1.0 / rhs->val.val_float64();
-        } else if (rhs->ret_type->is_primitive(PrimitiveTypeID::f32)) {
-          reciprocal->val.val_float32() = (float32)1.0 / rhs->val.val_float32();
-        } else {
-          TI_NOT_IMPLEMENTED
-        }
-        auto product = Stmt::make<BinaryOpStmt>(BinaryOpType::mul, stmt->lhs,
-                                                reciprocal.get());
+        Stmt *new_rhs = get_inverse(stmt);
+
+        auto product =
+            Stmt::make<BinaryOpStmt>(BinaryOpType::mul, stmt->lhs, new_rhs);
         product->ret_type = stmt->ret_type;
         stmt->replace_usages_with(product.get());
-        modifier.insert_before(stmt, std::move(reciprocal));
         modifier.insert_before(stmt, std::move(product));
         modifier.erase(stmt);
         return true;
       }
     }
-    if (is_integral(stmt->lhs->ret_type) && is_unsigned(stmt->lhs->ret_type) &&
+    if (is_integral(stmt->lhs->ret_type.get_element_type()) &&
+        is_unsigned(stmt->lhs->ret_type.get_element_type()) &&
         alg_is_pot(rhs)) {
       // (unsigned)a / pot -> a >> log2(pot)
-      int log2rhs = bit::log2int((uint64)rhs->val.val_as_int64());
-      auto new_rhs =
-          Stmt::make<ConstStmt>(TypedConstant(stmt->lhs->ret_type, log2rhs));
-      auto result = Stmt::make<BinaryOpStmt>(BinaryOpType::bit_sar, stmt->lhs,
-                                             new_rhs.get());
+
+      Stmt *new_rhs = get_log2rhs(stmt);
+      auto result =
+          Stmt::make<BinaryOpStmt>(BinaryOpType::bit_sar, stmt->lhs, new_rhs);
       result->ret_type = stmt->ret_type;
       stmt->replace_usages_with(result.get());
-      modifier.insert_before(stmt, std::move(new_rhs));
       modifier.insert_before(stmt, std::move(result));
       modifier.erase(stmt);
       return true;
@@ -213,13 +455,8 @@ class AlgSimp : public BasicStmtVisitor {
   }
 
   void visit(BinaryOpStmt *stmt) override {
-    if (stmt->lhs->ret_type->is<TensorType>() ||
-        stmt->rhs->ret_type->is<TensorType>()) {
-      // TODO: support tensor type
-      return;
-    }
-    auto lhs = stmt->lhs->cast<ConstStmt>();
-    auto rhs = stmt->rhs->cast<ConstStmt>();
+    auto lhs = stmt->lhs;
+    auto rhs = stmt->rhs;
     if (stmt->op_type == BinaryOpType::mul) {
       optimize_multiplication(stmt);
     } else if (stmt->op_type == BinaryOpType::div ||
@@ -244,82 +481,23 @@ class AlgSimp : public BasicStmtVisitor {
         modifier.erase(stmt);
       } else if ((stmt->op_type == BinaryOpType::sub ||
                   stmt->op_type == BinaryOpType::bit_xor) &&
-                 (fast_math || is_integral(stmt->ret_type)) &&
+                 (fast_math ||
+                  is_integral(stmt->ret_type.get_element_type())) &&
                  irpass::analysis::same_value(stmt->lhs, stmt->rhs)) {
         // fast_math or integral operands: a -^ a -> 0
         replace_with_zero(stmt);
       }
-    } else if (rhs && stmt->op_type == BinaryOpType::pow) {
-      float64 exponent = rhs->val.val_cast_to_float64();
-      if (exponent == 1) {
+    } else if (stmt->op_type == BinaryOpType::pow) {
+      if (exponent_one_optimize(stmt)) {
         // a ** 1 -> a
-        stmt->replace_usages_with(stmt->lhs);
-        modifier.erase(stmt);
-      } else if (exponent == 0) {
+      } else if (exponent_zero_optimize(stmt)) {
         // a ** 0 -> 1
-        replace_with_one(stmt);
-      } else if (exponent == 0.5) {
+      } else if (exponent_half_optimize(stmt)) {
         // a ** 0.5 -> sqrt(a)
-        auto a = stmt->lhs;
-        cast_to_result_type(a, stmt);
-        auto result = Stmt::make<UnaryOpStmt>(UnaryOpType::sqrt, a);
-        result->ret_type = a->ret_type;
-        stmt->replace_usages_with(result.get());
-        modifier.insert_before(stmt, std::move(result));
-        modifier.erase(stmt);
-      } else if (exponent == std::round(exponent) && exponent > 0 &&
-                 exponent <= max_weaken_exponent) {
+      } else if (exponent_n_optimize(stmt)) {
         // a ** n -> Exponentiation by squaring
-        auto a = stmt->lhs;
-        cast_to_result_type(a, stmt);
-        const int exp = exponent;
-        Stmt *result = nullptr;
-        auto a_power_of_2 = a;
-        int current_exponent = 1;
-        while (true) {
-          if (exp & current_exponent) {
-            if (!result)
-              result = a_power_of_2;
-            else {
-              auto new_result = Stmt::make<BinaryOpStmt>(BinaryOpType::mul,
-                                                         result, a_power_of_2);
-              new_result->ret_type = a->ret_type;
-              result = new_result.get();
-              modifier.insert_before(stmt, std::move(new_result));
-            }
-          }
-          current_exponent <<= 1;
-          if (current_exponent > exp)
-            break;
-          auto new_a_power = Stmt::make<BinaryOpStmt>(
-              BinaryOpType::mul, a_power_of_2, a_power_of_2);
-          new_a_power->ret_type = a->ret_type;
-          a_power_of_2 = new_a_power.get();
-          modifier.insert_before(stmt, std::move(new_a_power));
-        }
-        stmt->replace_usages_with(result);
-        modifier.erase(stmt);
-      } else if (exponent == std::round(exponent) && exponent < 0 &&
-                 exponent >= -max_weaken_exponent) {
+      } else if (exponent_negative_optimize(stmt)) {
         // a ** -n -> 1 / a ** n
-        if (is_integral(stmt->lhs->ret_type)) {
-          TI_ERROR("Negative exponent in pow(int, int) is not allowed.");
-        }
-        auto one = Stmt::make<ConstStmt>(TypedConstant(1));
-        auto one_raw = one.get();
-        modifier.insert_before(stmt, std::move(one));
-        cast_to_result_type(one_raw, stmt);
-        auto new_exponent = Stmt::make<UnaryOpStmt>(UnaryOpType::neg, rhs);
-        auto a_to_n = Stmt::make<BinaryOpStmt>(BinaryOpType::pow, stmt->lhs,
-                                               new_exponent.get());
-        a_to_n->ret_type = stmt->ret_type;
-        auto result =
-            Stmt::make<BinaryOpStmt>(BinaryOpType::div, one_raw, a_to_n.get());
-        stmt->replace_usages_with(result.get());
-        modifier.insert_before(stmt, std::move(new_exponent));
-        modifier.insert_before(stmt, std::move(a_to_n));
-        modifier.insert_before(stmt, std::move(result));
-        modifier.erase(stmt);
       }
     } else if (stmt->op_type == BinaryOpType::bit_and) {
       if (alg_is_minus_one(rhs)) {
@@ -351,7 +529,7 @@ class AlgSimp : public BasicStmtVisitor {
         modifier.erase(stmt);
       }
     } else if (is_comparison(stmt->op_type)) {
-      if ((fast_math || is_integral(stmt->lhs->ret_type)) &&
+      if ((fast_math || is_integral(stmt->lhs->ret_type.get_element_type())) &&
           irpass::analysis::same_value(stmt->lhs, stmt->rhs)) {
         // fast_math or integral operands: a == a -> 1, a != a -> 0
         if (stmt->op_type == BinaryOpType::cmp_eq ||
@@ -389,40 +567,107 @@ class AlgSimp : public BasicStmtVisitor {
     }
   }
 
-  static bool alg_is_zero(ConstStmt *stmt) {
+  static bool alg_is_zero(Stmt *stmt) {
     if (!stmt)
       return false;
-    return stmt->val.equal_value(0);
-  }
-
-  static bool alg_is_one(ConstStmt *stmt) {
-    if (!stmt)
-      return false;
-    return stmt->val.equal_value(1);
-  }
-
-  static bool alg_is_two(ConstStmt *stmt) {
-    if (!stmt)
-      return false;
-    return stmt->val.equal_value(2);
-  }
-
-  static bool alg_is_minus_one(ConstStmt *stmt) {
-    if (!stmt)
-      return false;
-    return stmt->val.equal_value(-1);
-  }
-
-  static bool alg_is_pot(ConstStmt *stmt) {
-    if (!stmt)
-      return false;
-    if (!is_integral(stmt->val.dt))
-      return false;
-    if (is_signed(stmt->val.dt)) {
-      return bit::is_power_of_two(stmt->val.val_int());
-    } else {
-      return bit::is_power_of_two(stmt->val.val_uint());
+    if (auto const_stmt = stmt->cast<ConstStmt>()) {
+      return const_stmt->val.equal_value(0);
+    } else if (auto matrix_stmt = stmt->cast<MatrixInitStmt>()) {
+      for (auto &val : matrix_stmt->values) {
+        if (!alg_is_zero(val)) {
+          return false;
+        }
+      }
+      return true;
     }
+    return false;
+  }
+
+  static bool alg_is_optimizable(Stmt *stmt) {
+    if (!stmt)
+      return false;
+    if (auto const_stmt = stmt->cast<ConstStmt>()) {
+      return true;
+    } else if (auto matrix_stmt = stmt->cast<MatrixInitStmt>()) {
+      for (auto &val : matrix_stmt->values) {
+        if (!alg_is_optimizable(val)) {
+          return false;
+        }
+      }
+      return true;
+    }
+    return false;
+  }
+
+  static bool alg_is_one(Stmt *stmt) {
+    if (!stmt)
+      return false;
+    if (auto const_stmt = stmt->cast<ConstStmt>()) {
+      return const_stmt->val.equal_value(1);
+    } else if (auto matrix_stmt = stmt->cast<MatrixInitStmt>()) {
+      for (auto &val : matrix_stmt->values) {
+        if (!alg_is_one(val)) {
+          return false;
+        }
+      }
+      return true;
+    }
+    return false;
+  }
+
+  static bool alg_is_two(Stmt *stmt) {
+    if (!stmt)
+      return false;
+    if (auto const_stmt = stmt->cast<ConstStmt>()) {
+      return const_stmt->val.equal_value(2);
+    } else if (auto matrix_stmt = stmt->cast<MatrixInitStmt>()) {
+      for (auto &val : matrix_stmt->values) {
+        if (!alg_is_two(val)) {
+          return false;
+        }
+      }
+      return true;
+    }
+    return false;
+  }
+
+  static bool alg_is_minus_one(Stmt *stmt) {
+    if (!stmt)
+      return false;
+    if (auto const_stmt = stmt->cast<ConstStmt>()) {
+      return const_stmt->val.equal_value(-1);
+    } else if (auto matrix_stmt = stmt->cast<MatrixInitStmt>()) {
+      for (auto &val : matrix_stmt->values) {
+        if (!alg_is_minus_one(val)) {
+          return false;
+        }
+      }
+      return true;
+    }
+    return false;
+  }
+
+  static bool alg_is_pot(Stmt *stmt) {
+    if (!stmt)
+      return false;
+
+    if (auto const_stmt = stmt->cast<ConstStmt>()) {
+      if (!is_integral(const_stmt->val.dt))
+        return false;
+      if (is_signed(const_stmt->val.dt)) {
+        return bit::is_power_of_two(const_stmt->val.val_int());
+      } else {
+        return bit::is_power_of_two(const_stmt->val.val_uint());
+      }
+    } else if (auto matrix_stmt = stmt->cast<MatrixInitStmt>()) {
+      for (auto &val : matrix_stmt->values) {
+        if (!alg_is_pot(val)) {
+          return false;
+        }
+      }
+      return true;
+    }
+    return false;
   }
 
   static bool run(IRNode *node, bool fast_math) {

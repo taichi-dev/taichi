@@ -6,8 +6,6 @@ from .scene import SceneV2
 from .staging_buffer import (
     copy_all_to_vbo,
     copy_all_to_vbo_particle,
-    get_indices_field,
-    get_vbo_field,
     get_indices_fieldV2,
     get_vbo_fieldV2,
     to_rgba8,

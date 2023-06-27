@@ -689,6 +689,26 @@ class Texture {
   }
 };
 
+template <typename T>
+struct DataTypeToEnum {
+  static constexpr TiDataType value = TI_DATA_TYPE_UNKNOWN;
+};
+#define DEFINE_DATA_TYPE_ENUM(type, enumv)                    \
+  template <>                                                 \
+  struct DataTypeToEnum<type> {                               \
+    static constexpr TiDataType value = TI_DATA_TYPE_##enumv; \
+  };
+
+DEFINE_DATA_TYPE_ENUM(int32_t, I32);
+DEFINE_DATA_TYPE_ENUM(float, F32);
+DEFINE_DATA_TYPE_ENUM(uint16_t, U16);
+DEFINE_DATA_TYPE_ENUM(int16_t, I16);
+DEFINE_DATA_TYPE_ENUM(uint8_t, U8);
+DEFINE_DATA_TYPE_ENUM(int8_t, I8);
+DEFINE_DATA_TYPE_ENUM(uint64_t, U64);
+DEFINE_DATA_TYPE_ENUM(int64_t, I64);
+#undef DEFINE_DATA_TYPE_ENUM
+
 class ArgumentEntry {
   friend class ComputeGraph;
   TiArgument *arg_;
@@ -748,6 +768,27 @@ class ArgumentEntry {
     arg_->type = TI_ARGUMENT_TYPE_TEXTURE;
     arg_->value.texture = texture;
     return *this;
+  }
+  template <typename T>
+  inline ArgumentEntry &operator=(const std::vector<T> &matrix) {
+    arg_->type = TI_ARGUMENT_TYPE_TENSOR;
+    std::memcpy(arg_->value.tensor.contents.data.x8, matrix.data(),
+                matrix.size() * sizeof(T));
+    arg_->value.tensor.contents.length = matrix.size();
+    arg_->value.tensor.type = DataTypeToEnum<T>::value;
+  }
+  template <typename T>
+  inline ArgumentEntry &operator=(const std::vector<std::vector<T>> &matrix) {
+    arg_->type = TI_ARGUMENT_TYPE_TENSOR;
+    uint32_t size = 0, bias = 0;
+    for (const auto &row: matrix) {
+      std::memcpy((arg_->value.tensor.contents.data.x8 + bias), row.data(),
+                  row.size() * sizeof(T));
+      size += row.size();
+      bias += row.size() * sizeof(T);
+    }
+    arg_->value.tensor.contents.length = size;
+    arg_->value.tensor.type = DataTypeToEnum<T>::value;
   }
 };
 
@@ -837,25 +878,6 @@ class ComputeGraph {
     return compute_graph_;
   }
 };
-template <typename T>
-struct DataTypeToEnum {
-  static constexpr TiDataType value = TI_DATA_TYPE_UNKNOWN;
-};
-#define DEFINE_DATA_TYPE_ENUM(type, enumv)                    \
-  template <>                                                 \
-  struct DataTypeToEnum<type> {                               \
-    static constexpr TiDataType value = TI_DATA_TYPE_##enumv; \
-  };
-
-DEFINE_DATA_TYPE_ENUM(int32_t, I32);
-DEFINE_DATA_TYPE_ENUM(float, F32);
-DEFINE_DATA_TYPE_ENUM(uint16_t, U16);
-DEFINE_DATA_TYPE_ENUM(int16_t, I16);
-DEFINE_DATA_TYPE_ENUM(uint8_t, U8);
-DEFINE_DATA_TYPE_ENUM(int8_t, I8);
-DEFINE_DATA_TYPE_ENUM(uint64_t, U64);
-DEFINE_DATA_TYPE_ENUM(int64_t, I64);
-#undef DEFINE_DATA_TYPE_ENUM
 
 class Kernel {
  protected:

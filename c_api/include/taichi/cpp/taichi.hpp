@@ -776,6 +776,7 @@ class ArgumentEntry {
                 matrix.size() * sizeof(T));
     arg_->value.tensor.contents.length = matrix.size();
     arg_->value.tensor.type = DataTypeToEnum<T>::value;
+    return *this;
   }
   template <typename T>
   inline ArgumentEntry &operator=(const std::vector<std::vector<T>> &matrix) {
@@ -789,6 +790,7 @@ class ArgumentEntry {
     }
     arg_->value.tensor.contents.length = size;
     arg_->value.tensor.type = DataTypeToEnum<T>::value;
+    return *this;
   }
 };
 

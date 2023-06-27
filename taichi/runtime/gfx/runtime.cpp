@@ -65,12 +65,11 @@ class HostDeviceContextBlitter {
                 LaunchContextBuilder::DevAllocType::kNone &&
             ext_arr_size.at(indices)) {
           // Only need to blit ext arrs (host array)
-          auto access_it = std::find_if(
-              ctx_attribs_->arr_access.begin(),
-              ctx_attribs_->arr_access.end(),
-              [indices](const auto& pair) -> bool {
-            return pair.first == indices;
-          });
+          auto access_it = std::find_if(ctx_attribs_->arr_access.begin(),
+                                        ctx_attribs_->arr_access.end(),
+                                        [indices](const auto &pair) -> bool {
+                                          return pair.first == indices;
+                                        });
           TI_ASSERT(access_it != ctx_attribs_->arr_access.end());
           uint32_t access = uint32_t(access_it->second);
           if (access & uint32_t(irpass::ExternalPtrAccess::READ)) {
@@ -135,12 +134,11 @@ class HostDeviceContextBlitter {
           host_ctx_.device_allocation_type[indices] ==
               LaunchContextBuilder::DevAllocType::kNone &&
           ext_arr_size.at(indices)) {
-        auto access_it = std::find_if(
-            ctx_attribs_->arr_access.begin(),
-            ctx_attribs_->arr_access.end(),
-            [indices](const auto& pair) -> bool {
-              return pair.first == indices;
-            });
+        auto access_it = std::find_if(ctx_attribs_->arr_access.begin(),
+                                      ctx_attribs_->arr_access.end(),
+                                      [indices](const auto &pair) -> bool {
+                                        return pair.first == indices;
+                                      });
         TI_ASSERT(access_it != ctx_attribs_->arr_access.end());
         uint32_t access = uint32_t(access_it->second);
         if (access & uint32_t(irpass::ExternalPtrAccess::WRITE)) {
@@ -451,12 +449,12 @@ void GfxRuntime::launch_kernel(KernelHandle handle,
           }
         } else {
           ext_array_size[indices] = host_ctx.array_runtime_sizes[indices];
-          auto arr_access = ti_kernel->ti_kernel_attribs().ctx_attribs.arr_access;
-          auto access_it = std::find_if(
-              arr_access.begin(), arr_access.end(),
-              [indices](const auto& pair) -> bool {
-                return pair.first == indices;
-              });
+          auto arr_access =
+              ti_kernel->ti_kernel_attribs().ctx_attribs.arr_access;
+          auto access_it = std::find_if(arr_access.begin(), arr_access.end(),
+                                        [indices](const auto &pair) -> bool {
+                                          return pair.first == indices;
+                                        });
           TI_ASSERT(access_it != arr_access.end());
           uint32_t access = uint32_t(access_it->second);
           // Alloc ext arr

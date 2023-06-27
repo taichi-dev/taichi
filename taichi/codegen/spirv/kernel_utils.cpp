@@ -51,8 +51,7 @@ KernelContextAttributes::KernelContextAttributes(
     const Kernel &kernel,
     const DeviceCapabilityConfig *caps)
     : args_bytes_(0), rets_bytes_(0) {
-  arr_access.reserve(
-      kernel.not_flattened_parameters.size());
+  arr_access.reserve(kernel.not_flattened_parameters.size());
   arg_attribs_vec_.reserve(kernel.not_flattened_parameters.size());
   // TODO: We should be able to limit Kernel args and rets to be primitive types
   // as well but let's leave that as a followup up PR.

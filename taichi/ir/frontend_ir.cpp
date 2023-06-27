@@ -1235,6 +1235,21 @@ void ExternalTensorShapeAlongAxisExpression::flatten(FlattenContext *ctx) {
   stmt = ctx->back_stmt();
 }
 
+void ExternalTensorBasePtrExpression::type_check(const CompileConfig *) {
+  TI_ASSERT_INFO(ptr.is<ExternalTensorExpression>(),
+                 "Invalid ptr [{}] for ExternalTensorBasePtrExpression",
+                 ExpressionHumanFriendlyPrinter::expr_to_string(ptr));
+  ret_type = ptr.cast<ExternalTensorExpression>()->dt.get_element_type();
+  ret_type.set_is_pointer(true);
+}
+
+void ExternalTensorBasePtrExpression::flatten(FlattenContext *ctx) {
+  auto tensor = ptr.cast<ExternalTensorExpression>();
+  ctx->push_back<ExternalTensorBasePtrStmt>(tensor->arg_id, is_grad);
+  stmt = ctx->back_stmt();
+  stmt->ret_type = ret_type;
+}
+
 void GetElementExpression::type_check(const CompileConfig *config) {
   TI_ASSERT_TYPE_CHECKED(src);
   auto src_type = src->ret_type;

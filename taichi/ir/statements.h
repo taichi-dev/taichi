@@ -574,6 +574,21 @@ class ExternalTensorShapeAlongAxisStmt : public Stmt {
   TI_DEFINE_ACCEPT_AND_CLONE
 };
 
+class ExternalTensorBasePtrStmt : public Stmt {
+ public:
+  int arg_id;
+  bool is_grad;
+
+  ExternalTensorBasePtrStmt(int arg_id, bool is_grad);
+
+  bool has_global_side_effect() const override {
+    return false;
+  }
+
+  TI_STMT_DEF_FIELDS(ret_type, arg_id, is_grad);
+  TI_DEFINE_ACCEPT_AND_CLONE
+};
+
 /**
  * An assertion.
  * If |cond| is false, print the formatted |text| with |args|, and terminate

@@ -268,10 +268,8 @@ class IRNode {
   std::unique_ptr<IRNode> clone();
 };
 
-#define TI_DEFINE_ACCEPT                     \
-  void accept(IRVisitor *visitor) override { \
-    visitor->visit(this);                    \
-  }
+#define TI_DEFINE_ACCEPT \
+  void accept(IRVisitor *visitor) override { visitor->visit(this); }
 
 #define TI_DEFINE_CLONE                                             \
   std::unique_ptr<Stmt> clone() const override {                    \
@@ -510,13 +508,9 @@ class Stmt : public IRNode {
 };
 
 struct ErrorEmitter {
-  template <typename T>
-  [[noreturn]] ErrorEmitter(T &&error,
-                            const Stmt *stmt,
-                            std::string &&error_msg) {
-    error.msg_ = stmt->tb + error_msg;
-    throw error;
-  }
+  ErrorEmitter(TaichiExceptionImpl &&error,
+               const Stmt *stmt,
+               std::string &&error_msg);
 };
 
 class Block : public IRNode {

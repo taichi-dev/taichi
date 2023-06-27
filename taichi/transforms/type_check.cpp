@@ -32,9 +32,10 @@ class TypeCheck : public IRVisitor {
     if (dst_type != val_type) {
       auto promoted = promoted_type(dst_type, val_type);
       if (dst_type != promoted) {
-        TI_WARN("[{}] {} may lose precision: {} <- {}\n{}", stmt->name(),
-                stmt_name, dst_type->to_string(), val->ret_data_type_name(),
-                stmt->tb);
+        ErrorEmitter(
+            TaichiCastWarning(), stmt,
+            fmt::format("{} may lose precision: {} <- {}", stmt_name,
+                        dst_type->to_string(), val->ret_data_type_name()));
       }
       val = insert_type_cast_before(stmt, val, dst_type);
     }
@@ -144,22 +145,24 @@ class TypeCheck : public IRVisitor {
       stmt->ret_type =
           TypeFactory::get_instance().get_pointer_type(stmt->snode->dt);
     } else
-      TI_WARN("[{}] Type inference failed: snode is nullptr.\n{}", stmt->name(),
-              stmt->tb);
+      ErrorEmitter(TaichiTypeWarning(), stmt,
+                   "Type inference failed: snode is nullptr.");
     auto check_indices = [&](SNode *snode) {
       if (snode->num_active_indices != stmt->indices.size()) {
-        TI_ERROR("[{}] {} has {} indices. Indexed with {}.", stmt->name(),
-                 snode->node_type_name, snode->num_active_indices,
-                 stmt->indices.size());
+        ErrorEmitter(
+            TaichiRuntimeError(), stmt,
+            fmt::format("{} has {} indices. Indexed with {}.",
+                        snode->node_type_name, snode->num_active_indices,
+                        stmt->indices.size()));
       }
     };
     check_indices(stmt->is_cell_access ? stmt->snode : stmt->snode->parent);
     for (int i = 0; i < stmt->indices.size(); i++) {
       if (!stmt->indices[i]->ret_type->is_primitive(PrimitiveTypeID::i32)) {
-        TI_WARN(
-            "[{}] Field index {} not int32, casting into int32 "
-            "implicitly\n{}",
-            stmt->name(), i, stmt->tb);
+        ErrorEmitter(
+            TaichiCastWarning(), stmt,
+            fmt::format(
+                "Field index {} not int32, casting into int32 implicitly", i));
         stmt->indices[i] =
             insert_type_cast_before(stmt, stmt->indices[i], PrimitiveType::i32);
       }
@@ -298,16 +301,12 @@ class TypeCheck : public IRVisitor {
   }
 
   void visit(BinaryOpStmt *stmt) override {
-    auto error = [&](std::string comment = "") {
-      if (comment == "") {
-        TI_WARN("[{}] Type mismatch (left = {}, right = {}, stmt_id = {})\n{}",
-                stmt->name(), stmt->lhs->ret_data_type_name(),
-                stmt->rhs->ret_data_type_name(), stmt->id, stmt->tb);
-      } else {
-        TI_WARN("[{}] {}\n{}", stmt->name(), comment, stmt->tb);
-      }
-      TI_WARN("Compilation stopped due to type mismatch.");
-      throw std::runtime_error("Binary operator type mismatch");
+    auto error = [&]() {
+      ErrorEmitter(
+          TaichiTypeError(), stmt,
+          fmt::format("Type mismatch (left = {}, right = {}, stmt_id = {})",
+                      stmt->lhs->ret_data_type_name(),
+                      stmt->rhs->ret_data_type_name(), stmt->id));
     };
     if (stmt->lhs->ret_type->is_primitive(PrimitiveTypeID::unknown) &&
         stmt->rhs->ret_type->is_primitive(PrimitiveTypeID::unknown))

@@ -7,6 +7,10 @@ class IRModified {};
 class TaichiExceptionImpl : public std::exception {
   friend struct ErrorEmitter;
 
+ private:
+  virtual void emit() = 0;
+
+ protected:
   std::string msg_;
 
  public:
@@ -22,22 +26,58 @@ class TaichiExceptionImpl : public std::exception {
 
 class TaichiTypeError : public TaichiExceptionImpl {
   using TaichiExceptionImpl::TaichiExceptionImpl;
+
+  [[noreturn]] void emit() override {
+    throw *this;
+  }
 };
 
 class TaichiSyntaxError : public TaichiExceptionImpl {
   using TaichiExceptionImpl::TaichiExceptionImpl;
+
+  [[noreturn]] void emit() override {
+    throw *this;
+  }
 };
 
 class TaichiIndexError : public TaichiExceptionImpl {
   using TaichiExceptionImpl::TaichiExceptionImpl;
+
+  [[noreturn]] void emit() override {
+    throw *this;
+  }
 };
 
 class TaichiRuntimeError : public TaichiExceptionImpl {
   using TaichiExceptionImpl::TaichiExceptionImpl;
+
+  [[noreturn]] void emit() override {
+    throw *this;
+  }
 };
 
 class TaichiAssertionError : public TaichiExceptionImpl {
   using TaichiExceptionImpl::TaichiExceptionImpl;
+
+  [[noreturn]] void emit() override {
+    throw *this;
+  }
+};
+
+class TaichiCastWarning : public TaichiExceptionImpl {
+  using TaichiExceptionImpl::TaichiExceptionImpl;
+
+  void emit() noexcept override {
+    taichi::Logger::get_instance().warn("TaichiCastWarning\n" + msg_);
+  }
+};
+
+class TaichiTypeWarning : public TaichiExceptionImpl {
+  using TaichiExceptionImpl::TaichiExceptionImpl;
+
+  void emit() noexcept override {
+    taichi::Logger::get_instance().warn("TaichiTypeWarning\n" + msg_);
+  }
 };
 
 }  // namespace taichi::lang

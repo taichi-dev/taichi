@@ -538,4 +538,11 @@ void ImmediateIRModifier::replace_usages_with(Stmt *old_stmt, Stmt *new_stmt) {
   }
 }
 
+ErrorEmitter::ErrorEmitter(TaichiExceptionImpl &&error,
+                           const Stmt *stmt,
+                           std::string &&error_msg) {
+  error.msg_ = stmt->tb + error_msg;
+  error.emit();
+}
+
 }  // namespace taichi::lang

@@ -78,8 +78,10 @@ def gen_normals(vertices, indices):
 
 
 class SceneV2:
-    """The 3D scene class, which can contain meshes and particles,
+    """The new 3D scene class, which can contain meshes, lines and particles,
     and can be rendered on a canvas.
+    An instance of this class can be retrieved using the 
+    get_scene() function of a taichi.ui.Window.
     """
 
     def __init__(self, scene) -> None:
@@ -419,16 +421,17 @@ class SceneV2:
         """Set the ambient color of this scene.
 
         Example::
-
-            >>> scene = ti.ui.Scene()
             >>> scene.ambient_light([0.2, 0.2, 0.2])
         """
         self.scene.ambient_light(tuple(color))
 
 
 class Scene:
-    """The 3D scene class, which can contain meshes and particles,
+    """The old 3D scene class, which can contain meshes, lines and particles,
     and can be rendered on a canvas.
+    This scene class is to be instantiated directly and is deprecated.
+    Use the new SceneV2 class instead, which can be retrieved using the 
+    get_scene() function of a taichi.ui.Window.
     """
 
     def __init__(self):

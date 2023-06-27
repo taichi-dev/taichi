@@ -782,7 +782,7 @@ class ArgumentEntry {
   inline ArgumentEntry &operator=(const std::vector<std::vector<T>> &matrix) {
     arg_->type = TI_ARGUMENT_TYPE_TENSOR;
     uint32_t size = 0, bias = 0;
-    for (const auto &row: matrix) {
+    for (const auto &row : matrix) {
       std::memcpy((arg_->value.tensor.contents.data.x8 + bias), row.data(),
                   row.size() * sizeof(T));
       size += row.size();

@@ -3,30 +3,32 @@ import os
 
 import taichi as ti
 
+
 def compile_matrix_aot(arch):
     ti.init(arch=arch)
 
     if ti.lang.impl.current_cfg().arch != arch:
         return
-    
+
     @ti.kernel
     def run(
         vec: ti.types.vector(3, ti.i32),
         mat: ti.types.matrix(2, 2, ti.i32),
         vec_arr: ti.types.ndarray(ndim=1, dtype=ti.i32),
-        mat_arr: ti.types.ndarray(ndim=1, dtype=ti.i32)):
+        mat_arr: ti.types.ndarray(ndim=1, dtype=ti.i32),
+    ):
         vec_val = vec[0] + vec[1] + vec[2]
         mat_val = mat[0, 0] + mat[0, 1] + mat[1, 0] + mat[1, 1]
         for i in ti.grouped(vec_arr):
             vec_arr[i] = vec_val
             mat_arr[i] = mat_val
-    
+
     sym_vec = ti.graph.Arg(ti.graph.ArgKind.MATRIX, "vec", dtype=ti.types.vector(3, ti.i32))
-    
+
     sym_mat = ti.graph.Arg(ti.graph.ArgKind.MATRIX, "mat", dtype=ti.types.matrix(2, 2, ti.i32))
-    
+
     sym_vec_arr = ti.graph.Arg(ti.graph.ArgKind.NDARRAY, "vec_arr", dtype=ti.i32, ndim=1)
-    
+
     sym_mat_arr = ti.graph.Arg(ti.graph.ArgKind.NDARRAY, "mat_arr", dtype=ti.i32, ndim=1)
 
     g_builder = ti.graph.GraphBuilder()

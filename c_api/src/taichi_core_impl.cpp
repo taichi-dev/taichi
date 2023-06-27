@@ -1025,10 +1025,10 @@ void ti_launch_compute_graph(TiRuntime runtime,
             prim_ty = &taichi::lang::PrimitiveType::u64;
             break;
           default: {
-            ti_set_last_error(TI_ERROR_ARGUMENT_OUT_OF_RANGE,
-                              ("args[" + std::to_string(i) +
-                               "].argument.value.tensor.type")
-                                  .c_str());
+            ti_set_last_error(
+                TI_ERROR_ARGUMENT_OUT_OF_RANGE,
+                ("args[" + std::to_string(i) + "].argument.value.tensor.type")
+                    .c_str());
             return;
           }
         }

@@ -268,8 +268,10 @@ class IRNode {
   std::unique_ptr<IRNode> clone();
 };
 
-#define TI_DEFINE_ACCEPT \
-  void accept(IRVisitor *visitor) override { visitor->visit(this); }
+#define TI_DEFINE_ACCEPT                     \
+  void accept(IRVisitor *visitor) override { \
+    visitor->visit(this);                    \
+  }
 
 #define TI_DEFINE_CLONE                                             \
   std::unique_ptr<Stmt> clone() const override {                    \
@@ -508,7 +510,14 @@ class Stmt : public IRNode {
 };
 
 struct ErrorEmitter {
+  // Emit an error on stmt with error message
   ErrorEmitter(TaichiExceptionImpl &&error,
+               const Stmt *stmt,
+               std::string &&error_msg);
+
+  // Emit an error when expression is false
+  ErrorEmitter(bool expression,
+               TaichiExceptionImpl &&error,
                const Stmt *stmt,
                std::string &&error_msg);
 };

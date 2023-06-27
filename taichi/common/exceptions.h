@@ -64,6 +64,14 @@ class TaichiAssertionError : public TaichiExceptionImpl {
   }
 };
 
+class TaichiIrError : public TaichiExceptionImpl {
+  using TaichiExceptionImpl::TaichiExceptionImpl;
+
+  [[noreturn]] void emit() override {
+    throw *this;
+  }
+};
+
 class TaichiCastWarning : public TaichiExceptionImpl {
   using TaichiExceptionImpl::TaichiExceptionImpl;
 
@@ -77,6 +85,14 @@ class TaichiTypeWarning : public TaichiExceptionImpl {
 
   void emit() noexcept override {
     taichi::Logger::get_instance().warn("TaichiTypeWarning\n" + msg_);
+  }
+};
+
+class TaichiIrWarning : public TaichiExceptionImpl {
+  using TaichiExceptionImpl::TaichiExceptionImpl;
+
+  void emit() noexcept override {
+    taichi::Logger::get_instance().warn("TaichiIrWarning\n" + msg_);
   }
 };
 

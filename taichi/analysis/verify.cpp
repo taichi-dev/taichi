@@ -32,9 +32,10 @@ class IRVerifier : public BasicStmtVisitor {
   }
 
   void basic_verify(Stmt *stmt) {
-    TI_ASSERT_INFO(stmt->parent == current_block_,
-                   "stmt({})->parent({}) != current_block({})", stmt->id,
-                   fmt::ptr(stmt->parent), fmt::ptr(current_block_));
+    ErrorEmitter(
+        stmt->parent == current_block_, TaichiIrError(), stmt,
+        fmt::format("stmt({})->parent({}) != current_block({})", stmt->id,
+                    fmt::ptr(stmt->parent), fmt::ptr(current_block_)));
     for (auto &op : stmt->get_operands()) {
       if (op == nullptr)
         continue;
@@ -45,15 +46,17 @@ class IRVerifier : public BasicStmtVisitor {
           break;
         }
       }
-      TI_ASSERT_INFO(found,
-                     "IR broken: stmt {} {} cannot have operand {} {}."
-                     " If you are using autodiff, please check out"
-                     " https://docs.taichi-lang.org/docs/"
-                     "differences_between_taichi_and_python_programs"
-                     " If it doesn't help, please open an issue at"
-                     " https://github.com/taichi-dev/taichi to help us improve."
-                     " Thanks in advance!",
-                     stmt->type(), stmt->id, op->type(), op->id);
+      ErrorEmitter(
+          found, TaichiIrError(), stmt,
+          fmt::format(
+              "IR broken: stmt {} {} cannot have operand {} {}."
+              " If you are using autodiff, please check out"
+              " https://docs.taichi-lang.org/docs/"
+              "differences_between_taichi_and_python_programs"
+              " If it doesn't help, please open an issue at"
+              " https://github.com/taichi-dev/taichi to help us improve."
+              " Thanks in advance!",
+              stmt->type(), stmt->id, op->type(), op->id));
     }
     visible_stmts_.back().insert(stmt);
   }
@@ -67,11 +70,15 @@ class IRVerifier : public BasicStmtVisitor {
   }
 
   void visit(Block *block) override {
-    TI_ASSERT_INFO(
-        block->parent_stmt() == current_container_stmt_,
-        "block({})->parent({}) != current_container_stmt({})", fmt::ptr(block),
-        block->parent_stmt() ? block->parent_stmt()->name() : "nullptr",
-        current_container_stmt_ ? current_container_stmt_->name() : "nullptr");
+    ErrorEmitter(
+        block->parent_stmt() == current_container_stmt_, TaichiIrError(),
+        current_container_stmt_,
+        fmt::format(
+            "block({})->parent({}) != current_container_stmt({})",
+            fmt::ptr(block),
+            block->parent_stmt() ? block->parent_stmt()->name() : "nullptr",
+            current_container_stmt_ ? current_container_stmt_->name()
+                                    : "nullptr"));
     auto backup_block = current_block_;
     current_block_ = block;
     auto backup_container_stmt = current_container_stmt_;
@@ -92,12 +99,16 @@ class IRVerifier : public BasicStmtVisitor {
   void visit(OffloadedStmt *stmt) override {
     basic_verify(stmt);
     if (stmt->has_body() && !stmt->body) {
-      TI_ERROR("offloaded {} ({})->body is nullptr",
-               offloaded_task_type_name(stmt->task_type), stmt->name());
+      ErrorEmitter(
+          TaichiIrError(), stmt,
+          fmt::format("offloaded {} ({})->body is nullptr",
+                      offloaded_task_type_name(stmt->task_type), stmt->name()));
     } else if (!stmt->has_body() && stmt->body) {
-      TI_ERROR("offloaded {} ({})->body is {} (should be nullptr)",
-               offloaded_task_type_name(stmt->task_type), stmt->name(),
-               fmt::ptr(stmt->body));
+      ErrorEmitter(
+          TaichiIrError(), stmt,
+          fmt::format("offloaded {} ({})->body is {} (should be nullptr)",
+                      offloaded_task_type_name(stmt->task_type), stmt->name(),
+                      fmt::ptr(stmt->body)));
     }
     stmt->all_blocks_accept(this);
   }

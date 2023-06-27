@@ -61,8 +61,10 @@ class StatementTypeNameVisitor : public IRVisitor {
   StatementTypeNameVisitor() {
   }
 
-#define PER_STATEMENT(x) \
-  void visit(x *stmt) override { type_name = #x; }
+#define PER_STATEMENT(x)         \
+  void visit(x *stmt) override { \
+    type_name = #x;              \
+  }
 #include "taichi/inc/statements.inc.h"
 
 #undef PER_STATEMENT
@@ -543,6 +545,15 @@ ErrorEmitter::ErrorEmitter(TaichiExceptionImpl &&error,
                            std::string &&error_msg) {
   error.msg_ = stmt->tb + error_msg;
   error.emit();
+}
+
+ErrorEmitter::ErrorEmitter(bool expression,
+                           TaichiExceptionImpl &&error,
+                           const Stmt *stmt,
+                           std::string &&error_msg) {
+  if (!expression) {
+    ErrorEmitter(std::move(error), stmt, std::move(error_msg));
+  }
 }
 
 }  // namespace taichi::lang

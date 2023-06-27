@@ -9,14 +9,37 @@ from taichi.types.primitive_types import f32, u8, u32
 
 import taichi as ti
 
+vbo_field_cache = {}
+depth_ndarray_cache = {}
+indices_ndarray_cache = {}
+transforms_ndarray_cache = {}
 
 def get_depth_ndarray(window):
+    if window not in depth_ndarray_cache:
+        w, h = window.get_window_shape()
+        depth_arr = ndarray(dtype=ti.f32, shape=w * h)
+        depth_ndarray_cache[window] = depth_arr
+    return depth_ndarray_cache[window]
+
+def get_depth_ndarrayV2(window):
     w, h = window.get_window_shape()
     depth_arr = ndarray(dtype=ti.f32, shape=w * h)
     return depth_arr
 
-
 def get_vbo_field(vertices):
+    if vertices not in vbo_field_cache:
+        N = vertices.shape[0]
+        pos = 3
+        normal = 3
+        tex_coord = 2
+        color = 4
+        vertex_stride = pos + normal + tex_coord + color
+        vbo = np.ndarray((N, vertex_stride), dtype=np.float32)
+        vbo_field_cache[vertices] = vbo
+        return vbo
+    return vbo_field_cache[vertices]
+
+def get_vbo_fieldV2(vertices):
     N = vertices.shape[0]
     pos = 3
     normal = 3
@@ -26,8 +49,14 @@ def get_vbo_field(vertices):
     vbo = np.ndarray((N, vertex_stride), dtype=np.float32)
     return vbo
 
-
 def get_indices_field(indices):
+    if isinstance(indices, np.ndarray):
+        return indices
+    indices_arr = indices.to_numpy()
+    indices_ndarray_cache[indices] = indices_arr
+    return indices_arr
+
+def get_indices_fieldV2(indices):
     if isinstance(indices, np.ndarray):
         return indices
     indices_arr = indices.to_numpy()
@@ -35,6 +64,13 @@ def get_indices_field(indices):
 
 
 def get_transforms_field(transforms):
+    if isinstance(transforms, np.ndarray):
+        return transforms
+    transforms_arr = transforms.to_numpy()
+    transforms_ndarray_cache[transforms] = transforms_arr
+    return transforms_arr
+
+def get_transforms_fieldV2(transforms):
     if isinstance(transforms, np.ndarray):
         return transforms
     transforms_arr = transforms.to_numpy()

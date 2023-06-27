@@ -183,9 +183,9 @@ class BasicBlockSimplify : public IRVisitor {
       auto zero = Stmt::make<ConstStmt>(TypedConstant(0));
       auto check_sum =
           Stmt::make<BinaryOpStmt>(BinaryOpType::cmp_ge, sum.get(), zero.get());
-      auto assert = Stmt::make<AssertStmt>(
-          check_sum.get(), "The indices provided are too big!\n" + stmt->tb,
-          std::vector<Stmt *>());
+      auto assert = Stmt::make<AssertStmt>(check_sum.get(),
+                                           "The indices provided are too big!",
+                                           std::vector<Stmt *>());
       // Because Taichi's assertion is checked only after the execution of the
       // kernel, when the linear index overflows and goes negative, we have to
       // replace that with 0 to make sure that the rest of the kernel can still

@@ -62,8 +62,8 @@ def test_aot_bind_id():
                             assert buffer_bind["binding"] != -1
                     args = kernel["ctx_attribs"]["arg_attribs_vec_"]
                     assert len(args) == 2
-                    arg_0, arg_1 = args[0]['value'], args[1]['value']
-                    if args[0]['key'] == [1]:
+                    arg_0, arg_1 = args[0]["value"], args[1]["value"]
+                    if args[0]["key"] == [1]:
                         arg_0, arg_1 = arg_1, arg_0
 
                     assert arg_0["is_array"] == False

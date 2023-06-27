@@ -711,8 +711,6 @@ void export_lang(py::module &m) {
           }
         }
         self->jit_run(compile_config, args);
-        matrix_buffers.clear();
-        matrices.clear();
       });
 
   py::class_<Kernel>(m, "Kernel")

@@ -20,6 +20,7 @@ class Matrix {
   }
 
   uint32_t length() const {
+    // number of matrix elements
     return length_;
   }
 

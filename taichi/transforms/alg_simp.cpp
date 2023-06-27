@@ -214,6 +214,10 @@ class AlgSimp : public BasicStmtVisitor {
     }
 
     float64 exponent = exponents[0];
+    if (!(exponent == std::round(exponent) && exponent > 0 &&
+          exponent <= max_weaken_exponent)) {
+      return false;
+    }
 
     // a ** n -> Exponentiation by squaring
     auto a = stmt->lhs;
@@ -488,16 +492,22 @@ class AlgSimp : public BasicStmtVisitor {
         replace_with_zero(stmt);
       }
     } else if (stmt->op_type == BinaryOpType::pow) {
+      std::cout << 111111 << std::endl;
       if (exponent_one_optimize(stmt)) {
         // a ** 1 -> a
+        std::cout << 2222 << std::endl;
       } else if (exponent_zero_optimize(stmt)) {
         // a ** 0 -> 1
+        std::cout << 3333 << std::endl;
       } else if (exponent_half_optimize(stmt)) {
         // a ** 0.5 -> sqrt(a)
+        std::cout << 4444 << std::endl;
       } else if (exponent_n_optimize(stmt)) {
         // a ** n -> Exponentiation by squaring
+        std::cout << 5555 << std::endl;
       } else if (exponent_negative_optimize(stmt)) {
         // a ** -n -> 1 / a ** n
+        std::cout << 6666 << std::endl;
       }
     } else if (stmt->op_type == BinaryOpType::bit_and) {
       if (alg_is_minus_one(rhs)) {

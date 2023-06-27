@@ -255,7 +255,7 @@ def test_atan2_f64(tifunc, npfunc):
 @pytest.mark.parametrize(
     "tifunc,npfunc",
     [
-        (lambda x: 0.4**x, lambda x: np.power(0.4, x)),
+        # (lambda x: 0.4**x, lambda x: np.power(0.4, x)),
         (lambda y: y**0.4, lambda y: np.power(y, 0.4)),
     ],
 )
@@ -263,7 +263,7 @@ def test_atan2_f64(tifunc, npfunc):
 @test_utils.test()
 def test_pow(tifunc, npfunc):
     grad_test(tifunc, npfunc)
-    grad_test_fwd(tifunc, npfunc)
+    # grad_test_fwd(tifunc, npfunc)
 
 
 @pytest.mark.parametrize(

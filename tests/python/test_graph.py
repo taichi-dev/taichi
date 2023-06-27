@@ -9,7 +9,7 @@ from tests import test_utils
 
 supported_floating_types = [ti.f32] if platform.system() == "Darwin" else [ti.f32, ti.f64]
 
-supported_archs_cgraph = [ti.vulkan]
+supported_archs_cgraph = [ti.vulkan, ti.opengl]
 
 
 @test_utils.test(arch=supported_archs_cgraph)
@@ -216,6 +216,8 @@ def build_graph_matrix(N, dtype):
 @pytest.mark.parametrize("dt", [ti.u8, ti.u16, ti.u32, ti.u64, ti.i8, ti.i16, ti.i32, ti.i64])
 @test_utils.test(arch=supported_archs_cgraph)
 def test_matrix_int(dt):
+    if ti.lang.impl.current_cfg().arch == ti.opengl and dt not in [ti.u32, ti.i32]:
+        return
     n = 4
     A = ti.Matrix([4, 5] * n, dt)
     res = ti.ndarray(dt, shape=(1,))
@@ -227,6 +229,8 @@ def test_matrix_int(dt):
 @pytest.mark.parametrize("dt", supported_floating_types)
 @test_utils.test(arch=supported_archs_cgraph)
 def test_matrix_float(dt):
+    if ti.lang.impl.current_cfg().arch == ti.opengl and dt not in [ti.f32]:
+        return
     n = 4
     A = ti.Matrix([4.2, 5.7] * n, dt)
     res = ti.ndarray(dt, shape=(1,))
@@ -236,7 +240,7 @@ def test_matrix_float(dt):
 
 
 @pytest.mark.sm70
-@test_utils.test(arch=supported_archs_cgraph)
+@test_utils.test(arch=[ti.vulkan])
 def test_matrix_float16():
     n = 4
     A = ti.Matrix([4.0, 5.0] * n, ti.f16)
@@ -250,6 +254,8 @@ def test_matrix_float16():
 @pytest.mark.parametrize("dt", [ti.u8, ti.u16, ti.u32, ti.u64, ti.i8, ti.i16, ti.i32, ti.i64])
 @test_utils.test(arch=supported_archs_cgraph)
 def test_vector_int(dt):
+    if ti.lang.impl.current_cfg().arch == ti.opengl and dt not in [ti.u32, ti.i32]:
+        return
     n = 12
     A = ti.Vector([1, 3, 13, 4, 5, 6, 7, 2, 3, 4, 1, 25], dt)
     res = ti.ndarray(dt, shape=(1,))
@@ -261,6 +267,8 @@ def test_vector_int(dt):
 @pytest.mark.parametrize("dt", supported_floating_types)
 @test_utils.test(arch=supported_archs_cgraph)
 def test_vector_float(dt):
+    if ti.lang.impl.current_cfg().arch == ti.opengl and dt not in [ti.f32]:
+        return
     n = 8
     A = ti.Vector([1.4, 3.7, 13.2, 4.5, 5.6, 6.1, 7.2, 2.6], dt)
     res = ti.ndarray(dt, shape=(1,))
@@ -270,7 +278,7 @@ def test_vector_float(dt):
 
 
 @pytest.mark.sm70
-@test_utils.test(arch=supported_archs_cgraph)
+@test_utils.test(arch=[ti.vulkan])
 def test_vector_float16():
     n = 4
     A = ti.Vector([1.4, 3.7, 13.2, 4.5], ti.f16)

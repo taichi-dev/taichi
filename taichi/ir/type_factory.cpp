@@ -58,7 +58,7 @@ const Type *TypeFactory::get_struct_type(
 }
 
 const Type *TypeFactory::get_argpack_type(
-    const std::vector<ArgPackMember> &elements) {
+    const std::vector<AbstractDictionaryMember> &elements) {
   std::lock_guard<std::mutex> _(argpack_mut_);
   auto key = elements;
 

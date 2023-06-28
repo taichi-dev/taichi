@@ -790,15 +790,4 @@ struct Hasher<lang::AbstractDictionaryMember> {
   }
 };
 
-template <>
-struct Hasher<lang::ArgPackMember> {
- public:
-  size_t operator()(lang::ArgPackMember const &member) const {
-    size_t ret = hash_value(member.type);
-    hash_combine(ret, member.name);
-    hash_combine(ret, member.position);
-    return ret;
-  }
-};
-
 }  // namespace taichi::hashing

@@ -23,6 +23,8 @@ class ArgPack:
     Args:
         annotations (Dict[str, Union[Dict, Matrix, Struct]]): \
             The keys and types for `ArgPack` members.
+        dtype (ArgPackType): \
+            The ArgPackType class of this ArgPack object.
         entries (Dict[str, Union[Dict, Matrix, Struct]]): \
             The keys and corresponding values for `ArgPack` members.
 
@@ -40,7 +42,7 @@ class ArgPack:
 
     _instance_count = 0
 
-    def __init__(self, annotations, *args, **kwargs):
+    def __init__(self, annotations, dtype, *args, **kwargs):
         # converts dicts to argument packs
         if len(args) == 1 and kwargs == {} and isinstance(args[0], dict):
             self.__entries = args[0]
@@ -56,7 +58,12 @@ class ArgPack:
         for k, v in self.__entries.items():
             self.__entries[k] = v if in_python_scope() else impl.expr_init(v)
         self._register_members()
-        self.__dtype = None
+        self.__dtype = dtype
+        self.__argpack = impl.get_runtime().prog.create_argpack(self.__dtype)
+
+    def __del__(self):
+        if impl is not None and impl.get_runtime() is not None and impl.get_runtime().prog is not None:
+            impl.get_runtime().prog.delete_argpack(self.__argpack)
 
     @property
     def keys(self):
@@ -181,7 +188,7 @@ class _IntermediateArgPack(ArgPack):
         entries (Dict[str, Union[Expr, Matrix, Struct]]): keys and values for struct members.
     """
 
-    def __init__(self, annotations, *args, **kwargs):
+    def __init__(self, annotations, dtype, *args, **kwargs):
         # converts dicts to argument packs
         if len(args) == 1 and kwargs == {} and isinstance(args[0], dict):
             self._ArgPack__entries = args[0]
@@ -195,7 +202,8 @@ class _IntermediateArgPack(ArgPack):
             raise TaichiSyntaxError("ArgPack annotations keys not equals to entries keys.")
         self._ArgPack__annotations = annotations
         self._register_members()
-        self._ArgPack__dtype = None
+        self._ArgPack__dtype = dtype
+        self._ArgPack__argpack = impl.get_runtime().prog.create_argpack(dtype)
 
 
 class ArgPackType(CompoundType):
@@ -263,10 +271,8 @@ class ArgPackType(CompoundType):
 
             d[name] = data
 
-        entries = ArgPack(self.members, d)
-        entries._ArgPack__dtype = self.dtype
+        entries = ArgPack(self.members, self.dtype, d)
         pack = self.cast(entries)
-        pack._ArgPack__dtype = self.dtype
         return pack
 
     def __instancecheck__(self, instance):
@@ -308,8 +314,7 @@ class ArgPackType(CompoundType):
                     entries[k] = int(v) if dtype in primitive_types.integer_types else float(v)
                 else:
                     entries[k] = ops.cast(pack._ArgPack__entries[k], dtype)
-        pack = ArgPack(self.members, entries)
-        pack._ArgPack__dtype = self.dtype
+        pack = ArgPack(self.members, self.dtype, entries)
         return pack
 
     def from_taichi_object(self, arg_load_dict: dict):
@@ -318,7 +323,7 @@ class ArgPackType(CompoundType):
         for index, pair in enumerate(items):
             name, dtype = pair
             d[name] = arg_load_dict[name]
-        pack = _IntermediateArgPack(self.members, d)
+        pack = _IntermediateArgPack(self.members, self.dtype, d)
         pack._ArgPack__dtype = self.dtype
         return pack
 

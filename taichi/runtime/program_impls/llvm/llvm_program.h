@@ -221,10 +221,17 @@ class LlvmProgramImpl : public ProgramImpl {
   std::string get_kernel_argument_data_layout() override {
     return get_llvm_context()->get_data_layout_string();
   };
+
   std::pair<const StructType *, size_t> get_struct_type_with_data_layout(
       const StructType *old_ty,
       const std::string &layout) override {
     return get_llvm_context()->get_struct_type_with_data_layout(old_ty, layout);
+  }
+
+  std::pair<const ArgPackType *, size_t> get_argpack_type_with_data_layout(
+      const ArgPackType *old_ty,
+      const std::string &layout) override {
+    return get_llvm_context()->get_argpack_type_with_data_layout(old_ty, layout);
   }
 
   // TODO(zhanlue): Rearrange llvm::Context's ownership

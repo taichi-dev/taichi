@@ -856,5 +856,79 @@ GfxRuntime::get_struct_type_with_data_layout_impl(
           bytes, align};
 }
 
+std::pair<const lang::ArgPackType *, size_t>
+GfxRuntime::get_argpack_type_with_data_layout(const lang::ArgPackType *old_ty,
+                                              const std::string &layout) {
+  auto [new_ty, size, align] =
+      get_argpack_type_with_data_layout_impl(old_ty, layout);
+  return {new_ty, size};
+}
+
+std::tuple<const lang::ArgPackType *, size_t, size_t>
+GfxRuntime::get_argpack_type_with_data_layout_impl(
+    const lang::ArgPackType *old_ty,
+    const std::string &layout) {
+  TI_TRACE("get_argpack_type_with_data_layout: {}", layout);
+  TI_ASSERT(layout.size() == 2);
+  auto is_430 = layout[0] == '4';
+  auto has_buffer_ptr = layout[1] == 'b';
+  auto members = old_ty->elements();
+  size_t bytes = 0;
+  size_t align = 0;
+  for (int i = 0; i < members.size(); i++) {
+    auto &member = members[i];
+    size_t member_align;
+    size_t member_size;
+    if (auto struct_type = member.type->cast<lang::StructType>()) {
+      auto [new_ty, size, member_align_] =
+          get_struct_type_with_data_layout_impl(struct_type, layout);
+      members[i].type = new_ty;
+      member_align = member_align_;
+      member_size = size;
+    } else if (auto tensor_type = member.type->cast<lang::TensorType>()) {
+      size_t element_size = data_type_size_gfx(tensor_type->get_element_type());
+      size_t num_elements = tensor_type->get_num_elements();
+      if (!is_430) {
+        if (num_elements == 2) {
+          member_align = element_size * 2;
+        } else {
+          member_align = element_size * 4;
+        }
+        member_size = member_align;
+      } else {
+        member_align = element_size;
+        member_size = tensor_type->get_num_elements() * element_size;
+      }
+    } else if (auto pointer_type = member.type->cast<PointerType>()) {
+      if (has_buffer_ptr) {
+        member_size = sizeof(uint64_t);
+        member_align = member_size;
+      } else {
+        // Use u32 as placeholder
+        member_size = sizeof(uint32_t);
+        member_align = member_size;
+      }
+    } else {
+      TI_ASSERT(member.type->is<PrimitiveType>());
+      member_size = data_type_size_gfx(member.type);
+      member_align = member_size;
+    }
+    bytes = align_up(bytes, member_align);
+    members[i].offset = bytes;
+    bytes += member_size;
+    align = std::max(align, member_align);
+  }
+
+  if (!is_430) {
+    align = align_up(align, sizeof(float) * 4);
+    bytes = align_up(bytes, 4 * sizeof(float));
+  }
+  TI_TRACE("  total_bytes={}", bytes);
+  return {TypeFactory::get_instance()
+              .get_argpack_type(members, layout)
+              ->as<lang::ArgPackType>(),
+          bytes, align};
+}
+
 }  // namespace gfx
 }  // namespace taichi::lang

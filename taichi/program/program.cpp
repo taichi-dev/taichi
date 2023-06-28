@@ -398,6 +398,13 @@ Ndarray *Program::create_ndarray(const DataType type,
   return arr_ptr;
 }
 
+ArgPack *Program::create_argpack(const DataType type) {
+  auto pack = std::make_unique<ArgPack>(this, type);
+  auto pack_ptr = pack.get();
+  argpacks_.insert({pack_ptr, std::move(pack)});
+  return pack_ptr;
+}
+
 void Program::delete_ndarray(Ndarray *ndarray) {
   // [Note] Ndarray memory deallocation
   // Ndarray's memory allocation is managed by Taichi and Python can control
@@ -413,6 +420,24 @@ void Program::delete_ndarray(Ndarray *ndarray) {
   if (ndarrays_.count(ndarray) &&
       !program_impl_->used_in_kernel(ndarray->ndarray_alloc_.alloc_id)) {
     ndarrays_.erase(ndarray);
+  }
+}
+
+void Program::delete_argpack(ArgPack *argpack) {
+  // [Note] Argpack memory deallocation
+  // Argpack's memory allocation is managed by Taichi and Python can control
+  // this via Taichi indirectly. For example, when an argpack is GC-ed in
+  // Python, it signals Taichi to free its memory allocation. But Taichi will
+  // make sure **no pending kernels to be executed needs the argpack** before it
+  // actually frees the memory. When `ti.reset()` is called, all argpack
+  // allocated in this program should be gone and no longer valid in Python.
+  // This isn't the best implementation, argpacks should be managed by taichi
+  // runtime instead of this giant program and it should be freed when:
+  // - Python GC signals taichi that it's no longer useful
+  // - All kernels using it are executed.
+  if (argpacks_.count(argpack) &&
+      !program_impl_->used_in_kernel(argpack->argpack_alloc_.alloc_id)) {
+    argpacks_.erase(argpack);
   }
 }
 

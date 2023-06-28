@@ -428,6 +428,12 @@ void export_lang(py::module &m) {
           py::arg("layout") = ExternalArrayLayout::kNull,
           py::arg("zero_fill") = false, py::return_value_policy::reference)
       .def("delete_ndarray", &Program::delete_ndarray)
+      .def("create_argpack",
+           [](Program *program, const DataType &dt) -> ArgPack * {
+             return program->create_argpack(dt);
+           },
+           py::arg("dt"), py::return_value_policy::reference)
+      .def("delete_argpack", &Program::delete_argpack)
       .def(
           "create_texture",
           [&](Program *program, BufferFormat fmt, const std::vector<int> &shape)

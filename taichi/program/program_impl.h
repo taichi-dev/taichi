@@ -163,6 +163,12 @@ class ProgramImpl {
     return {old_ty, 0};
   }
 
+  virtual std::pair<const ArgPackType *, size_t>
+  get_argpack_type_with_data_layout(const ArgPackType *old_ty,
+                                   const std::string &layout) {
+    return {old_ty, 0};
+  }
+
   KernelCompilationManager &get_kernel_compilation_manager();
 
   KernelLauncher &get_kernel_launcher();

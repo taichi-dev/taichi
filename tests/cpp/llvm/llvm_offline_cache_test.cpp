@@ -126,8 +126,8 @@ TEST_P(LlvmOfflineCacheTest, ReadWrite) {
           {{0}, Callable::Parameter{DataType(PrimitiveType::i32), false}},
           {{1}, Callable::Parameter{DataType(PrimitiveType::i32), false}},
       };
-  auto member1 = StructMember{PrimitiveType::i32, "a"};
-  auto member2 = StructMember{PrimitiveType::i32, "b"};
+  auto member1 = AbstractDictionaryMember{PrimitiveType::i32, "a"};
+  auto member2 = AbstractDictionaryMember{PrimitiveType::i32, "b"};
   auto struct_type =
       TypeFactory::get_instance().get_struct_type({member1, member2});
   auto arg_type = tlctx_->get_struct_type_with_data_layout(

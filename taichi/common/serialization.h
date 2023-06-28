@@ -860,9 +860,9 @@ class TextSerializer : public Serializer {
   void process(const std::pair<T, G> &val) {
     add_raw("[");
     indent_++;
-    process("first", val.first);
+    process(val.first);
     add_raw(", ");
-    process("second", val.second);
+    process(val.second);
     indent_--;
     add_raw("]");
   }

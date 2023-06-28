@@ -176,7 +176,7 @@ class UnaryOpStmt : public Stmt {
  */
 class ArgLoadStmt : public Stmt {
  public:
-  int arg_id;
+  std::vector<int> arg_id;
 
   /* TODO(zhanlue): more organized argument-type information
 
@@ -192,7 +192,10 @@ class ArgLoadStmt : public Stmt {
 
   bool create_load;
 
-  ArgLoadStmt(int arg_id, const DataType &dt, bool is_ptr, bool create_load)
+  ArgLoadStmt(const std::vector<int> &arg_id,
+              const DataType &dt,
+              bool is_ptr,
+              bool create_load)
       : arg_id(arg_id), is_ptr(is_ptr), create_load(create_load) {
     this->ret_type = dt;
     TI_STMT_REG_FIELDS;
@@ -562,9 +565,9 @@ class SNodeOpStmt : public Stmt, public ir_traits::Store {
 class ExternalTensorShapeAlongAxisStmt : public Stmt {
  public:
   int axis;
-  int arg_id;
+  std::vector<int> arg_id;
 
-  ExternalTensorShapeAlongAxisStmt(int axis, int arg_id);
+  ExternalTensorShapeAlongAxisStmt(int axis, const std::vector<int> &arg_id);
 
   bool has_global_side_effect() const override {
     return false;

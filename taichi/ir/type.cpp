@@ -181,14 +181,36 @@ std::string ArgPackType::to_string() const {
       s += ", ";
     }
     s += fmt::format("{}({}, #{}): {}", i, elements_[i].name,
-                     elements_[i].position, elements_[i].type->to_string());
+                     i + 1, elements_[i].type->to_string());
   }
   s += "}";
   return s;
 }
 
 const Type *ArgPackType::get_type() const {
-  return TypeFactory::get_instance().get_argpack_type(elements_);
+  return TypeFactory::get_instance().get_argpack_type(elements_, layout_);
+}
+
+size_t ArgPackType::get_element_offset(const std::vector<int> &indices) const {
+  const Type *type_now = this;
+  size_t offset = 0;
+  for (auto it = indices.begin(); it != indices.end(); ++it) {
+    int ind = *it;
+    if (auto tensor_type = type_now->cast<TensorType>()) {
+      TI_ASSERT(ind < tensor_type->get_num_elements())
+      offset += tensor_type->get_element_offset(ind);
+      type_now = tensor_type->get_element_type();
+    } else if (auto struct_type = type_now->cast<StructType>()) {
+      std::vector<int> indices_for_struct;
+      indices_for_struct.assign(++it, indices.end());
+      offset += struct_type->get_element_offset(indices_for_struct);
+      return offset;
+    } else {
+      offset += type_now->as<ArgPackType>()->elements_[ind].offset;
+      type_now = type_now->as<ArgPackType>()->elements_[ind].type;
+    }
+  }
+  return offset;
 }
 
 const Type *ArgPackType::get_element_type(

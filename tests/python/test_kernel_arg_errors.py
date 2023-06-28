@@ -14,7 +14,7 @@ def test_pass_float_as_i32():
 
     with pytest.raises(
         ti.TaichiRuntimeTypeError,
-        match=r"Argument 0 \(type=<class 'float'>\) cannot be converted into required type i32",
+        match=r"Argument \(0,\) \(type=<class 'float'>\) cannot be converted into required type i32",
     ) as e:
         foo(1.2)
 
@@ -102,7 +102,7 @@ def test_pass_struct_mismatch():
 
     with pytest.raises(
         ti.TaichiRuntimeTypeError,
-        match=r"Argument 0 \(type=<class 'taichi.lang.struct.Struct.*\) cannot be converted into required type <ti."
-        r"StructType center=<taichi.lang.matrix.VectorType object at .*>, radius=f32, struct_methods={}>",
+        match=r"Argument \(0,\) \(type=<class 'taichi.lang.struct.Struct.*\) cannot be converted into required type <ti"
+        r".StructType center=<taichi.lang.matrix.VectorType object at .*>, radius=f32, struct_methods={}>",
     ) as e:
         foo(circle_type(center=ti.math.vec2([1, 2]), radius=2.33))

@@ -123,26 +123,26 @@ void CompiledGraph::init_runtime_context(
                   "dtype={} but got an ndarray with dtype={}",
                   symbolic_arg.name, symbolic_arg_primitive_dtype.to_string(),
                   arr_primitive_dtype.to_string());
-      ctx.set_arg_ndarray(i, *arr);
+      ctx.set_arg_ndarray({i}, *arr);
     } else if (symbolic_arg.tag == aot::ArgKind::kScalar) {
       TI_ASSERT(ival.tag == aot::ArgKind::kScalar);
       // Matrix args are flattened so they're same as scalars.
       int type_size = data_type_size(symbolic_arg.dtype());
       switch (type_size) {
         case 1:
-          ctx.set_arg(i,
+          ctx.set_arg({i},
                       taichi_union_cast_with_different_sizes<int8>(ival.val));
           break;
         case 2:
-          ctx.set_arg(i,
+          ctx.set_arg({i},
                       taichi_union_cast_with_different_sizes<int16>(ival.val));
           break;
         case 4:
-          ctx.set_arg(i,
+          ctx.set_arg({i},
                       taichi_union_cast_with_different_sizes<int32>(ival.val));
           break;
         case 8:
-          ctx.set_arg(i,
+          ctx.set_arg({i},
                       taichi_union_cast_with_different_sizes<int64>(ival.val));
           break;
         default:
@@ -151,11 +151,11 @@ void CompiledGraph::init_runtime_context(
     } else if (symbolic_arg.tag == aot::ArgKind::kTexture) {
       TI_ASSERT(ival.tag == aot::ArgKind::kTexture);
       Texture *tex = reinterpret_cast<Texture *>(ival.val);
-      ctx.set_arg_texture(i, *tex);
+      ctx.set_arg_texture({i}, *tex);
     } else if (symbolic_arg.tag == aot::ArgKind::kRWTexture) {
       TI_ASSERT(ival.tag == aot::ArgKind::kTexture);
       Texture *tex = reinterpret_cast<Texture *>(ival.val);
-      ctx.set_arg_rw_texture(i, *tex);
+      ctx.set_arg_rw_texture({i}, *tex);
     } else {
       TI_ERROR("Error in compiled graph: unknown tag {}", ival.tag);
     }

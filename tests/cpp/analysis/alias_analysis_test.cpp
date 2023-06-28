@@ -95,8 +95,8 @@ TEST(AliasAnalysis, GlobalPtr_DiffSNodes) {
 
 TEST(AliasAnalysis, ExternalPtr_Same) {
   IRBuilder builder;
-  auto *arg1 = builder.create_arg_load(1, PrimitiveType::i32, true);
-  auto *arg2 = builder.create_arg_load(2, PrimitiveType::i32, false);
+  auto *arg1 = builder.create_arg_load({1}, PrimitiveType::i32, true);
+  auto *arg2 = builder.create_arg_load({2}, PrimitiveType::i32, false);
   const auto indices = std::vector<Stmt *>{arg2, arg2};
   auto *eptr1 = builder.create_external_ptr(arg1, indices);
   auto *eptr2 = builder.create_external_ptr(arg1, indices);
@@ -107,8 +107,8 @@ TEST(AliasAnalysis, ExternalPtr_Same) {
 
 TEST(AliasAnalysis, ExternalPtr_Different) {
   IRBuilder builder;
-  auto *arg1 = builder.create_arg_load(1, PrimitiveType::i32, true);
-  auto *arg2 = builder.create_arg_load(2, PrimitiveType::i32, false);
+  auto *arg1 = builder.create_arg_load({1}, PrimitiveType::i32, true);
+  auto *arg2 = builder.create_arg_load({2}, PrimitiveType::i32, false);
   const auto indices1 = std::vector<Stmt *>{arg2, builder.get_int32(1)};
   const auto indices2 = std::vector<Stmt *>{arg2, builder.get_int32(2)};
   auto *eptr1 = builder.create_external_ptr(arg1, indices1);
@@ -120,9 +120,9 @@ TEST(AliasAnalysis, ExternalPtr_Different) {
 
 TEST(AliasAnalysis, ExternalPtr_Uncertain) {
   IRBuilder builder;
-  auto *arg1 = builder.create_arg_load(1, PrimitiveType::i32, true);
-  auto *arg2 = builder.create_arg_load(2, PrimitiveType::i32, false);
-  auto *arg3 = builder.create_arg_load(3, PrimitiveType::i32, false);
+  auto *arg1 = builder.create_arg_load({1}, PrimitiveType::i32, true);
+  auto *arg2 = builder.create_arg_load({2}, PrimitiveType::i32, false);
+  auto *arg3 = builder.create_arg_load({3}, PrimitiveType::i32, false);
   const auto indices1 = std::vector<Stmt *>{arg2, arg2};
   const auto indices2 = std::vector<Stmt *>{arg2, arg3};
   auto *eptr1 = builder.create_external_ptr(arg1, indices1);
@@ -134,9 +134,9 @@ TEST(AliasAnalysis, ExternalPtr_Uncertain) {
 
 TEST(AliasAnalysis, ExternalPtr_DiffPtr) {
   IRBuilder builder;
-  auto *arg1 = builder.create_arg_load(1, PrimitiveType::i32, true);
-  auto *arg2 = builder.create_arg_load(2, PrimitiveType::i32, true);
-  auto *arg3 = builder.create_arg_load(3, PrimitiveType::i32, false);
+  auto *arg1 = builder.create_arg_load({1}, PrimitiveType::i32, true);
+  auto *arg2 = builder.create_arg_load({2}, PrimitiveType::i32, true);
+  auto *arg3 = builder.create_arg_load({3}, PrimitiveType::i32, false);
   const auto indices = std::vector<Stmt *>{arg3, arg3};
   auto *eptr1 = builder.create_external_ptr(arg1, indices);
   auto *eptr2 = builder.create_external_ptr(arg2, indices);
@@ -147,9 +147,9 @@ TEST(AliasAnalysis, ExternalPtr_DiffPtr) {
 
 TEST(AliasAnalysis, ExternalPtr_GradSame) {
   IRBuilder builder;
-  auto *arg1 = builder.create_arg_load(1, PrimitiveType::i32, true);
-  auto *arg2 = builder.create_arg_load(1, PrimitiveType::i32, true);
-  auto *arg3 = builder.create_arg_load(2, PrimitiveType::i32, false);
+  auto *arg1 = builder.create_arg_load({1}, PrimitiveType::i32, true);
+  auto *arg2 = builder.create_arg_load({1}, PrimitiveType::i32, true);
+  auto *arg3 = builder.create_arg_load({2}, PrimitiveType::i32, false);
   const auto indices = std::vector<Stmt *>{arg3, arg3};
   auto *eptr1 = builder.create_external_ptr(arg1, indices);
   auto *eptr2 = builder.create_external_ptr(arg2, indices);
@@ -160,9 +160,9 @@ TEST(AliasAnalysis, ExternalPtr_GradSame) {
 
 TEST(AliasAnalysis, ExternalPtr_GradDiff) {
   IRBuilder builder;
-  auto *arg1 = builder.create_arg_load(1, PrimitiveType::i32, true);
-  auto *arg2 = builder.create_arg_load(1, PrimitiveType::i32, true);
-  auto *arg3 = builder.create_arg_load(2, PrimitiveType::i32, false);
+  auto *arg1 = builder.create_arg_load({1}, PrimitiveType::i32, true);
+  auto *arg2 = builder.create_arg_load({1}, PrimitiveType::i32, true);
+  auto *arg3 = builder.create_arg_load({2}, PrimitiveType::i32, false);
   const auto indices = std::vector<Stmt *>{arg3, arg3};
   auto *eptr1 = builder.create_external_ptr(arg1, indices, /*is_grad=*/false);
   auto *eptr2 = builder.create_external_ptr(arg2, indices, /*is_grad=*/true);

@@ -3,6 +3,8 @@
 #include "taichi/rhi/device.h"
 #include "taichi/util/lang_util.h"
 
+#include <stack>
+
 namespace taichi::lang {
 
 class Program;
@@ -103,6 +105,10 @@ class TI_DLL_EXPORT CallableBase {
   };
 
   std::vector<Parameter> parameter_list;
+  std::unordered_map<std::vector<int>,
+                     Parameter,
+                     hashing::Hasher<std::vector<int>>>
+      not_flattened_parameters;
   std::vector<Ret> rets;
 
   const StructType *ret_type = nullptr;
@@ -124,20 +130,27 @@ class TI_DLL_EXPORT Callable : public CallableBase {
   Callable();
   virtual ~Callable();
 
-  int insert_scalar_param(const DataType &dt, const std::string &name = "");
-  int insert_arr_param(const DataType &dt,
-                       int total_dim,
-                       std::vector<int> element_shape,
-                       const std::string &name = "");
-  int insert_ndarray_param(const DataType &dt,
-                           int ndim,
-                           const std::string &name = "",
-                           bool needs_grad = false);
-  int insert_texture_param(int total_dim, const std::string &name = "");
-  int insert_pointer_param(const DataType &dt, const std::string &name = "");
-  int insert_rw_texture_param(int total_dim,
-                              BufferFormat format,
-                              const std::string &name = "");
+  std::vector<int> insert_scalar_param(const DataType &dt,
+                                       const std::string &name = "");
+  std::vector<int> insert_arr_param(const DataType &dt,
+                                    int total_dim,
+                                    std::vector<int> element_shape,
+                                    const std::string &name = "");
+  std::vector<int> insert_ndarray_param(const DataType &dt,
+                                        int ndim,
+                                        const std::string &name = "",
+                                        bool needs_grad = false);
+  std::vector<int> insert_texture_param(int total_dim,
+                                        const std::string &name = "");
+  std::vector<int> insert_pointer_param(const DataType &dt,
+                                        const std::string &name = "");
+  std::vector<int> insert_rw_texture_param(int total_dim,
+                                           BufferFormat format,
+                                           const std::string &name = "");
+
+  std::vector<int> insert_argpack_param_and_push(const std::string &name = "");
+
+  void pop_argpack_stack();
 
   int insert_ret(const DataType &dt);
 
@@ -146,6 +159,14 @@ class TI_DLL_EXPORT Callable : public CallableBase {
   void finalize_params();
 
   [[nodiscard]] virtual std::string get_name() const = 0;
+
+ private:
+  std::vector<int> add_parameter(const Parameter &param);
+  // Note: These stacks are used for inserting params inside argpacks. When
+  // we call finalize_params(), all of them are required to be empty then.
+  std::stack<std::vector<Parameter>> temp_argpack_stack_;
+  std::vector<int> temp_indices_stack_;
+  std::stack<std::string> temp_argpack_name_stack_;
 };
 
 }  // namespace taichi::lang

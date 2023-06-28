@@ -20,7 +20,10 @@ class CacheLoopInvariantGlobalVars : public LoopInvariantDetector {
 
   DelayedIRModifier modifier;
   std::unordered_map<const SNode *, GlobalPtrStmt *> loop_unique_ptr_;
-  std::unordered_map<int, ExternalPtrStmt *> loop_unique_arr_ptr_;
+  std::unordered_map<std::vector<int>,
+                     ExternalPtrStmt *,
+                     hashing::Hasher<std::vector<int>>>
+      loop_unique_arr_ptr_;
 
   OffloadedStmt *current_offloaded;
 
@@ -101,7 +104,7 @@ class CacheLoopInvariantGlobalVars : public LoopInvariantDetector {
         return false;
       }
       ArgLoadStmt *arg_load_stmt = dest_ptr->base_ptr->as<ArgLoadStmt>();
-      int arg_id = arg_load_stmt->arg_id;
+      std::vector<int> arg_id = arg_load_stmt->arg_id;
       if (loop_unique_arr_ptr_[arg_id] == nullptr) {
         // Not loop unique
         return false;

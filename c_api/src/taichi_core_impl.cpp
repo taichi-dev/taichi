@@ -728,19 +728,19 @@ void ti_launch_kernel(TiRuntime runtime,
           case TI_DATA_TYPE_I16: {
             int16_t arg_val;
             std::memcpy(&arg_val, &arg.value.scalar.value.x16, sizeof(arg_val));
-            builder.set_arg(i, arg_val);
+            builder.set_arg({(int)i}, arg_val);
             break;
           }
           case TI_DATA_TYPE_U16: {
             uint16_t arg_val = arg.value.scalar.value.x16;
-            builder.set_arg(i, arg_val);
+            builder.set_arg({(int)i}, arg_val);
             break;
           }
           case TI_DATA_TYPE_F16: {
             float arg_val;
             std::memcpy(&arg_val, &arg.value.scalar.value.x32, sizeof(arg_val));
             // FIXME: temporary workaround for f16
-            builder.set_arg_float(i, arg_val);
+            builder.set_arg_float({(int)i}, arg_val);
             break;
           }
           default: {
@@ -754,11 +754,11 @@ void ti_launch_kernel(TiRuntime runtime,
       }
 
       case TI_ARGUMENT_TYPE_I32: {
-        builder.set_arg(i, arg.value.i32);
+        builder.set_arg({(int)i}, arg.value.i32);
         break;
       }
       case TI_ARGUMENT_TYPE_F32: {
-        builder.set_arg(i, arg.value.f32);
+        builder.set_arg({(int)i}, arg.value.f32);
         break;
       }
       case TI_ARGUMENT_TYPE_NDARRAY: {
@@ -774,7 +774,7 @@ void ti_launch_kernel(TiRuntime runtime,
         std::vector<int> shape(ndarray.shape.dims,
                                ndarray.shape.dims + ndarray.shape.dim_count);
 
-        builder.set_arg_ndarray_impl(i, (intptr_t)devalloc.get(), shape);
+        builder.set_arg_ndarray_impl({(int)i}, (intptr_t)devalloc.get(), shape);
 
         devallocs.emplace_back(std::move(devalloc));
         break;
@@ -787,7 +787,7 @@ void ti_launch_kernel(TiRuntime runtime,
         int width = arg.value.texture.extent.width;
         int height = arg.value.texture.extent.height;
         int depth = arg.value.texture.extent.depth;
-        builder.set_arg_rw_texture_impl(i, (intptr_t)devalloc.get(),
+        builder.set_arg_rw_texture_impl({(int)i}, (intptr_t)devalloc.get(),
                                         {width, height, depth});
         devallocs.emplace_back(std::move(devalloc));
         break;

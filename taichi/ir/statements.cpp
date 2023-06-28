@@ -150,8 +150,9 @@ bool SNodeOpStmt::need_activation(SNodeOpType op) {
          op == SNodeOpType::allocate;
 }
 
-ExternalTensorShapeAlongAxisStmt::ExternalTensorShapeAlongAxisStmt(int axis,
-                                                                   int arg_id)
+ExternalTensorShapeAlongAxisStmt::ExternalTensorShapeAlongAxisStmt(
+    int axis,
+    const std::vector<int> &arg_id)
     : axis(axis), arg_id(arg_id) {
   TI_STMT_REG_FIELDS;
 }

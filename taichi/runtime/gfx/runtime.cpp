@@ -41,8 +41,13 @@ class HostDeviceContextBlitter {
   }
 
   void host_to_device(
-      const std::unordered_map<int, DeviceAllocation> &ext_arrays,
-      const std::unordered_map<int, size_t> &ext_arr_size) {
+      const std::unordered_map<std::vector<int>,
+                               DeviceAllocation,
+                               hashing::Hasher<std::vector<int>>> &ext_arrays,
+      const std::unordered_map<std::vector<int>,
+                               size_t,
+                               hashing::Hasher<std::vector<int>>>
+          &ext_arr_size) {
     if (!ctx_attribs_->has_args()) {
       return;
     }
@@ -52,38 +57,47 @@ class HostDeviceContextBlitter {
               RhiResult::success);
 
     for (int i = 0; i < ctx_attribs_->args().size(); ++i) {
-      const auto &arg = ctx_attribs_->args()[i];
+      const auto &arg_kv = ctx_attribs_->args()[i];
+      const auto &indices = arg_kv.first;
+      const auto &arg = arg_kv.second;
       if (arg.is_array) {
-        if (host_ctx_.device_allocation_type[i] ==
+        if (host_ctx_.device_allocation_type[indices] ==
                 LaunchContextBuilder::DevAllocType::kNone &&
-            ext_arr_size.at(i)) {
+            ext_arr_size.at(indices)) {
           // Only need to blit ext arrs (host array)
-          uint32_t access = uint32_t(ctx_attribs_->arr_access.at(i));
+          auto access_it = std::find_if(ctx_attribs_->arr_access.begin(),
+                                        ctx_attribs_->arr_access.end(),
+                                        [indices](const auto &pair) -> bool {
+                                          return pair.first == indices;
+                                        });
+          TI_ASSERT(access_it != ctx_attribs_->arr_access.end());
+          uint32_t access = uint32_t(access_it->second);
           if (access & uint32_t(irpass::ExternalPtrAccess::READ)) {
-            DeviceAllocation buffer = ext_arrays.at(i);
+            DeviceAllocation buffer = ext_arrays.at(indices);
             void *device_arr_ptr{nullptr};
             TI_ASSERT(device_->map(buffer, &device_arr_ptr) ==
                       RhiResult::success);
-            const void *host_ptr =
-                host_ctx_.array_ptrs[{i, TypeFactory::DATA_PTR_POS_IN_NDARRAY}];
-            std::memcpy(device_arr_ptr, host_ptr, ext_arr_size.at(i));
+            auto data_ptr_idx = indices;
+            data_ptr_idx.push_back(TypeFactory::DATA_PTR_POS_IN_NDARRAY);
+            const void *host_ptr = host_ctx_.array_ptrs[data_ptr_idx];
+            std::memcpy(device_arr_ptr, host_ptr, ext_arr_size.at(indices));
             device_->unmap(buffer);
           }
         }
         // Substitute in the device address.
 
-        if ((host_ctx_.device_allocation_type[i] ==
+        if ((host_ctx_.device_allocation_type[indices] ==
                  LaunchContextBuilder::DevAllocType::kNone ||
-             host_ctx_.device_allocation_type[i] ==
+             host_ctx_.device_allocation_type[indices] ==
                  LaunchContextBuilder::DevAllocType::kNdarray) &&
             device_->get_caps().get(
                 DeviceCapability::spirv_has_physical_storage_buffer)) {
           uint64_t addr =
-              device_->get_memory_physical_pointer(ext_arrays.at(i));
+              device_->get_memory_physical_pointer(ext_arrays.at(indices));
+          auto grad_ptr_idx = indices;
+          grad_ptr_idx.push_back(TypeFactory::GRAD_PTR_POS_IN_NDARRAY);
           host_ctx_.set_ndarray_ptrs(
-              i, addr,
-              (uint64)host_ctx_
-                  .array_ptrs[{i, TypeFactory::GRAD_PTR_POS_IN_NDARRAY}]);
+              indices, addr, (uint64)host_ctx_.array_ptrs[grad_ptr_idx]);
         }
       }
     }
@@ -96,8 +110,13 @@ class HostDeviceContextBlitter {
 
   bool device_to_host(
       CommandList *cmdlist,
-      const std::unordered_map<int, DeviceAllocation> &ext_arrays,
-      const std::unordered_map<int, size_t> &ext_arr_size) {
+      const std::unordered_map<std::vector<int>,
+                               DeviceAllocation,
+                               hashing::Hasher<std::vector<int>>> &ext_arrays,
+      const std::unordered_map<std::vector<int>,
+                               size_t,
+                               hashing::Hasher<std::vector<int>>>
+          &ext_arr_size) {
     if (ctx_attribs_->empty()) {
       return false;
     }
@@ -108,19 +127,28 @@ class HostDeviceContextBlitter {
     std::vector<size_t> readback_sizes;
 
     for (int i = 0; i < ctx_attribs_->args().size(); ++i) {
-      const auto &arg = ctx_attribs_->args()[i];
+      const auto &kv = ctx_attribs_->args()[i];
+      const auto &indices = kv.first;
+      const auto &arg = kv.second;
       if (arg.is_array &&
-          host_ctx_.device_allocation_type[i] ==
+          host_ctx_.device_allocation_type[indices] ==
               LaunchContextBuilder::DevAllocType::kNone &&
-          ext_arr_size.at(i)) {
-        uint32_t access = uint32_t(ctx_attribs_->arr_access.at(i));
+          ext_arr_size.at(indices)) {
+        auto access_it = std::find_if(ctx_attribs_->arr_access.begin(),
+                                      ctx_attribs_->arr_access.end(),
+                                      [indices](const auto &pair) -> bool {
+                                        return pair.first == indices;
+                                      });
+        TI_ASSERT(access_it != ctx_attribs_->arr_access.end());
+        uint32_t access = uint32_t(access_it->second);
         if (access & uint32_t(irpass::ExternalPtrAccess::WRITE)) {
           // Only need to blit ext arrs (host array)
-          readback_dev_ptrs.push_back(ext_arrays.at(i).get_ptr(0));
-          readback_host_ptrs.push_back(
-              host_ctx_.array_ptrs[{i, TypeFactory::DATA_PTR_POS_IN_NDARRAY}]);
+          readback_dev_ptrs.push_back(ext_arrays.at(indices).get_ptr(0));
+          auto data_ptr_idx = indices;
+          data_ptr_idx.push_back(TypeFactory::DATA_PTR_POS_IN_NDARRAY);
+          readback_host_ptrs.push_back(host_ctx_.array_ptrs[data_ptr_idx]);
           // TODO: readback grad_ptrs as well once ndarray ad is supported
-          readback_sizes.push_back(ext_arr_size.at(i));
+          readback_sizes.push_back(ext_arr_size.at(indices));
           require_sync = true;
         }
       }
@@ -368,68 +396,79 @@ void GfxRuntime::launch_kernel(KernelHandle handle,
       args_buffer.get(), ret_buffer.get());
 
   // `any_arrays` contain both external arrays and NDArrays
-  std::unordered_map<int, DeviceAllocation> any_arrays;
+  std::unordered_map<std::vector<int>, DeviceAllocation,
+                     hashing::Hasher<std::vector<int>>>
+      any_arrays;
   // `ext_array_size` only holds the size of external arrays (host arrays)
   // As buffer size information is only needed when it needs to be allocated
   // and transferred by the host
-  std::unordered_map<int, size_t> ext_array_size;
-  std::unordered_map<int, DeviceAllocation> textures;
+  std::unordered_map<std::vector<int>, size_t,
+                     hashing::Hasher<std::vector<int>>>
+      ext_array_size;
+  std::unordered_map<std::vector<int>, DeviceAllocation,
+                     hashing::Hasher<std::vector<int>>>
+      textures;
 
   // Prepare context buffers & arrays
   if (ctx_blitter) {
     TI_ASSERT(ti_kernel->get_args_buffer_size() ||
               ti_kernel->get_ret_buffer_size());
 
-    int i = 0;
     const auto &args = ti_kernel->ti_kernel_attribs().ctx_attribs.args();
-    for (auto &arg : args) {
+    for (auto &kv : args) {
+      const auto &indices = kv.first;
+      const auto &arg = kv.second;
       if (arg.is_array) {
-        if (host_ctx.device_allocation_type[i] !=
+        if (host_ctx.device_allocation_type[indices] !=
             LaunchContextBuilder::DevAllocType::kNone) {
           DeviceAllocation devalloc = kDeviceNullAllocation;
-
+          auto data_ptr_indices = indices;
+          data_ptr_indices.push_back(TypeFactory::DATA_PTR_POS_IN_NDARRAY);
           // NDArray
-          if (host_ctx.array_ptrs.count(
-                  {i, TypeFactory::DATA_PTR_POS_IN_NDARRAY})) {
-            devalloc = *(DeviceAllocation *)(host_ctx.array_ptrs[{
-                i, TypeFactory::DATA_PTR_POS_IN_NDARRAY}]);
+          if (host_ctx.array_ptrs.count(data_ptr_indices)) {
+            devalloc =
+                *(DeviceAllocation *)(host_ctx.array_ptrs[data_ptr_indices]);
           }
           // Texture
-          if (host_ctx.array_ptrs.count({i})) {
-            devalloc = *(DeviceAllocation *)(host_ctx.array_ptrs[{i}]);
+          if (host_ctx.array_ptrs.count(indices)) {
+            devalloc = *(DeviceAllocation *)(host_ctx.array_ptrs[indices]);
           }
 
-          if (host_ctx.device_allocation_type[i] ==
+          if (host_ctx.device_allocation_type[indices] ==
               LaunchContextBuilder::DevAllocType::kNdarray) {
-            any_arrays[i] = devalloc;
+            any_arrays[indices] = devalloc;
             ndarrays_in_use_.insert(devalloc.alloc_id);
-          } else if (host_ctx.device_allocation_type[i] ==
+          } else if (host_ctx.device_allocation_type[indices] ==
                      LaunchContextBuilder::DevAllocType::kTexture) {
-            textures[i] = devalloc;
-          } else if (host_ctx.device_allocation_type[i] ==
+            textures[indices] = devalloc;
+          } else if (host_ctx.device_allocation_type[indices] ==
                      LaunchContextBuilder::DevAllocType::kRWTexture) {
-            textures[i] = devalloc;
+            textures[indices] = devalloc;
           } else {
             TI_NOT_IMPLEMENTED;
           }
         } else {
-          ext_array_size[i] = host_ctx.array_runtime_sizes[i];
-          uint32_t access = uint32_t(
-              ti_kernel->ti_kernel_attribs().ctx_attribs.arr_access.at(i));
-
+          ext_array_size[indices] = host_ctx.array_runtime_sizes[indices];
+          auto arr_access =
+              ti_kernel->ti_kernel_attribs().ctx_attribs.arr_access;
+          auto access_it = std::find_if(arr_access.begin(), arr_access.end(),
+                                        [indices](const auto &pair) -> bool {
+                                          return pair.first == indices;
+                                        });
+          TI_ASSERT(access_it != arr_access.end());
+          uint32_t access = uint32_t(access_it->second);
           // Alloc ext arr
-          size_t alloc_size = std::max(size_t(32), ext_array_size.at(i));
+          size_t alloc_size = std::max(size_t(32), ext_array_size.at(indices));
           bool host_write = access & uint32_t(irpass::ExternalPtrAccess::READ);
           auto [allocated, res] = device_->allocate_memory_unique(
               {alloc_size, host_write, false, /*export_sharing=*/false,
                AllocUsage::Storage});
           TI_ASSERT_INFO(res == RhiResult::success,
                          "Failed to allocate ext arr buffer");
-          any_arrays[i] = *allocated.get();
+          any_arrays[indices] = *allocated.get();
           ctx_buffers_.push_back(std::move(allocated));
         }
       }
-      i++;
     }
 
     ctx_blitter->host_to_device(any_arrays, ext_array_size);

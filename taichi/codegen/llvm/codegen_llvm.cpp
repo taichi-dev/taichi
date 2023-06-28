@@ -1276,7 +1276,7 @@ llvm::Value *TaskCodeGenLLVM::bitcast_to_u64(llvm::Value *val, DataType type) {
 }
 
 void TaskCodeGenLLVM::visit(ArgLoadStmt *stmt) {
-  llvm_val[stmt] = get_struct_arg({stmt->arg_id}, stmt->create_load);
+  llvm_val[stmt] = get_struct_arg(stmt->arg_id, stmt->create_load);
 }
 
 void TaskCodeGenLLVM::visit(ReturnStmt *stmt) {
@@ -1978,8 +1978,10 @@ void TaskCodeGenLLVM::visit(ExternalPtrStmt *stmt) {
 void TaskCodeGenLLVM::visit(ExternalTensorShapeAlongAxisStmt *stmt) {
   const auto arg_id = stmt->arg_id;
   const auto axis = stmt->axis;
-  llvm_val[stmt] = get_struct_arg(
-      {arg_id, TypeFactory::SHAPE_POS_IN_NDARRAY, axis}, /*create_load=*/true);
+  auto extended_arg_id = arg_id;
+  extended_arg_id.push_back(TypeFactory::SHAPE_POS_IN_NDARRAY);
+  extended_arg_id.push_back(axis);
+  llvm_val[stmt] = get_struct_arg(extended_arg_id, /*create_load=*/true);
 }
 
 std::string TaskCodeGenLLVM::init_offloaded_task_function(OffloadedStmt *stmt,

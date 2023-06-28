@@ -11,7 +11,7 @@ class KernelLauncher : public LLVM::KernelLauncher {
 
   struct Context {
     JITModule *jit_module{nullptr};
-    std::vector<Callable::Parameter> parameters;
+    std::vector<std::pair<std::vector<int>, Callable::Parameter>> parameters;
     std::vector<OffloadedTask> offloaded_tasks;
   };
 

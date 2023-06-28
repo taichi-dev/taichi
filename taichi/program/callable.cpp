@@ -103,7 +103,7 @@ void Callable::pop_argpack_stack() {
   TI_ASSERT(temp_argpack_stack_.size() > 0 && temp_indices_stack_.size() > 0 &&
             temp_argpack_name_stack_.size() > 0);
   std::vector<Parameter> argpack_params = temp_argpack_stack_.top();
-  std::vector<StructMember> members;
+  std::vector<AbstractDictionaryMember> members;
   members.reserve(argpack_params.size());
   for (int i = 0; i < argpack_params.size(); i++) {
     auto &param = argpack_params[i];

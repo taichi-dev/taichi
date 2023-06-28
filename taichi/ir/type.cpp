@@ -180,8 +180,8 @@ std::string ArgPackType::to_string() const {
     if (i) {
       s += ", ";
     }
-    s += fmt::format("{}({}, #{}): {}", i, elements_[i].name, i + 1,
-                     elements_[i].type->to_string());
+    s += fmt::format("{}({}, #{}): {}", i, elements_[i].name,
+                     i + 1, elements_[i].type->to_string());
   }
   s += "}";
   return s;

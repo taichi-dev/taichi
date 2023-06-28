@@ -11,8 +11,11 @@ from .staging_buffer import (
     copy_all_to_vbo,
     copy_all_to_vbo_particle,
     get_indices_field,
+    get_indices_field_v2,
     get_transforms_field,
+    get_transforms_field_v2,
     get_vbo_field,
+    get_vbo_field_v2,
 )
 from .utils import check_ggui_availability, get_field_info
 
@@ -157,10 +160,10 @@ class SceneV2:
             vertex_count = vertices.shape[0] - vertex_offset
             vertex_count -= vertex_count % 2
         has_per_vertex_color = per_vertex_color is not None
-        vbo = get_vbo_field(vertices)
+        vbo = get_vbo_field_v2(vertices)
         copy_all_to_vbo(vbo, vertices, 0, 0, per_vertex_color if has_per_vertex_color else 0)
         vbo_info = get_field_info(vbo)
-        indices_ndarray = get_indices_field(indices) if indices is not None else None
+        indices_ndarray = get_indices_field_v2(indices) if indices is not None else None
         indices_info = get_field_info(indices_ndarray)
         self.scene.lines(
             vbo_info,
@@ -235,10 +238,10 @@ class SceneV2:
                 index_count = vertex_count  # FIXME : Need to confirm
             else:
                 index_count = indices.shape[0]
-        vbo = get_vbo_field(vertices)
+        vbo = get_vbo_field_v2(vertices)
         copy_all_to_vbo(vbo, vertices, normals, 0, per_vertex_color if has_per_vertex_color else 0)
         vbo_info = get_field_info(vbo)
-        indices_ndarray = get_indices_field(indices) if indices is not None else None
+        indices_ndarray = get_indices_field_v2(indices) if indices is not None else None
         indices_info = get_field_info(indices_ndarray)
 
         self.scene.mesh(
@@ -336,12 +339,12 @@ class SceneV2:
         else:
             instance_count = 1
 
-        vbo = get_vbo_field(vertices)
+        vbo = get_vbo_field_v2(vertices)
         copy_all_to_vbo(vbo, vertices, normals, 0, per_vertex_color if has_per_vertex_color else 0)
         vbo_info = get_field_info(vbo)
-        indices_ndarray = get_indices_field(indices) if indices else None
+        indices_ndarray = get_indices_field_v2(indices) if indices else None
         indices_info = get_field_info(indices_ndarray)
-        transforms_ndarray = get_transforms_field(transforms) if transforms else None
+        transforms_ndarray = get_transforms_field_v2(transforms) if transforms else None
         transform_info = get_field_info(transforms_ndarray)
         self.scene.mesh_instance(
             vbo_info,
@@ -392,7 +395,7 @@ class SceneV2:
         if index_count is None:
             index_count = centers.shape[0]
             # per_vertex_radius_vec3[i] = Vector([per_vertex_radius[i], 0., 0.])
-        vbo = get_vbo_field(centers)
+        vbo = get_vbo_field_v2(centers)
         copy_all_to_vbo_particle(
             vbo,
             centers,

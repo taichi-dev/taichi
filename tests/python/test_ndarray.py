@@ -1103,3 +1103,29 @@ def test_ndarray_clamp_verify():
     ao = ti.ndarray(ti.f32, shape=(height, width))
     test(ao)
     assert (ao.to_numpy() == np.zeros((height, width))).all()
+
+
+@test_utils.test(arch=supported_archs_taichi_ndarray)
+def test_ndarray_arg_builtin_float_type():
+    @ti.kernel
+    def foo(x: ti.types.ndarray(float, ndim=0)) -> ti.f32:
+        return x[None]
+
+    x = ti.ndarray(ti.f32, shape=())
+    x[None] = 42
+    assert foo(x) == 42
+
+
+@test_utils.test(arch=[ti.cpu, ti.cuda])
+def test_real_func_vector_ndarray_arg():
+    @ti.experimental.real_func
+    def foo(x: ti.types.ndarray(ndim=1)) -> vec3:
+        return x[0]
+
+    @ti.kernel
+    def test(x: ti.types.ndarray(ndim=1)) -> vec3:
+        return foo(x)
+
+    x = ti.Vector.ndarray(3, ti.f32, shape=(1))
+    x[0] = vec3(1, 2, 3)
+    assert (test(x) == vec3(1, 2, 3)).all()

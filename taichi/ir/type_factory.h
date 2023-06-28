@@ -22,8 +22,9 @@ class TypeFactory {
 
   Type *get_tensor_type(std::vector<int> shape, Type *element);
 
-  const Type *get_struct_type(const std::vector<AbstractDictionaryMember> &elements,
-                              const std::string &layout = "none");
+  const Type *get_struct_type(
+      const std::vector<AbstractDictionaryMember> &elements,
+      const std::string &layout = "none");
 
   const Type *get_argpack_type(const std::vector<ArgPackMember> &elements);
 
@@ -77,7 +78,8 @@ class TypeFactory {
   std::unordered_map<
       std::pair<std::vector<AbstractDictionaryMember>, std::string>,
       std::unique_ptr<Type>,
-      hashing::Hasher<std::pair<std::vector<AbstractDictionaryMember>, std::string>>>
+      hashing::Hasher<
+          std::pair<std::vector<AbstractDictionaryMember>, std::string>>>
       struct_types_;
   std::mutex struct_mut_;
   std::unordered_map<std::vector<ArgPackMember>,

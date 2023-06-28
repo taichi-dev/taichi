@@ -798,6 +798,22 @@ class ExternalTensorShapeAlongAxisExpression : public Expression {
   TI_DEFINE_ACCEPT_FOR_EXPRESSION
 };
 
+class ExternalTensorBasePtrExpression : public Expression {
+ public:
+  Expr ptr;
+  bool is_grad;
+
+  explicit ExternalTensorBasePtrExpression(const Expr &ptr, bool is_grad)
+      : ptr(ptr), is_grad(is_grad) {
+  }
+
+  void type_check(const CompileConfig *config) override;
+
+  void flatten(FlattenContext *ctx) override;
+
+  TI_DEFINE_ACCEPT_FOR_EXPRESSION
+};
+
 class FrontendFuncCallStmt : public Stmt {
  public:
   std::optional<Identifier> ident;

@@ -157,6 +157,11 @@ ExternalTensorShapeAlongAxisStmt::ExternalTensorShapeAlongAxisStmt(int axis,
   TI_STMT_REG_FIELDS;
 }
 
+ExternalTensorBasePtrStmt::ExternalTensorBasePtrStmt(int arg_id, bool is_grad)
+    : arg_id(arg_id), is_grad(is_grad) {
+  TI_STMT_REG_FIELDS;
+}
+
 LoopUniqueStmt::LoopUniqueStmt(Stmt *input, const std::vector<SNode *> &covers)
     : input(input) {
   for (const auto &sn : covers) {

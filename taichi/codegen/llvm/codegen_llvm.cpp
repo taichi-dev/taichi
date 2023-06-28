@@ -1985,6 +1985,13 @@ void TaskCodeGenLLVM::visit(ExternalTensorShapeAlongAxisStmt *stmt) {
       {arg_id, TypeFactory::SHAPE_POS_IN_NDARRAY, axis}, /*create_load=*/true);
 }
 
+void TaskCodeGenLLVM::visit(ExternalTensorBasePtrStmt *stmt) {
+  const auto arg_id = stmt->arg_id;
+  int pos = stmt->is_grad ? TypeFactory::GRAD_PTR_POS_IN_NDARRAY
+                          : TypeFactory::DATA_PTR_POS_IN_NDARRAY;
+  llvm_val[stmt] = get_struct_arg({arg_id, pos}, /*create_load=*/true);
+}
+
 std::string TaskCodeGenLLVM::init_offloaded_task_function(OffloadedStmt *stmt,
                                                           std::string suffix) {
   current_loop_reentry = nullptr;

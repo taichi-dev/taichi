@@ -9,7 +9,7 @@ void set_kernel_args(const std::vector<int> &I,
                      int num_active_indices,
                      LaunchContextBuilder *launch_ctx) {
   for (int i = 0; i < num_active_indices; i++) {
-    launch_ctx->set_arg_int(i, I[i]);
+    launch_ctx->set_arg_int({i}, I[i]);
   }
 }
 }  // namespace
@@ -39,7 +39,7 @@ void SNodeRwAccessorsBank::Accessors::write_float(const std::vector<int> &I,
                                                   float64 val) {
   auto launch_ctx = writer_->make_launch_context();
   set_kernel_args(I, snode_->num_active_indices, &launch_ctx);
-  launch_ctx.set_arg_float(snode_->num_active_indices, val);
+  launch_ctx.set_arg_float({snode_->num_active_indices}, val);
   prog_->synchronize();
   const auto &compiled_kernel_data = prog_->compile_kernel(
       prog_->compile_config(), prog_->get_device_caps(), *writer_);
@@ -62,7 +62,7 @@ void SNodeRwAccessorsBank::Accessors::write_int(const std::vector<int> &I,
                                                 int64 val) {
   auto launch_ctx = writer_->make_launch_context();
   set_kernel_args(I, snode_->num_active_indices, &launch_ctx);
-  launch_ctx.set_arg_int(snode_->num_active_indices, val);
+  launch_ctx.set_arg_int({snode_->num_active_indices}, val);
   prog_->synchronize();
   const auto &compiled_kernel_data = prog_->compile_kernel(
       prog_->compile_config(), prog_->get_device_caps(), *writer_);
@@ -74,7 +74,7 @@ void SNodeRwAccessorsBank::Accessors::write_uint(const std::vector<int> &I,
                                                  uint64 val) {
   auto launch_ctx = writer_->make_launch_context();
   set_kernel_args(I, snode_->num_active_indices, &launch_ctx);
-  launch_ctx.set_arg_uint(snode_->num_active_indices, val);
+  launch_ctx.set_arg_uint({snode_->num_active_indices}, val);
   prog_->synchronize();
   const auto &compiled_kernel_data = prog_->compile_kernel(
       prog_->compile_config(), prog_->get_device_caps(), *writer_);

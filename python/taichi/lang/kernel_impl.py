@@ -632,56 +632,45 @@ class Kernel:
         launch_ctx = t_kernel.make_launch_context()
         max_arg_num = 64
         exceed_max_arg_num = False
-        for i, val in enumerate(args):
-            _needed = self.arguments[i].annotation
-            if isinstance(_needed, template):
-                continue
-            needed_list, provided_list = [], []
 
-            def flatten_argpack(argpack, argpack_type):
-                for j, (name, anno) in enumerate(argpack_type.members.items()):
-                    if isinstance(anno, ArgPackType):
-                        flatten_argpack(argpack[name], anno)
-                    else:
-                        needed_list.append(anno)
-                        provided_list.append(argpack[name])
-
-            if isinstance(_needed, ArgPackType) and isinstance(val, ArgPack):
-                flatten_argpack(val, _needed)
+        def recursive_set_args(needed, provided, v, indices):
+            nonlocal actual_argument_slot, exceed_max_arg_num
+            if actual_argument_slot >= max_arg_num:
+                exceed_max_arg_num = True
+                return
+            actual_argument_slot += 1
+            if isinstance(needed, ArgPackType):
+                if not isinstance(v, ArgPack):
+                    raise TaichiRuntimeTypeError.get(indices, str(needed), str(provided))
+                for j, (name, anno) in enumerate(needed.members.items()):
+                    recursive_set_args(anno, type(v[name]), v[name], indices + (j,))
             else:
-                needed_list, provided_list = [_needed], [val]
-
-            for j, _v in enumerate(needed_list):
-                needed, provided, v = _v, type(provided_list[j]), provided_list[j]
-                if actual_argument_slot >= max_arg_num:
-                    exceed_max_arg_num = True
-                    break
                 # Note: do not use sth like "needed == f32". That would be slow.
                 if id(needed) in primitive_types.real_type_ids:
                     if not isinstance(v, (float, int, np.floating, np.integer)):
-                        raise TaichiRuntimeTypeError.get(i, needed.to_string(), provided)
-                    launch_ctx.set_arg_float(actual_argument_slot, float(v))
+                        raise TaichiRuntimeTypeError.get(indices, needed.to_string(), provided)
+                    launch_ctx.set_arg_float(indices, float(v))
                 elif id(needed) in primitive_types.integer_type_ids:
                     if not isinstance(v, (int, np.integer)):
-                        raise TaichiRuntimeTypeError.get(i, needed.to_string(), provided)
+                        raise TaichiRuntimeTypeError.get(indices, needed.to_string(), provided)
                     if is_signed(cook_dtype(needed)):
-                        launch_ctx.set_arg_int(actual_argument_slot, int(v))
+                        launch_ctx.set_arg_int(indices, int(v))
                     else:
-                        launch_ctx.set_arg_uint(actual_argument_slot, int(v))
+                        launch_ctx.set_arg_uint(indices, int(v))
                 elif isinstance(needed, sparse_matrix_builder):
                     # Pass only the base pointer of the ti.types.sparse_matrix_builder() argument
-                    launch_ctx.set_arg_uint(actual_argument_slot, v._get_ndarray_addr())
+                    launch_ctx.set_arg_uint(indices, v._get_ndarray_addr())
                 elif isinstance(needed, ndarray_type.NdarrayType) and isinstance(v, taichi.lang._ndarray.Ndarray):
                     v_primal = v.arr
                     v_grad = v.grad.arr if v.grad else None
                     if v_grad is None:
-                        launch_ctx.set_arg_ndarray(actual_argument_slot, v_primal)
+                        launch_ctx.set_arg_ndarray(indices, v_primal)
                     else:
-                        launch_ctx.set_arg_ndarray_with_grad(actual_argument_slot, v_primal, v_grad)
+                        launch_ctx.set_arg_ndarray_with_grad(indices, v_primal, v_grad)
                 elif isinstance(needed, texture_type.TextureType) and isinstance(v, taichi.lang._texture.Texture):
-                    launch_ctx.set_arg_texture(actual_argument_slot, v.tex)
+                    launch_ctx.set_arg_texture(indices, v.tex)
                 elif isinstance(needed, texture_type.RWTextureType) and isinstance(v, taichi.lang._texture.Texture):
-                    launch_ctx.set_arg_rw_texture(actual_argument_slot, v.tex)
+                    launch_ctx.set_arg_rw_texture(indices, v.tex)
                 elif isinstance(needed, ndarray_type.NdarrayType):
                     # Element shapes are already specialized in Taichi codegen.
                     # The shape information for element dims are no longer needed.
@@ -701,7 +690,7 @@ class Kernel:
                     if isinstance(v, np.ndarray):
                         if v.flags.c_contiguous:
                             launch_ctx.set_arg_external_array_with_shape(
-                                actual_argument_slot, int(v.ctypes.data), v.nbytes, array_shape, 0
+                                indices, int(v.ctypes.data), v.nbytes, array_shape, 0
                             )
                         elif v.flags.f_contiguous:
                             # TODO: A better way that avoids copying is saving strides info.
@@ -714,7 +703,7 @@ class Kernel:
 
                             callbacks.append(functools.partial(callback, v, tmp))
                             launch_ctx.set_arg_external_array_with_shape(
-                                actual_argument_slot, int(tmp.ctypes.data), tmp.nbytes, array_shape, 0
+                                indices, int(tmp.ctypes.data), tmp.nbytes, array_shape, 0
                             )
                         else:
                             raise ValueError(
@@ -752,14 +741,14 @@ class Kernel:
                                 callbacks.append(get_call_back(v, host_v))
 
                             launch_ctx.set_arg_external_array_with_shape(
-                                actual_argument_slot,
+                                indices,
                                 int(tmp.data_ptr()),
                                 tmp.element_size() * tmp.nelement(),
                                 array_shape,
                                 int(v.grad.data_ptr()) if v.grad is not None else 0,
                             )
                         else:
-                            raise TaichiRuntimeTypeError.get(i, needed.to_string(), v)
+                            raise TaichiRuntimeTypeError.get(indices, needed.to_string(), v)
                     elif has_paddle():
                         import paddle  # pylint: disable=C0415
 
@@ -791,26 +780,26 @@ class Kernel:
                                     f"Taichi do not support backend {v.place} that Paddle support"
                                 )
                             launch_ctx.set_arg_external_array_with_shape(
-                                actual_argument_slot, int(tmp._ptr()), v.element_size() * v.size, array_shape, 0
+                                indices, int(tmp._ptr()), v.element_size() * v.size, array_shape, 0
                             )
                         else:
-                            raise TaichiRuntimeTypeError.get(i, needed.to_string(), v)
+                            raise TaichiRuntimeTypeError.get(indices, needed.to_string(), v)
                     else:
-                        raise TaichiRuntimeTypeError.get(i, needed.to_string(), v)
+                        raise TaichiRuntimeTypeError.get(indices, needed.to_string(), v)
 
                 elif isinstance(needed, MatrixType):
                     if needed.dtype in primitive_types.real_types:
 
                         def cast_func(x):
                             if not isinstance(x, (int, float, np.integer, np.floating)):
-                                raise TaichiRuntimeTypeError.get(i, needed.dtype.to_string(), type(x))
+                                raise TaichiRuntimeTypeError.get(indices, needed.dtype.to_string(), type(x))
                             return float(x)
 
                     elif needed.dtype in primitive_types.integer_types:
 
                         def cast_func(x):
                             if not isinstance(x, (int, np.integer)):
-                                raise TaichiRuntimeTypeError.get(i, needed.dtype.to_string(), type(x))
+                                raise TaichiRuntimeTypeError.get(indices, needed.dtype.to_string(), type(x))
                             return int(x)
 
                     else:
@@ -821,14 +810,21 @@ class Kernel:
                     else:
                         v = [cast_func(v[i]) for i in range(needed.n)]
                     v = needed(*v)
-                    needed.set_kernel_struct_args(v, launch_ctx, (actual_argument_slot,))
+                    needed.set_kernel_struct_args(v, launch_ctx, indices)
                 elif isinstance(needed, StructType):
                     if not isinstance(v, needed):
-                        raise TaichiRuntimeTypeError.get(i, str(needed), provided)
-                    needed.set_kernel_struct_args(v, launch_ctx, (actual_argument_slot,))
+                        raise TaichiRuntimeTypeError.get(indices, str(needed), provided)
+                    needed.set_kernel_struct_args(v, launch_ctx, indices)
                 else:
                     raise ValueError(f"Argument type mismatch. Expecting {needed}, got {type(v)}.")
-                actual_argument_slot += 1
+
+        template_num = 0
+        for i, val in enumerate(args):
+            needed_ = self.arguments[i].annotation
+            if isinstance(needed_, template):
+                template_num += 1
+                continue
+            recursive_set_args(needed_, type(val), val, (i - template_num,))
 
         if exceed_max_arg_num:
             raise TaichiRuntimeError(

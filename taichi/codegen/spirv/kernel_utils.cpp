@@ -22,7 +22,7 @@ std::string TaskAttributes::buffers_name(BufferInfo b) {
     return "GlobalTmps";
   }
   if (b.type == BufferType::Root) {
-    return std::string("Root: ") + std::to_string(b.root_id);
+    return std::string("Root: ") + fmt::format("{}", fmt::join(b.root_id, "_"));
   }
   TI_ERROR("unrecognized buffer type");
 }
@@ -51,15 +51,17 @@ KernelContextAttributes::KernelContextAttributes(
     const Kernel &kernel,
     const DeviceCapabilityConfig *caps)
     : args_bytes_(0), rets_bytes_(0) {
-  arr_access.resize(kernel.parameter_list.size(), irpass::ExternalPtrAccess(0));
-  arg_attribs_vec_.reserve(kernel.parameter_list.size());
+  arr_access.reserve(kernel.not_flattened_parameters.size());
+  arg_attribs_vec_.reserve(kernel.not_flattened_parameters.size());
   // TODO: We should be able to limit Kernel args and rets to be primitive types
   // as well but let's leave that as a followup up PR.
-  for (const auto &ka : kernel.parameter_list) {
+  for (const auto &kv : kernel.not_flattened_parameters) {
+    const auto &k = kv.first;
+    const auto &ka = kv.second;
     ArgAttributes aa;
     aa.name = ka.name;
     aa.is_array = ka.is_array;
-    aa.index = arg_attribs_vec_.size();
+    aa.indices = k;
     if (ka.is_array && ka.get_dtype()->is<StructType>()) {
       auto struct_type = ka.get_dtype()->as<StructType>();
       aa.dtype = DataType(struct_type->get_element_type(
@@ -75,7 +77,8 @@ KernelContextAttributes::KernelContextAttributes(
     aa.element_shape = ka.element_shape;
     aa.field_dim = ka.total_dim - ka.element_shape.size();
     aa.ptype = ka.ptype;
-    arg_attribs_vec_.push_back(aa);
+    arg_attribs_vec_.push_back({k, aa});
+    arr_access.push_back({k, irpass::ExternalPtrAccess(0)});
   }
   // TODO:
   //  ret_attribs_vec_ and this if loop is redundant now. Remove it in a follow

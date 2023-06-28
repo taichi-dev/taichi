@@ -174,7 +174,10 @@ class UniquelyAccessedSNodeSearcher : public BasicStmtVisitor {
   std::unordered_map<const SNode *, GlobalPtrStmt *> rel_access_pointer_;
 
   // Search any_arrs that are uniquely accessed. Maps: ArgID -> ExternalPtrStmt
-  std::unordered_map<int, ExternalPtrStmt *> accessed_arr_pointer_;
+  std::unordered_map<std::vector<int>,
+                     ExternalPtrStmt *,
+                     hashing::Hasher<std::vector<int>>>
+      accessed_arr_pointer_;
 
  public:
   using BasicStmtVisitor::visit;
@@ -229,7 +232,7 @@ class UniquelyAccessedSNodeSearcher : public BasicStmtVisitor {
     // If the accessed indices are loop unique,
     // the accessed memory location is loop unique
     ArgLoadStmt *arg_load_stmt = stmt->base_ptr->as<ArgLoadStmt>();
-    int arg_id = arg_load_stmt->arg_id;
+    std::vector<int> arg_id = arg_load_stmt->arg_id;
 
     auto accessed_ptr = accessed_arr_pointer_.find(arg_id);
 
@@ -279,7 +282,9 @@ class UniquelyAccessedSNodeSearcher : public BasicStmtVisitor {
   }
 
   static std::pair<std::unordered_map<const SNode *, GlobalPtrStmt *>,
-                   std::unordered_map<int, ExternalPtrStmt *>>
+                   std::unordered_map<std::vector<int>,
+                                      ExternalPtrStmt *,
+                                      hashing::Hasher<std::vector<int>>>>
   run(IRNode *root) {
     TI_ASSERT(root->is<OffloadedStmt>());
     auto offload = root->as<OffloadedStmt>();
@@ -373,7 +378,9 @@ const std::string GatherUniquelyAccessedBitStructsPass::id =
 
 namespace irpass::analysis {
 std::pair<std::unordered_map<const SNode *, GlobalPtrStmt *>,
-          std::unordered_map<int, ExternalPtrStmt *>>
+          std::unordered_map<std::vector<int>,
+                             ExternalPtrStmt *,
+                             hashing::Hasher<std::vector<int>>>>
 gather_uniquely_accessed_pointers(IRNode *root) {
   // TODO: What about SNodeOpStmts?
   return UniquelyAccessedSNodeSearcher::run(root);

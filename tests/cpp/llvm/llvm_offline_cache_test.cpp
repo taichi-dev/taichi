@@ -121,10 +121,11 @@ TEST_P(LlvmOfflineCacheTest, ReadWrite) {
   const auto tmp_dir_str{tmp_dir.u8string()};
   const bool dir_ok = fs::create_directories(tmp_dir);
   ASSERT_TRUE(dir_ok);
-  const std::vector<Callable::Parameter> arg_infos = {
-      Callable::Parameter{DataType(PrimitiveType::i32), false},
-      Callable::Parameter{DataType(PrimitiveType::i32), false},
-  };
+  const std::vector<std::pair<std::vector<int>, Callable::Parameter>>
+      arg_infos = {
+          {{0}, Callable::Parameter{DataType(PrimitiveType::i32), false}},
+          {{1}, Callable::Parameter{DataType(PrimitiveType::i32), false}},
+      };
   auto member1 = StructMember{PrimitiveType::i32, "a"};
   auto member2 = StructMember{PrimitiveType::i32, "b"};
   auto struct_type =

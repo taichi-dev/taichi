@@ -1138,7 +1138,7 @@ TaichiLLVMContext::get_struct_type_with_data_layout(const StructType *old_ty,
   if (old_ty->get_layout() == layout) {
     return {old_ty, struct_size};
   }
-  std::vector<StructMember> elements = old_ty->elements();
+  std::vector<AbstractDictionaryMember> elements = old_ty->elements();
   for (auto &element : elements) {
     if (auto struct_type = element.type->cast<StructType>()) {
       element.type =

@@ -80,7 +80,8 @@ TEST(LlvmAotTest, CudaKernel) {
 
     constexpr int kArrLen = 32;
     constexpr int kArrBytes = kArrLen * sizeof(int32_t);
-    auto arr_devalloc = exec.allocate_memory_on_device(kArrBytes, result_buffer);
+    auto arr_devalloc =
+        exec.allocate_memory_on_device(kArrBytes, result_buffer);
     Ndarray arr = Ndarray(arr_devalloc, PrimitiveType::i32, {kArrLen});
 
     LLVM::AotModuleParams aot_params;

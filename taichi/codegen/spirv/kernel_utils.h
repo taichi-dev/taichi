@@ -24,7 +24,7 @@ struct TaskAttributes {
 
   struct BufferInfo {
     BufferType type;
-    int root_id{-1};  // only used if type==Root or type==ExtArr
+    std::vector<int> root_id{-1};  // only used if type==Root or type==ExtArr
 
     BufferInfo() = default;
 
@@ -33,6 +33,10 @@ struct TaskAttributes {
     }
 
     BufferInfo(BufferType buffer_type, int root_buffer_id)
+        : type(buffer_type), root_id({root_buffer_id}) {
+    }
+
+    BufferInfo(BufferType buffer_type, const std::vector<int> &root_buffer_id)
         : type(buffer_type), root_id(root_buffer_id) {
     }
 
@@ -55,7 +59,10 @@ struct TaskAttributes {
       using std::size_t;
       using std::string;
 
-      return hash<BufferType>()(buf.type) ^ buf.root_id;
+      size_t hash_result = hash<BufferType>()(buf.type);
+      for (const int &element : buf.root_id)
+        hash_result ^= element;
+      return hash_result;
     }
   };
 
@@ -69,7 +76,7 @@ struct TaskAttributes {
   };
 
   struct TextureBind {
-    int arg_id{0};
+    std::vector<int> arg_id;
     int binding{0};
     bool is_storage{false};
 
@@ -150,8 +157,6 @@ class KernelContextAttributes {
     size_t stride{0};
     // Offset in the context buffer
     size_t offset_in_mem{0};
-    // Index of the input arg or the return value in the host `Context`
-    int index{-1};
     PrimitiveTypeID dtype{PrimitiveTypeID::unknown};
     bool is_array{false};
     std::vector<int> element_shape;
@@ -160,6 +165,44 @@ class KernelContextAttributes {
     // while RW textures always have a valid format.
     BufferFormat format{BufferFormat::unknown};
     ParameterType ptype{ParameterType::kUnknown};
+
+    TI_IO_DEF(name,
+              stride,
+              offset_in_mem,
+              dtype,
+              is_array,
+              element_shape,
+              field_dim,
+              format,
+              ptype);
+  };
+
+ public:
+  /**
+   * This is mostly the same as Kernel::Arg, with device specific attributes.
+   */
+  struct ArgAttributes : public AttribsBase {
+    // Indices of the arg value in the host `Context`.
+    std::vector<int> indices;
+
+    TI_IO_DEF(name,
+              stride,
+              offset_in_mem,
+              indices,
+              dtype,
+              is_array,
+              element_shape,
+              field_dim,
+              format,
+              ptype);
+  };
+
+  /**
+   * This is mostly the same as Kernel::Ret, with device specific attributes.
+   */
+  struct RetAttributes : public AttribsBase {
+    // Index of the return value in the host `Context`.
+    int index{-1};
 
     TI_IO_DEF(name,
               stride,
@@ -173,17 +216,6 @@ class KernelContextAttributes {
               ptype);
   };
 
- public:
-  /**
-   * This is mostly the same as Kernel::Arg, with device specific attributes.
-   */
-  struct ArgAttributes : public AttribsBase {};
-
-  /**
-   * This is mostly the same as Kernel::Ret, with device specific attributes.
-   */
-  struct RetAttributes : public AttribsBase {};
-
   KernelContextAttributes() = default;
   explicit KernelContextAttributes(const Kernel &kernel,
                                    const DeviceCapabilityConfig *caps);
@@ -195,8 +227,21 @@ class KernelContextAttributes {
     return !arg_attribs_vec_.empty();
   }
 
-  inline const std::vector<ArgAttributes> &args() const {
+  inline const std::vector<std::pair<std::vector<int>, ArgAttributes>> &args()
+      const {
     return arg_attribs_vec_;
+  }
+
+  inline const ArgAttributes &arg_at(const std::vector<int> &indices) const {
+    for (const auto &element : arg_attribs_vec_) {
+      if (element.first == indices) {
+        return element.second;
+      }
+    }
+    TI_ERROR(fmt::format(
+        "Unexpected error: ArgAttributes with indices ({}) not found.",
+        fmt::join(indices, ", ")));
+    return arg_attribs_vec_[0].second;
   }
 
   /**
@@ -245,7 +290,8 @@ class KernelContextAttributes {
     return rets_type_;
   }
 
-  std::vector<irpass::ExternalPtrAccess> arr_access;
+  std::vector<std::pair<std::vector<int>, irpass::ExternalPtrAccess>>
+      arr_access;
 
   TI_IO_DEF(arg_attribs_vec_,
             ret_attribs_vec_,
@@ -256,7 +302,7 @@ class KernelContextAttributes {
             rets_type_);
 
  private:
-  std::vector<ArgAttributes> arg_attribs_vec_;
+  std::vector<std::pair<std::vector<int>, ArgAttributes>> arg_attribs_vec_;
   std::vector<RetAttributes> ret_attribs_vec_;
 
   size_t args_bytes_{0};

@@ -28,7 +28,11 @@ class Inliner : public BasicStmtVisitor {
           inlined_ir.get(),
           /*filter=*/[&](Stmt *s) { return s->is<ArgLoadStmt>(); },
           /*finder=*/
-          [&](Stmt *s) { return stmt->args[s->as<ArgLoadStmt>()->arg_id]; });
+          [&](Stmt *s) {
+            // Note: Functions in taichi do not support argpack.
+            TI_ASSERT(s->as<ArgLoadStmt>()->arg_id.size() == 1);
+            return stmt->args[s->as<ArgLoadStmt>()->arg_id[0]];
+          });
     }
     if (func->rets.empty()) {
       modifier_.replace_with(

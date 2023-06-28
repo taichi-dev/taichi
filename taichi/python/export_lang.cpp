@@ -684,6 +684,9 @@ void export_lang(py::module &m) {
       .def("insert_texture_param", &Kernel::insert_texture_param)
       .def("insert_pointer_param", &Kernel::insert_pointer_param)
       .def("insert_rw_texture_param", &Kernel::insert_rw_texture_param)
+      .def("insert_argpack_param_and_push",
+           &Kernel::insert_argpack_param_and_push)
+      .def("pop_argpack_stack", &Kernel::pop_argpack_stack)
       .def("insert_ret", &Kernel::insert_ret)
       .def("finalize_rets", &Kernel::finalize_rets)
       .def("finalize_params", &Kernel::finalize_params)
@@ -929,14 +932,15 @@ void export_lang(py::module &m) {
         Stmt::make<FrontendAssignStmt, const Expr &, const Expr &>);
 
   m.def("make_arg_load_expr",
-        Expr::make<ArgLoadExpression, int, const DataType &, bool, bool>,
+        Expr::make<ArgLoadExpression, const std::vector<int> &,
+                   const DataType &, bool, bool>,
         "arg_id"_a, "dt"_a, "is_ptr"_a = false, "create_load"_a = true);
 
   m.def("make_reference", Expr::make<ReferenceExpression, const Expr &>);
 
   m.def("make_external_tensor_expr",
-        Expr::make<ExternalTensorExpression, const DataType &, int, int, bool,
-                   const BoundaryMode &>);
+        Expr::make<ExternalTensorExpression, const DataType &, int,
+                   const std::vector<int> &, bool, const BoundaryMode &>);
 
   m.def("make_external_tensor_grad_expr",
         Expr::make<ExternalTensorExpression, Expr *>);
@@ -952,9 +956,11 @@ void export_lang(py::module &m) {
   m.def("make_const_expr_fp",
         Expr::make<ConstExpression, const DataType &, float64>);
 
-  m.def("make_texture_ptr_expr", Expr::make<TexturePtrExpression, int, int>);
+  m.def("make_texture_ptr_expr",
+        Expr::make<TexturePtrExpression, const std::vector<int> &, int>);
   m.def("make_rw_texture_ptr_expr",
-        Expr::make<TexturePtrExpression, int, int, const BufferFormat &, int>);
+        Expr::make<TexturePtrExpression, const std::vector<int> &, int,
+                   const BufferFormat &, int>);
 
   auto &&texture =
       py::enum_<TextureOpType>(m, "TextureOpType", py::arithmetic());

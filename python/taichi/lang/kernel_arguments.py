@@ -94,7 +94,12 @@ def decl_struct_arg(structtype, name):
     return structtype.from_taichi_object(arg_load)
 
 
+def push_argpack_arg(name):
+    impl.get_runtime().compiling_callable.insert_argpack_param_and_push(name)
+
+
 def decl_argpack_arg(argpacktype, member_dict):
+    impl.get_runtime().compiling_callable.pop_argpack_stack()
     return argpacktype.from_taichi_object(member_dict)
 
 

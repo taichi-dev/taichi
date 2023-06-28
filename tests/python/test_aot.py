@@ -62,17 +62,21 @@ def test_aot_bind_id():
                             assert buffer_bind["binding"] != -1
                     args = kernel["ctx_attribs"]["arg_attribs_vec_"]
                     assert len(args) == 2
-                    assert args[0]["is_array"] == False
-                    assert args[0]["index"] == 0
-                    assert args[0]["dtype"] == 1
-                    assert args[0]["ptype"] == 0
+                    arg_0, arg_1 = args[0]["value"], args[1]["value"]
+                    if args[0]["key"] == [1]:
+                        arg_0, arg_1 = arg_1, arg_0
 
-                    assert args[1]["is_array"] == True
-                    assert args[1]["field_dim"] == 2
-                    assert args[1]["index"] == 1
-                    assert args[1]["dtype"] == 5
-                    assert args[1]["element_shape"] == [2]
-                    assert args[1]["ptype"] == 1
+                    assert arg_0["is_array"] == False
+                    assert arg_0["indices"] == [0]
+                    assert arg_0["dtype"] == 1
+                    assert arg_0["ptype"] == 0
+
+                    assert arg_1["is_array"] == True
+                    assert arg_1["field_dim"] == 2
+                    assert arg_1["indices"] == [1]
+                    assert arg_1["dtype"] == 5
+                    assert arg_1["element_shape"] == [2]
+                    assert arg_1["ptype"] == 1
 
 
 @test_utils.test(arch=[ti.opengl, ti.vulkan])

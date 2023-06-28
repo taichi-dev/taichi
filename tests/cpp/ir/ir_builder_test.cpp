@@ -97,7 +97,7 @@ TEST(IRBuilder, ExternalPtr) {
   array[0] = 2;
   array[2] = 40;
   auto *arg =
-      builder.create_ndarray_arg_load(/*arg_id=*/0, get_data_type<int>(), 1);
+      builder.create_ndarray_arg_load(/*arg_id=*/{0}, get_data_type<int>(), 1);
   auto *zero = builder.get_int32(0);
   auto *one = builder.get_int32(1);
   auto *two = builder.get_int32(2);
@@ -115,7 +115,7 @@ TEST(IRBuilder, ExternalPtr) {
   ker->finalize_params();
   auto launch_ctx = ker->make_launch_context();
   launch_ctx.set_arg_external_array_with_shape(
-      /*arg_id=*/0, (uint64)array.get(), size, {size});
+      /*arg_id=*/{0}, (uint64)array.get(), size, {size});
   auto *prog = test_prog.prog();
   const auto &compiled_kernel_data = prog->compile_kernel(
       prog->compile_config(), prog->get_device_caps(), *ker);
@@ -144,7 +144,7 @@ TEST(IRBuilder, Ndarray) {
   array.write_int({2}, 40);
   auto ker1 = setup_kernel1(test_prog.prog());
   auto launch_ctx1 = ker1->make_launch_context();
-  launch_ctx1.set_arg_ndarray(/*arg_id=*/0, array);
+  launch_ctx1.set_arg_ndarray(/*arg_id=*/{0}, array);
   const auto &compiled_kernel_data = prog->compile_kernel(
       prog->compile_config(), prog->get_device_caps(), *ker1);
   prog->launch_kernel(compiled_kernel_data, launch_ctx1);
@@ -154,8 +154,8 @@ TEST(IRBuilder, Ndarray) {
 
   auto ker2 = setup_kernel2(test_prog.prog());
   auto launch_ctx2 = ker2->make_launch_context();
-  launch_ctx2.set_arg_ndarray(/*arg_id=*/0, array);
-  launch_ctx2.set_arg_int(/*arg_id=*/1, 3);
+  launch_ctx2.set_arg_ndarray(/*arg_id=*/{0}, array);
+  launch_ctx2.set_arg_int(/*arg_id=*/{1}, 3);
   const auto &compiled_kernel_data2 = prog->compile_kernel(
       prog->compile_config(), prog->get_device_caps(), *ker2);
   prog->launch_kernel(compiled_kernel_data2, launch_ctx2);
@@ -174,7 +174,7 @@ TEST(IRBuilder, AtomicOp) {
   array[0] = 2;
   array[2] = 40;
   auto *arg =
-      builder.create_ndarray_arg_load(/*arg_id=*/0, get_data_type<int>(), 1);
+      builder.create_ndarray_arg_load(/*arg_id=*/{0}, get_data_type<int>(), 1);
   auto *zero = builder.get_int32(0);
   auto *one = builder.get_int32(1);
   auto *a0ptr = builder.create_external_ptr(arg, {zero});
@@ -185,7 +185,7 @@ TEST(IRBuilder, AtomicOp) {
   ker->finalize_params();
   auto launch_ctx = ker->make_launch_context();
   launch_ctx.set_arg_external_array_with_shape(
-      /*arg_id=*/0, (uint64)array.get(), size, {size});
+      /*arg_id=*/{0}, (uint64)array.get(), size, {size});
   auto *prog = test_prog.prog();
   const auto &compiled_kernel_data = prog->compile_kernel(
       prog->compile_config(), prog->get_device_caps(), *ker);

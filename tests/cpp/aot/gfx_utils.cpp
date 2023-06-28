@@ -164,8 +164,8 @@ void run_kernel_test1(Arch arch, taichi::lang::Device *device) {
             RhiResult::success);
   Ndarray arr = Ndarray(devalloc_arr_, PrimitiveType::i32, {size});
 
-  builder.set_arg(/*arg_id=*/0, /*base=*/0);
-  builder.set_arg_ndarray(/*arg_id=*/1, arr);
+  builder.set_arg(/*arg_id=*/{0}, /*base=*/0);
+  builder.set_arg_ndarray(/*arg_id=*/{1}, arr);
 
   // Hack to set vector/matrix args
   std::vector<int> vec = {1, 2, 3};
@@ -226,7 +226,7 @@ void run_kernel_test2(Arch arch, taichi::lang::Device *device) {
     auto &host_ctx = builder.get_context();
     host_ctx.result_buffer = result_buffer;
 
-    builder.set_arg_ndarray(0, arr);
+    builder.set_arg_ndarray({0}, arr);
     int src[size] = {0};
     src[0] = 2;
     src[2] = 40;
@@ -246,8 +246,8 @@ void run_kernel_test2(Arch arch, taichi::lang::Device *device) {
     LaunchContextBuilder builder(ker2);
     auto &host_ctx = builder.get_context();
     host_ctx.result_buffer = result_buffer;
-    builder.set_arg_ndarray(0, arr);
-    builder.set_arg(1, 3);
+    builder.set_arg_ndarray({0}, arr);
+    builder.set_arg({1}, 3);
     ker2->launch(builder);
     gfx_runtime->synchronize();
     load_devalloc(devalloc_arr_, dst, sizeof(dst));

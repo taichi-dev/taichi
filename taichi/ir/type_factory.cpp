@@ -58,12 +58,13 @@ const Type *TypeFactory::get_struct_type(
 }
 
 const Type *TypeFactory::get_argpack_type(
-    const std::vector<AbstractDictionaryMember> &elements) {
+    const std::vector<AbstractDictionaryMember> &elements,
+    const std::string &layout) {
   std::lock_guard<std::mutex> _(argpack_mut_);
   auto key = elements;
 
   if (argpack_types_.find(key) == argpack_types_.end()) {
-    argpack_types_[key] = std::make_unique<ArgPackType>(elements);
+    argpack_types_[key] = std::make_unique<ArgPackType>(elements, layout);
   }
   return argpack_types_[key].get();
 }

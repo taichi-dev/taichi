@@ -25,7 +25,8 @@ class TypeFactory {
   const Type *get_struct_type(const std::vector<AbstractDictionaryMember> &elements,
                               const std::string &layout = "none");
 
-  const Type *get_argpack_type(const std::vector<AbstractDictionaryMember> &elements);
+  const Type *get_argpack_type(const std::vector<AbstractDictionaryMember> &elements,
+                               const std::string &layout = "none");
 
   const Type *get_ndarray_struct_type(DataType dt,
                                       int ndim,

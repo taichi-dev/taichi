@@ -174,39 +174,6 @@ const Type *StructType::get_type() const {
   return TypeFactory::get_instance().get_struct_type(elements_, layout_);
 }
 
-std::string ArgPackType::to_string() const {
-  std::string s = fmt::format("argpack[{}]{{", layout_);
-  for (int i = 0; i < elements_.size(); i++) {
-    if (i) {
-      s += ", ";
-    }
-    s += fmt::format("{}({}, #{}): {}", i, elements_[i].name,
-                     elements_[i].position, elements_[i].type->to_string());
-  }
-  s += "}";
-  return s;
-}
-
-const Type *ArgPackType::get_type() const {
-  return TypeFactory::get_instance().get_argpack_type(elements_);
-}
-
-const Type *ArgPackType::get_element_type(
-    const std::vector<int> &indices) const {
-  const Type *type_now = this;
-  for (auto ind : indices) {
-    if (auto tensor_type = type_now->cast<TensorType>()) {
-      TI_ASSERT(ind < tensor_type->get_num_elements())
-      type_now = tensor_type->get_element_type();
-    } else if (auto struct_type = type_now->cast<StructType>()) {
-      type_now = struct_type->get_element_type({ind});
-    } else if (auto argpack_type = type_now->cast<ArgPackType>()) {
-      type_now = argpack_type->elements_[ind].type;
-    }
-  }
-  return type_now;
-}
-
 bool Type::is_primitive(PrimitiveTypeID type) const {
   if (auto p = cast<PrimitiveType>()) {
     return p->type == type;

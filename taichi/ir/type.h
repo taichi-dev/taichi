@@ -310,45 +310,6 @@ class TI_DLL_EXPORT StructType : public Type {
   std::string layout_;
 };
 
-struct TI_DLL_EXPORT ArgPackMember {
-  const Type *type;
-  std::string name;
-  size_t position{0};
-  bool operator==(const ArgPackMember &other) const {
-    return type == other.type && name == other.name &&
-           position == other.position;
-  }
-  TI_IO_DEF(type, name, position)
-};
-
-class TI_DLL_EXPORT ArgPackType : public Type {
- public:
-  ArgPackType() : Type(TypeKind::ArgPack){};
-  explicit ArgPackType(const std::vector<ArgPackMember> &elements)
-      : Type(TypeKind::ArgPack), elements_(elements) {
-  }
-
-  const Type *get_element_type(const std::vector<int> &indices) const;
-
-  std::string to_string() const override;
-
-  const std::vector<ArgPackMember> &elements() const {
-    return elements_;
-  }
-
-  Type *get_compute_type() override {
-    return this;
-  }
-
-  const Type *get_type() const override;
-
-  TI_IO_DEF(elements_, layout_);
-
- private:
-  std::vector<ArgPackMember> elements_;
-  std::string layout_;
-};
-
 class TI_DLL_EXPORT QuantIntType : public Type {
  public:
   QuantIntType() : Type(TypeKind::QuantInt){};
@@ -791,17 +752,6 @@ struct Hasher<lang::StructMember> {
     size_t ret = hash_value(member.type);
     hash_combine(ret, member.name);
     hash_combine(ret, member.offset);
-    return ret;
-  }
-};
-
-template <>
-struct Hasher<lang::ArgPackMember> {
- public:
-  size_t operator()(lang::ArgPackMember const &member) const {
-    size_t ret = hash_value(member.type);
-    hash_combine(ret, member.name);
-    hash_combine(ret, member.position);
     return ret;
   }
 };

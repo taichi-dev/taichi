@@ -13,7 +13,7 @@ namespace LLVM {
 class CompiledKernelData : public lang::CompiledKernelData {
  public:
   struct InternalData {
-    std::vector<Callable::Parameter> args;
+    std::vector<std::pair<std::vector<int>, Callable::Parameter>> args;
     std::vector<Callable::Ret> rets;
     LLVMCompiledKernel compiled_data;
 

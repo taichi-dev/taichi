@@ -276,7 +276,8 @@ Kernel &Program::get_snode_reader(SNode *snode) {
   auto &ker = kernel([snode, this](Kernel *kernel) {
     ExprGroup indices;
     for (int i = 0; i < snode->num_active_indices; i++) {
-      auto argload_expr = Expr::make<ArgLoadExpression>(i, PrimitiveType::i32);
+      auto argload_expr = Expr::make<ArgLoadExpression>(std::vector<int>{i},
+                                                        PrimitiveType::i32);
       argload_expr->type_check(&this->compile_config());
       indices.push_back(std::move(argload_expr));
     }
@@ -301,7 +302,8 @@ Kernel &Program::get_snode_writer(SNode *snode) {
   auto &ker = kernel([snode, this](Kernel *kernel) {
     ExprGroup indices;
     for (int i = 0; i < snode->num_active_indices; i++) {
-      auto argload_expr = Expr::make<ArgLoadExpression>(i, PrimitiveType::i32);
+      auto argload_expr = Expr::make<ArgLoadExpression>(std::vector<int>{i},
+                                                        PrimitiveType::i32);
       argload_expr->type_check(&this->compile_config());
       indices.push_back(std::move(argload_expr));
     }
@@ -309,7 +311,8 @@ Kernel &Program::get_snode_writer(SNode *snode) {
     auto expr =
         builder.expr_subscript(Expr(snode_to_fields_.at(snode)), indices);
     auto argload_expr = Expr::make<ArgLoadExpression>(
-        snode->num_active_indices, snode->dt->get_compute_type());
+        std::vector<int>{snode->num_active_indices},
+        snode->dt->get_compute_type());
     argload_expr->type_check(&this->compile_config());
     builder.insert_assignment(expr, argload_expr, expr->tb);
   });

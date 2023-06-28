@@ -24,13 +24,17 @@ void detect_read_only_in_task(OffloadedStmt *offload) {
 
 class ExternalPtrAccessVisitor : public BasicStmtVisitor {
  private:
-  std::unordered_map<int, ExternalPtrAccess> &map_;
+  std::unordered_map<std::vector<int>,
+                     ExternalPtrAccess,
+                     hashing::Hasher<std::vector<int>>> &map_;
 
  public:
   using BasicStmtVisitor::visit;
 
   explicit ExternalPtrAccessVisitor(
-      std::unordered_map<int, ExternalPtrAccess> &map)
+      std::unordered_map<std::vector<int>,
+                         ExternalPtrAccess,
+                         hashing::Hasher<std::vector<int>>> &map)
       : map_(map) {
   }
 
@@ -83,9 +87,13 @@ void detect_read_only(IRNode *root) {
   }
 }
 
-std::unordered_map<int, ExternalPtrAccess> detect_external_ptr_access_in_task(
-    OffloadedStmt *offload) {
-  std::unordered_map<int, ExternalPtrAccess> map;
+std::unordered_map<std::vector<int>,
+                   ExternalPtrAccess,
+                   hashing::Hasher<std::vector<int>>>
+detect_external_ptr_access_in_task(OffloadedStmt *offload) {
+  std::unordered_map<std::vector<int>, ExternalPtrAccess,
+                     hashing::Hasher<std::vector<int>>>
+      map;
   ExternalPtrAccessVisitor v(map);
   offload->accept(&v);
   return map;

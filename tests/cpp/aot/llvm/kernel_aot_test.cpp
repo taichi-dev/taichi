@@ -50,8 +50,8 @@ TEST(LlvmAotTest, CpuKernel) {
   auto *k_run = mod->get_kernel("run");
 
   LaunchContextBuilder builder(k_run);
-  builder.set_arg(0, /*v=*/0);
-  builder.set_arg_ndarray(/*arg_id=*/1, arr);
+  builder.set_arg({0}, /*v=*/0);
+  builder.set_arg_ndarray(/*arg_id=*/{1}, arr);
   std::vector<int> vec = {1, 2, 3};
   for (int i = 0; i < vec.size(); ++i) {
     builder.set_struct_arg(/*arg_indices=*/{2, i}, vec[i]);
@@ -96,8 +96,8 @@ TEST(LlvmAotTest, CudaKernel) {
 
     auto *k_run = mod->get_kernel("run");
     LaunchContextBuilder builder(k_run);
-    builder.set_arg(0, /*v=*/0);
-    builder.set_arg_ndarray(/*arg_id=*/1, arr);
+    builder.set_arg({0}, /*v=*/0);
+    builder.set_arg_ndarray(/*arg_id=*/{1}, arr);
     std::vector<int> vec = {1, 2, 3};
     for (int i = 0; i < vec.size(); ++i) {
       builder.set_struct_arg(/*arg_indices=*/{2, i}, vec[i]);

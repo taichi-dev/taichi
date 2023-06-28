@@ -649,6 +649,7 @@ class ASTTransformer(Builder):
             for i, arg in enumerate(args.args):
                 if isinstance(ctx.func.arguments[i].annotation, ArgPackType):
                     d = {}
+                    kernel_arguments.push_argpack_arg(ctx.func.arguments[i].name)
                     for j, (name, anno) in enumerate(ctx.func.arguments[i].annotation.members.items()):
                         d[name] = decl_and_create_variable(anno, name, ctx.arg_features[i][j])
                     ctx.create_variable(arg.arg, kernel_arguments.decl_argpack_arg(ctx.func.arguments[i].annotation, d))

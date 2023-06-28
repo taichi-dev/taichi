@@ -178,7 +178,9 @@ RandStmt *IRBuilder::create_rand(DataType value_type) {
   return insert(Stmt::make_typed<RandStmt>(value_type));
 }
 
-ArgLoadStmt *IRBuilder::create_arg_load(int arg_id, DataType dt, bool is_ptr) {
+ArgLoadStmt *IRBuilder::create_arg_load(const std::vector<int> &arg_id,
+                                        DataType dt,
+                                        bool is_ptr) {
   return insert(
       Stmt::make_typed<ArgLoadStmt>(arg_id, dt, is_ptr, /*create_load*/ true));
 }
@@ -497,7 +499,7 @@ MeshRelationAccessStmt *IRBuilder::get_relation_access(
 MeshPatchIndexStmt *IRBuilder::get_patch_index() {
   return insert(Stmt::make_typed<MeshPatchIndexStmt>());
 }
-ArgLoadStmt *IRBuilder::create_ndarray_arg_load(int arg_id,
+ArgLoadStmt *IRBuilder::create_ndarray_arg_load(const std::vector<int> &arg_id,
                                                 DataType dt,
                                                 int ndim) {
   auto type = TypeFactory::get_instance().get_ndarray_struct_type(dt, ndim);

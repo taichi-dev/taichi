@@ -1103,3 +1103,14 @@ def test_ndarray_clamp_verify():
     ao = ti.ndarray(ti.f32, shape=(height, width))
     test(ao)
     assert (ao.to_numpy() == np.zeros((height, width))).all()
+
+
+@test_utils.test(arch=supported_archs_taichi_ndarray)
+def test_ndarray_arg_builtin_float_type():
+    @ti.kernel
+    def foo(x: ti.types.ndarray(float, ndim=0)) -> ti.f32:
+        return x[None]
+
+    x = ti.ndarray(ti.f32, shape=())
+    x[None] = 42
+    assert foo(x) == 42

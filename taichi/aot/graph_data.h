@@ -17,6 +17,7 @@ namespace taichi::lang {
 class AotModuleBuilder;
 class Ndarray;
 class Texture;
+class Matrix;
 class Kernel;
 
 namespace aot {
@@ -114,6 +115,10 @@ struct TI_DLL_EXPORT IValue {
 
   static IValue create(const Texture &tex) {
     return IValue(reinterpret_cast<intptr_t>(&tex), ArgKind::kTexture);
+  }
+
+  static IValue create(const Matrix &matrix) {
+    return IValue(reinterpret_cast<intptr_t>(&matrix), ArgKind::kMatrix);
   }
 
   template <typename T,

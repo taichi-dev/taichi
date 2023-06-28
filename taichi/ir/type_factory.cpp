@@ -57,17 +57,6 @@ const Type *TypeFactory::get_struct_type(
   return struct_types_[key].get();
 }
 
-const Type *TypeFactory::get_argpack_type(
-    const std::vector<ArgPackMember> &elements) {
-  std::lock_guard<std::mutex> _(argpack_mut_);
-  auto key = elements;
-
-  if (argpack_types_.find(key) == argpack_types_.end()) {
-    argpack_types_[key] = std::make_unique<ArgPackType>(elements);
-  }
-  return argpack_types_[key].get();
-}
-
 Type *TypeFactory::get_pointer_type(Type *element, bool is_bit_pointer) {
   std::lock_guard<std::mutex> _(pointer_mut_);
 

@@ -25,8 +25,6 @@ class TypeFactory {
   const Type *get_struct_type(const std::vector<StructMember> &elements,
                               const std::string &layout = "none");
 
-  const Type *get_argpack_type(const std::vector<ArgPackMember> &elements);
-
   const Type *get_ndarray_struct_type(DataType dt,
                                       int ndim,
                                       bool needs_grad = false);
@@ -80,11 +78,6 @@ class TypeFactory {
       hashing::Hasher<std::pair<std::vector<StructMember>, std::string>>>
       struct_types_;
   std::mutex struct_mut_;
-  std::unordered_map<std::vector<ArgPackMember>,
-                     std::unique_ptr<Type>,
-                     hashing::Hasher<std::vector<ArgPackMember>>>
-      argpack_types_;
-  std::mutex argpack_mut_;
 
   // TODO: is_bit_ptr?
   std::unordered_map<std::pair<Type *, bool>,

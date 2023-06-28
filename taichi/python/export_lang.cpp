@@ -1138,23 +1138,6 @@ void export_lang(py::module &m) {
             }
             return DataType(factory->get_struct_type(members));
           },
-          py::return_value_policy::reference)
-      .def("get_rwtexture_struct_type", &TypeFactory::get_rwtexture_struct_type,
-           py::return_value_policy::reference)
-      .def("get_ndarray_struct_type", &TypeFactory::get_ndarray_struct_type,
-           py::arg("dt"), py::arg("ndim"), py::arg("needs_grad"),
-           py::return_value_policy::reference)
-      .def(
-          "get_argpack_type",
-          [&](TypeFactory *factory,
-              std::vector<std::pair<DataType, std::string>> elements) {
-            std::vector<ArgPackMember> members;
-            size_t pos = 0;
-            for (auto &[type, name] : elements) {
-              members.push_back({type, name, ++pos});
-            }
-            return DataType(factory->get_argpack_type(members));
-          },
           py::return_value_policy::reference);
 
   m.def("get_type_factory_instance", TypeFactory::get_instance,

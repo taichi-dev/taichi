@@ -231,7 +231,8 @@ class LlvmProgramImpl : public ProgramImpl {
   std::pair<const ArgPackType *, size_t> get_argpack_type_with_data_layout(
       const ArgPackType *old_ty,
       const std::string &layout) override {
-    return get_llvm_context()->get_argpack_type_with_data_layout(old_ty, layout);
+    return get_llvm_context()->get_argpack_type_with_data_layout(old_ty,
+                                                                 layout);
   }
 
   // TODO(zhanlue): Rearrange llvm::Context's ownership

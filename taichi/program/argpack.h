@@ -16,8 +16,7 @@ class TI_DLL_EXPORT ArgPack {
   /* Constructs a ArgPack managed by Program.
    * Memory allocation and deallocation is handled by Program.
    */
-  explicit ArgPack(Program *prog,
-                   const DataType type);
+  explicit ArgPack(Program *prog, const DataType type);
 
   DeviceAllocation argpack_alloc_{kDeviceNullAllocation};
   DataType dtype;
@@ -32,4 +31,4 @@ class TI_DLL_EXPORT ArgPack {
  private:
   Program *prog_{nullptr};
 };
-}
+}  // namespace taichi::lang

@@ -1149,7 +1149,7 @@ void export_lang(py::module &m) {
           "get_argpack_type",
           [&](TypeFactory *factory,
               std::vector<std::pair<DataType, std::string>> elements) {
-            std::vector<ArgPackMember> members;
+            std::vector<AbstractDictionaryMember> members;
             size_t pos = 0;
             for (auto &[type, name] : elements) {
               members.push_back({type, name, ++pos});

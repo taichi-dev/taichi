@@ -25,7 +25,7 @@ class TypeFactory {
   const Type *get_struct_type(const std::vector<AbstractDictionaryMember> &elements,
                               const std::string &layout = "none");
 
-  const Type *get_argpack_type(const std::vector<ArgPackMember> &elements);
+  const Type *get_argpack_type(const std::vector<AbstractDictionaryMember> &elements);
 
   const Type *get_ndarray_struct_type(DataType dt,
                                       int ndim,
@@ -80,9 +80,9 @@ class TypeFactory {
       hashing::Hasher<std::pair<std::vector<AbstractDictionaryMember>, std::string>>>
       struct_types_;
   std::mutex struct_mut_;
-  std::unordered_map<std::vector<ArgPackMember>,
+  std::unordered_map<std::vector<AbstractDictionaryMember>,
                      std::unique_ptr<Type>,
-                     hashing::Hasher<std::vector<ArgPackMember>>>
+                     hashing::Hasher<std::vector<AbstractDictionaryMember>>>
       argpack_types_;
   std::mutex argpack_mut_;
 

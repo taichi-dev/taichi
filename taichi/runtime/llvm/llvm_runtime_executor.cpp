@@ -473,7 +473,7 @@ LlvmDevice *LlvmRuntimeExecutor::llvm_device() {
   return static_cast<LlvmDevice *>(device_.get());
 }
 
-DeviceAllocation LlvmRuntimeExecutor::allocate_memory_ndarray(
+DeviceAllocation LlvmRuntimeExecutor::allocate_memory_on_device(
     std::size_t alloc_size,
     uint64 *result_buffer) {
   auto devalloc = llvm_device()->allocate_memory_runtime(
@@ -490,7 +490,7 @@ DeviceAllocation LlvmRuntimeExecutor::allocate_memory_ndarray(
   return devalloc;
 }
 
-void LlvmRuntimeExecutor::deallocate_memory_ndarray(DeviceAllocation handle) {
+void LlvmRuntimeExecutor::deallocate_memory_on_device(DeviceAllocation handle) {
   TI_ASSERT(allocated_runtime_memory_allocs_.find(handle.alloc_id) !=
             allocated_runtime_memory_allocs_.end());
   llvm_device()->dealloc_memory(handle);
@@ -562,7 +562,7 @@ void LlvmRuntimeExecutor::finalize() {
       if (ptr == nullptr)
         continue;
 
-      deallocate_memory_ndarray(iter.second);
+      deallocate_memory_on_device(iter.second);
     }
     allocated_runtime_memory_allocs_.clear();
 

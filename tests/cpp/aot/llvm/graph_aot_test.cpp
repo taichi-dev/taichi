@@ -46,9 +46,9 @@ TEST(LlvmCGraph, RunGraphCpu) {
   constexpr int ArrLength = 100;
   constexpr int kArrBytes_arr = ArrLength * 1 * sizeof(int32_t);
   auto devalloc_arr_0 =
-      exec.allocate_memory_ndarray(kArrBytes_arr, result_buffer);
+      exec.allocate_memory_on_device(kArrBytes_arr, result_buffer);
   auto devalloc_arr_1 =
-      exec.allocate_memory_ndarray(kArrBytes_arr, result_buffer);
+      exec.allocate_memory_on_device(kArrBytes_arr, result_buffer);
 
   /* Test with Graph */
   // Prepare & Run "init" Graph
@@ -115,10 +115,10 @@ TEST(LlvmCGraph, RunGraphCuda) {
     constexpr int ArrLength = 100;
     constexpr int kArrBytes_arr = ArrLength * 1 * sizeof(int32_t);
     auto devalloc_arr_0 =
-        exec.allocate_memory_ndarray(kArrBytes_arr, result_buffer);
+        exec.allocate_memory_on_device(kArrBytes_arr, result_buffer);
 
     auto devalloc_arr_1 =
-        exec.allocate_memory_ndarray(kArrBytes_arr, result_buffer);
+        exec.allocate_memory_on_device(kArrBytes_arr, result_buffer);
 
     /* Test with Graph */
     // Prepare & Run "init" Graph

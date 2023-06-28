@@ -652,7 +652,7 @@ void export_lang(py::module &m) {
         };
 
         std::vector<std::unique_ptr<char[]>> matrix_buffers;
-        std::vector<Matrix> matrices;
+        std::vector<std::unique_ptr<Matrix>> matrices;
         for (const auto &[arg_name, arg] : self->args) {
           auto tag = arg.tag;
           TI_ASSERT(pyargs.contains(arg_name.c_str()));
@@ -684,10 +684,11 @@ void export_lang(py::module &m) {
                 }
                 matrix_buffers.emplace_back(std::move(data));
 
-                matrices.emplace_back(Matrix(
-                    length, arg.dtype(),
-                    reinterpret_cast<intptr_t>(matrix_buffers.back().get())));
-                args.insert({arg_name, aot::IValue::create(matrices.back())});
+                std::unique_ptr<Matrix> matrix(new Matrix(length, arg.dtype(),
+                  reinterpret_cast<intptr_t>(matrix_buffers.back().get())));
+                matrices.emplace_back(std::move(matrix));
+                args.insert({arg_name,
+                  aot::IValue::create(*(matrices.back().get()))});
                 break;
               }
 #define PER_C_TYPE(type, ctype)                                           \
@@ -702,10 +703,11 @@ void export_lang(py::module &m) {
                 sizeof(ctype) * length);                                  \
     matrix_buffers.emplace_back(std::move(data));                         \
                                                                           \
-    matrices.emplace_back(                                                \
-        Matrix(length, arg.dtype(),                                       \
-               reinterpret_cast<intptr_t>(matrix_buffers.back().get()))); \
-    args.insert({arg_name, aot::IValue::create(matrices.back())});        \
+    std::unique_ptr<Matrix> matrix(new Matrix(length, arg.dtype(),        \
+      reinterpret_cast<intptr_t>(matrix_buffers.back().get())));          \
+    matrices.emplace_back(std::move(matrix));                             \
+    args.insert({arg_name,                                                \
+      aot::IValue::create(*(matrices.back().get()))});                    \
     break;                                                                \
   }
 #include "taichi/inc/data_type_with_c_type.inc.h"

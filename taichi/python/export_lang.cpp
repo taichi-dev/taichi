@@ -652,7 +652,10 @@ void export_lang(py::module &m) {
         };
 
         std::vector<std::unique_ptr<char[]>> matrix_buffers;
+        matrix_buffers.reserve(self->args.size());
         std::vector<Matrix> matrices;
+        // Reserve to avoid changes in element addresses
+        matrices.reserve(self->args.size());
         for (const auto &[arg_name, arg] : self->args) {
           auto tag = arg.tag;
           TI_ASSERT(pyargs.contains(arg_name.c_str()));

@@ -128,7 +128,7 @@ void KernelLauncher::launch_llvm_kernel(Handle handle,
       AMDGPUDriver::get_instance().memcpy_device_to_host(
           itr->second.first, (void *)device_ptrs[idx],
           ctx.array_runtime_sizes[arg_id]);
-      executor->allocate_memory_on_device(itr->second.second);
+      executor->deallocate_memory_on_device(itr->second.second);
     }
   }
 }

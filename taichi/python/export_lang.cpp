@@ -684,31 +684,32 @@ void export_lang(py::module &m) {
                 }
                 matrix_buffers.emplace_back(std::move(data));
 
-                std::unique_ptr<Matrix> matrix(new Matrix(length, arg.dtype(),
-                  reinterpret_cast<intptr_t>(matrix_buffers.back().get())));
+                std::unique_ptr<Matrix> matrix(new Matrix(
+                    length, arg.dtype(),
+                    reinterpret_cast<intptr_t>(matrix_buffers.back().get())));
                 matrices.emplace_back(std::move(matrix));
-                args.insert({arg_name,
-                  aot::IValue::create(*(matrices.back().get()))});
+                args.insert(
+                    {arg_name, aot::IValue::create(*(matrices.back().get()))});
                 break;
               }
-#define PER_C_TYPE(type, ctype)                                           \
-  case PrimitiveTypeID::type: {                                           \
-    auto arr = pyarg.cast<py::array_t<ctype>>();                          \
-    py::buffer_info buffer_info = arr.request();                          \
-    auto length = buffer_info.size;                                       \
-    auto ptr = reinterpret_cast<intptr_t>(buffer_info.ptr);               \
-                                                                          \
-    std::unique_ptr<char[]> data(new char[128]);                          \
-    std::memcpy(data.get(), reinterpret_cast<char *>(ptr),                \
-                sizeof(ctype) * length);                                  \
-    matrix_buffers.emplace_back(std::move(data));                         \
-                                                                          \
-    std::unique_ptr<Matrix> matrix(new Matrix(length, arg.dtype(),        \
-      reinterpret_cast<intptr_t>(matrix_buffers.back().get())));          \
-    matrices.emplace_back(std::move(matrix));                             \
-    args.insert({arg_name,                                                \
-      aot::IValue::create(*(matrices.back().get()))});                    \
-    break;                                                                \
+#define PER_C_TYPE(type, ctype)                                               \
+  case PrimitiveTypeID::type: {                                               \
+    auto arr = pyarg.cast<py::array_t<ctype>>();                              \
+    py::buffer_info buffer_info = arr.request();                              \
+    auto length = buffer_info.size;                                           \
+    auto ptr = reinterpret_cast<intptr_t>(buffer_info.ptr);                   \
+                                                                              \
+    std::unique_ptr<char[]> data(new char[128]);                              \
+    std::memcpy(data.get(), reinterpret_cast<char *>(ptr),                    \
+                sizeof(ctype) * length);                                      \
+    matrix_buffers.emplace_back(std::move(data));                             \
+                                                                              \
+    std::unique_ptr<Matrix> matrix(                                           \
+        new Matrix(length, arg.dtype(),                                       \
+                   reinterpret_cast<intptr_t>(matrix_buffers.back().get()))); \
+    matrices.emplace_back(std::move(matrix));                                 \
+    args.insert({arg_name, aot::IValue::create(*(matrices.back().get()))});   \
+    break;                                                                    \
   }
 #include "taichi/inc/data_type_with_c_type.inc.h"
 #undef PER_C_TYPE

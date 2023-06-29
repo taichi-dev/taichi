@@ -173,7 +173,8 @@ while window.running:
 
 ### Advanced 3d Geometries
 
-```python cont
+```python preludes:vars
+window = ti.ui.Window(name='Advanced 3d Geometries', res = (720, 720))
 scene = window.get_scene()
 width = 2
 radius = 5

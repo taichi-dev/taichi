@@ -279,6 +279,7 @@ while window.running:
 3. Details of mesh instancing
 
 ```python preludes:vars
+window = ti.ui.Window("Display Instanced Mesh", (1024, 1024))
 scene = window.get_scene()
 
 num_instance = 100

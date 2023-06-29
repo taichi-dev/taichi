@@ -2033,4 +2033,34 @@ class MatrixInitStmt : public Stmt {
   TI_DEFINE_ACCEPT_AND_CLONE
 };
 
+template <typename T>
+std::vector<std::unique_ptr<Stmt>> get_const_stmt_with_value(DataType dt,
+                                                             T value) {
+  if (dt->is<PrimitiveType>()) {
+    TypedConstant constant(dt, value);
+    auto const_stmt = std::make_unique<ConstStmt>(constant);
+
+    std::vector<std::unique_ptr<Stmt>> ret;
+    ret.push_back(std::move(const_stmt));
+    return ret;
+
+  } else if (dt->is<TensorType>()) {
+    DataType element_dt = dt.get_element_type();
+    std::vector<std::unique_ptr<Stmt>> stmts =
+        get_const_stmt_with_value(element_dt, value);
+
+    Stmt *elem_stmt = stmts.back().get();
+    std::vector<Stmt *> elem_stmts(dt->as<TensorType>()->get_num_elements(),
+                                   elem_stmt);
+
+    auto matrix_init_stmt = std::make_unique<MatrixInitStmt>(elem_stmts);
+    matrix_init_stmt->ret_type = dt;
+
+    stmts.push_back(std::move(matrix_init_stmt));
+    return stmts;
+  } else {
+    TI_NOT_IMPLEMENTED
+  }
+}
+
 }  // namespace taichi::lang

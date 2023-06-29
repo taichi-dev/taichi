@@ -1129,3 +1129,22 @@ def test_real_func_vector_ndarray_arg():
     x = ti.Vector.ndarray(3, ti.f32, shape=(1))
     x[0] = vec3(1, 2, 3)
     assert (test(x) == vec3(1, 2, 3)).all()
+
+
+@test_utils.test(arch=[ti.cpu, ti.cuda])
+def test_real_func_write_ndarray_cfg():
+    @ti.experimental.real_func
+    def bar(a: ti.types.ndarray(ndim=1)):
+        a[0] = vec3(1)
+
+    @ti.kernel
+    def foo(
+        a: ti.types.ndarray(ndim=1),
+    ):
+        a[0] = vec3(3)
+        bar(a)
+        a[0] = vec3(3)
+
+    a = ti.Vector.ndarray(3, float, shape=(2,))
+    foo(a)
+    assert (a[0] == vec3(3)).all()

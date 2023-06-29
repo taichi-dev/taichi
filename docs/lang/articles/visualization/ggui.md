@@ -193,7 +193,7 @@ The additional arguments `vertex_offset`, `vertex_count`, `index_offset` and `in
 
 1. Example of drawing a part of the mesh/particles
 
-```python preludes:vars
+```python cont
 scene = window.get_scene()
 
 center = ti.Vector.field(3, ti.f32, shape=10)

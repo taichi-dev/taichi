@@ -41,7 +41,7 @@ def test():
     x = tm.sin(a)  # [0.841471, 0.909297, 0.141120]
     y = tm.floor(a)  #  [1.000000, 2.000000, 3.000000]
     z = tm.degrees(a)  #  [57.295780, 114.591560, 171.887344]
-    b = ti.Vector([2.0, 3.0, 4.0])
+    b = ti.Vector([2.0, 3.0, 4.0])  #  [2.000000, 3.000000, 4.000000]
     w = tm.atan2(b, a)  # [1.107149, 0.982794, 0.927295]
     ...
 ```
@@ -87,13 +87,13 @@ vec3 = ti.math.mat3
 vec4 = ti.math.vec4
 
 m = mat2(1)  # [[1., 1.], [1., 1.]]
-m = mat2(1, 2, 3, 4)  # [[1., 2.], [3, 4.]]
-m = mat2([1, 2], [3, 4])  # [[1., 2.], [3, 4.]]
-m = mat2([1, 2, 3, 4])  # [[1., 2.], [3, 4.]]
-v = vec3(1, 2, 3)
-m = mat2(v, 4)  # [[1., 2.], [3, 4.]]
-u = vec4([1, 2], [3, 4])
-u = vec4(v, 4.0)
+m = mat2(1, 2, 3, 4)  # [[1., 2.], [3., 4.]]
+m = mat2([1, 2], [3, 4])  # [[1., 2.], [3., 4.]]
+m = mat2([1, 2, 3, 4])  # [[1., 2.], [3., 4.]]
+v = vec3(1, 2, 3)  # [1., 2., 3.]
+m = mat2(v, 4)  # [[1., 2.], [3., 4.]]
+u = vec4([1, 2], [3, 4])  # [1., 2., 3., 4.]
+u = vec4(v, 4.0)  # [1., 2., 3., 4.]
 ```
 
 Another important feature of vector types created by `ti.types.vector()` is that they support **vector swizzling** just as GLSL vectors do. This means you can use `xyzw`, `rgba`, `stpq` to access their elements with indices &le; four:

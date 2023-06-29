@@ -652,7 +652,10 @@ void export_lang(py::module &m) {
         };
 
         std::vector<std::unique_ptr<char[]>> matrix_buffers;
+        matrix_buffers.reserve(self->args.size());
         std::vector<Matrix> matrices;
+        // Reserve to avoid changes in element addresses
+        matrices.reserve(self->args.size());
         for (const auto &[arg_name, arg] : self->args) {
           auto tag = arg.tag;
           TI_ASSERT(pyargs.contains(arg_name.c_str()));
@@ -1086,6 +1089,30 @@ void export_lang(py::module &m) {
 
   m.def("get_external_tensor_shape_along_axis",
         Expr::make<ExternalTensorShapeAlongAxisExpression, const Expr &, int>);
+
+  m.def("get_external_tensor_real_func_args", [](const Expr &expr) {
+    TI_ASSERT(expr.is<ExternalTensorExpression>());
+    auto external_tensor_expr = expr.cast<ExternalTensorExpression>();
+
+    std::vector<Expr> args;
+    for (int i = 0; i < external_tensor_expr->ndim; i++) {
+      args.push_back(
+          Expr::make<ExternalTensorShapeAlongAxisExpression>(expr, i));
+      args.back()->type_check(nullptr);
+    }
+
+    args.push_back(
+        Expr::make<ExternalTensorBasePtrExpression>(expr, /*is_grad=*/false));
+    args.back()->type_check(nullptr);
+
+    if (external_tensor_expr->needs_grad) {
+      args.push_back(
+          Expr::make<ExternalTensorBasePtrExpression>(expr, /*is_grad=*/true));
+      args.back()->type_check(nullptr);
+    }
+
+    return args;
+  });
 
   // Mesh related.
   m.def("get_relation_size", [](mesh::MeshPtr mesh_ptr, const Expr &mesh_idx,

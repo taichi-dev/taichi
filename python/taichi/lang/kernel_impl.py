@@ -258,7 +258,7 @@ class Func:
                         raise TaichiTypeError(
                             f"Expected ndarray in the kernel argument for argument {kernel_arg.name}, got {args[i]}"
                         )
-                    non_template_args.append(args[i].ptr)
+                    non_template_args += _ti_core.get_external_tensor_real_func_args(args[i].ptr)
                 else:
                     non_template_args.append(args[i])
         non_template_args = impl.make_expr_group(non_template_args)

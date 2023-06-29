@@ -774,8 +774,8 @@ class IRPrinter : public IRVisitor {
   }
 
   void visit(ExternalTensorBasePtrStmt *stmt) override {
-    print("{}{} = external_tensor_base_ptr (arg_id={})", stmt->type_hint(),
-          stmt->name(), stmt->arg_id);
+    print("{}{} = external_tensor_base_ptr (arg_id={}, is_grad={})",
+          stmt->type_hint(), stmt->name(), stmt->arg_id, stmt->is_grad);
   }
 
   void visit(BitStructStoreStmt *stmt) override {

@@ -210,7 +210,7 @@ class ExpressionHumanFriendlyPrinter : public ExpressionPrinter {
   void visit(ExternalTensorBasePtrExpression *expr) override {
     emit("external_tensor_base_ptr(");
     expr->ptr->accept(this);
-    emit(')');
+    emit(", is_grad=", expr->is_grad, ')');
   }
 
   void visit(MeshPatchIndexExpression *expr) override {

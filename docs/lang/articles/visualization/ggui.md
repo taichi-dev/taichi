@@ -173,7 +173,7 @@ while window.running:
 
 ### Advanced 3d Geometries
 
-```python preludes:vars
+```python cont
 scene = window.get_scene()
 width = 2
 radius = 5

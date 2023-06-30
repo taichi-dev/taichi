@@ -571,9 +571,7 @@ def _test_arg_not_match():
         pass
 
     x = ti.ndarray(dtype=ti.i32, shape=(16, 16))
-    with pytest.raises(
-        TypeError, match=r"Expect element type .* for argument x, but get .*"
-    ):
+    with pytest.raises(TypeError, match=r"Expect element type .* for argument x, but get .*"):
         func8(x)
 
 
@@ -657,9 +655,7 @@ def test_ndarray_as_template():
 
     arr_0 = ti.ndarray(ti.f32, shape=(5, 10))
     arr_1 = ti.ndarray(ti.f32, shape=(5, 10))
-    with pytest.raises(
-        ti.TaichiRuntimeTypeError, match=r"Ndarray shouldn't be passed in via"
-    ):
+    with pytest.raises(ti.TaichiRuntimeTypeError, match=r"Ndarray shouldn't be passed in via"):
         func(arr_0, arr_1)
 
 
@@ -822,9 +818,7 @@ def test_scalar_ndarray_oob():
 )
 def test_matrix_ndarray_oob():
     @ti.kernel
-    def access_arr(
-        input: ti.types.ndarray(), p: ti.i32, q: ti.i32, x: ti.i32, y: ti.i32
-    ) -> ti.f32:
+    def access_arr(input: ti.types.ndarray(), p: ti.i32, q: ti.i32, x: ti.i32, y: ti.i32) -> ti.f32:
         return input[p, q][x, y]
 
     @ti.kernel
@@ -1097,9 +1091,7 @@ def test_ndarray_oob_clamp():
     assert test_vec_arr(x2, 2) == 2
 
     @ti.kernel
-    def test_mat_arr(
-        x: ti.types.ndarray(boundary="clamp"), i: ti.i32, j: ti.i32
-    ) -> ti.f32:
+    def test_mat_arr(x: ti.types.ndarray(boundary="clamp"), i: ti.i32, j: ti.i32) -> ti.f32:
         return x[1, 2][i, j]
 
     x3 = ti.ndarray(ti.math.mat2, shape=(3, 3))

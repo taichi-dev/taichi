@@ -171,7 +171,7 @@ class MetalShaderResourceSet final : public ShaderResourceSet {
 
  private:
   const MetalDevice *device_;
-  std::vector<MetalShaderResource> resources_;
+  std::vector<MetalShaderResource> resources_; // TODO: need raster resources
 };
 
 class MetalCommandList final : public CommandList {

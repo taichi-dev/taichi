@@ -1,4 +1,4 @@
-#include "common.h"
+#include "common_metal.h"
 
 class SampleApp : public App {
  public:

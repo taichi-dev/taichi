@@ -378,9 +378,7 @@ def test_indexing_mat_field_with_np_int():
 @test_utils.test()
 def test_python_for_in():
     x = ti.field(int, shape=3)
-    with pytest.raises(
-        NotImplementedError, match="Struct for is only available in Taichi scope"
-    ):
+    with pytest.raises(NotImplementedError, match="Struct for is only available in Taichi scope"):
         for i in x:
             pass
 
@@ -400,36 +398,24 @@ def test_matrix_mult_field():
 
 @test_utils.test(exclude=[ti.x64, ti.arm64, ti.cuda])
 def test_sparse_not_supported():
-    with pytest.raises(
-        ti.TaichiRuntimeError, match="Pointer SNode is not supported on this backend."
-    ):
+    with pytest.raises(ti.TaichiRuntimeError, match="Pointer SNode is not supported on this backend."):
         ti.root.pointer(ti.i, 10)
 
-    with pytest.raises(
-        ti.TaichiRuntimeError, match="Pointer SNode is not supported on this backend."
-    ):
+    with pytest.raises(ti.TaichiRuntimeError, match="Pointer SNode is not supported on this backend."):
         a = ti.root.dense(ti.i, 10)
         a.pointer(ti.j, 10)
 
-    with pytest.raises(
-        ti.TaichiRuntimeError, match="Dynamic SNode is not supported on this backend."
-    ):
+    with pytest.raises(ti.TaichiRuntimeError, match="Dynamic SNode is not supported on this backend."):
         ti.root.dynamic(ti.i, 10)
 
-    with pytest.raises(
-        ti.TaichiRuntimeError, match="Dynamic SNode is not supported on this backend."
-    ):
+    with pytest.raises(ti.TaichiRuntimeError, match="Dynamic SNode is not supported on this backend."):
         a = ti.root.dense(ti.i, 10)
         a.dynamic(ti.j, 10)
 
-    with pytest.raises(
-        ti.TaichiRuntimeError, match="Bitmasked SNode is not supported on this backend."
-    ):
+    with pytest.raises(ti.TaichiRuntimeError, match="Bitmasked SNode is not supported on this backend."):
         ti.root.bitmasked(ti.i, 10)
 
-    with pytest.raises(
-        ti.TaichiRuntimeError, match="Bitmasked SNode is not supported on this backend."
-    ):
+    with pytest.raises(ti.TaichiRuntimeError, match="Bitmasked SNode is not supported on this backend."):
         a = ti.root.dense(ti.i, 10)
         a.bitmasked(ti.j, 10)
 

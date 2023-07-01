@@ -1036,4 +1036,4 @@ def test_for_loop_index():
 
     for i in range(N):
         for j in range(M):
-            assert test_utils.allclose(x.grad[i, j] - my_x_grad[i, j], 1e-5, 1e-6)
+            assert test_utils.allclose(x.grad[i, j], my_x_grad[i, j])

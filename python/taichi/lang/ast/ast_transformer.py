@@ -1155,7 +1155,10 @@ class ASTTransformer(Builder):
                 if not alert_already and ti_unroll_limit and iter_time > ti_unroll_limit:
                     alert_already = True
                     warnings.warn_explicit(
-                        f"loop unrolling only support under {ti_unroll_limit}",
+                        f"""Maybe a better warning message: You are unrolling more than
+                        {ti_unroll_limit} iterations, so the compile time may be extremely long.
+                        You can use a non-static for loop if you want to decrease the compile time.
+                        You can disable this warning by setting ti.init(unrolling_limit=0).""",
                         SyntaxWarning,
                         ctx.file,
                         node.lineno + ctx.lineno_offset,
@@ -1184,7 +1187,10 @@ class ASTTransformer(Builder):
                 if not alert_already and ti_unroll_limit and iter_time > ti_unroll_limit:
                     alert_already = True
                     warnings.warn_explicit(
-                        f"loop unrolling only support under {ti_unroll_limit}",
+                        f"""Maybe a better warning message: You are unrolling more than
+                        {ti_unroll_limit} iterations, so the compile time may be extremely long.
+                        You can use a non-static for loop if you want to decrease the compile time.
+                        You can disable this warning by setting ti.init(unrolling_limit=0).""",
                         SyntaxWarning,
                         ctx.file,
                         node.lineno + ctx.lineno_offset,

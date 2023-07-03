@@ -179,6 +179,12 @@ llvm::Type *TaichiLLVMContext::get_data_type(DataType dt) {
       types.push_back(get_data_type(element.type));
     }
     return llvm::StructType::get(*ctx, types);
+  } else if (const auto *argpack_type = dt->cast<ArgPackType>()) {
+    std::vector<llvm::Type *> types;
+    for (const auto &element : argpack_type->elements()) {
+      types.push_back(get_data_type(element.type));
+    }
+    return llvm::StructType::get(*ctx, types);
   } else if (const auto *pointer_type = dt->cast<PointerType>()) {
     return llvm::PointerType::get(
         get_data_type(pointer_type->get_pointee_type()), 0);
@@ -1156,9 +1162,8 @@ TaichiLLVMContext::get_struct_type_with_data_layout(const StructType *old_ty,
 }
 
 std::pair<const ArgPackType *, size_t>
-TaichiLLVMContext::get_argpack_type_with_data_layout(
-    const ArgPackType *old_ty,
-    const std::string &layout) {
+TaichiLLVMContext::get_argpack_type_with_data_layout(const ArgPackType *old_ty,
+                                                     const std::string &layout) {
   auto *llvm_struct_type = llvm::cast<llvm::StructType>(get_data_type(old_ty));
   auto data_layout = llvm::DataLayout::parse(layout);
   TI_ASSERT(data_layout);

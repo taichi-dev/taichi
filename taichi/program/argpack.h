@@ -31,4 +31,4 @@ class TI_DLL_EXPORT ArgPack {
  private:
   Program *prog_{nullptr};
 };
-}  // namespace taichi::lang
+} // namespace taichi::lang

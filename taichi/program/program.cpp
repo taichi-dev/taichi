@@ -398,8 +398,8 @@ Ndarray *Program::create_ndarray(const DataType type,
   return arr_ptr;
 }
 
-ArgPack *Program::create_argpack(const DataType type) {
-  auto pack = std::make_unique<ArgPack>(this, type);
+ArgPack *Program::create_argpack(const DataType dt) {
+  auto pack = std::make_unique<ArgPack>(this, dt);
   auto pack_ptr = pack.get();
   argpacks_.insert({pack_ptr, std::move(pack)});
   return pack_ptr;

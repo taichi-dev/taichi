@@ -256,7 +256,7 @@ class TI_DLL_EXPORT Program {
       ExternalArrayLayout layout = ExternalArrayLayout::kNull,
       bool zero_fill = false);
 
-  ArgPack *create_argpack(const DataType type);
+  ArgPack *create_argpack(const DataType dt);
 
   std::string get_kernel_return_data_layout() {
     return program_impl_->get_kernel_return_data_layout();

@@ -13,7 +13,8 @@ namespace taichi::lang {
 ArgPack::ArgPack(Program *prog, const DataType type) : prog_(prog) {
   auto *old_type = type->get_type()->as<ArgPackType>();
   auto [argpack_type, alloc_size] =
-      prog->get_argpack_type_with_data_layout(old_type, old_type->get_layout());
+      prog->get_argpack_type_with_data_layout(
+          old_type, prog->get_kernel_argument_data_layout());
   dtype = DataType(argpack_type);
   argpack_alloc_ =
       prog->allocate_memory_on_device(alloc_size, prog->result_buffer);

@@ -17,12 +17,14 @@ class TI_DLL_EXPORT CallableBase {
     std::string name;
     bool is_array{
         false};  // This is true for both ndarray and external array args.
+    bool is_argpack{false};
     std::size_t total_dim{0};  // total dim of array
     BufferFormat format{BufferFormat::unknown};
     bool needs_grad{false};  // TODO: reorder for better alignment
     std::vector<int> element_shape{};
     ParameterType ptype{ParameterType::kUnknown};
     TI_IO_DEF(is_array,
+              is_argpack,
               total_dim,
               format,
               dt_,
@@ -33,7 +35,8 @@ class TI_DLL_EXPORT CallableBase {
     bool operator==(const Parameter &o) const {
       return is_array == o.is_array && total_dim == o.total_dim &&
              format == o.format && dt_ == o.dt_ && needs_grad == o.needs_grad &&
-             element_shape == o.element_shape && ptype == o.ptype;
+             element_shape == o.element_shape && ptype == o.ptype &&
+             is_argpack == o.is_argpack;
     }
 
     /* [arguments with TensorType]
@@ -51,6 +54,7 @@ class TI_DLL_EXPORT CallableBase {
     */
     explicit Parameter(const DataType &dt = PrimitiveType::unknown,
                        bool is_array = false,
+                       bool is_argpack = false,
                        std::size_t size_unused = 0,
                        int total_dim = 0,
                        std::vector<int> element_shape = {},
@@ -70,6 +74,7 @@ class TI_DLL_EXPORT CallableBase {
       }
       this->element_shape = element_shape;
       this->is_array = is_array;
+      this->is_argpack = is_argpack;
       this->total_dim = total_dim;
       this->format = format;
       this->needs_grad = needs_grad;

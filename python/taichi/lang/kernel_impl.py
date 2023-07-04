@@ -644,6 +644,7 @@ class Kernel:
                     raise TaichiRuntimeTypeError.get(indices, str(needed), str(provided))
                 for j, (name, anno) in enumerate(needed.members.items()):
                     recursive_set_args(anno, type(v[name]), v[name], indices + (j,))
+                launch_ctx.set_arg_argpack(indices, v._ArgPack__argpack)
             else:
                 # Note: All scalar values whose index depth > 1 are owned by argpacks. Ignore them.
                 should_ignore_scalar = len(indices) > 1

@@ -242,6 +242,11 @@ void LaunchContextBuilder::set_arg_ndarray(const std::vector<int> &arg_id,
   set_arg_ndarray_impl(arg_id, ptr, arr.shape);
 }
 
+void LaunchContextBuilder::set_arg_argpack(const std::vector<int> &arg_id,
+                                           const ArgPack &argpack) {
+  argpack_ptrs[arg_id] = &argpack;
+}
+
 void LaunchContextBuilder::set_arg_ndarray_with_grad(
     const std::vector<int> &arg_id,
     const Ndarray &arr,

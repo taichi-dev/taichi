@@ -725,6 +725,7 @@ void export_lang(py::module &m) {
            &LaunchContextBuilder::set_struct_arg<double>)
       .def("set_arg_external_array_with_shape",
            &LaunchContextBuilder::set_arg_external_array_with_shape)
+      .def("set_arg_argpack", &LaunchContextBuilder::set_arg_argpack)
       .def("set_arg_ndarray", &LaunchContextBuilder::set_arg_ndarray)
       .def("set_arg_ndarray_with_grad",
            &LaunchContextBuilder::set_arg_ndarray_with_grad)

@@ -1,6 +1,7 @@
 #pragma once
 #include <taichi/program/callable.h>
 #include "taichi/program/ndarray.h"
+#include "taichi/program/argpack.h"
 #include "taichi/program/texture.h"
 
 namespace taichi::lang {
@@ -72,6 +73,7 @@ class LaunchContextBuilder {
                             const std::vector<int> &shape,
                             intptr_t devalloc_ptr_grad = 0);
   void set_arg_ndarray(const std::vector<int> &arg_id, const Ndarray &arr);
+  void set_arg_argpack(const std::vector<int> &arg_id, const ArgPack &argpack);
   void set_arg_ndarray_with_grad(const std::vector<int> &arg_id,
                                  const Ndarray &arr,
                                  const Ndarray &arr_grad);
@@ -127,6 +129,8 @@ class LaunchContextBuilder {
   std::
       unordered_map<std::vector<int>, void *, hashing::Hasher<std::vector<int>>>
           array_ptrs;
+  std::unordered_map<std::vector<int>, const ArgPack *,
+                     hashing::Hasher<std::vector<int>>> argpack_ptrs;
 };
 
 }  // namespace taichi::lang

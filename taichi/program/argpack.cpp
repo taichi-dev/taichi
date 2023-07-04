@@ -56,8 +56,7 @@ TypedConstant ArgPack::read(const std::vector<int> &I) const {
       this->argpack_alloc_.device->allocate_memory_unique(alloc_params);
   TI_ASSERT(res == RhiResult::success);
   staging_buf_->device->memcpy_internal(
-      staging_buf_->get_ptr(),
-      this->argpack_alloc_.get_ptr(offset), size);
+      staging_buf_->get_ptr(), this->argpack_alloc_.get_ptr(offset), size);
 
   char *device_arr_ptr{nullptr};
   TI_ASSERT(staging_buf_->device->map(
@@ -100,9 +99,8 @@ void ArgPack::write(const std::vector<int> &I, TypedConstant val) {
   std::memcpy(device_arr_ptr, &val.value_bits, size);
 
   staging_buf_->device->unmap(*staging_buf_);
-  staging_buf_->device->memcpy_internal(
-      this->argpack_alloc_.get_ptr(offset), staging_buf_->get_ptr(),
-      size);
+  staging_buf_->device->memcpy_internal(this->argpack_alloc_.get_ptr(offset),
+                                        staging_buf_->get_ptr(), size);
 
   prog_->synchronize();
 }

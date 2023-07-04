@@ -46,9 +46,9 @@ std::vector<int> Callable::insert_ndarray_param(const DataType &dt,
   // If we could avoid using parameter_list in codegen it'll be fine
   auto *type = TypeFactory::get_instance().get_ndarray_struct_type(dtype, ndim,
                                                                    needs_grad);
-  auto p = Parameter(type, /*is_array=*/true, false, 0,
-                     ndim + element_shape.size(), element_shape,
-                     BufferFormat::unknown, needs_grad);
+  auto p =
+      Parameter(type, /*is_array=*/true, false, 0, ndim + element_shape.size(),
+                element_shape, BufferFormat::unknown, needs_grad);
   p.name = name;
   p.ptype = ParameterType::kNdarray;
   return add_parameter(p);

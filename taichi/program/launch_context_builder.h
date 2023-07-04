@@ -129,8 +129,10 @@ class LaunchContextBuilder {
   std::
       unordered_map<std::vector<int>, void *, hashing::Hasher<std::vector<int>>>
           array_ptrs;
-  std::unordered_map<std::vector<int>, const ArgPack *,
-                     hashing::Hasher<std::vector<int>>> argpack_ptrs;
+  std::unordered_map<std::vector<int>,
+                     const ArgPack *,
+                     hashing::Hasher<std::vector<int>>>
+      argpack_ptrs;
 };
 
 }  // namespace taichi::lang

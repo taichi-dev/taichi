@@ -78,6 +78,15 @@ class FrontendTypeCheck : public IRVisitor {
                    fmt::format("cannot assign '{}' to '{}'",
                                rhs_type->to_string(), lhs_type->to_string()));
     }
+
+    if (lhs_type != rhs_type) {
+      auto promoted = promoted_type(lhs_type, rhs_type);
+      if (lhs_type != promoted) {
+        ErrorEmitter(TaichiCastWarning(), stmt,
+                     fmt::format("Assign may lose precision: {} <- {}",
+                                 lhs_type->to_string(), rhs_type->to_string()));
+      }
+    }
   }
 
   void visit(FrontendIfStmt *stmt) override {

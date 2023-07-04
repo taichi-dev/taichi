@@ -18,10 +18,7 @@ class TypeCheck : public IRVisitor {
  private:
   CompileConfig config_;
 
-  Type *type_check_store(Stmt *stmt,
-                         Stmt *dst,
-                         Stmt *&val,
-                         const std::string &stmt_name) {
+  Type *type_check_store(Stmt *stmt, Stmt *dst, Stmt *&val) {
     auto dst_type = dst->ret_type.ptr_removed();
     auto val_type = val->ret_type.ptr_removed();
     if (is_quant(dst_type)) {
@@ -30,13 +27,6 @@ class TypeCheck : public IRVisitor {
       dst_type = dst_type->get_compute_type();
     }
     if (dst_type != val_type) {
-      auto promoted = promoted_type(dst_type, val_type);
-      if (dst_type != promoted) {
-        ErrorEmitter(
-            TaichiCastWarning(), stmt,
-            fmt::format("{} may lose precision: {} <- {}", stmt_name,
-                        dst_type->to_string(), val->ret_data_type_name()));
-      }
       val = insert_type_cast_before(stmt, val, dst_type);
     }
     return dst_type;
@@ -81,9 +71,7 @@ class TypeCheck : public IRVisitor {
   void visit(AtomicOpStmt *stmt) override {
     // TODO(type): test_ad_for fails if we assume dest is a pointer type.
 
-    stmt->ret_type = type_check_store(
-        stmt, stmt->dest, stmt->val,
-        fmt::format("Atomic {}", atomic_op_type_name(stmt->op_type)));
+    stmt->ret_type = type_check_store(stmt, stmt->dest, stmt->val);
   }
 
   void visit(LocalLoadStmt *stmt) override {
@@ -106,8 +94,7 @@ class TypeCheck : public IRVisitor {
       // Infer data type for alloca
       stmt->dest->ret_type = stmt->val->ret_type;
     }
-    stmt->ret_type =
-        type_check_store(stmt, stmt->dest, stmt->val, "Local store");
+    stmt->ret_type = type_check_store(stmt, stmt->dest, stmt->val);
   }
 
   void visit(GlobalLoadStmt *stmt) override {
@@ -176,7 +163,7 @@ class TypeCheck : public IRVisitor {
   }
 
   void visit(GlobalStoreStmt *stmt) override {
-    type_check_store(stmt, stmt->dest, stmt->val, "Global store");
+    type_check_store(stmt, stmt->dest, stmt->val);
   }
 
   void visit(RangeForStmt *stmt) override {

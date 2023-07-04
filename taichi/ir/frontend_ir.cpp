@@ -1007,6 +1007,16 @@ void AtomicOpExpression::type_check(const CompileConfig *config) {
   } else {
     error();
   }
+
+  if (ret_type != val_dtype) {
+    auto promoted = promoted_type(ret_type, val_dtype);
+    if (ret_type != promoted) {
+      ErrorEmitter(TaichiCastWarning(), this,
+                   fmt::format("Atomic {} may lose precision: {} <- {}",
+                               atomic_op_type_name(op_type),
+                               ret_type->to_string(), val_dtype->to_string()));
+    }
+  }
 }
 
 void AtomicOpExpression::flatten(FlattenContext *ctx) {

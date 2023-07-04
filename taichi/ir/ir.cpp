@@ -537,21 +537,4 @@ void ImmediateIRModifier::replace_usages_with(Stmt *old_stmt, Stmt *new_stmt) {
     usage->set_operand(i, new_stmt);
   }
 }
-
-ErrorEmitter::ErrorEmitter(TaichiExceptionImpl &&error,
-                           const Stmt *stmt,
-                           std::string &&error_msg) {
-  error.msg_ = stmt->tb + error_msg;
-  error.emit();
-}
-
-ErrorEmitter::ErrorEmitter(bool expression,
-                           TaichiExceptionImpl &&error,
-                           const Stmt *stmt,
-                           std::string &&error_msg) {
-  if (!expression) {
-    ErrorEmitter(std::move(error), stmt, std::move(error_msg));
-  }
-}
-
 }  // namespace taichi::lang

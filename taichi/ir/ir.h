@@ -509,15 +509,26 @@ class Stmt : public IRNode {
 
 struct ErrorEmitter {
   // Emit an error on stmt with error message
-  ErrorEmitter(TaichiExceptionImpl &&error,
-               const Stmt *stmt,
-               std::string &&error_msg);
+  template <typename T,
+            typename = std::enable_if_t<
+                std::is_same_v<std::string, decltype(std::declval<T>().tb)>>>
+  ErrorEmitter(TaichiExceptionImpl &&error, T *stmt, std::string &&error_msg) {
+    error.msg_ = stmt->tb + error_msg;
+    error.emit();
+  }
 
   // Emit an error when expression is false
+  template <typename T,
+            typename = std::enable_if_t<
+                std::is_same_v<std::string, decltype(std::declval<T>().tb)>>>
   ErrorEmitter(bool expression,
                TaichiExceptionImpl &&error,
-               const Stmt *stmt,
-               std::string &&error_msg);
+               T *stmt,
+               std::string &&error_msg) {
+    if (!expression) {
+      ErrorEmitter(std::move(error), stmt, std::move(error_msg));
+    }
+  }
 };
 
 class Block : public IRNode {

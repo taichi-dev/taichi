@@ -26,6 +26,12 @@ class TI_DLL_EXPORT ArgPack {
   DeviceAllocation get_device_allocation() const;
   std::size_t get_nelement() const;
 
+  TypedConstant read(const std::vector<int> &I) const;
+  void write(const std::vector<int> &I, TypedConstant val);
+  void set_arg_int(const std::vector<int> &i, int64 val);
+  void set_arg_uint(const std::vector<int> &i, uint64 val);
+  void set_arg_float(const std::vector<int> &i, float64 val);
+
   ~ArgPack();
 
  private:

@@ -729,6 +729,24 @@ class StructType(CompoundType):
                 else:
                     raise TaichiRuntimeTypeError(f"Invalid argument type on index={ret_index + (index, )}")
 
+    def set_argpack_struct_args(self, struct, argpack, ret_index=()):
+        # TODO: move this to class Struct after we add dtype to Struct
+        items = self.members.items()
+        for index, pair in enumerate(items):
+            name, dtype = pair
+            if isinstance(dtype, CompoundType):
+                dtype.set_kernel_struct_args(struct[name], argpack, ret_index + (index,))
+            else:
+                if dtype in primitive_types.integer_types:
+                    if is_signed(cook_dtype(dtype)):
+                        argpack.set_arg_int(ret_index + (index,), struct[name])
+                    else:
+                        argpack.set_arg_uint(ret_index + (index,), struct[name])
+                elif dtype in primitive_types.real_types:
+                    argpack.set_arg_float(ret_index + (index,), struct[name])
+                else:
+                    raise TaichiRuntimeTypeError(f"Invalid argument type on index={ret_index + (index, )}")
+
     def cast(self, struct):
         # sanity check members
         if self.members.keys() != struct._Struct__entries.keys():

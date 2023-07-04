@@ -48,6 +48,7 @@ PRELUDES[
     "init"
 ] = """
 import taichi as ti
+import taichi.math as tm
 import numpy as np
 import math
 import random
@@ -195,12 +196,11 @@ class MarkdownFile(pytest.File):
             extra = dict((v.split(":", 1) + [None])[:2] for v in c.extra.split())
             code = c.children[0].children
             if "as-prelude" in extra:
-                assert "cont" not in extra
-                assert "preludes" not in extra
                 prelude_name = extra["as-prelude"]
                 assert prelude_name not in per_file_preludes, f"Duplicate prelude {prelude_name}"
                 per_file_preludes[prelude_name] = code
-            elif "cont" in extra:
+
+            if "cont" in extra:
                 assert spec is not None
                 spec.code += code
             else:

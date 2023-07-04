@@ -2,7 +2,6 @@
 sidebar_position: 1
 ---
 
-
 # Hello, World!
 
 Taichi is a domain-specific language designed for high-performance, parallel computing, and is embedded in Python.
@@ -72,10 +71,10 @@ Save the code above to your local machine and run this program, you get the foll
 
 :::note
 
-If you are *not* using an IDE for running code, you can simply run the code from your terminal by:
+If you are _not_ using an IDE for running code, you can simply run the code from your terminal by:
 
 1. Go to the directory that contains your .py file
-2. Type in `python3 filename.py` (replace *filename* with your script's name. Be sure to include the `.py` extension)
+2. Type in `python3 filename.py` (replace _filename_ with your script's name. Be sure to include the `.py` extension)
 
 :::
 
@@ -83,17 +82,16 @@ Let's dive into this simple Taichi program.
 
 ### Import Taichi
 
-```python skip-ci:Trivial
+```python
 import taichi as ti
 import taichi.math as tm
 ```
 
 The first two lines import Taichi and its `math` module. The `math` module contains built-in vectors and matrices of small dimensions, such as `vec2` for 2D real vectors and `mat3` for 3&times;3 real matrices. See the [Math Module](../math/math_module.md) for more information.
 
-
 ### Initialize Taichi
 
-```python skip-ci:Trivial
+```python
 ti.init(arch=ti.gpu)
 ```
 
@@ -107,7 +105,7 @@ Additionally, you can specify the desired GPU backend directly by setting `arch=
 
 ### Define a Taichi field
 
-```python skip-ci:Trivial
+```python as-prelude:pixels
 n = 320
 pixels = ti.field(dtype=float, shape=(n * 2, n))
 ```
@@ -116,10 +114,9 @@ The function `ti.field(dtype, shape)` defines a Taichi field whose shape is of `
 
 Field is a fundamental and frequently utilized data structure in Taichi. It can be considered equivalent to NumPy's `ndarray` or PyTorch's `tensor`, but with added flexibility. For instance, a Taichi field can be [spatially sparse](../basic/sparse.md) and can be easily [changed between different data layouts](../basic/layout.md). Further advanced features of fields will be covered in other scenario-based tutorials. For now, it is sufficient to understand that the field `pixels` is a dense two-dimensional array.
 
-
 ### Kernels and functions
 
-```python skip-ci:Trivial
+```python preludes:pixels as-prelude:paint
 @ti.func
 def complex_sqr(z):  # complex square of a 2D vector
     return tm.vec2(z[0] * z[0] - z[1] * z[1], 2 * z[0] * z[1])
@@ -136,14 +133,13 @@ def paint(t: float):
         pixels[i, j] = 1 - iterations * 0.02
 ```
 
-The code above defines two functions, one decorated with `@ti.func` and the other with `@ti.kernel`. They are called *Taichi function* and *kernel* respectively. Taichi functions and kernels are not executed by Python's interpreter but taken over by Taichi's JIT compiler and deployed to your parallel multi-core CPU or GPU, which is determined by the `arch` argument in the `ti.init()` call.
+The code above defines two functions, one decorated with `@ti.func` and the other with `@ti.kernel`. They are called _Taichi function_ and _kernel_ respectively. Taichi functions and kernels are not executed by Python's interpreter but taken over by Taichi's JIT compiler and deployed to your parallel multi-core CPU or GPU, which is determined by the `arch` argument in the `ti.init()` call.
 
 The main differences between Taichi functions and kernels are as follows:
 
 - Kernels serve as the entry points for Taichi to take over the execution. They can be called anywhere in the program, whereas Taichi functions can only be invoked within kernels or other Taichi functions. For instance, in the provided code example, the Taichi function `complex_sqr` is called within the kernel `paint`.
 - It is important to note that the arguments and return values of kernels must be type hinted, while Taichi functions do not require type hinting. In the example, the argument `t` in the kernel `paint` is type hinted, while the argument `z` in the Taichi function `complex_sqr` is not.
 - Taichi supports the use of nested functions, but nested kernels are not supported. Additionally, Taichi does not support recursive calls within Taichi functions.
-
 
 :::tip
 
@@ -153,13 +149,13 @@ For those familiar with the world of OpenGL, `ti.func` can be compared to a typi
 
 :::
 
-
 ### Parallel for loops
 
-```python skip-ci:Trivial
+```python preludes:pixels
 @ti.kernel
 def paint(t: float):
     for i, j in pixels:  # Parallelized over all pixels
+        pass
 ```
 
 The key to achieving high performance in Taichi lies in efficient iteration. By utilizing parallelized looping, data can be processed more effectively.
@@ -170,7 +166,7 @@ Taichi provides a convenient syntax for parallelizing tasks. Any for loop at the
 
 The field pixels is treated as an iterator, with `i` and `j` being integer indices ranging from `0` to `2*n-1` and `0` to `n-1`, respectively. The `(i, j)` pairs loop over the sets `(0, 0)`, `(0, 1)`, ..., `(0, n-1)`, `(1, 0)`, `(1, 1)`, ..., `(2*n-1, n-1)` in parallel.
 
-It is important to keep in mind that for loops nested within other constructs, such as `if/else` statements or other loops, are not automatically parallelized and are processed *sequentially*.
+It is important to keep in mind that for loops nested within other constructs, such as `if/else` statements or other loops, are not automatically parallelized and are processed _sequentially_.
 
 ```python
 @ti.kernel
@@ -182,15 +178,16 @@ def fill():
 
     if total > 10:
         for k in range(5):  # Not parallelized because it is not at the outermost scope
+            total -= k
 ```
 
 You may also serialize a for loop at the outermost scope using `ti.loop_config(serialize=True)`. Please refer to [Serialize a specified parallel for loop](../debug/debugging.md#serialize-a-specified-parallel-for-loop) for additional information.
 
 :::caution WARNING
 
-The `break` statement is *not* supported in parallelized loops:
+The `break` statement is _not_ supported in parallelized loops:
 
-```python skip-ci:ToyDemo
+```python skip-ci:NegativeExample
 @ti.kernel
 def foo():
     for i in x:
@@ -211,7 +208,7 @@ def foo():
 
 To render the result on screen, Taichi provides a built-in [GUI System](../visualization/gui_system.md). Use the `gui.set_image()` method to set the content of the window and `gui.show()` method to show the updated image.
 
-```python skip-ci:Trivial
+```python preludes:pixels,paint
 gui = ti.GUI("Julia Set", res=(n * 2, n))
 # Sets the window title and the resolution
 
@@ -231,14 +228,13 @@ Taichi's GUI system uses the standard Cartesian coordinate system to define pixe
 
 </center>
 
-
 ### Key takeaways
 
 Congratulations! By following the brief example above, you have learned the most important features of Taichi:
 
 - Taichi compiles and executes Taichi functions and kernels on the designated backend.
 - For loops located at the outermost scope in a Taichi kernel are automatically parallelized.
-- Taichi offers a flexible data container, known as *field*, and you can utilize indices to iterate over a field.
+- Taichi offers a flexible data container, known as _field_, and you can utilize indices to iterate over a field.
 
 ## Taichi examples
 
@@ -265,7 +261,7 @@ To access the complete list of Taichi examples, run `ti example`. Here are some 
 
 The table below provides an overview of the operating systems supported by Taichi and the corresponding backends that are compatible with these platforms:
 
-| **platform** |      **CPU**       |      **CUDA**      |     **OpenGL**     |     **Metal**      |    **Vulkan**    |
+| **platform** |      **CPU**       |      **CUDA**      |     **OpenGL**     |     **Metal**      |     **Vulkan**     |
 | :----------: | :----------------: | :----------------: | :----------------: | :----------------: | :----------------: |
 |   Windows    | :heavy_check_mark: | :heavy_check_mark: | :heavy_check_mark: |        N/A         | :heavy_check_mark: |
 |    Linux     | :heavy_check_mark: | :heavy_check_mark: | :heavy_check_mark: |        N/A         | :heavy_check_mark: |
@@ -278,4 +274,4 @@ You are now prepared to begin writing your own Taichi programs. The following do
 
 - [Accelerate Python with Taichi](./accelerate_python.md)
 - [Conduct Physical Simulation](./cloth_simulation.md)
-- [Accelerate PyTorch with Taichi](./accelerate_pytorch.md).
+- [Accelerate PyTorch with Taichi](./accelerate_pytorch.md)

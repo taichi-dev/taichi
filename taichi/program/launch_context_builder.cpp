@@ -245,6 +245,8 @@ void LaunchContextBuilder::set_arg_ndarray(const std::vector<int> &arg_id,
 void LaunchContextBuilder::set_arg_argpack(const std::vector<int> &arg_id,
                                            const ArgPack &argpack) {
   argpack_ptrs[arg_id] = &argpack;
+  // TODO: Consider renaming this method to `set_device_allocation_type`
+  set_array_device_allocation_type(arg_id, DevAllocType::kArgPack);
 }
 
 void LaunchContextBuilder::set_arg_ndarray_with_grad(

@@ -14,7 +14,8 @@ class LaunchContextBuilder {
     kNone = 0,
     kNdarray = 1,
     kTexture = 2,
-    kRWTexture = 3
+    kRWTexture = 3,
+    kArgPack = 4,
   };
 
   explicit LaunchContextBuilder(CallableBase *kernel);

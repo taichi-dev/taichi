@@ -71,7 +71,7 @@ class ArgPack:
         self.__dtype = dtype
         self.__argpack = impl.get_runtime().prog.create_argpack(self.__dtype)
         for i, (k, v) in enumerate(self.__entries.items()):
-            self.write_to_device(self.__annotations[k], type(v), v, i)
+            self._write_to_device(self.__annotations[k], type(v), v, i)
 
     def __del__(self):
         if impl is not None and impl.get_runtime() is not None and impl.get_runtime().prog is not None:
@@ -120,7 +120,7 @@ class ArgPack:
     def __setitem__(self, key, value):
         self.__entries[key] = value
         index = list(self.__annotations).index(key)
-        self.write_to_device(self.__annotations[key], type(value), value, index)
+        self._write_to_device(self.__annotations[key], type(value), value, index)
 
     def _set_entries(self, value):
         if isinstance(value, dict):
@@ -181,7 +181,7 @@ class ArgPack:
         }
         return res_dict
 
-    def write_to_device(self, needed, provided, v, index):
+    def _write_to_device(self, needed, provided, v, index):
         if isinstance(needed, ArgPackType):
             if not isinstance(v, ArgPack):
                 raise TaichiRuntimeTypeError.get(index, str(needed), str(provided))

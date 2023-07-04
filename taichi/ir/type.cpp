@@ -127,6 +127,24 @@ const Type *TensorType::get_type() const {
   return TypeFactory::get_instance().get_tensor_type(shape_, element_);
 }
 
+const Type *AbstractDictionaryType::get_element_type(
+    const std::vector<int> &indices) const {
+  const Type *type_now = this;
+  for (auto ind : indices) {
+    if (auto tensor_type = type_now->cast<TensorType>()) {
+      TI_ASSERT(ind < tensor_type->get_num_elements())
+      type_now = tensor_type->get_element_type();
+    } else if (auto struct_type = type_now->cast<StructType>()) {
+      type_now = struct_type->elements_[ind].type;
+    } else if (auto argpack_type = type_now->cast<ArgPackType>()) {
+      type_now = argpack_type->elements_[ind].type;
+    } else {
+      TI_NOT_IMPLEMENTED;
+    }
+  }
+  return type_now;
+}
+
 std::string StructType::to_string() const {
   std::string s = fmt::format("struct[{}]{{", layout_);
   for (int i = 0; i < elements_.size(); i++) {
@@ -138,20 +156,6 @@ std::string StructType::to_string() const {
   }
   s += "}";
   return s;
-}
-
-const Type *StructType::get_element_type(
-    const std::vector<int> &indices) const {
-  const Type *type_now = this;
-  for (auto ind : indices) {
-    if (auto tensor_type = type_now->cast<TensorType>()) {
-      TI_ASSERT(ind < tensor_type->get_num_elements())
-      type_now = tensor_type->get_element_type();
-    } else {
-      type_now = type_now->as<StructType>()->elements_[ind].type;
-    }
-  }
-  return type_now;
 }
 
 size_t StructType::get_element_offset(const std::vector<int> &indices) const {
@@ -211,22 +215,6 @@ size_t ArgPackType::get_element_offset(const std::vector<int> &indices) const {
     }
   }
   return offset;
-}
-
-const Type *ArgPackType::get_element_type(
-    const std::vector<int> &indices) const {
-  const Type *type_now = this;
-  for (auto ind : indices) {
-    if (auto tensor_type = type_now->cast<TensorType>()) {
-      TI_ASSERT(ind < tensor_type->get_num_elements())
-      type_now = tensor_type->get_element_type();
-    } else if (auto struct_type = type_now->cast<StructType>()) {
-      type_now = struct_type->get_element_type({ind});
-    } else if (auto argpack_type = type_now->cast<ArgPackType>()) {
-      type_now = argpack_type->elements_[ind].type;
-    }
-  }
-  return type_now;
 }
 
 bool Type::is_primitive(PrimitiveTypeID type) const {

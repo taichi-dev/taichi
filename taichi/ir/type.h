@@ -283,6 +283,8 @@ class TI_DLL_EXPORT AbstractDictionaryType : public Type {
     return this;
   }
 
+  const Type *get_element_type(const std::vector<int> &indices) const;
+
   TI_IO_DEF(elements_, layout_);
 
  protected:
@@ -299,8 +301,6 @@ class TI_DLL_EXPORT StructType : public AbstractDictionaryType {
   }
 
   std::string to_string() const override;
-
-  const Type *get_element_type(const std::vector<int> &indices) const;
 
   size_t get_element_offset(const std::vector<int> &indices) const;
 
@@ -332,8 +332,6 @@ class TI_DLL_EXPORT ArgPackType : public AbstractDictionaryType {
                        const std::string &layout = "none")
       : AbstractDictionaryType(TypeKind::ArgPack, elements, layout) {
   }
-
-  const Type *get_element_type(const std::vector<int> &indices) const;
 
   size_t get_element_offset(const std::vector<int> &indices) const;
 

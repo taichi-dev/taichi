@@ -2,6 +2,7 @@ import numpy as np
 import pytest
 
 import taichi as ti
+from taichi.math import vec4
 from tests import test_utils
 
 
@@ -140,3 +141,25 @@ def test_shared_array_atomics():
     assert arr[32] == sum
     assert arr[128] == sum
     assert arr[224] == sum
+
+
+@test_utils.test(arch=[ti.cuda])
+def test_shared_array_tensor_type():
+    data_type = vec4
+    block_dim = 16
+
+    y = ti.Vector.field(4, dtype=ti.f32, shape=())
+
+    @ti.kernel
+    def test(x: ti.i32):
+        for i in range(10):
+            shared_mem = ti.simt.block.SharedArray((block_dim), data_type)
+
+            for j in range(block_dim):
+                shared_mem[j] = ti.Vector([1.0, 2.0, 3.0, 4.0])
+
+            if x:
+                y[None] = shared_mem[x]
+
+    test(1)
+    assert (y.to_numpy() == [1.0, 2.0, 3.0, 4.0]).all()

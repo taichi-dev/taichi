@@ -54,6 +54,8 @@ class SharedArray:
             raise ValueError(
                 f"ti.simt.block.shared_array shape must be an integer or a tuple of integers, but got {shape}"
             )
+        if isinstance(dtype, impl.MatrixType):
+            dtype = dtype.tensor_type
         self.dtype = dtype
         self.shared_array_proxy = impl.expr_init_shared_array(self.shape, dtype)
 

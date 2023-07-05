@@ -151,8 +151,8 @@ void ArgLoadExpression::type_check(const CompileConfig *) {
 }
 
 void ArgLoadExpression::flatten(FlattenContext *ctx) {
-  auto arg_load = std::make_unique<ArgLoadStmt>(arg_id, dt, is_ptr,
-                                                create_load, is_argpack);
+  auto arg_load = std::make_unique<ArgLoadStmt>(arg_id, dt, is_ptr, create_load,
+                                                is_argpack);
   arg_load->ret_type = ret_type;
   ctx->push_back(std::move(arg_load));
   stmt = ctx->back_stmt();
@@ -164,8 +164,8 @@ void TexturePtrExpression::type_check(const CompileConfig *config) {
 void TexturePtrExpression::flatten(FlattenContext *ctx) {
   ctx->push_back<ArgLoadStmt>(arg_id, PrimitiveType::f32, /*is_ptr=*/true,
                               /*create_load=*/true, /*is_argpack=*/is_argpack);
-  ctx->push_back<TexturePtrStmt>(ctx->back_stmt(), num_dims, is_storage,
-                                 format, lod);
+  ctx->push_back<TexturePtrStmt>(ctx->back_stmt(), num_dims, is_storage, format,
+                                 lod);
   stmt = ctx->back_stmt();
 }
 

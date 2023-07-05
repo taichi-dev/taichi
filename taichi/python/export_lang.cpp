@@ -951,15 +951,15 @@ void export_lang(py::module &m) {
 
   m.def("make_arg_load_expr",
         Expr::make<ArgLoadExpression, const std::vector<int> &,
-                   const DataType &, bool, bool, bool>,
+                   const DataType &, bool, bool, int>,
         "arg_id"_a, "dt"_a, "is_ptr"_a = false, "create_load"_a = true,
-        "is_argpack"_a = false);
+        "arg_depth"_a = 0);
 
   m.def("make_reference", Expr::make<ReferenceExpression, const Expr &>);
 
   m.def("make_external_tensor_expr",
         Expr::make<ExternalTensorExpression, const DataType &, int,
-                   const std::vector<int> &, bool, bool, const BoundaryMode &>);
+                   const std::vector<int> &, bool, int, const BoundaryMode &>);
 
   m.def("make_external_tensor_grad_expr",
         Expr::make<ExternalTensorExpression, Expr *>);
@@ -976,9 +976,9 @@ void export_lang(py::module &m) {
         Expr::make<ConstExpression, const DataType &, float64>);
 
   m.def("make_texture_ptr_expr",
-        Expr::make<TexturePtrExpression, const std::vector<int> &, int, bool>);
+        Expr::make<TexturePtrExpression, const std::vector<int> &, int, int>);
   m.def("make_rw_texture_ptr_expr",
-        Expr::make<TexturePtrExpression, const std::vector<int> &, int, bool,
+        Expr::make<TexturePtrExpression, const std::vector<int> &, int, int,
                    const BufferFormat &, int>);
 
   auto &&texture =

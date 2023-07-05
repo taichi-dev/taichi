@@ -331,7 +331,10 @@ class ArgLoadExpression : public Expression {
                     bool is_ptr = false,
                     bool create_load = true,
                     bool is_argpack = false)
-      : arg_id(arg_id), dt(dt), is_ptr(is_ptr), create_load(create_load),
+      : arg_id(arg_id),
+        dt(dt),
+        is_ptr(is_ptr),
+        create_load(create_load),
         is_argpack(is_argpack) {
   }
 
@@ -359,7 +362,9 @@ class TexturePtrExpression : public Expression {
   BufferFormat format{BufferFormat::unknown};
   int lod{0};
 
-  explicit TexturePtrExpression(const std::vector<int> &arg_id, int num_dims, bool is_argpack)
+  explicit TexturePtrExpression(const std::vector<int> &arg_id,
+                                int num_dims,
+                                bool is_argpack)
       : arg_id(arg_id),
         num_dims(num_dims),
         is_storage(false),

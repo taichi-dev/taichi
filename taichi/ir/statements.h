@@ -200,7 +200,10 @@ class ArgLoadStmt : public Stmt {
               bool is_ptr,
               bool create_load,
               bool is_argpack)
-      : arg_id(arg_id), is_ptr(is_ptr), create_load(create_load), is_argpack(is_argpack) {
+      : arg_id(arg_id),
+        is_ptr(is_ptr),
+        create_load(create_load),
+        is_argpack(is_argpack) {
     this->ret_type = dt;
     TI_STMT_REG_FIELDS;
   }

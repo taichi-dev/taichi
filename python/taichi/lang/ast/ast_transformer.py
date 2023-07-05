@@ -635,9 +635,9 @@ class ASTTransformer(Builder):
                     name,
                 )
             if isinstance(annotation, MatrixType):
-                return kernel_arguments.decl_matrix_arg(annotation, name)
+                return kernel_arguments.decl_matrix_arg(annotation, name, arg_depth)
             if isinstance(annotation, StructType):
-                return kernel_arguments.decl_struct_arg(annotation, name)
+                return kernel_arguments.decl_struct_arg(annotation, name, arg_depth)
             return kernel_arguments.decl_scalar_arg(annotation, name, arg_depth)
 
         def transform_as_kernel():

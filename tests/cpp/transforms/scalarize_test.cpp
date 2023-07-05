@@ -33,7 +33,7 @@ TEST(Scalarize, ScalarizeGlobalStore) {
 
   auto argload_stmt = block->push_back<ArgLoadStmt>(
       std::vector<int>{0} /*arg_id*/, type, /*is_ptr*/ true,
-      /*create_load*/ false, /*is_argpack*/ false);
+      /*create_load*/ false, /*arg_depth*/ 0);
 
   std::vector<Stmt *> indices = {};
   Stmt *dest_stmt = block->push_back<ExternalPtrStmt>(
@@ -98,7 +98,7 @@ TEST(Scalarize, ScalarizeGlobalLoad) {
 
   auto argload_stmt = block->push_back<ArgLoadStmt>(
       std::vector<int>{0} /*arg_id*/, type, /*is_ptr*/ true,
-      /*create_load*/ false, /*is_argpack*/ false);
+      /*create_load*/ false, /*arg_depth*/ 0);
 
   std::vector<Stmt *> indices = {};
   Stmt *src_stmt = block->push_back<ExternalPtrStmt>(

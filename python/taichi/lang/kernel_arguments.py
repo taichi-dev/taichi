@@ -56,7 +56,7 @@ def decl_scalar_arg(dtype, name, arg_depth):
         arg_id = impl.get_runtime().compiling_callable.insert_pointer_param(dtype, name)
     else:
         arg_id = impl.get_runtime().compiling_callable.insert_scalar_param(dtype, name)
-    return Expr(_ti_core.make_arg_load_expr(arg_id, dtype, is_ref, arg_depth, is_argpack))
+    return Expr(_ti_core.make_arg_load_expr(arg_id, dtype, is_ref, arg_depth, arg_depth))
 
 
 def get_type_for_kernel_args(dtype, name):

@@ -116,7 +116,7 @@ void run_snode() {
       auto _ = builder.get_loop_guard(loop);
       auto *index = builder.get_loop_index(loop);
       auto *ext = builder.create_external_ptr(
-          builder.create_arg_load({0}, PrimitiveType::i32, true, false),
+          builder.create_arg_load({0}, PrimitiveType::i32, true, 0),
           {index});
       auto *place_index =
           builder.create_global_load(builder.create_global_ptr(place, {index}));

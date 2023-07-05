@@ -488,7 +488,7 @@ class MatrixPtrStmt : public Stmt {
   */
   bool offset_used_as_index() const {
     if (origin->is<AllocaStmt>() || origin->is<GlobalTemporaryStmt>() ||
-        origin->is<ExternalPtrStmt>()) {
+        origin->is<ExternalPtrStmt>() || origin->is<MatrixPtrStmt>()) {
       TI_ASSERT_INFO(origin->ret_type.ptr_removed()->is<TensorType>(),
                      "MatrixPtrStmt can only be used for TensorType.");
       return true;

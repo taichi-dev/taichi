@@ -602,13 +602,13 @@ class ASTTransformer(Builder):
         assert args.kw_defaults == []
         assert args.kwarg is None
 
-        def decl_and_create_variable(annotation, name, arg_features):
+        def decl_and_create_variable(annotation, name, arg_features, is_argpack):
             if not isinstance(annotation, primitive_types.RefType):
                 ctx.kernel_args.append(name)
             if isinstance(annotation, ArgPackType):
                 d = {}
                 for j, (_name, anno) in enumerate(annotation.members.items()):
-                    d[_name] = decl_and_create_variable(anno, _name, arg_features[j])
+                    d[_name] = decl_and_create_variable(anno, _name, arg_features[j], True)
                 return kernel_arguments.decl_argpack_arg(annotation, d)
             if isinstance(annotation, annotations.template):
                 return ctx.global_vars[name]
@@ -635,10 +635,10 @@ class ASTTransformer(Builder):
                     name,
                 )
             if isinstance(annotation, MatrixType):
-                return kernel_arguments.decl_matrix_arg(annotation, name)
+                return kernel_arguments.decl_matrix_arg(annotation, name, is_argpack)
             if isinstance(annotation, StructType):
-                return kernel_arguments.decl_struct_arg(annotation, name)
-            return kernel_arguments.decl_scalar_arg(annotation, name)
+                return kernel_arguments.decl_struct_arg(annotation, name, is_argpack)
+            return kernel_arguments.decl_scalar_arg(annotation, name, is_argpack)
 
         def transform_as_kernel():
             # Treat return type
@@ -651,7 +651,7 @@ class ASTTransformer(Builder):
                     d = {}
                     kernel_arguments.push_argpack_arg(ctx.func.arguments[i].name)
                     for j, (name, anno) in enumerate(ctx.func.arguments[i].annotation.members.items()):
-                        d[name] = decl_and_create_variable(anno, name, ctx.arg_features[i][j])
+                        d[name] = decl_and_create_variable(anno, name, ctx.arg_features[i][j], True)
                     ctx.create_variable(arg.arg, kernel_arguments.decl_argpack_arg(ctx.func.arguments[i].annotation, d))
                 else:
                     ctx.create_variable(
@@ -660,6 +660,7 @@ class ASTTransformer(Builder):
                             ctx.func.arguments[i].annotation,
                             ctx.func.arguments[i].name,
                             ctx.arg_features[i] if ctx.arg_features is not None else None,
+                            False,
                         ),
                     )
 

@@ -36,7 +36,7 @@ TEST(Half2Vectorization, Ndarray) {
 
   auto argload_stmt = block->push_back<ArgLoadStmt>(
       std::vector<int>{0} /*arg_id*/, PrimitiveType::f16, /*is_ptr*/ true,
-      /*create_load*/ false);
+      /*create_load*/ false, /*is_argpack*/ false);
   argload_stmt->ret_type = half2_type;
   auto const_0_stmt = block->push_back<ConstStmt>(TypedConstant(0));
 

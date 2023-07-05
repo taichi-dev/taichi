@@ -151,8 +151,9 @@ void ArgLoadExpression::type_check(const CompileConfig *) {
 }
 
 void ArgLoadExpression::flatten(FlattenContext *ctx) {
-  auto arg_load = std::make_unique<ArgLoadStmt>(arg_id, dt, is_ptr, create_load,
-                                                is_argpack);
+  auto arg_load =
+      std::make_unique<ArgLoadStmt>(arg_id, dt, is_ptr, create_load,
+                                    is_argpack);
   arg_load->ret_type = ret_type;
   ctx->push_back(std::move(arg_load));
   stmt = ctx->back_stmt();
@@ -609,9 +610,8 @@ void ExternalTensorExpression::flatten(FlattenContext *ctx) {
   auto type =
       TypeFactory::get_instance().get_ndarray_struct_type(dt, ndim, needs_grad);
 
-  auto ptr =
-      Stmt::make<ArgLoadStmt>(arg_id, type, /*is_ptr=*/true,
-                              /*create_load=*/false, /*is_argpack=*/is_argpack);
+  auto ptr = Stmt::make<ArgLoadStmt>(arg_id, type, /*is_ptr=*/true,
+                                     /*create_load=*/false, /*is_argpack=*/is_argpack);
 
   ptr->tb = tb;
   ctx->push_back(std::move(ptr));

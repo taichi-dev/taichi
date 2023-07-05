@@ -182,8 +182,9 @@ ArgLoadStmt *IRBuilder::create_arg_load(const std::vector<int> &arg_id,
                                         DataType dt,
                                         bool is_ptr,
                                         bool is_argpack) {
-  return insert(Stmt::make_typed<ArgLoadStmt>(
-      arg_id, dt, is_ptr, /*create_load*/ true, is_argpack));
+  return insert(
+      Stmt::make_typed<ArgLoadStmt>(arg_id, dt, is_ptr, /*create_load*/ true,
+                                    is_argpack));
 }
 
 ReturnStmt *IRBuilder::create_return(Stmt *value) {
@@ -507,8 +508,7 @@ ArgLoadStmt *IRBuilder::create_ndarray_arg_load(const std::vector<int> &arg_id,
   auto type = TypeFactory::get_instance().get_ndarray_struct_type(dt, ndim);
 
   return insert(Stmt::make_typed<ArgLoadStmt>(arg_id, type, /*is_ptr=*/true,
-                                              /*create_load=*/false,
-                                              /*is_argpack=*/is_argpack));
+                                              /*create_load=*/false, /*is_argpack=*/is_argpack));
 }
 
 }  // namespace taichi::lang

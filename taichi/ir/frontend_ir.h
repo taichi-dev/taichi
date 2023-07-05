@@ -324,7 +324,7 @@ class ArgLoadExpression : public Expression {
    */
   bool create_load;
 
-  bool arg_depth;
+  int arg_depth;
 
   ArgLoadExpression(const std::vector<int> &arg_id,
                     DataType dt,
@@ -533,7 +533,7 @@ class ExternalTensorExpression : public Expression {
             int ndim,
             const std::vector<int> &arg_id,
             bool needs_grad,
-            bool arg_depth,
+            int arg_depth,
             BoundaryMode boundary) {
     this->dt = dt;
     this->ndim = ndim;

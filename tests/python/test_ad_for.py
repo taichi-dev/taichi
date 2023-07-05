@@ -991,3 +991,49 @@ def test_ib_global_load():
     compute.grad()
     for i in range(N):
         assert a.grad[i] == i
+
+
+@test_utils.test(require=ti.extension.adstack)
+def test_for_loop_index():
+    N = 2
+    M = 2
+    x = ti.field(ti.f32, shape=(N, M), needs_grad=True)
+    x[0, 0] = -0.57279384
+    x[0, 1] = 0.7815071
+    x[1, 0] = 0.45064202
+    x[1, 1] = -0.299493
+    my_x_grad = ti.field(ti.f32, shape=(N, M))
+    loss = ti.field(ti.f32, shape=(), needs_grad=True)
+
+    @ti.kernel
+    def compute():
+        for i in range(N):
+            x_sum = 0.0
+            for j in range(M):
+                x_sum += x[i, j]
+            loss[None] += ti.exp(x_sum)
+
+    @ti.kernel
+    def compute_grad():
+        for i in range(N):
+            # forward again
+            x_sum = 0.0
+            for j in range(M):
+                x_sum += x[i, j]
+            # backward
+            x_sum_grad = loss.grad[None] * ti.exp(x_sum)
+            for j in range(M):
+                my_x_grad[i, j] = x_sum_grad
+
+    # Compute gradient using AD
+    loss[None] = 0
+    compute()
+    loss.grad[None] = 1
+    compute.grad()
+
+    # Compute the mannually derived gradient
+    compute_grad()
+
+    for i in range(N):
+        for j in range(M):
+            assert test_utils.allclose(x.grad[i, j], my_x_grad[i, j])

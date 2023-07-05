@@ -442,8 +442,7 @@ TEST_F(ConstantFoldTest, BinaryBitShrInt32) {
 }
 
 TEST_F(ConstantFoldTest, BinaryBitShrInt64) {
-  auto *x =
-      builder.create_arg_load({0}, get_data_type<int64_t>(), false, 0);
+  auto *x = builder.create_arg_load({0}, get_data_type<int64_t>(), false, 0);
   auto *lhs = builder.get_int64(-1);
   auto *rhs = builder.get_uint32(2);
   auto *out = builder.create_shr(lhs, rhs);

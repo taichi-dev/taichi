@@ -33,9 +33,8 @@ std::unique_ptr<Kernel> setup_kernel2(Program *prog) {
   {
     auto *arg0 = builder2.create_ndarray_arg_load(
         /*arg_id=*/{0}, get_data_type<int>(), 1, 0);
-    auto *arg1 =
-        builder2.create_arg_load(/*arg_id=*/{1}, get_data_type<int>(),
-                                 /*is_ptr=*/false, /*arg_depth=*/0);
+    auto *arg1 = builder2.create_arg_load(/*arg_id=*/{1}, get_data_type<int>(),
+                                          /*is_ptr=*/false, /*arg_depth=*/0);
     auto *one = builder2.get_int32(1);
     auto *a1ptr = builder2.create_external_ptr(arg0, {one});
     builder2.create_global_store(a1ptr, arg1);  // a[1] = arg1

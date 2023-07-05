@@ -182,8 +182,8 @@ ArgLoadStmt *IRBuilder::create_arg_load(const std::vector<int> &arg_id,
                                         DataType dt,
                                         bool is_ptr,
                                         int arg_depth) {
-  return insert(Stmt::make_typed<ArgLoadStmt>(
-      arg_id, dt, is_ptr, /*create_load*/ true, arg_depth));
+  return insert(Stmt::make_typed<ArgLoadStmt>(arg_id, dt, is_ptr,
+                                              /*create_load*/ true, arg_depth));
 }
 
 ReturnStmt *IRBuilder::create_return(Stmt *value) {

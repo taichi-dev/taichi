@@ -56,7 +56,7 @@ def decl_scalar_arg(dtype, name, arg_depth):
         arg_id = impl.get_runtime().compiling_callable.insert_pointer_param(dtype, name)
     else:
         arg_id = impl.get_runtime().compiling_callable.insert_scalar_param(dtype, name)
-    return Expr(_ti_core.make_arg_load_expr(arg_id, dtype, is_ref, arg_depth))
+    return Expr(_ti_core.make_arg_load_expr(arg_id, dtype, is_ref, True, arg_depth))
 
 
 def get_type_for_kernel_args(dtype, name):
@@ -108,7 +108,7 @@ def decl_sparse_matrix(dtype, name):
     ptr_type = cook_dtype(u64)
     # Treat the sparse matrix argument as a scalar since we only need to pass in the base pointer
     arg_id = impl.get_runtime().compiling_callable.insert_scalar_param(ptr_type, name)
-    return SparseMatrixProxy(_ti_core.make_arg_load_expr(arg_id, ptr_type, False, 0), value_type)
+    return SparseMatrixProxy(_ti_core.make_arg_load_expr(arg_id, ptr_type, False, True, 0), value_type)
 
 
 def decl_ndarray_arg(element_type, ndim, name, needs_grad, boundary):

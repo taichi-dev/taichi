@@ -29,6 +29,7 @@ constexpr char kArgsBufferName[] = "args_buffer";
 constexpr char kRetBufferName[] = "ret_buffer";
 constexpr char kListgenBufferName[] = "listgen_buffer";
 constexpr char kExtArrBufferName[] = "ext_arr_buffer";
+constexpr char kArgPackBufferName[] = "argpack_buffer";
 
 constexpr int kMaxNumThreadsGridStrideLoop = 65536 * 2;
 
@@ -55,6 +56,9 @@ std::string buffer_instance_name(BufferInfo b) {
       return kListgenBufferName;
     case BufferType::ExtArr:
       return std::string(kExtArrBufferName) + "_" +
+             fmt::format("{}", fmt::join(b.root_id, "_"));
+    case BufferType::ArgPack:
+      return std::string(kArgPackBufferName) + "_" +
              fmt::format("{}", fmt::join(b.root_id, "_"));
     default:
       TI_NOT_IMPLEMENTED;
@@ -586,14 +590,28 @@ class TaskCodegen : public IRVisitor {
       //    ir_->int_immediate_number(ir_->i32_type(), offset_in_mem);
       // ir_->register_value(stmt->raw_name(), val);
     } else {
-      auto buffer_value =
-          get_buffer_value(BufferType::Args, PrimitiveType::i32);
+      spirv::Value buffer_val, buffer_value;
       bool is_bool = arg_type->is_primitive(PrimitiveTypeID::u1);
-      const auto val_type =
-          is_bool ? ir_->i32_type() : args_struct_types_[arg_id];
-      spirv::Value buffer_val = ir_->make_access_chain(
-          ir_->get_pointer_type(val_type, spv::StorageClassUniform),
-          buffer_value, arg_id);
+      // `val_type` must be assigned after `get_buffer_value` because
+      // `args_struct_types_` needs to be initialized by `get_buffer_value`.
+      SType val_type;
+      if (stmt->arg_depth > 0) {
+        // Inside argpacks, load value from argpack buffer
+        std::vector<int> indices_l(stmt->arg_id.begin(), stmt->arg_id.begin() + stmt->arg_depth);
+        std::vector<int> indices_r(stmt->arg_id.begin() + stmt->arg_depth, stmt->arg_id.end());
+        buffer_value = get_buffer_value({BufferType::ArgPack, indices_l}, PrimitiveType::i32);
+        val_type = is_bool ? ir_->i32_type() : args_struct_types_[arg_id];
+        buffer_val = ir_->make_access_chain(
+            ir_->get_pointer_type(val_type, spv::StorageClassUniform),
+            buffer_value, indices_r);
+      } else {
+        // Not in argpacks, load value from args buffer
+        buffer_value = get_buffer_value(BufferType::Args, PrimitiveType::i32);
+        val_type = is_bool ? ir_->i32_type() : args_struct_types_[arg_id];
+        buffer_val = ir_->make_access_chain(
+            ir_->get_pointer_type(val_type, spv::StorageClassUniform),
+            buffer_value, arg_id);
+      }
       buffer_val.flag = ValueKind::kVariablePtr;
       if (!stmt->create_load) {
         ir_->register_value(stmt->raw_name(), buffer_val);
@@ -2247,6 +2265,18 @@ class TaskCodegen : public IRVisitor {
       return ret_buffer_value_;
     }
 
+    if (buffer.type == BufferType::ArgPack) {
+      // Make sure that Args Buffer are loaded first:
+      get_buffer_value(BufferType::Args, PrimitiveType::i32);
+
+      int binding = binding_head_++;
+      buffer_binding_map_[key] = binding;
+
+      auto buffer_value = compile_argpack_struct(buffer.root_id, binding, buffer_instance_name(buffer));
+      buffer_value_map_[key] = buffer_value;
+      return buffer_value;
+    }
+
     // Binding head starts at 2, so we don't break args and rets
     int binding = binding_head_++;
     buffer_binding_map_[key] = binding;
@@ -2346,6 +2376,40 @@ class TaskCodegen : public IRVisitor {
         ir_->uniform_struct_argument(args_struct_type_, 0, 0, "args");
   }
 
+  spirv::Value compile_argpack_struct(const std::vector<int> &arg_id, int binding, const std::string &buffer_name) {
+    spirv::SType argpack_struct_type;
+    // Generate struct IR
+    tinyir::Block blk;
+    std::vector<const tinyir::Type *> element_types;
+    bool has_buffer_ptr =
+        caps_->get(DeviceCapability::spirv_has_physical_storage_buffer);
+    const lang::StructType *argpack_type = ctx_attribs_->args_type()->get_element_type(arg_id)->as<lang::StructType>();
+    for (int i = 0; i < argpack_type->elements().size(); i++) {
+      auto *type = argpack_type->elements()[i].type;
+      auto spirv_type = translate_ti_type(blk, type, has_buffer_ptr);
+      element_types.push_back(spirv_type);
+    }
+    const tinyir::Type *struct_type =
+        blk.emplace_back<StructType>(element_types);
+
+    // Reduce struct IR
+    std::unordered_map<const tinyir::Type *, const tinyir::Type *> old2new;
+    auto reduced_blk = ir_reduce_types(&blk, old2new);
+    struct_type = old2new[struct_type];
+
+    // Layout & translate to SPIR-V
+    STD140LayoutContext layout_ctx;
+    auto ir2spirv_map =
+        ir_translate_to_spirv(reduced_blk.get(), layout_ctx, ir_.get());
+    argpack_struct_type.id = ir2spirv_map[struct_type];
+
+    argpack_struct_types_[arg_id] = argpack_struct_type;
+    argpack_buffer_values_[arg_id] =
+        ir_->uniform_struct_argument(
+            argpack_struct_type, 0, binding, buffer_name);
+    return argpack_buffer_values_[arg_id];
+  }
+
   void compile_ret_struct() {
     if (!ctx_attribs_->has_rets())
       return;
@@ -2443,6 +2507,15 @@ class TaskCodegen : public IRVisitor {
                      spirv::SType,
                      hashing::Hasher<std::vector<int>>>
       args_struct_types_;
+  std::unordered_map<std::vector<int>,
+                     spirv::SType,
+                     hashing::Hasher<std::vector<int>>>
+      argpack_struct_types_;
+  std::unordered_map<std::vector<int>,
+                     spirv::Value,
+                     hashing::Hasher<std::vector<int>>>
+      argpack_buffer_values_;
+
   std::vector<spirv::SType> rets_struct_types_;
 
   spirv::SType ret_struct_type_;

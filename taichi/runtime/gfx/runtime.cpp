@@ -47,7 +47,10 @@ class HostDeviceContextBlitter {
       const std::unordered_map<std::vector<int>,
                                size_t,
                                hashing::Hasher<std::vector<int>>>
-          &ext_arr_size) {
+          &ext_arr_size,
+      const std::unordered_map<std::vector<int>,
+                               const ArgPack *,
+                               hashing::Hasher<std::vector<int>>> &argpacks) {
     if (!ctx_attribs_->has_args()) {
       return;
     }
@@ -99,6 +102,8 @@ class HostDeviceContextBlitter {
           host_ctx_.set_ndarray_ptrs(
               indices, addr, (uint64)host_ctx_.array_ptrs[grad_ptr_idx]);
         }
+      } else if (arg.is_argpack) {
+        // Temporarily do nothing here.
       }
     }
 
@@ -408,6 +413,10 @@ void GfxRuntime::launch_kernel(KernelHandle handle,
   std::unordered_map<std::vector<int>, DeviceAllocation,
                      hashing::Hasher<std::vector<int>>>
       textures;
+  // `argpacks` holds argpacks that passed to this kernel.
+  std::unordered_map<std::vector<int>, const ArgPack *,
+                     hashing::Hasher<std::vector<int>>>
+      argpacks;
 
   // Prepare context buffers & arrays
   if (ctx_blitter) {
@@ -468,10 +477,18 @@ void GfxRuntime::launch_kernel(KernelHandle handle,
           any_arrays[indices] = *allocated.get();
           ctx_buffers_.push_back(std::move(allocated));
         }
+      } else if (arg.is_argpack) {
+        TI_ASSERT(host_ctx.device_allocation_type[indices] ==
+                  LaunchContextBuilder::DevAllocType::kArgPack);
+        TI_ASSERT(host_ctx.argpack_ptrs.count(indices));
+        const ArgPack *argpack = host_ctx.argpack_ptrs[indices];
+        DeviceAllocation devalloc = argpack->get_device_allocation();
+        argpacks_in_use_.insert(devalloc.alloc_id);
+        argpacks[indices] = argpack;
       }
     }
 
-    ctx_blitter->host_to_device(any_arrays, ext_array_size);
+    ctx_blitter->host_to_device(any_arrays, ext_array_size, argpacks);
   }
 
   ensure_current_cmdlist();
@@ -495,6 +512,9 @@ void GfxRuntime::launch_kernel(KernelHandle handle,
       } else if (bind.buffer.type == BufferType::Args) {
         bindings->buffer(bind.binding,
                          args_buffer ? *args_buffer : kDeviceNullAllocation);
+      } else if (bind.buffer.type == BufferType::ArgPack) {
+        DeviceAllocation alloc = argpacks.at(bind.buffer.root_id)->get_device_allocation();
+        bindings->buffer(bind.binding, alloc);
       } else if (bind.buffer.type == BufferType::Rets) {
         bindings->rw_buffer(bind.binding,
                             ret_buffer ? *ret_buffer : kDeviceNullAllocation);

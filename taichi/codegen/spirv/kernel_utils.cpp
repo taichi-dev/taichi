@@ -12,6 +12,9 @@ namespace spirv {
 
 // static
 std::string TaskAttributes::buffers_name(BufferInfo b) {
+  if (b.type == BufferType::ArgPack) {
+    return "ArgPack";
+  }
   if (b.type == BufferType::Args) {
     return "Args";
   }

@@ -20,7 +20,7 @@ namespace spirv {
  * Per offloaded task attributes.
  */
 struct TaskAttributes {
-  enum class BufferType { Root, GlobalTmps, Args, Rets, ListGen, ExtArr };
+  enum class BufferType { Root, GlobalTmps, Args, Rets, ListGen, ExtArr, ArgPack };
 
   struct BufferInfo {
     BufferType type;

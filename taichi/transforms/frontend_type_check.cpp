@@ -68,8 +68,8 @@ class FrontendTypeCheck : public IRVisitor {
   }
 
   void visit(FrontendAssignStmt *stmt) override {
-    auto lhs_type = stmt->lhs->ret_type.ptr_removed();
-    auto rhs_type = stmt->rhs->ret_type.ptr_removed();
+    auto const &lhs_type = stmt->lhs->ret_type.ptr_removed();
+    auto const &rhs_type = stmt->rhs->ret_type.ptr_removed();
 
     // No implicit cast at frontend for now
     if (is_tensor(lhs_type) && is_tensor(rhs_type) &&
@@ -79,12 +79,16 @@ class FrontendTypeCheck : public IRVisitor {
                                rhs_type->to_string(), lhs_type->to_string()));
     }
 
-    if (lhs_type != rhs_type) {
-      auto promoted = promoted_type(lhs_type, rhs_type);
-      if (lhs_type != promoted) {
+    auto const &lhs_element_type = lhs_type.get_element_type();
+    auto const &rhs_element_type = rhs_type.get_element_type();
+
+    if (lhs_element_type != rhs_element_type) {
+      auto promoted = promoted_type(lhs_element_type, rhs_element_type);
+      if (lhs_element_type != promoted) {
         ErrorEmitter(TaichiCastWarning(), stmt,
                      fmt::format("Assign may lose precision: {} <- {}",
-                                 lhs_type->to_string(), rhs_type->to_string()));
+                                 lhs_element_type->to_string(),
+                                 rhs_element_type->to_string()));
       }
     }
   }

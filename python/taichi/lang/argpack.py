@@ -279,8 +279,13 @@ class ArgPackType(CompoundType):
                 self.members[k] = dtype
                 elements.append([dtype.dtype, k])
             elif isinstance(dtype, MatrixType):
+                # Convert MatrixType to StructType
+                if dtype.ndim == 1:
+                    elements_ = [(dtype.dtype, f"{k}_{i}") for i in range(dtype.n)]
+                else:
+                    elements_ = [(dtype.dtype, f"{k}_{i}_{j}") for i in range(dtype.n) for j in range(dtype.m)]
                 self.members[k] = dtype
-                elements.append([dtype.tensor_type, k])
+                elements.append([_ti_core.get_type_factory_instance().get_struct_type(elements_), k])
             elif isinstance(dtype, sparse_matrix_builder):
                 self.members[k] = dtype
                 elements.append([cook_dtype(primitive_types.u64), k])

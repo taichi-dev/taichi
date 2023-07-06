@@ -60,7 +60,35 @@ class FrontendTypeCheck : public IRVisitor {
   }
 
   void visit(FrontendSNodeOpStmt *stmt) override {
-    // Noop
+    if (!stmt->ret_type.ptr_removed().get_element_type()->is_primitive(
+            PrimitiveTypeID::unknown)) {
+      // pass
+    } else if (stmt->snode) {
+      stmt->ret_type =
+          TypeFactory::get_instance().get_pointer_type(stmt->snode->dt);
+    } else
+      ErrorEmitter(TaichiTypeWarning(), stmt,
+                   "Type inference failed: snode is nullptr.");
+    auto check_indices = [&](SNode *snode) {
+      if (snode->num_active_indices != stmt->indices.size()) {
+        ErrorEmitter(
+            TaichiRuntimeError(), stmt,
+            fmt::format("{} has {} indices. Indexed with {}.",
+                        snode->node_type_name, snode->num_active_indices,
+                        stmt->indices.size()));
+      }
+    };
+    auto is_cell_access = SNodeOpStmt::activation_related(stmt->op_type) &&
+                          stmt->snode->type != SNodeType::dynamic;
+    check_indices(is_cell_access ? stmt->snode : stmt->snode->parent);
+    for (int i = 0; i < stmt->indices.size(); i++) {
+      if (!stmt->indices[i]->ret_type->is_primitive(PrimitiveTypeID::i32)) {
+        ErrorEmitter(
+            TaichiCastWarning(), stmt,
+            fmt::format(
+                "Field index {} not int32, casting into int32 implicitly", i));
+      }
+    }
   }
 
   void visit(FrontendAssertStmt *stmt) override {

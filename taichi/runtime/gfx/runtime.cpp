@@ -46,8 +46,7 @@ class HostDeviceContextBlitter {
                                hashing::Hasher<std::vector<int>>> &ext_arrays,
       const std::unordered_map<std::vector<int>,
                                size_t,
-                               hashing::Hasher<std::vector<int>>>
-          &ext_arr_size,
+                               hashing::Hasher<std::vector<int>>> &ext_arr_size,
       const std::unordered_map<std::vector<int>,
                                const ArgPack *,
                                hashing::Hasher<std::vector<int>>> &argpacks) {
@@ -513,7 +512,8 @@ void GfxRuntime::launch_kernel(KernelHandle handle,
         bindings->buffer(bind.binding,
                          args_buffer ? *args_buffer : kDeviceNullAllocation);
       } else if (bind.buffer.type == BufferType::ArgPack) {
-        DeviceAllocation alloc = argpacks.at(bind.buffer.root_id)->get_device_allocation();
+        DeviceAllocation alloc =
+            argpacks.at(bind.buffer.root_id)->get_device_allocation();
         bindings->buffer(bind.binding, alloc);
       } else if (bind.buffer.type == BufferType::Rets) {
         bindings->rw_buffer(bind.binding,

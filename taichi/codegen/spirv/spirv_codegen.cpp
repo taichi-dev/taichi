@@ -597,9 +597,12 @@ class TaskCodegen : public IRVisitor {
       SType val_type;
       if (stmt->arg_depth > 0) {
         // Inside argpacks, load value from argpack buffer
-        std::vector<int> indices_l(stmt->arg_id.begin(), stmt->arg_id.begin() + stmt->arg_depth);
-        std::vector<int> indices_r(stmt->arg_id.begin() + stmt->arg_depth, stmt->arg_id.end());
-        buffer_value = get_buffer_value({BufferType::ArgPack, indices_l}, PrimitiveType::i32);
+        std::vector<int> indices_l(stmt->arg_id.begin(),
+                                   stmt->arg_id.begin() + stmt->arg_depth);
+        std::vector<int> indices_r(stmt->arg_id.begin() + stmt->arg_depth,
+                                   stmt->arg_id.end());
+        buffer_value = get_buffer_value({BufferType::ArgPack, indices_l},
+                                        PrimitiveType::i32);
         val_type = is_bool ? ir_->i32_type() : args_struct_types_[arg_id];
         buffer_val = ir_->make_access_chain(
             ir_->get_pointer_type(val_type, spv::StorageClassUniform),
@@ -2272,7 +2275,8 @@ class TaskCodegen : public IRVisitor {
       int binding = binding_head_++;
       buffer_binding_map_[key] = binding;
 
-      auto buffer_value = compile_argpack_struct(buffer.root_id, binding, buffer_instance_name(buffer));
+      auto buffer_value = compile_argpack_struct(buffer.root_id, binding,
+                                                 buffer_instance_name(buffer));
       buffer_value_map_[key] = buffer_value;
       return buffer_value;
     }
@@ -2376,14 +2380,18 @@ class TaskCodegen : public IRVisitor {
         ir_->uniform_struct_argument(args_struct_type_, 0, 0, "args");
   }
 
-  spirv::Value compile_argpack_struct(const std::vector<int> &arg_id, int binding, const std::string &buffer_name) {
+  spirv::Value compile_argpack_struct(const std::vector<int> &arg_id,
+                                      int binding,
+                                      const std::string &buffer_name) {
     spirv::SType argpack_struct_type;
     // Generate struct IR
     tinyir::Block blk;
     std::vector<const tinyir::Type *> element_types;
     bool has_buffer_ptr =
         caps_->get(DeviceCapability::spirv_has_physical_storage_buffer);
-    const lang::StructType *argpack_type = ctx_attribs_->args_type()->get_element_type(arg_id)->as<lang::StructType>();
+    const lang::StructType *argpack_type = ctx_attribs_->args_type()
+                                               ->get_element_type(arg_id)
+                                               ->as<lang::StructType>();
     for (int i = 0; i < argpack_type->elements().size(); i++) {
       auto *type = argpack_type->elements()[i].type;
       auto spirv_type = translate_ti_type(blk, type, has_buffer_ptr);
@@ -2404,9 +2412,8 @@ class TaskCodegen : public IRVisitor {
     argpack_struct_type.id = ir2spirv_map[struct_type];
 
     argpack_struct_types_[arg_id] = argpack_struct_type;
-    argpack_buffer_values_[arg_id] =
-        ir_->uniform_struct_argument(
-            argpack_struct_type, 0, binding, buffer_name);
+    argpack_buffer_values_[arg_id] = ir_->uniform_struct_argument(
+        argpack_struct_type, 0, binding, buffer_name);
     return argpack_buffer_values_[arg_id];
   }
 

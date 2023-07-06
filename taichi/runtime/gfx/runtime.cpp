@@ -905,6 +905,12 @@ GfxRuntime::get_argpack_type_with_data_layout_impl(
       members[i].type = new_ty;
       member_align = member_align_;
       member_size = size;
+    } else if (auto argpack_type = member.type->cast<lang::ArgPackType>()) {
+      auto [new_ty, size, member_align_] =
+          get_argpack_type_with_data_layout_impl(argpack_type, layout);
+      members[i].type = new_ty;
+      member_align = member_align_;
+      member_size = size;
     } else if (auto tensor_type = member.type->cast<lang::TensorType>()) {
       size_t element_size = data_type_size_gfx(tensor_type->get_element_type());
       size_t num_elements = tensor_type->get_num_elements();

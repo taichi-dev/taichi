@@ -266,6 +266,9 @@ class _IntermediateArgPack(ArgPack):
         self._ArgPack__dtype = dtype
         self._ArgPack__argpack = impl.get_runtime().prog.create_argpack(dtype)
 
+    def __del__(self):
+        pass
+
 
 class ArgPackType(CompoundType):
     def __init__(self, **kwargs):
@@ -277,7 +280,8 @@ class ArgPackType(CompoundType):
                 elements.append([dtype.dtype, k])
             elif isinstance(dtype, ArgPackType):
                 self.members[k] = dtype
-                elements.append([dtype.dtype, k])
+                # Use i32 as a placeholder for nested argpacks
+                elements.append([primitive_types.i32, k])
             elif isinstance(dtype, MatrixType):
                 # Convert MatrixType to StructType
                 if dtype.ndim == 1:

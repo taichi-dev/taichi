@@ -1177,6 +1177,9 @@ TaichiLLVMContext::get_argpack_type_with_data_layout(
     if (auto struct_type = element.type->cast<StructType>()) {
       element.type =
           get_struct_type_with_data_layout(struct_type, layout).first;
+    } else if (auto argpack_type = element.type->cast<ArgPackType>()) {
+      element.type =
+          get_argpack_type_with_data_layout(argpack_type, layout).first;
     }
   }
   auto struct_layout = data_layout->getStructLayout(llvm_struct_type);

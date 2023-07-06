@@ -606,6 +606,7 @@ class ASTTransformer(Builder):
             if not isinstance(annotation, primitive_types.RefType):
                 ctx.kernel_args.append(name)
             if isinstance(annotation, ArgPackType):
+                kernel_arguments.push_argpack_arg(name)
                 d = {}
                 for j, (_name, anno) in enumerate(annotation.members.items()):
                     d[_name] = decl_and_create_variable(anno, _name, arg_features[j], arg_depth + 1)

@@ -115,15 +115,20 @@ void Callable::pop_argpack_stack() {
              : (const Type *)param.get_dtype(),
          fmt::format("arg_{}_{}", fmt::join(temp_indices_stack_, "_"), i)});
   }
-  auto *type =
+  auto *type_inner =
       TypeFactory::get_instance().get_struct_type(members)->as<StructType>();
-  auto p = Parameter(DataType(type), false, true);
+  auto* type_pointer =
+      TypeFactory::get_instance().get_pointer_type(const_cast<StructType *>(type_inner), false);
+  auto *type_outter =
+      TypeFactory::get_instance().get_struct_type({{type_pointer, "data_ptr"}})->as<StructType>();
+  auto p = Parameter(DataType(type_outter), false, true);
   p.name = temp_argpack_name_stack_.top();
   // Pop stacks
   temp_argpack_stack_.pop();
   temp_indices_stack_.pop_back();
   temp_argpack_name_stack_.pop();
-  add_parameter(p);
+  auto indices = add_parameter(p);
+  argpack_types[indices] = type_inner;
 }
 
 std::vector<int> Callable::add_parameter(const Parameter &param) {
@@ -132,13 +137,13 @@ std::vector<int> Callable::add_parameter(const Parameter &param) {
   if (temp_argpack_stack_.size() == 0) {
     parameter_list.push_back(param);
     auto indices = std::vector<int>{(int)parameter_list.size() - 1};
-    not_flattened_parameters[indices] = param;
+    nested_parameters[indices] = param;
     return indices;
   }
   temp_argpack_stack_.top().push_back(param);
   std::vector<int> ret = temp_indices_stack_;
   ret.push_back(temp_argpack_stack_.top().size() - 1);
-  not_flattened_parameters[ret] = param;
+  nested_parameters[ret] = param;
   return ret;
 }
 

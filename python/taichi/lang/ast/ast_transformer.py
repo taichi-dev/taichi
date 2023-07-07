@@ -602,44 +602,57 @@ class ASTTransformer(Builder):
         assert args.kw_defaults == []
         assert args.kwarg is None
 
-        def decl_and_create_variable(annotation, name, arg_features, arg_depth):
+        def decl_and_create_variable(annotation, name, arg_features, invoke_later_dict, prefix_name, arg_depth):
+            full_name = prefix_name + "_" + name
             if not isinstance(annotation, primitive_types.RefType):
                 ctx.kernel_args.append(name)
             if isinstance(annotation, ArgPackType):
                 kernel_arguments.push_argpack_arg(name)
                 d = {}
+                items_to_put_in_dict = []
                 for j, (_name, anno) in enumerate(annotation.members.items()):
-                    d[_name] = decl_and_create_variable(anno, _name, arg_features[j], arg_depth + 1)
-                return kernel_arguments.decl_argpack_arg(annotation, d)
+                    result, obj = decl_and_create_variable(anno, _name, arg_features[j], invoke_later_dict,
+                                                           full_name, arg_depth + 1)
+                    if not result:
+                        d[_name] = None
+                        items_to_put_in_dict.append((full_name + "_" + _name, _name, obj))
+                    else:
+                        d[_name] = obj
+                argpack = kernel_arguments.decl_argpack_arg(annotation, d)
+                for item in items_to_put_in_dict:
+                    invoke_later_dict[item[0]] = argpack, item[1], *item[2]
+                return True, argpack
             if isinstance(annotation, annotations.template):
-                return ctx.global_vars[name]
+                return True, ctx.global_vars[name]
             if isinstance(annotation, annotations.sparse_matrix_builder):
-                return kernel_arguments.decl_sparse_matrix(
-                    to_taichi_type(arg_features),
-                    name,
-                )
+                return False, (kernel_arguments.decl_sparse_matrix,
+                               (
+                                   to_taichi_type(arg_features),
+                                   full_name,
+                               ))
             if isinstance(annotation, ndarray_type.NdarrayType):
-                return kernel_arguments.decl_ndarray_arg(
-                    to_taichi_type(arg_features[0]),
-                    arg_features[1],
-                    name,
-                    arg_features[2],
-                    arg_features[3],
-                )
+                return False, (kernel_arguments.decl_ndarray_arg,
+                               (
+                                   to_taichi_type(arg_features[0]),
+                                   arg_features[1],
+                                   full_name,
+                                   arg_features[2],
+                                   arg_features[3],
+                               ))
             if isinstance(annotation, texture_type.TextureType):
-                return kernel_arguments.decl_texture_arg(arg_features[0], name)
+                return False, (kernel_arguments.decl_texture_arg,
+                               (arg_features[0], full_name))
             if isinstance(annotation, texture_type.RWTextureType):
-                return kernel_arguments.decl_rw_texture_arg(
-                    arg_features[0],
-                    arg_features[1],
-                    arg_features[2],
-                    name,
-                )
+                return False, (kernel_arguments.decl_rw_texture_arg,
+                               (arg_features[0],
+                                arg_features[1],
+                                arg_features[2],
+                                full_name))
             if isinstance(annotation, MatrixType):
-                return kernel_arguments.decl_matrix_arg(annotation, name, arg_depth)
+                return True, kernel_arguments.decl_matrix_arg(annotation, name, arg_depth)
             if isinstance(annotation, StructType):
-                return kernel_arguments.decl_struct_arg(annotation, name, arg_depth)
-            return kernel_arguments.decl_scalar_arg(annotation, name, arg_depth)
+                return True, kernel_arguments.decl_struct_arg(annotation, name, arg_depth)
+            return True, kernel_arguments.decl_scalar_arg(annotation, name, arg_depth)
 
         def transform_as_kernel():
             # Treat return type
@@ -647,23 +660,40 @@ class ASTTransformer(Builder):
                 kernel_arguments.decl_ret(ctx.func.return_type, ctx.is_real_function)
             impl.get_runtime().compiling_callable.finalize_rets()
 
+            invoke_later_dict = dict()
+            create_variable_later = dict()
             for i, arg in enumerate(args.args):
                 if isinstance(ctx.func.arguments[i].annotation, ArgPackType):
-                    d = {}
                     kernel_arguments.push_argpack_arg(ctx.func.arguments[i].name)
+                    d = {}
+                    items_to_put_in_dict = []
                     for j, (name, anno) in enumerate(ctx.func.arguments[i].annotation.members.items()):
-                        d[name] = decl_and_create_variable(anno, name, ctx.arg_features[i][j], 1)
-                    ctx.create_variable(arg.arg, kernel_arguments.decl_argpack_arg(ctx.func.arguments[i].annotation, d))
+                        result, obj = decl_and_create_variable(anno, name, ctx.arg_features[i][j], invoke_later_dict,
+                                                               "__argpack_" + name, 1)
+                        if not result:
+                            d[name] = None
+                            items_to_put_in_dict.append(("__argpack_" + name, name, obj))
+                        else:
+                            d[name] = obj
+                    argpack = kernel_arguments.decl_argpack_arg(ctx.func.arguments[i].annotation, d)
+                    for item in items_to_put_in_dict:
+                        invoke_later_dict[item[0]] = argpack, item[1], *item[2]
+                    create_variable_later[arg.arg] = argpack
                 else:
-                    ctx.create_variable(
-                        arg.arg,
-                        decl_and_create_variable(
-                            ctx.func.arguments[i].annotation,
-                            ctx.func.arguments[i].name,
-                            ctx.arg_features[i] if ctx.arg_features is not None else None,
-                            0,
-                        ),
+                    result, obj = decl_and_create_variable(
+                        ctx.func.arguments[i].annotation,
+                        ctx.func.arguments[i].name,
+                        ctx.arg_features[i] if ctx.arg_features is not None else None,
+                        invoke_later_dict,
+                        "",
+                        0,
                     )
+                    ctx.create_variable(arg.arg, obj if result else obj[0](*obj[1]))
+            for k, v in invoke_later_dict.items():
+                argpack, name, func, params = v
+                argpack[name] = func(*params)
+            for k, v in create_variable_later.items():
+                ctx.create_variable(k, v)
 
             impl.get_runtime().compiling_callable.finalize_params()
             # remove original args

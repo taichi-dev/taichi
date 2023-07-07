@@ -1276,7 +1276,11 @@ llvm::Value *TaskCodeGenLLVM::bitcast_to_u64(llvm::Value *val, DataType type) {
 }
 
 void TaskCodeGenLLVM::visit(ArgLoadStmt *stmt) {
-  llvm_val[stmt] = get_struct_arg(stmt->arg_id, stmt->create_load);
+  if (stmt->arg_depth > 0) {
+    TI_NOT_IMPLEMENTED;
+  } else {
+    llvm_val[stmt] = get_struct_arg(stmt->arg_id, stmt->create_load);
+  }
 }
 
 void TaskCodeGenLLVM::visit(ReturnStmt *stmt) {

@@ -173,7 +173,8 @@ class UnaryOpStmt : public Stmt {
  * Load a kernel argument. The data type should be known when constructing this
  * statement. |is_ptr| should be true iff the result can be used as a base
  * pointer of an ExternalPtrStmt. |arg_depth| indicates the nested depth in the
- * argpack of this value.
+ * argpack of this value. |argpack_ptr| holds buffer for argpack, only valid if
+ * |arg_depth| > 0.
  */
 class ArgLoadStmt : public Stmt {
  public:
@@ -195,15 +196,19 @@ class ArgLoadStmt : public Stmt {
 
   int arg_depth;
 
+  Stmt *argpack_ptr;
+
   ArgLoadStmt(const std::vector<int> &arg_id,
               const DataType &dt,
               bool is_ptr,
               bool create_load,
-              int arg_depth)
+              int arg_depth,
+              Stmt *argpack_ptr = nullptr)
       : arg_id(arg_id),
         is_ptr(is_ptr),
         create_load(create_load),
-        arg_depth(arg_depth) {
+        arg_depth(arg_depth),
+        argpack_ptr(argpack_ptr) {
     this->ret_type = dt;
     TI_STMT_REG_FIELDS;
   }
@@ -212,7 +217,7 @@ class ArgLoadStmt : public Stmt {
     return false;
   }
 
-  TI_STMT_DEF_FIELDS(ret_type, arg_id, is_ptr, arg_depth);
+  TI_STMT_DEF_FIELDS(ret_type, arg_id, is_ptr, arg_depth, argpack_ptr);
   TI_DEFINE_ACCEPT_AND_CLONE
 };
 

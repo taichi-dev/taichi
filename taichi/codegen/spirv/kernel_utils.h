@@ -300,6 +300,25 @@ class KernelContextAttributes {
     return rets_type_;
   }
 
+  /**
+   * Get the type of argpack by arg_id.
+   */
+  inline const lang::Type *argpack_type(const std::vector<int> &arg_id) const {
+    for (const auto &element : argpack_types_) {
+      if (element.first == arg_id) {
+        return element.second;
+      }
+    }
+    return nullptr;
+  }
+
+  /**
+   * Get all argpacks.
+   */
+  inline const std::vector<std::pair<std::vector<int>, const Type *>> &argpack_types() const {
+    return argpack_types_;
+  }
+
   std::vector<std::pair<std::vector<int>, irpass::ExternalPtrAccess>>
       arr_access;
 
@@ -309,7 +328,8 @@ class KernelContextAttributes {
             rets_bytes_,
             arr_access,
             args_type_,
-            rets_type_);
+            rets_type_,
+            argpack_types_);
 
  private:
   std::vector<std::pair<std::vector<int>, ArgAttributes>> arg_attribs_vec_;
@@ -320,6 +340,8 @@ class KernelContextAttributes {
 
   const lang::StructType *args_type_{nullptr};
   const lang::StructType *rets_type_{nullptr};
+
+  std::vector<std::pair<std::vector<int>, const Type *>> argpack_types_;
 };
 
 /**

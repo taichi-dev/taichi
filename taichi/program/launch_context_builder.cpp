@@ -91,10 +91,17 @@ void LaunchContextBuilder::set_ndarray_ptrs(const std::vector<int> &arg_id,
   auto param_indices = arg_id;
   param_indices.push_back(TypeFactory::DATA_PTR_POS_IN_NDARRAY);
   set_struct_arg(param_indices, data_ptr);
-  if (kernel_->not_flattened_parameters[arg_id].needs_grad) {
+  if (kernel_->nested_parameters[arg_id].needs_grad) {
     param_indices.back() = TypeFactory::GRAD_PTR_POS_IN_NDARRAY;
     set_struct_arg(param_indices, grad_ptr);
   }
+}
+
+void LaunchContextBuilder::set_argpack_ptr(const std::vector<int> &arg_id,
+                                           uint64 data_ptr) {
+  auto param_indices = arg_id;
+  param_indices.push_back(TypeFactory::DATA_PTR_POS_IN_ARGPACK);
+  set_struct_arg(param_indices, data_ptr);
 }
 
 template void LaunchContextBuilder::set_struct_arg(std::vector<int> arg_indices,
@@ -217,7 +224,7 @@ void LaunchContextBuilder::set_arg_external_array_with_shape(
     const std::vector<int64> &shape,
     uintptr_t grad_ptr) {
   TI_ASSERT_INFO(
-      kernel_->not_flattened_parameters[arg_id].is_array,
+      kernel_->nested_parameters[arg_id].is_array,
       "Assigning external (numpy) array to scalar argument is not allowed.");
 
   TI_ASSERT_INFO(shape.size() <= taichi_max_num_indices,
@@ -245,6 +252,7 @@ void LaunchContextBuilder::set_arg_ndarray(const std::vector<int> &arg_id,
 void LaunchContextBuilder::set_arg_argpack(const std::vector<int> &arg_id,
                                            const ArgPack &argpack) {
   argpack_ptrs[arg_id] = &argpack;
+  set_argpack_ptr(arg_id, argpack.get_device_allocation_ptr_as_int());
   // TODO: Consider renaming this method to `set_device_allocation_type`
   set_array_device_allocation_type(arg_id, DevAllocType::kArgPack);
 }

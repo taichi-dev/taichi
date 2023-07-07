@@ -315,8 +315,7 @@ class KernelContextAttributes {
   /**
    * Get all argpacks.
    */
-  inline const std::vector<std::pair<std::vector<int>, const Type *>>
-      &argpack_types() const {
+  inline const std::vector<std::pair<std::vector<int>, const Type *>> &argpack_types() const {
     return argpack_types_;
   }
 

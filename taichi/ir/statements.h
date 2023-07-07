@@ -196,19 +196,15 @@ class ArgLoadStmt : public Stmt {
 
   int arg_depth;
 
-  Stmt *argpack_ptr;
-
   ArgLoadStmt(const std::vector<int> &arg_id,
               const DataType &dt,
               bool is_ptr,
               bool create_load,
-              int arg_depth,
-              Stmt *argpack_ptr = nullptr)
+              int arg_depth)
       : arg_id(arg_id),
         is_ptr(is_ptr),
         create_load(create_load),
-        arg_depth(arg_depth),
-        argpack_ptr(argpack_ptr) {
+        arg_depth(arg_depth) {
     this->ret_type = dt;
     TI_STMT_REG_FIELDS;
   }
@@ -217,7 +213,7 @@ class ArgLoadStmt : public Stmt {
     return false;
   }
 
-  TI_STMT_DEF_FIELDS(ret_type, arg_id, is_ptr, arg_depth, argpack_ptr);
+  TI_STMT_DEF_FIELDS(ret_type, arg_id, is_ptr, arg_depth);
   TI_DEFINE_ACCEPT_AND_CLONE
 };
 

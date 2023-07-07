@@ -50,5 +50,6 @@ class App {
   GLFWwindow *glfw_window;
   metal::MetalDevice *rhi_metal_device;
   
-  MTLCommandQueue_id command_queue;
+  std::unique_ptr<Surface> surface;
+
 };

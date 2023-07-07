@@ -10,9 +10,12 @@
 #import <Metal/Metal.h>
 #import <MetalKit/MetalKit.h>
 #import <CoreGraphics/CoreGraphics.h>
+#import <QuartzCore/QuartzCore.h>
 #define DEFINE_METAL_ID_TYPE(x) typedef id<x> x##_id;
+@class CAMetalLayer;
 #else
 #define DEFINE_METAL_ID_TYPE(x) typedef struct x##_t *x##_id;
+typedef void CAMetalLayer;
 #endif
 
 DEFINE_METAL_ID_TYPE(MTLDevice);
@@ -26,6 +29,7 @@ DEFINE_METAL_ID_TYPE(MTLCommandQueue);
 DEFINE_METAL_ID_TYPE(MTLCommandBuffer);
 DEFINE_METAL_ID_TYPE(MTLBlitCommandEncoder);
 DEFINE_METAL_ID_TYPE(MTLComputeCommandEncoder);
+DEFINE_METAL_ID_TYPE(CAMetalDrawable);
 
 #undef DEFINE_METAL_ID_TYPE
 
@@ -240,6 +244,50 @@ class MetalStream final : public Stream {
   bool is_destroyed_{false};
 };
 
+class MetalSurface final : public Surface {
+  public:
+    MetalSurface(MetalDevice *device, const SurfaceConfig &config);
+    ~MetalSurface() override;
+
+    CAMetalLayer* mtl_layer() {
+      return layer_;
+    }
+
+    StreamSemaphore acquire_next_image() override;
+    DeviceAllocation get_target_image() override;
+
+    void present_image(
+        const std::vector<StreamSemaphore> &wait_semaphores = {}) override;
+    std::pair<uint32_t, uint32_t> get_size() override;
+    int get_image_count() override;
+    BufferFormat image_format() override;
+    void resize(uint32_t width, uint32_t height) override;
+
+    DeviceAllocation get_depth_data(DeviceAllocation &depth_alloc) override {
+      TI_NOT_IMPLEMENTED;
+    }
+    DeviceAllocation get_image_data() override {
+      TI_NOT_IMPLEMENTED;
+    }
+
+  private:
+    void destroy_swap_chain();
+
+    SurfaceConfig config_;
+
+    BufferFormat image_format_{BufferFormat::unknown};
+
+    uint32_t width_{0};
+    uint32_t height_{0};
+
+    MTLTexture_id current_swap_chain_texture_;
+    std::unordered_map<MTLTexture_id, DeviceAllocation> swapchain_images_;
+    CAMetalDrawable_id current_drawable_;
+
+    MetalDevice *device_{nullptr};
+    CAMetalLayer* layer_;
+};
+
 class MetalDevice final : public GraphicsDevice {
  public:
   // `mtl_device` should be already retained.
@@ -257,9 +305,7 @@ class MetalDevice final : public GraphicsDevice {
   void destroy();
 
   std::unique_ptr<Surface> create_surface(
-      const SurfaceConfig &config) override {
-    TI_NOT_IMPLEMENTED;
-  }
+      const SurfaceConfig &config) override;
 
   RhiResult allocate_memory(const AllocParams &params,
                             DeviceAllocation *out_devalloc) override;

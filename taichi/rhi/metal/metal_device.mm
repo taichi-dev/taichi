@@ -7,6 +7,81 @@
 namespace taichi::lang {
 namespace metal {
 
+  MTLPixelFormat format2mtl(BufferFormat format) {
+  static const std::map<BufferFormat, MTLPixelFormat> map{
+      {BufferFormat::unknown, MTLPixelFormatInvalid},
+      {BufferFormat::r8, MTLPixelFormatR8Unorm},
+      {BufferFormat::rg8, MTLPixelFormatRG8Unorm},
+      {BufferFormat::rgba8, MTLPixelFormatRGBA8Unorm},
+      {BufferFormat::rgba8srgb, MTLPixelFormatRGBA8Unorm_sRGB},
+      {BufferFormat::bgra8, MTLPixelFormatBGRA8Unorm},
+      {BufferFormat::bgra8srgb, MTLPixelFormatBGRA8Unorm_sRGB},
+      {BufferFormat::r8u, MTLPixelFormatR8Uint},
+      {BufferFormat::rg8u, MTLPixelFormatRG8Uint},
+      {BufferFormat::rgba8u, MTLPixelFormatRGBA8Uint},
+      {BufferFormat::r8i, MTLPixelFormatR8Sint},
+      {BufferFormat::rg8i, MTLPixelFormatRG8Sint},
+      {BufferFormat::rgba8i, MTLPixelFormatRGBA8Sint},
+      {BufferFormat::r16, MTLPixelFormatR16Unorm},
+      {BufferFormat::rg16, MTLPixelFormatRG16Unorm},
+      {BufferFormat::rgb16, MTLPixelFormatInvalid},
+      {BufferFormat::rgba16, MTLPixelFormatRGBA16Unorm},
+      {BufferFormat::r16u, MTLPixelFormatR16Uint},
+      {BufferFormat::rg16u, MTLPixelFormatRG16Uint},
+      {BufferFormat::rgb16u, MTLPixelFormatInvalid},
+      {BufferFormat::rgba16u, MTLPixelFormatRGBA16Uint},
+      {BufferFormat::r16i, MTLPixelFormatR16Sint},
+      {BufferFormat::rg16i, MTLPixelFormatRG16Sint},
+      {BufferFormat::rgb16i, MTLPixelFormatInvalid},
+      {BufferFormat::rgba16i, MTLPixelFormatRGBA16Sint},
+      {BufferFormat::r16f, MTLPixelFormatR16Float},
+      {BufferFormat::rg16f, MTLPixelFormatRG16Float},
+      {BufferFormat::rgb16f, MTLPixelFormatInvalid},
+      {BufferFormat::rgba16f, MTLPixelFormatRGBA16Float},
+      {BufferFormat::r32u, MTLPixelFormatR32Uint},
+      {BufferFormat::rg32u, MTLPixelFormatRG32Uint},
+      {BufferFormat::rgb32u, MTLPixelFormatInvalid},
+      {BufferFormat::rgba32u, MTLPixelFormatRGBA32Uint},
+      {BufferFormat::r32i, MTLPixelFormatR32Sint},
+      {BufferFormat::rg32i, MTLPixelFormatRG32Sint},
+      {BufferFormat::rgb32i, MTLPixelFormatInvalid},
+      {BufferFormat::rgba32i, MTLPixelFormatRGBA32Sint},
+      {BufferFormat::r32f, MTLPixelFormatR32Float},
+      {BufferFormat::rg32f, MTLPixelFormatRG32Float},
+      {BufferFormat::rgb32f, MTLPixelFormatInvalid},
+      {BufferFormat::rgba32f, MTLPixelFormatRGBA32Float},
+      {BufferFormat::depth16, MTLPixelFormatDepth16Unorm},
+      {BufferFormat::depth24stencil8, MTLPixelFormatInvalid},
+      {BufferFormat::depth32f, MTLPixelFormatDepth32Float},
+  };
+  auto it = map.find(format);
+  RHI_ASSERT(it != map.end());
+  return it->second;
+}
+MTLTextureType dimension2mtl(ImageDimension dimension) {
+  static const std::map<ImageDimension, MTLTextureType> map = {
+      {ImageDimension::d1D, MTLTextureType1D},
+      {ImageDimension::d2D, MTLTextureType2D},
+      {ImageDimension::d3D, MTLTextureType3D},
+  };
+  auto it = map.find(dimension);
+  RHI_ASSERT(it != map.end());
+  return it->second;
+}
+MTLTextureUsage usage2mtl(ImageAllocUsage usage) {
+  MTLTextureUsage out = 0;
+  if (usage & ImageAllocUsage::Sampled) {
+    out |= MTLTextureUsageShaderRead;
+  }
+  if (usage & ImageAllocUsage::Storage) {
+    out |= MTLTextureUsageShaderWrite;
+  }
+  if (usage & ImageAllocUsage::Attachment) {
+    out |= MTLTextureUsageRenderTarget;
+  }
+  return out;
+}
+
 MetalMemory::MetalMemory(MTLBuffer_id mtl_buffer, bool can_map)
     : mtl_buffer_(mtl_buffer), can_map_(can_map) {}
 MetalMemory::~MetalMemory() {
@@ -530,6 +605,80 @@ std::unique_ptr<MetalSampler> create_sampler(id<MTLDevice> mtl_device) {
   return std::make_unique<MetalSampler>(mtl_sampler_state);
 }
 
+MetalSurface::MetalSurface(MetalDevice *device, const SurfaceConfig &config)
+    : config_(config), device_(device) {
+  
+  width_ = config.width;
+  height_ = config.height;
+
+  image_format_ = BufferFormat::bgra8;
+
+  layer_ = [CAMetalLayer layer];
+  layer_.device = device->mtl_device();
+  layer_.displaySyncEnabled = config.vsync;
+  layer_.pixelFormat = format2mtl(image_format_);
+  layer_.drawableSize = CGSizeMake(width_, height_);
+  layer_.allowsNextDrawableTimeout = NO;
+}
+
+MetalSurface::~MetalSurface() {
+  destroy_swap_chain();
+  [layer_ release];
+}
+
+void MetalSurface::destroy_swap_chain() {
+  for (auto &alloc : swapchain_images_) {
+    device_->destroy_image(alloc.second);
+  }
+  swapchain_images_.clear();
+}
+
+StreamSemaphore MetalSurface::acquire_next_image() {
+  current_drawable_ = [layer_ nextDrawable];
+  current_swap_chain_texture_ = current_drawable_.texture;
+
+  if (swapchain_images_.count(current_swap_chain_texture_) == 0) {
+    swapchain_images_[current_swap_chain_texture_] = device_->import_mtl_texture(current_drawable_.texture);
+    std::cout << "we have " << swapchain_images_.size() << " images\n";
+  }
+  return nullptr;
+}
+
+DeviceAllocation MetalSurface::get_target_image() {
+  return swapchain_images_.at(current_swap_chain_texture_);
+}
+
+void MetalSurface::present_image(
+    const std::vector<StreamSemaphore> &wait_semaphores) {
+  
+  Stream *stream = device_->get_compute_stream();
+  auto [cmd_list, res] = stream->new_command_list_unique();
+  MetalCommandList *cmd_list2 = (MetalCommandList *)cmd_list.get();
+  RHI_ASSERT(res == RhiResult::success);
+
+  [cmd_list2->finalize() presentDrawable:current_drawable_];
+  stream->submit_synced(cmd_list2);
+}
+
+std::pair<uint32_t, uint32_t> MetalSurface::get_size() {
+  return std::make_pair(width_, height_);
+}
+
+int MetalSurface::get_image_count() {
+  return (int) layer_.maximumDrawableCount;
+}
+
+BufferFormat MetalSurface::image_format() {
+  return image_format_;
+}
+
+void MetalSurface::resize(uint32_t width, uint32_t height) {
+  destroy_swap_chain();
+  width_ = width;
+  height_ = height;
+  layer_.drawableSize = CGSizeMake(width_, height_);
+}
+
 MetalDevice::MetalDevice(MTLDevice_id mtl_device) : mtl_device_(mtl_device) {
   compute_stream_ = std::unique_ptr<MetalStream>(MetalStream::create(*this));
 
@@ -552,6 +701,11 @@ void MetalDevice::destroy() {
     [mtl_device_ release];
     is_destroyed_ = true;
   }
+}
+
+std::unique_ptr<Surface> MetalDevice::create_surface(
+    const SurfaceConfig &config) {
+  return std::make_unique<MetalSurface>(this, config);
 }
 
 RhiResult MetalDevice::allocate_memory(const AllocParams &params,
@@ -597,81 +751,6 @@ DeviceAllocation MetalDevice::import_mtl_buffer(MTLBuffer_id buffer) {
 void MetalDevice::dealloc_memory(DeviceAllocation handle) {
   RHI_ASSERT(handle.device == this);
   memory_allocs_.release(&get_memory(handle.alloc_id));
-}
-
-MTLPixelFormat format2mtl(BufferFormat format) {
-  static const std::map<BufferFormat, MTLPixelFormat> map{
-      {BufferFormat::unknown, MTLPixelFormatInvalid},
-      {BufferFormat::r8, MTLPixelFormatR8Unorm},
-      {BufferFormat::rg8, MTLPixelFormatRG8Unorm},
-      {BufferFormat::rgba8, MTLPixelFormatRGBA8Unorm},
-      {BufferFormat::rgba8srgb, MTLPixelFormatRGBA8Unorm_sRGB},
-      {BufferFormat::bgra8, MTLPixelFormatBGRA8Unorm},
-      {BufferFormat::bgra8srgb, MTLPixelFormatBGRA8Unorm_sRGB},
-      {BufferFormat::r8u, MTLPixelFormatR8Uint},
-      {BufferFormat::rg8u, MTLPixelFormatRG8Uint},
-      {BufferFormat::rgba8u, MTLPixelFormatRGBA8Uint},
-      {BufferFormat::r8i, MTLPixelFormatR8Sint},
-      {BufferFormat::rg8i, MTLPixelFormatRG8Sint},
-      {BufferFormat::rgba8i, MTLPixelFormatRGBA8Sint},
-      {BufferFormat::r16, MTLPixelFormatR16Unorm},
-      {BufferFormat::rg16, MTLPixelFormatRG16Unorm},
-      {BufferFormat::rgb16, MTLPixelFormatInvalid},
-      {BufferFormat::rgba16, MTLPixelFormatRGBA16Unorm},
-      {BufferFormat::r16u, MTLPixelFormatR16Uint},
-      {BufferFormat::rg16u, MTLPixelFormatRG16Uint},
-      {BufferFormat::rgb16u, MTLPixelFormatInvalid},
-      {BufferFormat::rgba16u, MTLPixelFormatRGBA16Uint},
-      {BufferFormat::r16i, MTLPixelFormatR16Sint},
-      {BufferFormat::rg16i, MTLPixelFormatRG16Sint},
-      {BufferFormat::rgb16i, MTLPixelFormatInvalid},
-      {BufferFormat::rgba16i, MTLPixelFormatRGBA16Sint},
-      {BufferFormat::r16f, MTLPixelFormatR16Float},
-      {BufferFormat::rg16f, MTLPixelFormatRG16Float},
-      {BufferFormat::rgb16f, MTLPixelFormatInvalid},
-      {BufferFormat::rgba16f, MTLPixelFormatRGBA16Float},
-      {BufferFormat::r32u, MTLPixelFormatR32Uint},
-      {BufferFormat::rg32u, MTLPixelFormatRG32Uint},
-      {BufferFormat::rgb32u, MTLPixelFormatInvalid},
-      {BufferFormat::rgba32u, MTLPixelFormatRGBA32Uint},
-      {BufferFormat::r32i, MTLPixelFormatR32Sint},
-      {BufferFormat::rg32i, MTLPixelFormatRG32Sint},
-      {BufferFormat::rgb32i, MTLPixelFormatInvalid},
-      {BufferFormat::rgba32i, MTLPixelFormatRGBA32Sint},
-      {BufferFormat::r32f, MTLPixelFormatR32Float},
-      {BufferFormat::rg32f, MTLPixelFormatRG32Float},
-      {BufferFormat::rgb32f, MTLPixelFormatInvalid},
-      {BufferFormat::rgba32f, MTLPixelFormatRGBA32Float},
-      {BufferFormat::depth16, MTLPixelFormatDepth16Unorm},
-      {BufferFormat::depth24stencil8, MTLPixelFormatInvalid},
-      {BufferFormat::depth32f, MTLPixelFormatDepth32Float},
-  };
-  auto it = map.find(format);
-  RHI_ASSERT(it != map.end());
-  return it->second;
-}
-MTLTextureType dimension2mtl(ImageDimension dimension) {
-  static const std::map<ImageDimension, MTLTextureType> map = {
-      {ImageDimension::d1D, MTLTextureType1D},
-      {ImageDimension::d2D, MTLTextureType2D},
-      {ImageDimension::d3D, MTLTextureType3D},
-  };
-  auto it = map.find(dimension);
-  RHI_ASSERT(it != map.end());
-  return it->second;
-}
-MTLTextureUsage usage2mtl(ImageAllocUsage usage) {
-  MTLTextureUsage out = 0;
-  if (usage & ImageAllocUsage::Sampled) {
-    out |= MTLTextureUsageShaderRead;
-  }
-  if (usage & ImageAllocUsage::Storage) {
-    out |= MTLTextureUsageShaderWrite;
-  }
-  if (usage & ImageAllocUsage::Attachment) {
-    out |= MTLTextureUsageRenderTarget;
-  }
-  return out;
 }
 
 DeviceAllocation MetalDevice::create_image(const ImageParams &params) {

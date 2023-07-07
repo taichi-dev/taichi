@@ -5,11 +5,11 @@
 #include <stdio.h>
 #include <stdlib.h>
 
+using namespace taichi::lang;
+
 static void glfw_error_callback(int error, const char *description) {
   TI_WARN("GLFW Error {}: {}", error, description);
 }
-
-CAMetalLayer *layer;
 
 App::App(int width, int height, const std::string &title) {
   TI_INFO("Creating App '{}' of {}x{}", title, width, height);
@@ -39,37 +39,33 @@ App::App(int width, int height, const std::string &title) {
     TI_ERROR("failed to init GLFW");
   }
 
-  @autoreleasepool {
-    NSWindow *nswin = glfwGetCocoaWindow(glfw_window);
-    layer = [CAMetalLayer layer];
-    layer.device = mtl_device;
-    layer.pixelFormat = MTLPixelFormatBGRA8Unorm;
-    layer.drawableSize = CGSizeMake(width, height);
-    nswin.contentView.layer = layer;
-    nswin.contentView.wantsLayer = YES;
-  }
+  SurfaceConfig config;
+  config.width = width;
+  config.height = height;
 
-  metal::MetalStream *stream =
-      static_cast<metal::MetalStream *>(rhi_metal_device->get_compute_stream());
-  command_queue = stream->mtl_command_queue();
+  surface = rhi_metal_device->create_surface(config);
+
+  metal::MetalSurface* mtl_surf = dynamic_cast<metal::MetalSurface*> (surface.get());
+
+  NSWindow *nswin = glfwGetCocoaWindow(glfw_window);
+  nswin.contentView.layer = mtl_surf->mtl_layer();
+  nswin.contentView.wantsLayer = YES;
+
+  
 }
 
 App::~App() {
+  surface.reset();
   glfwDestroyWindow(glfw_window);
   glfwTerminate();
 }
 
 void App::run() {
   while (!glfwWindowShouldClose(glfw_window)) {
-    // TODO: Make this use the RHI via a MetalSurface rather than directly
-    // sending messages to the Metal Layer
-    CAMetalDrawable_id drawable = [layer nextDrawable];
-    if (!drawable) continue;
-    
+    auto image_available_semaphore = surface->acquire_next_image();
+
     glfwPollEvents();
 
-    MTLCommandBuffer_id cb = [command_queue commandBuffer];
-    [cb presentDrawable:drawable];
-    [cb commit];
+    surface->present_image(render_loop(image_available_semaphore));
   }
 }

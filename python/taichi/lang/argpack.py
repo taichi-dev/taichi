@@ -185,11 +185,11 @@ class ArgPack:
         for i in range(old_index):
             anno = list(self.__annotations.values())[i]
             if (
-                    isinstance(anno, sparse_matrix_builder)
-                    or isinstance(anno, ndarray_type.NdarrayType)
-                    or isinstance(anno, texture_type.TextureType)
-                    or isinstance(anno, texture_type.RWTextureType)
-                    or isinstance(anno, ndarray_type.NdarrayType)
+                isinstance(anno, sparse_matrix_builder)
+                or isinstance(anno, ndarray_type.NdarrayType)
+                or isinstance(anno, texture_type.TextureType)
+                or isinstance(anno, texture_type.RWTextureType)
+                or isinstance(anno, ndarray_type.NdarrayType)
             ):
                 old_index -= 1
         return old_index

@@ -799,6 +799,7 @@ class Kernel:
         set_later_list = []
 
         def recursive_set_args(needed, provided, v, indices):
+            in_argpack = len(indices) > 1
             nonlocal actual_argument_slot, exceed_max_arg_num, set_later_list
             if actual_argument_slot >= max_arg_num:
                 exceed_max_arg_num = True
@@ -812,72 +813,70 @@ class Kernel:
                     idx_new += recursive_set_args(anno, type(v[name]), v[name], indices + (idx_new,))
                 launch_ctx.set_arg_argpack(indices, v._ArgPack__argpack)
                 return 1
-            else:
-                in_argpack = len(indices) > 1
-                # Note: do not use sth like "needed == f32". That would be slow.
-                if id(needed) in primitive_types.real_type_ids:
-                    if not isinstance(v, (float, int, np.floating, np.integer)):
-                        raise TaichiRuntimeTypeError.get(indices, needed.to_string(), provided)
-                    if in_argpack:
-                        return 0
-                    launch_ctx.set_arg_float(indices, float(v))
-                    return 1
-                elif id(needed) in primitive_types.integer_type_ids:
-                    if not isinstance(v, (int, np.integer)):
-                        raise TaichiRuntimeTypeError.get(indices, needed.to_string(), provided)
-                    if in_argpack:
-                        return 0
-                    if is_signed(cook_dtype(needed)):
-                        launch_ctx.set_arg_int(indices, int(v))
-                    else:
-                        launch_ctx.set_arg_uint(indices, int(v))
-                    return 1
-                elif isinstance(needed, sparse_matrix_builder):
-                    if in_argpack:
-                        set_later_list.append((set_arg_sparse_matrix_builder, (v,)))
-                        return 0
-                    set_arg_sparse_matrix_builder(indices, v)
-                    return 1
-                elif isinstance(needed, ndarray_type.NdarrayType) and isinstance(v, taichi.lang._ndarray.Ndarray):
-                    if in_argpack:
-                        set_later_list.append((set_arg_ndarray, (v,)))
-                        return 0
-                    set_arg_ndarray(indices, v)
-                    return 1
-                elif isinstance(needed, texture_type.TextureType) and isinstance(v, taichi.lang._texture.Texture):
-                    if in_argpack:
-                        set_later_list.append((set_arg_texture, (v,)))
-                        return 0
-                    set_arg_texture(indices, v)
-                    return 1
-                elif isinstance(needed, texture_type.RWTextureType) and isinstance(v, taichi.lang._texture.Texture):
-                    if in_argpack:
-                        set_later_list.append((set_arg_rw_texture, (v,)))
-                        return 0
-                    set_arg_rw_texture(indices, v)
-                    return 1
-                elif isinstance(needed, ndarray_type.NdarrayType):
-                    if in_argpack:
-                        set_later_list.append((set_arg_ext_array, (v, needed)))
-                        return 0
-                    set_arg_ext_array(indices, v, needed)
-                    return 1
-                elif isinstance(needed, MatrixType):
-                    if in_argpack:
-                        return 0
-                    set_arg_matrix(indices, v, needed)
-                    return 1
-                elif isinstance(needed, StructType):
-                    if in_argpack:
-                        return 0
-                    if not isinstance(v, needed):
-                        raise TaichiRuntimeTypeError(
-                            f"Argument {provided} cannot be converted into required type {needed}"
-                        )
-                    needed.set_kernel_struct_args(v, launch_ctx, indices)
-                    return 1
+            # Note: do not use sth like "needed == f32". That would be slow.
+            if id(needed) in primitive_types.real_type_ids:
+                if not isinstance(v, (float, int, np.floating, np.integer)):
+                    raise TaichiRuntimeTypeError.get(indices, needed.to_string(), provided)
+                if in_argpack:
+                    return 0
+                launch_ctx.set_arg_float(indices, float(v))
+                return 1
+            if id(needed) in primitive_types.integer_type_ids:
+                if not isinstance(v, (int, np.integer)):
+                    raise TaichiRuntimeTypeError.get(indices, needed.to_string(), provided)
+                if in_argpack:
+                    return 0
+                if is_signed(cook_dtype(needed)):
+                    launch_ctx.set_arg_int(indices, int(v))
                 else:
-                    raise ValueError(f"Argument type mismatch. Expecting {needed}, got {type(v)}.")
+                    launch_ctx.set_arg_uint(indices, int(v))
+                return 1
+            elif isinstance(needed, sparse_matrix_builder):
+                if in_argpack:
+                    set_later_list.append((set_arg_sparse_matrix_builder, (v,)))
+                    return 0
+                set_arg_sparse_matrix_builder(indices, v)
+                return 1
+            elif isinstance(needed, ndarray_type.NdarrayType) and isinstance(v, taichi.lang._ndarray.Ndarray):
+                if in_argpack:
+                    set_later_list.append((set_arg_ndarray, (v,)))
+                    return 0
+                set_arg_ndarray(indices, v)
+                return 1
+            elif isinstance(needed, texture_type.TextureType) and isinstance(v, taichi.lang._texture.Texture):
+                if in_argpack:
+                    set_later_list.append((set_arg_texture, (v,)))
+                    return 0
+                set_arg_texture(indices, v)
+                return 1
+            elif isinstance(needed, texture_type.RWTextureType) and isinstance(v, taichi.lang._texture.Texture):
+                if in_argpack:
+                    set_later_list.append((set_arg_rw_texture, (v,)))
+                    return 0
+                set_arg_rw_texture(indices, v)
+                return 1
+            elif isinstance(needed, ndarray_type.NdarrayType):
+                if in_argpack:
+                    set_later_list.append((set_arg_ext_array, (v, needed)))
+                    return 0
+                set_arg_ext_array(indices, v, needed)
+                return 1
+            elif isinstance(needed, MatrixType):
+                if in_argpack:
+                    return 0
+                set_arg_matrix(indices, v, needed)
+                return 1
+            elif isinstance(needed, StructType):
+                if in_argpack:
+                    return 0
+                if not isinstance(v, needed):
+                    raise TaichiRuntimeTypeError(
+                        f"Argument {provided} cannot be converted into required type {needed}"
+                    )
+                needed.set_kernel_struct_args(v, launch_ctx, indices)
+                return 1
+            else:
+                raise ValueError(f"Argument type mismatch. Expecting {needed}, got {type(v)}.")
 
         template_num = 0
         for i, val in enumerate(args):

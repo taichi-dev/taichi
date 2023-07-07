@@ -477,8 +477,9 @@ void GfxRuntime::launch_kernel(KernelHandle handle,
       }
     }
 
-    auto argpack_types = ti_kernel->ti_kernel_attribs().ctx_attribs.argpack_types();
-    for (const auto& kv : argpack_types) {
+    auto argpack_types =
+        ti_kernel->ti_kernel_attribs().ctx_attribs.argpack_types();
+    for (const auto &kv : argpack_types) {
       const auto &indices = kv.first;
       TI_ASSERT(host_ctx.device_allocation_type[indices] ==
                 LaunchContextBuilder::DevAllocType::kArgPack);

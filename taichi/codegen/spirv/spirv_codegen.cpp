@@ -582,9 +582,12 @@ class TaskCodegen : public IRVisitor {
                                      stmt->arg_id.begin() + stmt->arg_depth);
     const std::vector<int> indices_r(stmt->arg_id.begin() + stmt->arg_depth,
                                      stmt->arg_id.end());
-    const auto arg_type = stmt->arg_depth == 0
-        ? ctx_attribs_->args_type()->get_element_type(arg_id)
-          : ctx_attribs_->argpack_type(indices_l)->as<lang::StructType>()->get_element_type(indices_r);
+    const auto arg_type =
+        stmt->arg_depth == 0
+            ? ctx_attribs_->args_type()->get_element_type(arg_id)
+            : ctx_attribs_->argpack_type(indices_l)
+                  ->as<lang::StructType>()
+                  ->get_element_type(indices_r);
     if (arg_type->is<PointerType>() ||
         (arg_type->is<lang::StructType>() &&
          arg_type->as<lang::StructType>()->elements().size() >= 2 &&
@@ -605,7 +608,8 @@ class TaskCodegen : public IRVisitor {
         // Inside argpacks, load value from argpack buffer
         buffer_value = get_buffer_value({BufferType::ArgPack, indices_l},
                                         PrimitiveType::i32);
-        val_type = is_bool ? ir_->i32_type() : argpack_struct_types_[indices_l][indices_r];
+        val_type = is_bool ? ir_->i32_type()
+                           : argpack_struct_types_[indices_l][indices_r];
         buffer_val = ir_->make_access_chain(
             ir_->get_pointer_type(val_type, spv::StorageClassUniform),
             buffer_value, indices_r);
@@ -2412,8 +2416,8 @@ class TaskCodegen : public IRVisitor {
               element_taichi_types[indices] = type;
               element_types[indices] = spirv_type;
             };
-    const lang::StructType *argpack_type = ctx_attribs_->argpack_type(arg_id)
-                                               ->as<lang::StructType>();
+    const lang::StructType *argpack_type =
+        ctx_attribs_->argpack_type(arg_id)->as<lang::StructType>();
     for (int i = 0; i < argpack_type->elements().size(); i++) {
       auto *type = argpack_type->elements()[i].type;
       auto spirv_type = translate_ti_type(blk, type, has_buffer_ptr);

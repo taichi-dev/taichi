@@ -117,10 +117,11 @@ void Callable::pop_argpack_stack() {
   }
   auto *type_inner =
       TypeFactory::get_instance().get_struct_type(members)->as<StructType>();
-  auto* type_pointer =
-      TypeFactory::get_instance().get_pointer_type(const_cast<StructType *>(type_inner), false);
-  auto *type_outter =
-      TypeFactory::get_instance().get_struct_type({{type_pointer, "data_ptr"}})->as<StructType>();
+  auto *type_pointer = TypeFactory::get_instance().get_pointer_type(
+      const_cast<StructType *>(type_inner), false);
+  auto *type_outter = TypeFactory::get_instance()
+                          .get_struct_type({{type_pointer, "data_ptr"}})
+                          ->as<StructType>();
   auto p = Parameter(DataType(type_outter), false, true);
   p.name = temp_argpack_name_stack_.top();
   // Pop stacks

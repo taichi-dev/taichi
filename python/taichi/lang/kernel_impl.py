@@ -118,13 +118,13 @@ def pyfunc(fn):
 
 
 def _get_tree_and_ctx(
-        self,
-        excluded_parameters=(),
-        is_kernel=True,
-        arg_features=None,
-        args=None,
-        ast_builder=None,
-        is_real_function=False,
+    self,
+    excluded_parameters=(),
+    is_kernel=True,
+    arg_features=None,
+    args=None,
+    ast_builder=None,
+    is_real_function=False,
 ):
     file = getsourcefile(self.func)
     src, start_lineno = getsourcelines(self.func)
@@ -421,7 +421,7 @@ class TaichiCallableTemplateMapper:
                             f"Invalid argument into ti.types.ndarray() - required element_dim={anno.dtype.ndim}, "
                             f"but the argument has only {len(shape)} dimensions"
                         )
-                element_shape = shape[-anno.dtype.ndim:]
+                element_shape = shape[-anno.dtype.ndim :]
                 anno_element_shape = anno.dtype.get_shape()
                 if None not in anno_element_shape and element_shape != anno_element_shape:
                     raise ValueError(
@@ -548,13 +548,13 @@ class Kernel:
                     raise TaichiSyntaxError("Taichi kernels parameters must be type annotated")
             else:
                 if isinstance(
-                        annotation,
-                        (
-                                template,
-                                ndarray_type.NdarrayType,
-                                texture_type.TextureType,
-                                texture_type.RWTextureType,
-                        ),
+                    annotation,
+                    (
+                        template,
+                        ndarray_type.NdarrayType,
+                        texture_type.TextureType,
+                        texture_type.RWTextureType,
+                    ),
                 ):
                     pass
                 elif id(annotation) in primitive_types.type_ids:
@@ -655,9 +655,7 @@ class Kernel:
             is_soa = needed.layout == Layout.SOA
             array_shape = v.shape
             if functools.reduce(operator.mul, array_shape, 1) > np.iinfo(np.int32).max:
-                warnings.warn(
-                    "Ndarray index might be out of int32 boundary but int64 indexing is not supported yet."
-                )
+                warnings.warn("Ndarray index might be out of int32 boundary but int64 indexing is not supported yet.")
             if needed.dtype is None or id(needed.dtype) in primitive_types.type_ids:
                 element_dim = 0
             else:
@@ -665,9 +663,7 @@ class Kernel:
                 array_shape = v.shape[element_dim:] if is_soa else v.shape[:-element_dim]
             if isinstance(v, np.ndarray):
                 if v.flags.c_contiguous:
-                    launch_ctx.set_arg_external_array_with_shape(
-                        indices, int(v.ctypes.data), v.nbytes, array_shape, 0
-                    )
+                    launch_ctx.set_arg_external_array_with_shape(indices, int(v.ctypes.data), v.nbytes, array_shape, 0)
                 elif v.flags.f_contiguous:
                     # TODO: A better way that avoids copying is saving strides info.
                     tmp = np.ascontiguousarray(v)
@@ -754,9 +750,7 @@ class Kernel:
                             callbacks.append(get_call_back(v, gpu_v))
                     else:
                         # Paddle do support many other backends like XPU, NPU, MLU, IPU
-                        raise TaichiRuntimeTypeError(
-                            f"Taichi do not support backend {v.place} that Paddle support"
-                        )
+                        raise TaichiRuntimeTypeError(f"Taichi do not support backend {v.place} that Paddle support")
                     launch_ctx.set_arg_external_array_with_shape(
                         indices, int(tmp._ptr()), v.element_size() * v.size, array_shape, 0
                     )
@@ -967,9 +961,9 @@ class Kernel:
 
         # No need to capture grad kernels because they are already bound with their primal kernels
         if (
-                self.autodiff_mode in (AutodiffMode.NONE, AutodiffMode.VALIDATION)
-                and self.runtime.target_tape
-                and not self.runtime.grad_replaced
+            self.autodiff_mode in (AutodiffMode.NONE, AutodiffMode.VALIDATION)
+            and self.runtime.target_tape
+            and not self.runtime.grad_replaced
         ):
             self.runtime.target_tape.insert(self, args)
 

@@ -94,7 +94,7 @@ KernelContextAttributes::KernelContextAttributes(
     ret_attribs_vec_.push_back(ra);
   }
 
-  for (const auto & kv : kernel.argpack_types) {
+  for (const auto &kv : kernel.argpack_types) {
     const auto &k = kv.first;
     const auto *type = kv.second;
     argpack_types_.push_back({k, type});

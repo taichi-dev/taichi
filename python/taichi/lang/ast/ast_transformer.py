@@ -611,8 +611,9 @@ class ASTTransformer(Builder):
                 d = {}
                 items_to_put_in_dict = []
                 for j, (_name, anno) in enumerate(annotation.members.items()):
-                    result, obj = decl_and_create_variable(anno, _name, arg_features[j], invoke_later_dict,
-                                                           full_name, arg_depth + 1)
+                    result, obj = decl_and_create_variable(
+                        anno, _name, arg_features[j], invoke_later_dict, full_name, arg_depth + 1
+                    )
                     if not result:
                         d[_name] = None
                         items_to_put_in_dict.append((full_name + "_" + _name, _name, obj))
@@ -625,29 +626,31 @@ class ASTTransformer(Builder):
             if isinstance(annotation, annotations.template):
                 return True, ctx.global_vars[name]
             if isinstance(annotation, annotations.sparse_matrix_builder):
-                return False, (kernel_arguments.decl_sparse_matrix,
-                               (
-                                   to_taichi_type(arg_features),
-                                   full_name,
-                               ))
+                return False, (
+                    kernel_arguments.decl_sparse_matrix,
+                    (
+                        to_taichi_type(arg_features),
+                        full_name,
+                    ),
+                )
             if isinstance(annotation, ndarray_type.NdarrayType):
-                return False, (kernel_arguments.decl_ndarray_arg,
-                               (
-                                   to_taichi_type(arg_features[0]),
-                                   arg_features[1],
-                                   full_name,
-                                   arg_features[2],
-                                   arg_features[3],
-                               ))
+                return False, (
+                    kernel_arguments.decl_ndarray_arg,
+                    (
+                        to_taichi_type(arg_features[0]),
+                        arg_features[1],
+                        full_name,
+                        arg_features[2],
+                        arg_features[3],
+                    ),
+                )
             if isinstance(annotation, texture_type.TextureType):
-                return False, (kernel_arguments.decl_texture_arg,
-                               (arg_features[0], full_name))
+                return False, (kernel_arguments.decl_texture_arg, (arg_features[0], full_name))
             if isinstance(annotation, texture_type.RWTextureType):
-                return False, (kernel_arguments.decl_rw_texture_arg,
-                               (arg_features[0],
-                                arg_features[1],
-                                arg_features[2],
-                                full_name))
+                return False, (
+                    kernel_arguments.decl_rw_texture_arg,
+                    (arg_features[0], arg_features[1], arg_features[2], full_name),
+                )
             if isinstance(annotation, MatrixType):
                 return True, kernel_arguments.decl_matrix_arg(annotation, name, arg_depth)
             if isinstance(annotation, StructType):
@@ -668,8 +671,9 @@ class ASTTransformer(Builder):
                     d = {}
                     items_to_put_in_dict = []
                     for j, (name, anno) in enumerate(ctx.func.arguments[i].annotation.members.items()):
-                        result, obj = decl_and_create_variable(anno, name, ctx.arg_features[i][j], invoke_later_dict,
-                                                               "__argpack_" + name, 1)
+                        result, obj = decl_and_create_variable(
+                            anno, name, ctx.arg_features[i][j], invoke_later_dict, "__argpack_" + name, 1
+                        )
                         if not result:
                             d[name] = None
                             items_to_put_in_dict.append(("__argpack_" + name, name, obj))

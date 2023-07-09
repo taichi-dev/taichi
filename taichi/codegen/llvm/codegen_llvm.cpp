@@ -1277,8 +1277,8 @@ llvm::Value *TaskCodeGenLLVM::bitcast_to_u64(llvm::Value *val, DataType type) {
 
 void TaskCodeGenLLVM::visit(ArgLoadStmt *stmt) {
   if (stmt->arg_depth > 0) {
-    llvm_val[stmt] = get_argpack_arg(stmt->arg_id, stmt->arg_depth,
-                                     stmt->create_load);
+    llvm_val[stmt] =
+        get_argpack_arg(stmt->arg_id, stmt->arg_depth, stmt->create_load);
   } else {
     llvm_val[stmt] = get_struct_arg(stmt->arg_id, stmt->create_load);
   }
@@ -2880,7 +2880,10 @@ llvm::Value *TaskCodeGenLLVM::get_argpack_arg(std::vector<int> arg_id,
   auto indices_data_ptr = indices_l;
   indices_data_ptr.push_back(TypeFactory::DATA_PTR_POS_IN_ARGPACK);
   auto data_ptr_value = get_struct_arg(indices_data_ptr, true);
-  auto argpack_iterator = std::find_if(current_callable->argpack_types.begin(), current_callable->argpack_types.end(), [&](const auto &kv){ return kv.first == indices_l; });
+  auto argpack_iterator =
+      std::find_if(current_callable->argpack_types.begin(),
+                   current_callable->argpack_types.end(),
+                   [&](const auto &kv) { return kv.first == indices_l; });
   TI_ASSERT(argpack_iterator != current_callable->argpack_types.end());
   const auto *argpack_type = (*argpack_iterator).second;
   auto *arg_type = argpack_type->get_element_type(indices_r);
@@ -2890,8 +2893,8 @@ llvm::Value *TaskCodeGenLLVM::get_argpack_arg(std::vector<int> arg_id,
   for (int ind : indices_r) {
     gep_index.push_back(tlctx->get_constant(ind));
   }
-  auto *gep =
-      builder->CreateGEP(tlctx->get_data_type(argpack_type), data_ptr_value, gep_index);
+  auto *gep = builder->CreateGEP(tlctx->get_data_type(argpack_type),
+                                 data_ptr_value, gep_index);
   if (!create_load) {
     return gep;
   }

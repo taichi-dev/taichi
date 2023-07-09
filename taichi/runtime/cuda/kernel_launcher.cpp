@@ -127,7 +127,8 @@ void KernelLauncher::launch_llvm_kernel(Handle handle,
       data_ptr_idx.push_back(TypeFactory::DATA_PTR_POS_IN_ARGPACK);
       auto *argpack = ctx.argpack_ptrs[key];
       auto argpack_ptr = argpack->get_device_allocation();
-      device_ptrs[data_ptr_idx] = executor->get_ndarray_alloc_info_ptr(argpack_ptr);
+      device_ptrs[data_ptr_idx] =
+          executor->get_ndarray_alloc_info_ptr(argpack_ptr);
       ctx.set_argpack_ptr(key, (uint64)device_ptrs[data_ptr_idx]);
     }
   }

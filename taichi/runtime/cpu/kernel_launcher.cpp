@@ -45,6 +45,15 @@ void KernelLauncher::launch_llvm_kernel(Handle handle,
                                     *static_cast<DeviceAllocation *>(grad_ptr));
       ctx.set_ndarray_ptrs(key, host_ptr, host_ptr_grad);
     }
+    if (parameter.is_argpack) {
+      data_ptr_idx = key;
+      data_ptr_idx.push_back(TypeFactory::DATA_PTR_POS_IN_ARGPACK);
+      auto *argpack = ctx.argpack_ptrs[key];
+      auto argpack_ptr = argpack->get_device_allocation();
+      uint64 host_ptr =
+          (uint64) executor->get_device_alloc_info_ptr(argpack_ptr);
+      ctx.set_argpack_ptr(key, host_ptr);
+    }
   }
   for (auto task : launcher_ctx.task_funcs) {
     task(&ctx.get_context());

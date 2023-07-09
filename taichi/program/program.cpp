@@ -465,7 +465,7 @@ intptr_t Program::get_ndarray_data_ptr_as_int(const Ndarray *ndarray) {
       compile_config().arch == Arch::amdgpu) {
     // For the LLVM backends, device allocation is a physical pointer.
     data_ptr =
-        program_impl_->get_ndarray_alloc_info_ptr(ndarray->ndarray_alloc_);
+        program_impl_->get_device_alloc_info_ptr(ndarray->ndarray_alloc_);
   }
 
   return reinterpret_cast<intptr_t>(data_ptr);

@@ -34,14 +34,14 @@ void KernelLauncher::launch_llvm_kernel(Handle handle,
         ctx.array_runtime_sizes[key] > 0) {
       DeviceAllocation *ptr =
           static_cast<DeviceAllocation *>(ctx.array_ptrs[data_ptr_idx]);
-      uint64 host_ptr = (uint64)executor->get_ndarray_alloc_info_ptr(*ptr);
+      uint64 host_ptr = (uint64)executor->get_device_alloc_info_ptr(*ptr);
       ctx.set_array_device_allocation_type(
           key, LaunchContextBuilder::DevAllocType::kNone);
 
       auto grad_ptr = ctx.array_ptrs[grad_ptr_idx];
       uint64 host_ptr_grad =
           grad_ptr == nullptr ? 0
-                              : (uint64)executor->get_ndarray_alloc_info_ptr(
+                              : (uint64)executor->get_device_alloc_info_ptr(
                                     *static_cast<DeviceAllocation *>(grad_ptr));
       ctx.set_ndarray_ptrs(key, host_ptr, host_ptr_grad);
     }

@@ -113,8 +113,7 @@ void KernelLauncher::launch_llvm_kernel(Handle handle,
 
         if (grad_ptr != nullptr) {
           ptr = static_cast<DeviceAllocation *>(grad_ptr);
-          device_ptrs[grad_ptr_idx] =
-              executor->get_device_alloc_info_ptr(*ptr);
+          device_ptrs[grad_ptr_idx] = executor->get_device_alloc_info_ptr(*ptr);
         } else {
           device_ptrs[grad_ptr_idx] = nullptr;
         }

@@ -58,8 +58,8 @@ TEST(LlvmAotTest, CpuKernel) {
   }
   k_run->launch(builder);
 
-  auto *data =
-      reinterpret_cast<int32_t *>(exec.get_device_alloc_info_ptr(arr_devalloc));
+  auto *data = reinterpret_cast<int32_t *>(
+      exec.get_device_alloc_info_ptr(arr_devalloc));
   for (int i = 0; i < kArrLen; ++i) {
     EXPECT_EQ(data[i], i + vec[0]);
   }

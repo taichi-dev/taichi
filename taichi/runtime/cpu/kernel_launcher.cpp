@@ -51,7 +51,7 @@ void KernelLauncher::launch_llvm_kernel(Handle handle,
       auto *argpack = ctx.argpack_ptrs[key];
       auto argpack_ptr = argpack->get_device_allocation();
       uint64 host_ptr =
-          (uint64)executor->get_device_alloc_info_ptr(argpack_ptr);
+          (uint64)executor->get_ndarray_alloc_info_ptr(argpack_ptr);
       ctx.set_argpack_ptr(key, host_ptr);
     }
   }

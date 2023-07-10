@@ -223,3 +223,12 @@ test(e) # New kernel compilation
 ```
 
 The compilation rule also applies to external arrays from NumPy or PyTorch. Changing the shape values does not trigger compilation, but changing the data type or the number of array dimensions does.
+
+
+## FAQ
+
+### How to use automatic differentiation with ndarrays?
+
+We recommend referring to [this project](https://github.com/taichi-dev/taichi-nerfs/blob/main/notebooks/autodiff.ipynb).
+
+Currently, the support for automatic differentiation in Taichi's ndarray is still incomplete. We are working on improving this functionality and will provide a more detailed tutorial as soon as possible.

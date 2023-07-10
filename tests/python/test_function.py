@@ -388,7 +388,7 @@ def test_func_ndarray_arg():
 
     assert arr[0] == [20, 20, 20]
 
-    with pytest.raises(ti.TaichiCompilationError, match=r"Invalid argument into ti.types.ndarray()"):
+    with pytest.raises(ti.TaichiCompilationError, match=r"Invalid value for argument a"):
         test_error(arr)
 
 
@@ -462,6 +462,19 @@ def test_real_func_matrix_arg():
         return mat_arg(a, b[()])
 
     assert foo() == pytest.approx(21)
+
+
+@test_utils.test(arch=[ti.cpu, ti.cuda])
+def test_real_func_matrix_return():
+    @ti.experimental.real_func
+    def mat_ret() -> ti.math.mat2:
+        return ti.math.mat2(1, 2, 3, 4)
+
+    @ti.kernel
+    def foo() -> ti.math.mat2:
+        return mat_ret()
+
+    assert (foo() == ti.math.mat2(1, 2, 3, 4)).all()
 
 
 @test_utils.test(arch=[ti.cpu, ti.cuda])

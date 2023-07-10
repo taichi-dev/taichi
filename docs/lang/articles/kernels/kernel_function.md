@@ -348,3 +348,23 @@ Type hinting is a formal solution to statically indicate the type of value withi
 #### Can I call a kernel from within a Taichi function?
 
 No. Keep in mind that a kernel is the smallest unit for Taichi's runtime execution. You cannot call a kernel from within a Taichi function (in the Taichi scope). You can *only* call a kernel from the Python scope.
+
+#### Can I specify different backends for each kernel separately?
+
+Currently, Taichi does not support using multiple different backends simultaneously. Specifically, at any given time, Taichi only uses one backend. While you can call `ti.init()` multiple times in a program to switch between the backends, after each `ti.init()` call, all kernels will be recompiled to the new backend. For example:
+
+```python
+ti.init(arch=ti.cpu)
+
+@ti.kernel
+def test():
+    print(ti.sin(1.0))
+
+test()
+
+ti.init(arch=ti.gpu)
+
+test()
+```
+
+In the provided code, we begin by designating the CPU as the backend, upon which the `test` function operates. Notably, the `test` function is initially executed on the CPU backend. As we proceed by invoking `ti.init(arch=ti.gpu)` to designate the GPU as the backend, all ensuing invocations of `test` trigger a recompilation of the `test` kernel tailored for the GPU backend, subsequently executing on the GPU. To conclude, Taichi does not facilitate the concurrent operation of multiple kernels on varied backends.

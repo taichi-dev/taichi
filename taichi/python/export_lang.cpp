@@ -589,6 +589,9 @@ void export_lang(py::module &m) {
       .def("device_allocation", &ArgPack::get_device_allocation)
       .def("nelement", &ArgPack::get_nelement)
       .def("data_type", &ArgPack::get_data_type)
+      .def("set_arg_float", &ArgPack::set_arg_float)
+      .def("set_arg_int", &ArgPack::set_arg_int)
+      .def("set_arg_uint", &ArgPack::set_arg_uint)
       .def_readonly("dtype", &ArgPack::dtype);
 
   py::enum_<BufferFormat>(m, "Format")

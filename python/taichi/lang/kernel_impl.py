@@ -690,14 +690,20 @@ class Kernel:
                 for j, (name, anno) in enumerate(needed.members.items()):
                     recursive_set_args(anno, type(v[name]), v[name], indices + (j,))
             else:
+                # Note: All scalar values whose index depth > 1 are owned by argpacks. Ignore them.
+                should_ignore_scalar = len(indices) > 1
                 # Note: do not use sth like "needed == f32". That would be slow.
                 if id(needed) in primitive_types.real_type_ids:
                     if not isinstance(v, (float, int, np.floating, np.integer)):
                         raise TaichiRuntimeTypeError.get(indices, needed.to_string(), provided)
+                    if should_ignore_scalar:
+                        return
                     launch_ctx.set_arg_float(indices, float(v))
                 elif id(needed) in primitive_types.integer_type_ids:
                     if not isinstance(v, (int, np.integer)):
                         raise TaichiRuntimeTypeError.get(indices, needed.to_string(), provided)
+                    if should_ignore_scalar:
+                        return
                     if is_signed(cook_dtype(needed)):
                         launch_ctx.set_arg_int(indices, int(v))
                     else:
@@ -854,11 +860,15 @@ class Kernel:
                         v = [cast_func(v[i, j]) for i in range(needed.n) for j in range(needed.m)]
                     else:
                         v = [cast_func(v[i]) for i in range(needed.n)]
+                    if should_ignore_scalar:
+                        return
                     v = needed(*v)
                     needed.set_kernel_struct_args(v, launch_ctx, indices)
                 elif isinstance(needed, StructType):
                     if not isinstance(v, needed):
                         raise TaichiRuntimeTypeError.get(indices, str(needed), provided)
+                    if should_ignore_scalar:
+                        return
                     needed.set_kernel_struct_args(v, launch_ctx, indices)
                 else:
                     raise ValueError(f"Argument type mismatch. Expecting {needed}, got {type(v)}.")

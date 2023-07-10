@@ -1,7 +1,6 @@
-#include <numeric>
-
 #include "taichi/program/argpack.h"
 #include "taichi/program/program.h"
+#include "fp16.h"
 
 #ifdef TI_WITH_LLVM
 #include "taichi/runtime/llvm/llvm_context.h"
@@ -41,6 +40,84 @@ std::size_t ArgPack::get_nelement() const {
 
 DataType ArgPack::get_data_type() const {
   return dtype;
+}
+
+TypedConstant ArgPack::read(const std::vector<int> &I) const {
+  prog_->synchronize();
+  size_t offset = dtype->as<ArgPackType>()->get_element_offset(I);
+  DataType element_dt = dtype->as<ArgPackType>()->get_element_type(I);
+  size_t size = data_type_size(element_dt);
+  taichi::lang::Device::AllocParams alloc_params;
+  alloc_params.host_write = false;
+  alloc_params.host_read = true;
+  alloc_params.size = size;
+  alloc_params.usage = AllocUsage::Storage;
+  auto [staging_buf_, res] =
+      this->argpack_alloc_.device->allocate_memory_unique(alloc_params);
+  TI_ASSERT(res == RhiResult::success);
+  staging_buf_->device->memcpy_internal(
+      staging_buf_->get_ptr(), this->argpack_alloc_.get_ptr(offset), size);
+
+  char *device_arr_ptr{nullptr};
+  TI_ASSERT(staging_buf_->device->map(
+                *staging_buf_, (void **)&device_arr_ptr) == RhiResult::success);
+
+  TypedConstant data(element_dt);
+  std::memcpy(&data.value_bits, device_arr_ptr, size);
+  staging_buf_->device->unmap(*staging_buf_);
+
+  if (element_dt->is_primitive(PrimitiveTypeID::f16)) {
+    float float32 = fp16_ieee_to_fp32_value(data.val_u16);
+    data.val_f32 = float32;
+  }
+  return data;
+}
+
+void ArgPack::write(const std::vector<int> &I, TypedConstant val) {
+  size_t offset = dtype->as<ArgPackType>()->get_element_offset(I);
+  DataType element_dt = dtype->as<ArgPackType>()->get_element_type(I);
+  size_t size = data_type_size(element_dt);
+  if (element_dt->is_primitive(PrimitiveTypeID::f16)) {
+    uint16_t float16 = fp16_ieee_from_fp32_value(val.val_f32);
+    std::memcpy(&val.value_bits, &float16, 4);
+  }
+
+  taichi::lang::Device::AllocParams alloc_params;
+  alloc_params.host_write = true;
+  alloc_params.host_read = false;
+  alloc_params.size = size;
+  alloc_params.usage = AllocUsage::Storage;
+  auto [staging_buf_, res] =
+      this->argpack_alloc_.device->allocate_memory_unique(alloc_params);
+  TI_ASSERT(res == RhiResult::success);
+
+  char *device_arr_ptr{nullptr};
+  TI_ASSERT(staging_buf_->device->map(
+                *staging_buf_, (void **)&device_arr_ptr) == RhiResult::success);
+
+  TI_ASSERT(device_arr_ptr);
+  std::memcpy(device_arr_ptr, &val.value_bits, size);
+
+  staging_buf_->device->unmap(*staging_buf_);
+  staging_buf_->device->memcpy_internal(this->argpack_alloc_.get_ptr(offset),
+                                        staging_buf_->get_ptr(), size);
+
+  prog_->synchronize();
+}
+
+void ArgPack::set_arg_int(const std::vector<int> &i, int64 val) {
+  DataType element_dt = dtype->as<ArgPackType>()->get_element_type(i);
+  write(i, TypedConstant(element_dt, val));
+}
+
+void ArgPack::set_arg_float(const std::vector<int> &i, float64 val) {
+  DataType element_dt = dtype->as<ArgPackType>()->get_element_type(i);
+  write(i, TypedConstant(element_dt, val));
+}
+
+void ArgPack::set_arg_uint(const std::vector<int> &i, uint64 val) {
+  DataType element_dt = dtype->as<ArgPackType>()->get_element_type(i);
+  write(i, TypedConstant(element_dt, val));
 }
 
 }  // namespace taichi::lang

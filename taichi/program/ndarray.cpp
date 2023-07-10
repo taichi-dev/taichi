@@ -55,8 +55,8 @@ Ndarray::Ndarray(Program *prog,
         "Ndarray index might be out of int32 boundary but int64 indexing is "
         "not supported yet.");
   }
-  ndarray_alloc_ = prog->allocate_memory_ndarray(nelement_ * element_size_,
-                                                 prog->result_buffer);
+  ndarray_alloc_ = prog->allocate_memory_on_device(nelement_ * element_size_,
+                                                   prog->result_buffer);
 }
 
 Ndarray::Ndarray(DeviceAllocation &devalloc,

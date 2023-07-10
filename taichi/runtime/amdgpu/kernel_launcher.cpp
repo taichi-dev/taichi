@@ -56,7 +56,7 @@ void KernelLauncher::launch_llvm_kernel(Handle handle,
         if (on_amdgpu_device(data_ptr)) {
           device_ptrs[data_ptr_idx] = data_ptr;
         } else {
-          DeviceAllocation devalloc = executor->allocate_memory_ndarray(
+          DeviceAllocation devalloc = executor->allocate_memory_on_device(
               arr_sz, (uint64 *)device_result_buffer);
           device_ptrs[data_ptr_idx] =
               executor->get_ndarray_alloc_info_ptr(devalloc);
@@ -128,7 +128,7 @@ void KernelLauncher::launch_llvm_kernel(Handle handle,
       AMDGPUDriver::get_instance().memcpy_device_to_host(
           itr->second.first, (void *)device_ptrs[idx],
           ctx.array_runtime_sizes[arg_id]);
-      executor->deallocate_memory_ndarray(itr->second.second);
+      executor->deallocate_memory_on_device(itr->second.second);
     }
   }
 }

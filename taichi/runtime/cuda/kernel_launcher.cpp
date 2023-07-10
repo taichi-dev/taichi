@@ -80,7 +80,7 @@ void KernelLauncher::launch_llvm_kernel(Handle handle,
           device_ptrs[data_ptr_idx] = data_ptr;
           device_ptrs[grad_ptr_idx] = grad_ptr;
         } else {
-          DeviceAllocation devalloc = executor->allocate_memory_ndarray(
+          DeviceAllocation devalloc = executor->allocate_memory_on_device(
               arr_sz, (uint64 *)device_result_buffer);
           device_ptrs[data_ptr_idx] =
               executor->get_ndarray_alloc_info_ptr(devalloc);
@@ -89,8 +89,9 @@ void KernelLauncher::launch_llvm_kernel(Handle handle,
           CUDADriver::get_instance().memcpy_host_to_device(
               (void *)device_ptrs[data_ptr_idx], data_ptr, arr_sz);
           if (grad_ptr != nullptr) {
-            DeviceAllocation grad_devalloc = executor->allocate_memory_ndarray(
-                arr_sz, (uint64 *)device_result_buffer);
+            DeviceAllocation grad_devalloc =
+                executor->allocate_memory_on_device(
+                    arr_sz, (uint64 *)device_result_buffer);
             device_ptrs[grad_ptr_idx] =
                 executor->get_ndarray_alloc_info_ptr(grad_devalloc);
             transfers[grad_ptr_idx] = {grad_ptr, grad_devalloc};
@@ -165,7 +166,7 @@ void KernelLauncher::launch_llvm_kernel(Handle handle,
       CUDADriver::get_instance().memcpy_device_to_host(
           itr->second.first, (void *)device_ptrs[idx],
           ctx.array_runtime_sizes[arg_id]);
-      executor->deallocate_memory_ndarray(itr->second.second);
+      executor->deallocate_memory_on_device(itr->second.second);
     }
   }
 }

@@ -40,7 +40,7 @@ std::unique_ptr<AotModuleBuilder> GfxProgramImpl::make_aot_module_builder(
   }
 }
 
-DeviceAllocation GfxProgramImpl::allocate_memory_ndarray(
+DeviceAllocation GfxProgramImpl::allocate_memory_on_device(
     std::size_t alloc_size,
     uint64 *result_buffer) {
   DeviceAllocation alloc;
@@ -51,6 +51,7 @@ DeviceAllocation GfxProgramImpl::allocate_memory_ndarray(
   TI_ASSERT(res == RhiResult::success);
   return alloc;
 }
+
 DeviceAllocation GfxProgramImpl::allocate_texture(const ImageParams &params) {
   return runtime_->create_image(params);
 }

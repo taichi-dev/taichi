@@ -41,8 +41,8 @@ class GfxProgramImpl : public ProgramImpl {
     snode_tree_mgr_->destroy_snode_tree(snode_tree);
   }
 
-  DeviceAllocation allocate_memory_ndarray(std::size_t alloc_size,
-                                           uint64 *result_buffer) override;
+  DeviceAllocation allocate_memory_on_device(std::size_t alloc_size,
+                                             uint64 *result_buffer) override;
 
   bool used_in_kernel(DeviceAllocationId id) override {
     return runtime_->used_in_kernel(id);

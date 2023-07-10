@@ -639,7 +639,8 @@ StreamSemaphore MetalSurface::acquire_next_image() {
 
   if (swapchain_images_.count(current_swap_chain_texture_) == 0) {
     swapchain_images_[current_swap_chain_texture_] = device_->import_mtl_texture(current_drawable_.texture);
-    std::cout << "we have " << swapchain_images_.size() << " images\n";
+      RHI_ASSERT(swapchain_images_.size() <= 50); // In case something goes wrong on Metal side, prevent this 
+                                                  // map of images from growing each frame unbounded.
   }
   return nullptr;
 }

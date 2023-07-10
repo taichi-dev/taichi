@@ -12,10 +12,10 @@
 #import <CoreGraphics/CoreGraphics.h>
 #import <QuartzCore/QuartzCore.h>
 #define DEFINE_METAL_ID_TYPE(x) typedef id<x> x##_id;
-@class CAMetalLayer;
+#define DEFINE_OBJC_TYPE(x) @class x;
 #else
 #define DEFINE_METAL_ID_TYPE(x) typedef struct x##_t *x##_id;
-typedef void CAMetalLayer;
+#define DEFINE_OBJC_TYPE(x) typedef void x;
 #endif
 
 DEFINE_METAL_ID_TYPE(MTLDevice);
@@ -30,8 +30,10 @@ DEFINE_METAL_ID_TYPE(MTLCommandBuffer);
 DEFINE_METAL_ID_TYPE(MTLBlitCommandEncoder);
 DEFINE_METAL_ID_TYPE(MTLComputeCommandEncoder);
 DEFINE_METAL_ID_TYPE(CAMetalDrawable);
+DEFINE_OBJC_TYPE(CAMetalLayer);
 
 #undef DEFINE_METAL_ID_TYPE
+#undef DEFINE_OBJC_TYPE
 
 namespace taichi::lang {
 

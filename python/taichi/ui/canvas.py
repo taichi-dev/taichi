@@ -1,8 +1,15 @@
 from taichi._lib import core as _ti_core
 from taichi.lang import impl
 from taichi.lang._texture import Texture
+from .scene import SceneV2
 
-from .staging_buffer import copy_all_to_vbo, copy_all_to_vbo_particle, get_indices_field, get_vbo_field, to_rgba8
+from .staging_buffer import (
+    copy_all_to_vbo,
+    copy_all_to_vbo_particle,
+    get_indices_field_v2,
+    get_vbo_field_v2,
+    to_rgba8,
+)
 from .utils import get_field_info
 
 
@@ -96,13 +103,13 @@ class Canvas:
             per_vertex_color (Tuple[float]): a taichi 3D vector field, \
                 where each element indicate the RGB color of a vertex.
         """
-        vbo = get_vbo_field(vertices)
+        vbo = get_vbo_field_v2(vertices)
         has_per_vertex_color = per_vertex_color is not None
         copy_all_to_vbo(vbo, vertices, 0, 0, per_vertex_color if has_per_vertex_color else 0)
         vbo_info = get_field_info(vbo)
         indices_ndarray = None
         if indices:
-            indices_ndarray = get_indices_field(indices)
+            indices_ndarray = get_indices_field_v2(indices)
         indices_info = get_field_info(indices_ndarray)
         self.canvas.triangles(vbo_info, indices_info, has_per_vertex_color, color)
 
@@ -128,13 +135,13 @@ class Canvas:
             per_vertex_color (tuple[float]): a taichi 3D vector field, where \
                 each element indicate the RGB color of a vertex.
         """
-        vbo = get_vbo_field(vertices)
+        vbo = get_vbo_field_v2(vertices)
         has_per_vertex_color = per_vertex_color is not None
         copy_all_to_vbo(vbo, vertices, 0, 0, per_vertex_color if has_per_vertex_color else 0)
         vbo_info = get_field_info(vbo)
         indices_ndarray = None
         if indices:
-            indices_ndarray = get_indices_field(indices)
+            indices_ndarray = get_indices_field_v2(indices)
         indices_info = get_field_info(indices_ndarray)
         self.canvas.lines(vbo_info, indices_info, has_per_vertex_color, color, width)
 
@@ -152,7 +159,7 @@ class Canvas:
             per_vertex_radius: a taichi float field, where \
                 each element indicates the radius of a circle.
         """
-        vbo = get_vbo_field(centers)
+        vbo = get_vbo_field_v2(centers)
         has_per_vertex_color = per_vertex_color is not None
         has_per_vertex_radius = per_vertex_radius is not None
         copy_all_to_vbo_particle(
@@ -240,4 +247,7 @@ class Canvas:
         """
         # FIXME: (penguinliong) Add a point light to ensure the allocation of light source SSBO.
         scene.point_light((0.0, 0.0, 0.0), (0.0, 0.0, 0.0))
-        self.canvas.scene(scene.scene)
+        if isinstance(scene, SceneV2):
+            self.canvas.scene_v2(scene.scene)  # pass in PySceneV2
+        else:
+            self.canvas.scene(scene.scene)  # pass in PyScene

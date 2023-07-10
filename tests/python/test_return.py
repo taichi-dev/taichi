@@ -326,3 +326,20 @@ def test_func_scalar_return_cast():
         return bar(a)
 
     assert foo(1.5) == 1.0
+
+
+@test_utils.test()
+def test_return_struct_field():
+    tp = ti.types.struct(a=ti.i32)
+
+    f = tp.field(shape=1)
+
+    @ti.func
+    def bar()->tp:
+        return f[0]
+
+    @ti.kernel
+    def foo()->tp:
+        return bar()
+
+    assert foo().a == 0

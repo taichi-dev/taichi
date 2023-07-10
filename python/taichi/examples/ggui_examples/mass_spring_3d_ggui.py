@@ -125,7 +125,7 @@ def main():
     window = ti.ui.Window("Taichi Cloth Simulation on GGUI", (768, 768), vsync=True)
     canvas = window.get_canvas()
     canvas.set_background_color((1, 1, 1))
-    scene = ti.ui.Scene()
+    scene = window.get_scene()
     camera = ti.ui.Camera()
 
     current_t = 0.0

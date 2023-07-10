@@ -19,7 +19,6 @@ class TI_DLL_EXPORT Kernel : public Callable {
   std::vector<SNode *> no_activate;
 
   bool is_accessor{false};
-  AutodiffMode autodiff_mode{AutodiffMode::kNone};
 
   Kernel(Program &program,
          const std::function<void()> &func,

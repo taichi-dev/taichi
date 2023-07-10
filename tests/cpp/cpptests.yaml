@@ -155,6 +155,12 @@
   - test: CapiTest.GraphTestOpenglGraph
     script: aot/python_scripts/graph_aot_test_.py
     args: --arch=opengl
+  - test: CapiTest.GraphTestVulkanMatrixGraph
+    script: aot/python_scripts/matrix_aot_test_.py
+    args: --arch=vulkan
+  - test: CapiTest.GraphTestOpenglMatrixGraph
+    script: aot/python_scripts/matrix_aot_test_.py
+    args: --arch=opengl
   - test: CapiTest.AotTestCpuKernel
     script: aot/python_scripts/kernel_aot_test1.py
     args: --arch=cpu

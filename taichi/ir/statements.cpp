@@ -110,8 +110,9 @@ MatrixPtrStmt::MatrixPtrStmt(Stmt *origin_input,
     TI_ASSERT(tensor_type != nullptr);
     element_type() = tensor_type->get_element_type();
     element_type().set_is_pointer(true);
-  } else if (origin->is<GlobalPtrStmt>()) {
-    element_type() = origin->cast<GlobalPtrStmt>()->ret_type;
+  } else if (origin->is<GlobalPtrStmt>() || origin->is<GetChStmt>()) {
+    element_type() = origin->ret_type.ptr_removed().get_element_type();
+    element_type().set_is_pointer(true);
   } else if (origin->is<AdStackLoadTopStmt>()) {
     TI_ASSERT(origin->as<AdStackLoadTopStmt>()->return_ptr == true);
     element_type() = origin->ret_type.get_element_type();
@@ -126,9 +127,9 @@ MatrixPtrStmt::MatrixPtrStmt(Stmt *origin_input,
 }
 
 bool MatrixPtrStmt::common_statement_eliminable() const {
-  Kernel *k = get_kernel();
-  TI_ASSERT(k != nullptr);
-  return (k->autodiff_mode == AutodiffMode::kNone);
+  Callable *callable = get_callable();
+  TI_ASSERT(callable != nullptr);
+  return (callable->autodiff_mode == AutodiffMode::kNone);
 }
 
 SNodeOpStmt::SNodeOpStmt(SNodeOpType op_type,
@@ -153,6 +154,11 @@ bool SNodeOpStmt::need_activation(SNodeOpType op) {
 ExternalTensorShapeAlongAxisStmt::ExternalTensorShapeAlongAxisStmt(int axis,
                                                                    int arg_id)
     : axis(axis), arg_id(arg_id) {
+  TI_STMT_REG_FIELDS;
+}
+
+ExternalTensorBasePtrStmt::ExternalTensorBasePtrStmt(int arg_id, bool is_grad)
+    : arg_id(arg_id), is_grad(is_grad) {
   TI_STMT_REG_FIELDS;
 }
 

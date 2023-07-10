@@ -1842,9 +1842,12 @@ void TaskCodeGenLLVM::visit(GetChStmt *stmt) {
 void TaskCodeGenLLVM::visit(MatrixPtrStmt *stmt) {
   if (stmt->offset_used_as_index()) {
     auto type = tlctx->get_data_type(stmt->origin->ret_type.ptr_removed());
-    llvm_val[stmt] =
-        builder->CreateGEP(type, llvm_val[stmt->origin],
-                           {tlctx->get_constant(0), llvm_val[stmt->offset]});
+
+    auto casted_ptr = builder->CreateBitCast(llvm_val[stmt->origin],
+                                             llvm::PointerType::get(type, 0));
+
+    llvm_val[stmt] = builder->CreateGEP(
+        type, casted_ptr, {tlctx->get_constant(0), llvm_val[stmt->offset]});
   } else {
     // Access PtrOffset via: base_ptr + offset
     auto origin_address = builder->CreatePtrToInt(
@@ -1980,6 +1983,13 @@ void TaskCodeGenLLVM::visit(ExternalTensorShapeAlongAxisStmt *stmt) {
   const auto axis = stmt->axis;
   llvm_val[stmt] = get_struct_arg(
       {arg_id, TypeFactory::SHAPE_POS_IN_NDARRAY, axis}, /*create_load=*/true);
+}
+
+void TaskCodeGenLLVM::visit(ExternalTensorBasePtrStmt *stmt) {
+  const auto arg_id = stmt->arg_id;
+  int pos = stmt->is_grad ? TypeFactory::GRAD_PTR_POS_IN_NDARRAY
+                          : TypeFactory::DATA_PTR_POS_IN_NDARRAY;
+  llvm_val[stmt] = get_struct_arg({arg_id, pos}, /*create_load=*/true);
 }
 
 std::string TaskCodeGenLLVM::init_offloaded_task_function(OffloadedStmt *stmt,
@@ -2778,18 +2788,18 @@ void TaskCodeGenLLVM::visit(FuncCallStmt *stmt) {
     current_callable = old_callable;
   }
   llvm::Function *llvm_func = func_map[stmt->func];
-  auto *new_ctx = builder->CreateAlloca(get_runtime_type("RuntimeContext"));
+  auto *new_ctx = create_entry_block_alloca(get_runtime_type("RuntimeContext"));
   call("RuntimeContext_set_runtime", new_ctx, get_runtime());
   if (!stmt->func->parameter_list.empty()) {
     auto *buffer =
-        builder->CreateAlloca(tlctx->get_data_type(stmt->func->args_type));
+        create_entry_block_alloca(tlctx->get_data_type(stmt->func->args_type));
     set_args_ptr(stmt->func, new_ctx, buffer);
     set_struct_to_buffer(stmt->func->args_type, buffer, stmt->args);
   }
   llvm::Value *result_buffer = nullptr;
   if (!stmt->func->rets.empty()) {
     auto *ret_type = tlctx->get_data_type(stmt->func->ret_type);
-    result_buffer = builder->CreateAlloca(ret_type);
+    result_buffer = create_entry_block_alloca(ret_type);
     auto *result_buffer_u64 = builder->CreatePointerCast(
         result_buffer,
         llvm::PointerType::get(tlctx->get_data_type<uint64>(), 0));

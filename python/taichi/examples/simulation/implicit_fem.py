@@ -374,7 +374,7 @@ def main():
 
         frame_id = 0
         canvas = window.get_canvas()
-        scene = ti.ui.Scene()
+        scene = window.get_scene()
         camera = ti.ui.Camera()
         camera.position(2.0, 2.0, 3.95)
         camera.lookat(0.5, 0.5, 0.5)

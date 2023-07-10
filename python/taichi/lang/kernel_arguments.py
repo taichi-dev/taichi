@@ -131,14 +131,10 @@ def decl_rw_texture_arg(num_dimensions, buffer_format, lod, name):
     )
 
 
-def decl_ret(dtype, real_func=False):
+def decl_ret(dtype):
     if isinstance(dtype, StructType):
         dtype = dtype.dtype
     if isinstance(dtype, MatrixType):
-        if real_func:
-            for i in range(dtype.n * dtype.m):
-                decl_ret(dtype.dtype)
-            return
         dtype = _ti_core.get_type_factory_instance().get_tensor_type([dtype.n, dtype.m], dtype.dtype)
     else:
         dtype = cook_dtype(dtype)

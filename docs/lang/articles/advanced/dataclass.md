@@ -12,6 +12,12 @@ Taichi provides custom [struct types](../type_system/type.md#compound-types) for
 
 To achieve the ends, Taichi enabled the `@ti.dataclass` decorator on a Python class. This is inspired by Python's [dataclass](https://docs.python.org/3/library/dataclasses.html) feature, which uses class fields with annotations to create data types.
 
+:::note
+
+The `dataclass` in Taichi is simply a wrapper for `ti.types.struct`. Therefore, the member types that a `dataclass` object can contain are the same as those allowed in a struct. They must be one of the following types: scalars, matrix/vector types, and other dataclass/struct types. Objects like `field`, `Vector field`, and `Ndarray` cannot be used as members of a `dataclass` object.
+
+:::
+
 ## Create a struct from a Python class
 
 The following is an example of defining a Taichi struct type under a Python class:

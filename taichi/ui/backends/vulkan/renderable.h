@@ -53,7 +53,9 @@ struct RenderableConfig {
 
 class Renderable {
  public:
+  bool is_3d_renderable{false};
   void update_data(const RenderableInfo &info);
+  virtual void update_scene_data(DevicePtr ssbo_ptr, DevicePtr ubo_ptr);
 
   virtual void record_this_frame_commands(
       taichi::lang::CommandList *command_list);
@@ -96,8 +98,7 @@ class Renderable {
   DeviceAllocationUnique staging_vertex_buffer_{nullptr};
   DeviceAllocationUnique staging_index_buffer_{nullptr};
 
-  DeviceAllocationUnique uniform_buffer_{nullptr};
-  DeviceAllocationUnique storage_buffer_{nullptr};
+  DeviceAllocationUnique uniform_buffer_renderable_{nullptr};
 
   bool indexed_{false};
 
@@ -106,8 +107,6 @@ class Renderable {
   void init_buffers();
 
   virtual void create_graphics_pipeline();
-
-  void resize_storage_buffers(int new_ssbo_size);
 };
 
 }  // namespace vulkan

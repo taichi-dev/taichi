@@ -21,9 +21,10 @@ void Circles::update_data(const CirclesInfo &info) {
   ubo.window_height = app_context_->config.height;
 
   void *mapped{nullptr};
-  RHI_VERIFY(app_context_->device().map(uniform_buffer_->get_ptr(0), &mapped));
+  RHI_VERIFY(app_context_->device().map(uniform_buffer_renderable_->get_ptr(0),
+                                        &mapped));
   memcpy(mapped, &ubo, sizeof(ubo));
-  app_context_->device().unmap(*uniform_buffer_);
+  app_context_->device().unmap(*uniform_buffer_renderable_);
 }
 
 Circles::Circles(AppContext *app_context, VertexAttributes vbo_attrs) {
@@ -42,7 +43,7 @@ Circles::Circles(AppContext *app_context, VertexAttributes vbo_attrs) {
 void Circles::record_this_frame_commands(CommandList *command_list) {
   auto raster_state = app_context_->device().create_raster_resources_unique();
   raster_state->vertex_buffer(vertex_buffer_->get_ptr(), 0);
-  resource_set_->buffer(0, uniform_buffer_->get_ptr());
+  resource_set_->buffer(0, uniform_buffer_renderable_->get_ptr());
 
   command_list->bind_pipeline(pipeline_);
   command_list->bind_raster_resources(raster_state.get());

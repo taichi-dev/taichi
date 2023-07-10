@@ -16,9 +16,10 @@ using namespace taichi::lang::vulkan;
 void SetImage::update_ubo(float x_factor, float y_factor, bool transpose) {
   UniformBufferObject ubo = {x_factor, y_factor, int(transpose)};
   void *mapped{nullptr};
-  RHI_VERIFY(app_context_->device().map(uniform_buffer_->get_ptr(0), &mapped));
+  RHI_VERIFY(app_context_->device().map(uniform_buffer_renderable_->get_ptr(0),
+                                        &mapped));
   memcpy(mapped, &ubo, sizeof(ubo));
-  app_context_->device().unmap(*uniform_buffer_);
+  app_context_->device().unmap(*uniform_buffer_renderable_);
 }
 
 void SetImage::update_data(const SetImageInfo &info) {
@@ -165,7 +166,7 @@ SetImage::SetImage(AppContext *app_context, VertexAttributes vbo_attrs) {
         {config_.ubo_size, /*host_write=*/true, /*host_read=*/false,
          /*export_sharing=*/false, AllocUsage::Uniform});
     TI_ASSERT(res == RhiResult::success);
-    uniform_buffer_ = std::move(buf);
+    uniform_buffer_renderable_ = std::move(buf);
   }
 
   // Create & upload vertex buffer (constant)
@@ -194,7 +195,7 @@ SetImage::SetImage(AppContext *app_context, VertexAttributes vbo_attrs) {
 
 void SetImage::record_this_frame_commands(CommandList *command_list) {
   resource_set_->image(0, *texture_, {});
-  resource_set_->buffer(1, uniform_buffer_->get_ptr());
+  resource_set_->buffer(1, uniform_buffer_renderable_->get_ptr());
 
   auto raster_state = app_context_->device().create_raster_resources_unique();
   raster_state->vertex_buffer(vertex_buffer_->get_ptr(), 0);

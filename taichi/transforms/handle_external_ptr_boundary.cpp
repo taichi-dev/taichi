@@ -42,7 +42,6 @@ class HandleExternalPtrBound : public BasicStmtVisitor {
 
         checked_index = new_stmts.push_back<BinaryOpStmt>(
             BinaryOpType::min, checked_index, valid_upper);
-        stmt->indices[i]->replace_usages_with(checked_index);
         stmt->indices[i] = checked_index;
       }
 
@@ -80,7 +79,7 @@ class HandleExternalPtrBound : public BasicStmtVisitor {
       checked_index = new_stmts.push_back<BinaryOpStmt>(
           BinaryOpType::min, checked_index, upper_bound);
 
-      index->replace_usages_with(checked_index);
+      stmt->offset = checked_index;
       modifier.insert_before(stmt, std::move(new_stmts));
       set_done(stmt);
     }

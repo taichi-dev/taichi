@@ -18,11 +18,22 @@ taichi::lang::gfx::GfxRuntime &OpenglRuntime::get_gfx_runtime() {
   return gfx_runtime_;
 }
 
+TiRuntime ti_import_opengl_runtime(TiOpenglRuntimeInteropInfo *interop_info,
+                                   bool use_gles) {
+  TI_CAPI_TRY_CATCH_BEGIN();
+  TI_CAPI_ARGUMENT_NULL_RV(interop_info);
+  taichi::lang::opengl::imported_process_address = interop_info->get_proc_addr;
+  taichi::lang::opengl::set_gles_override(use_gles);
+  TI_CAPI_TRY_CATCH_END();
+  return ti_create_runtime(TI_ARCH_OPENGL, 0);
+}
+
 void ti_export_opengl_runtime(TiRuntime runtime,
                               TiOpenglRuntimeInteropInfo *interop_info) {
   TI_CAPI_TRY_CATCH_BEGIN();
   // FIXME: (penguinliogn)
-  interop_info->get_proc_addr = taichi::lang::opengl::kGetOpenglProcAddr;
+  interop_info->get_proc_addr =
+      taichi::lang::opengl::kGetOpenglProcAddr.value();
   TI_CAPI_TRY_CATCH_END();
 }
 

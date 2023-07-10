@@ -577,6 +577,21 @@ class ExternalTensorShapeAlongAxisStmt : public Stmt {
   TI_DEFINE_ACCEPT_AND_CLONE
 };
 
+class ExternalTensorBasePtrStmt : public Stmt {
+ public:
+  std::vector<int> arg_id;
+  bool is_grad;
+
+  ExternalTensorBasePtrStmt(const std::vector<int> &arg_id, bool is_grad);
+
+  bool has_global_side_effect() const override {
+    return false;
+  }
+
+  TI_STMT_DEF_FIELDS(ret_type, arg_id, is_grad);
+  TI_DEFINE_ACCEPT_AND_CLONE
+};
+
 /**
  * An assertion.
  * If |cond| is false, print the formatted |text| with |args|, and terminate
@@ -1387,8 +1402,8 @@ class OffloadedStmt : public Stmt {
     return task_type != TaskType::listgen && task_type != TaskType::gc;
   }
 
-  Kernel *get_kernel() const override {
-    return kernel_;
+  Callable *get_callable() const override {
+    return (Callable *)kernel_;
   }
 
   bool is_container_statement() const override {
@@ -2020,5 +2035,35 @@ class MatrixInitStmt : public Stmt {
   TI_STMT_DEF_FIELDS(ret_type, values);
   TI_DEFINE_ACCEPT_AND_CLONE
 };
+
+template <typename T>
+std::vector<std::unique_ptr<Stmt>> get_const_stmt_with_value(DataType dt,
+                                                             T value) {
+  if (dt->is<PrimitiveType>()) {
+    TypedConstant constant(dt, value);
+    auto const_stmt = std::make_unique<ConstStmt>(constant);
+
+    std::vector<std::unique_ptr<Stmt>> ret;
+    ret.push_back(std::move(const_stmt));
+    return ret;
+
+  } else if (dt->is<TensorType>()) {
+    DataType element_dt = dt.get_element_type();
+    std::vector<std::unique_ptr<Stmt>> stmts =
+        get_const_stmt_with_value(element_dt, value);
+
+    Stmt *elem_stmt = stmts.back().get();
+    std::vector<Stmt *> elem_stmts(dt->as<TensorType>()->get_num_elements(),
+                                   elem_stmt);
+
+    auto matrix_init_stmt = std::make_unique<MatrixInitStmt>(elem_stmts);
+    matrix_init_stmt->ret_type = dt;
+
+    stmts.push_back(std::move(matrix_init_stmt));
+    return stmts;
+  } else {
+    TI_NOT_IMPLEMENTED
+  }
+}
 
 }  // namespace taichi::lang

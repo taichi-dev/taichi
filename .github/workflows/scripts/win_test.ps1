@@ -88,13 +88,16 @@ if ("$env:TI_RUN_RELEASE_TESTS" -eq "1") {
     Invoke pip install PyYAML
     Invoke git clone https://github.com/taichi-dev/taichi-release-tests
     Push-Location taichi-release-tests
-    Invoke git checkout 20230607
+    Invoke git checkout 20230619
     mkdir -p repos/taichi/python/taichi
     $EXAMPLES = & python -c 'import taichi.examples as e; print(e.__path__._path[0])' | Select-Object -Last 1
     Push-Location repos
     Invoke git clone --depth=1 https://github.com/taichi-dev/quantaichi
     Invoke git clone --depth=1 https://github.com/taichi-dev/difftaichi
     Invoke git clone --depth=1 https://github.com/taichi-dev/games201
+    Invoke git clone --depth=1 https://github.com/taichiCourse01/--Galaxy
+    Invoke git clone --depth=1 https://github.com/taichiCourse01/--Shadertoys
+    Invoke git clone --depth=1 https://github.com/taichiCourse01/taichi_ray_tracing
     Pop-Location
     Push-Location repos/difftaichi
     Invoke pip install -r requirements.txt

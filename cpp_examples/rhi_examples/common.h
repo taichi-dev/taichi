@@ -45,6 +45,7 @@ class App {
     TI_INFO("Creating App '{}' of {}x{}", title, width, height);
 
     TI_ASSERT(taichi::lang::vulkan::is_vulkan_api_available());
+    glfwInitVulkanLoader(vkGetInstanceProcAddr);
 
     if (glfwInit()) {
       TI_INFO("Initialized GLFW");

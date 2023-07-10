@@ -92,8 +92,10 @@ def main():
         for cr in checkruns["check_runs"]:
             status = cr.get("conclusion", cr["status"])
             name = cr["name"]
+            if name == "Copilot for PRs":
+                continue
             must(
-                status == "success",
+                status in ("success", "neutral"),
                 f"PR #{n} check-run `{name}`'s status `{status}` is not success!",
             )
         print("SUCCESS!")

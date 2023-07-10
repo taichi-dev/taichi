@@ -212,44 +212,80 @@ def build_graph_matrix(N, dtype):
     return graph
 
 
+@pytest.mark.sm70
+@pytest.mark.parametrize("dt", [ti.u8, ti.u16, ti.u32, ti.u64, ti.i8, ti.i16, ti.i32, ti.i64])
 @test_utils.test(arch=supported_archs_cgraph)
-def test_matrix_int():
+def test_matrix_int(dt):
+    if ti.lang.impl.current_cfg().arch == ti.opengl and dt not in [ti.u32, ti.i32]:
+        return
     n = 4
-    A = ti.Matrix([4, 5] * n)
-    res = ti.ndarray(ti.i32, shape=(1,))
-    graph = build_graph_matrix(n, dtype=ti.i32)
+    A = ti.Matrix([4, 5] * n, dt)
+    res = ti.ndarray(dt, shape=(1,))
+    graph = build_graph_matrix(n, dtype=dt)
     graph.run({"mat": A, "res": res})
     assert res.to_numpy()[0] == 36
 
 
+@pytest.mark.parametrize("dt", supported_floating_types)
 @test_utils.test(arch=supported_archs_cgraph)
-def test_matrix_float():
+def test_matrix_float(dt):
+    if ti.lang.impl.current_cfg().arch == ti.opengl and dt not in [ti.f32]:
+        return
     n = 4
-    A = ti.Matrix([4.2, 5.7] * n)
-    res = ti.ndarray(ti.f32, shape=(1))
-    graph = build_graph_matrix(n, dtype=ti.f32)
+    A = ti.Matrix([4.2, 5.7] * n, dt)
+    res = ti.ndarray(dt, shape=(1,))
+    graph = build_graph_matrix(n, dtype=dt)
     graph.run({"mat": A, "res": res})
     assert res.to_numpy()[0] == test_utils.approx(39.6, rel=1e-5)
 
 
+@pytest.mark.sm70
+@test_utils.test(arch=[ti.vulkan])
+def test_matrix_float16():
+    n = 4
+    A = ti.Matrix([4.0, 5.0] * n, ti.f16)
+    res = ti.ndarray(ti.f16, shape=(1,))
+    graph = build_graph_matrix(n, dtype=ti.f16)
+    graph.run({"mat": A, "res": res})
+    assert res.to_numpy()[0] == test_utils.approx(36.0, rel=1e-5)
+
+
+@pytest.mark.sm70
+@pytest.mark.parametrize("dt", [ti.u8, ti.u16, ti.u32, ti.u64, ti.i8, ti.i16, ti.i32, ti.i64])
 @test_utils.test(arch=supported_archs_cgraph)
-def test_vector_int():
+def test_vector_int(dt):
+    if ti.lang.impl.current_cfg().arch == ti.opengl and dt not in [ti.u32, ti.i32]:
+        return
     n = 12
-    A = ti.Vector([1, 3, 13, 4, 5, 6, 7, 2, 3, 4, 1, 25])
-    res = ti.ndarray(ti.i32, shape=(1,))
-    graph = build_graph_vector(n, dtype=ti.i32)
+    A = ti.Vector([1, 3, 13, 4, 5, 6, 7, 2, 3, 4, 1, 25], dt)
+    res = ti.ndarray(dt, shape=(1,))
+    graph = build_graph_vector(n, dtype=dt)
     graph.run({"mat": A, "res": res})
     assert res.to_numpy()[0] == 87
 
 
+@pytest.mark.parametrize("dt", supported_floating_types)
 @test_utils.test(arch=supported_archs_cgraph)
-def test_vector_float():
+def test_vector_float(dt):
+    if ti.lang.impl.current_cfg().arch == ti.opengl and dt not in [ti.f32]:
+        return
     n = 8
-    A = ti.Vector([1.4, 3.7, 13.2, 4.5, 5.6, 6.1, 7.2, 2.6])
-    res = ti.ndarray(ti.f32, shape=(1,))
-    graph = build_graph_vector(n, dtype=ti.f32)
+    A = ti.Vector([1.4, 3.7, 13.2, 4.5, 5.6, 6.1, 7.2, 2.6], dt)
+    res = ti.ndarray(dt, shape=(1,))
+    graph = build_graph_vector(n, dtype=dt)
     graph.run({"mat": A, "res": res})
     assert res.to_numpy()[0] == test_utils.approx(57.5, rel=1e-5)
+
+
+@pytest.mark.sm70
+@test_utils.test(arch=[ti.vulkan])
+def test_vector_float16():
+    n = 4
+    A = ti.Vector([1.4, 3.7, 13.2, 4.5], ti.f16)
+    res = ti.ndarray(ti.f16, shape=(1,))
+    graph = build_graph_vector(n, dtype=ti.f16)
+    graph.run({"mat": A, "res": res})
+    assert res.to_numpy()[0] == test_utils.approx(36.0, rel=1e-2)
 
 
 @pytest.mark.parametrize("dt", supported_floating_types)

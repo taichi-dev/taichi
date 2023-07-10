@@ -117,11 +117,11 @@ void Callable::pop_argpack_stack() {
       TypeFactory::get_instance().get_struct_type(members)->as<StructType>();
   auto p = Parameter(DataType(type), false);
   p.name = temp_argpack_name_stack_.top();
-  add_parameter(p);
   // Pop stacks
   temp_argpack_stack_.pop();
   temp_indices_stack_.pop_back();
   temp_argpack_name_stack_.pop();
+  add_parameter(p);
 }
 
 std::vector<int> Callable::add_parameter(const Parameter &param) {

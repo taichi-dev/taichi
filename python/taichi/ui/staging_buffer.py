@@ -37,6 +37,17 @@ def get_vbo_field(vertices):
     return vbo_field_cache[vertices]
 
 
+def get_vbo_field_v2(vertices):
+    N = vertices.shape[0]
+    pos = 3
+    normal = 3
+    tex_coord = 2
+    color = 4
+    vertex_stride = pos + normal + tex_coord + color
+    vbo = np.ndarray((N, vertex_stride), dtype=np.float32)
+    return vbo
+
+
 def get_indices_field(indices):
     if isinstance(indices, np.ndarray):
         return indices
@@ -45,11 +56,25 @@ def get_indices_field(indices):
     return indices_arr
 
 
+def get_indices_field_v2(indices):
+    if isinstance(indices, np.ndarray):
+        return indices
+    indices_arr = indices.to_numpy()
+    return indices_arr
+
+
 def get_transforms_field(transforms):
     if isinstance(transforms, np.ndarray):
         return transforms
     transforms_arr = transforms.to_numpy()
     transforms_ndarray_cache[transforms] = transforms_arr
+    return transforms_arr
+
+
+def get_transforms_field_v2(transforms):
+    if isinstance(transforms, np.ndarray):
+        return transforms
+    transforms_arr = transforms.to_numpy()
     return transforms_arr
 
 

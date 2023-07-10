@@ -255,7 +255,12 @@ class ASTTransformerContext:
             if name in s:
                 return s[name]
         if name in self.global_vars:
-            return self.global_vars[name]
+            var = self.global_vars[name]
+            from taichi.lang.matrix import Matrix, make_matrix  # pylint: disable-msg=C0415
+
+            if isinstance(var, Matrix):
+                return make_matrix(var.to_list())
+            return var
         try:
             return getattr(builtins, name)
         except AttributeError:

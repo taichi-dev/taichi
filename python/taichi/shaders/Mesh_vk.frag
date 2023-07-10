@@ -14,21 +14,29 @@ struct SceneUBO {
   int point_light_count;
 };
 
-layout(binding = 0) uniform UBO {
-  SceneUBO scene;
+layout(binding = 0) uniform UBORenderable {
   vec3 color;
   int use_per_vertex_color;
   int two_sided;
   float has_attribute;
 }
-ubo;
+ubo_renderable;
+
+layout(binding = 1) uniform UBOScene {
+  SceneUBO scene;
+  float window_width;
+  float window_height;
+  float tan_half_fov;
+  float aspect_ratio;
+}
+ubo_scene;
 
 struct PointLight {
   vec3 pos;
   vec3 color;
 };
 
-layout(binding = 1, std430) buffer SSBO {
+layout(binding = 2, std430) buffer SSBO {
   PointLight point_lights[];
 }
 ssbo;
@@ -36,16 +44,16 @@ ssbo;
 layout(location = 3) in vec4 selected_color;
 
 vec3 lambertian() {
-  vec3 ambient = ubo.scene.ambient_light * selected_color.rgb;
+  vec3 ambient = ubo_scene.scene.ambient_light * selected_color.rgb;
   vec3 result = ambient;
 
-  for (int i = 0; i < ubo.scene.point_light_count; ++i) {
+  for (int i = 0; i < ubo_scene.scene.point_light_count; ++i) {
     vec3 light_color = ssbo.point_lights[i].color;
 
     vec3 light_dir = normalize(ssbo.point_lights[i].pos - frag_pos);
     vec3 normal = normalize(frag_normal);
     float factor = 0.0;
-    if(ubo.two_sided != 0){
+    if(ubo_renderable.two_sided != 0){
       factor = abs(dot(light_dir, normal));
     }
     else{

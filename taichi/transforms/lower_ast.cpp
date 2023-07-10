@@ -459,6 +459,8 @@ class LowerAST : public IRVisitor {
 
     if (stmt->snode->type == SNodeType::dynamic) {
       auto ptr = fctx.push_back<GlobalPtrStmt>(stmt->snode, indices_stmt);
+      ptr->ret_type = stmt->snode->dt;
+      ptr->ret_type.set_is_pointer(true);
       fctx.push_back<SNodeOpStmt>(stmt->op_type, stmt->snode, ptr, val_stmt);
     } else if (stmt->snode->type == SNodeType::pointer ||
                stmt->snode->type == SNodeType::hash ||
@@ -467,6 +469,8 @@ class LowerAST : public IRVisitor {
       TI_ASSERT(SNodeOpStmt::activation_related(stmt->op_type));
       auto ptr =
           fctx.push_back<GlobalPtrStmt>(stmt->snode, indices_stmt, true, true);
+      ptr->ret_type = stmt->snode->dt;
+      ptr->ret_type.set_is_pointer(true);
       fctx.push_back<SNodeOpStmt>(stmt->op_type, stmt->snode, ptr, val_stmt);
     } else {
       TI_ERROR("The {} operation is not supported on {} SNode",

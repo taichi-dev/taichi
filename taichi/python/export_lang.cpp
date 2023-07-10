@@ -1220,11 +1220,23 @@ void export_lang(py::module &m) {
           "get_struct_type",
           [&](TypeFactory *factory,
               std::vector<std::pair<DataType, std::string>> elements) {
-            std::vector<StructMember> members;
+            std::vector<AbstractDictionaryMember> members;
             for (auto &[type, name] : elements) {
               members.push_back({type, name});
             }
             return DataType(factory->get_struct_type(members));
+          },
+          py::return_value_policy::reference)
+      .def(
+          "get_argpack_type",
+          [&](TypeFactory *factory,
+              std::vector<std::pair<DataType, std::string>> elements) {
+            std::vector<AbstractDictionaryMember> members;
+            size_t pos = 0;
+            for (auto &[type, name] : elements) {
+              members.push_back({type, name, ++pos});
+            }
+            return DataType(factory->get_argpack_type(members));
           },
           py::return_value_policy::reference);
 

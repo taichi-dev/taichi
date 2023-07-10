@@ -228,7 +228,7 @@ void UnaryOpExpression::type_check(const CompileConfig *config) {
   }
 
   if (type == UnaryOpType::frexp) {
-    std::vector<StructMember> elements;
+    std::vector<AbstractDictionaryMember> elements;
     TI_ASSERT(operand_primitive_type->is_primitive(PrimitiveTypeID::f32) ||
               operand_primitive_type->is_primitive(PrimitiveTypeID::f64));
     elements.push_back({operand_primitive_type, "mantissa", 0});

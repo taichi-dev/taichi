@@ -251,35 +251,58 @@ class TI_DLL_EXPORT TensorType : public Type {
   Type *element_{nullptr};
 };
 
-struct TI_DLL_EXPORT StructMember {
+struct TI_DLL_EXPORT AbstractDictionaryMember {
   const Type *type;
   std::string name;
   size_t offset{0};
-  bool operator==(const StructMember &other) const {
+  bool operator==(const AbstractDictionaryMember &other) const {
     return type == other.type && name == other.name && offset == other.offset;
   }
   TI_IO_DEF(type, name, offset)
 };
 
-class TI_DLL_EXPORT StructType : public Type {
+class TI_DLL_EXPORT AbstractDictionaryType : public Type {
  public:
-  StructType() : Type(TypeKind::Struct){};
-  explicit StructType(const std::vector<StructMember> &elements,
-                      const std::string &layout = "none")
-      : Type(TypeKind::Struct), elements_(elements), layout_(layout) {
+  explicit AbstractDictionaryType(TypeKind type_kind) : Type(type_kind){};
+  explicit AbstractDictionaryType(
+      TypeKind type_kind,
+      const std::vector<AbstractDictionaryMember> &elements,
+      const std::string &layout = "none")
+      : Type(type_kind), elements_(elements), layout_(layout) {
   }
-
-  std::string to_string() const override;
 
   const std::string &get_layout() const {
     return layout_;
   }
 
-  const Type *get_element_type(const std::vector<int> &indices) const;
-  size_t get_element_offset(const std::vector<int> &indices) const;
-  const std::vector<StructMember> &elements() const {
+  const std::vector<AbstractDictionaryMember> &elements() const {
     return elements_;
   }
+
+  Type *get_compute_type() override {
+    return this;
+  }
+
+  TI_IO_DEF(elements_, layout_);
+
+ protected:
+  std::vector<AbstractDictionaryMember> elements_;
+  std::string layout_;
+};
+
+class TI_DLL_EXPORT StructType : public AbstractDictionaryType {
+ public:
+  StructType() : AbstractDictionaryType(TypeKind::Struct){};
+  explicit StructType(const std::vector<AbstractDictionaryMember> &elements,
+                      const std::string &layout = "none")
+      : AbstractDictionaryType(TypeKind::Struct, elements, layout) {
+  }
+
+  std::string to_string() const override;
+
+  const Type *get_element_type(const std::vector<int> &indices) const;
+
+  size_t get_element_offset(const std::vector<int> &indices) const;
 
   int get_flattened_num_elements() const {
     int num = 0;
@@ -297,17 +320,28 @@ class TI_DLL_EXPORT StructType : public Type {
     return num;
   }
 
-  Type *get_compute_type() override {
-    return this;
+  const Type *get_type() const override;
+
+  TI_IO_DEF(elements_, layout_);
+};
+
+class TI_DLL_EXPORT ArgPackType : public AbstractDictionaryType {
+ public:
+  ArgPackType() : AbstractDictionaryType(TypeKind::ArgPack){};
+  explicit ArgPackType(const std::vector<AbstractDictionaryMember> &elements,
+                       const std::string &layout = "none")
+      : AbstractDictionaryType(TypeKind::ArgPack, elements, layout) {
   }
+
+  const Type *get_element_type(const std::vector<int> &indices) const;
+
+  size_t get_element_offset(const std::vector<int> &indices) const;
+
+  std::string to_string() const override;
 
   const Type *get_type() const override;
 
   TI_IO_DEF(elements_, layout_);
-
- private:
-  std::vector<StructMember> elements_;
-  std::string layout_;
 };
 
 class TI_DLL_EXPORT QuantIntType : public Type {
@@ -746,9 +780,9 @@ Type::jsonserde_ptr_io(const T *&ptr,
 namespace taichi::hashing {
 
 template <>
-struct Hasher<lang::StructMember> {
+struct Hasher<lang::AbstractDictionaryMember> {
  public:
-  size_t operator()(lang::StructMember const &member) const {
+  size_t operator()(lang::AbstractDictionaryMember const &member) const {
     size_t ret = hash_value(member.type);
     hash_combine(ret, member.name);
     hash_combine(ret, member.offset);

@@ -103,7 +103,7 @@ void Callable::pop_argpack_stack() {
   TI_ASSERT(temp_argpack_stack_.size() > 0 && temp_indices_stack_.size() > 0 &&
             temp_argpack_name_stack_.size() > 0);
   std::vector<Parameter> argpack_params = temp_argpack_stack_.top();
-  std::vector<StructMember> members;
+  std::vector<AbstractDictionaryMember> members;
   members.reserve(argpack_params.size());
   for (int i = 0; i < argpack_params.size(); i++) {
     auto &param = argpack_params[i];
@@ -141,7 +141,7 @@ std::vector<int> Callable::add_parameter(const Parameter &param) {
 }
 
 void Callable::finalize_rets() {
-  std::vector<StructMember> members;
+  std::vector<AbstractDictionaryMember> members;
   members.reserve(rets.size());
   for (int i = 0; i < rets.size(); i++) {
     members.push_back({rets[i].dt, fmt::format("ret_{}", i)});
@@ -157,7 +157,7 @@ void Callable::finalize_params() {
   TI_ASSERT(temp_argpack_stack_.size() == 0 &&
             temp_indices_stack_.size() == 0 &&
             temp_argpack_name_stack_.size() == 0);
-  std::vector<StructMember> members;
+  std::vector<AbstractDictionaryMember> members;
   members.reserve(parameter_list.size());
   for (int i = 0; i < parameter_list.size(); i++) {
     auto &param = parameter_list[i];

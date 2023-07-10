@@ -39,7 +39,7 @@ Type *TypeFactory::get_tensor_type(std::vector<int> shape, Type *element) {
 }
 
 const Type *TypeFactory::get_struct_type(
-    const std::vector<StructMember> &elements,
+    const std::vector<AbstractDictionaryMember> &elements,
     const std::string &layout) {
   std::lock_guard<std::mutex> _(struct_mut_);
   auto key = std::make_pair(elements, layout);
@@ -55,6 +55,18 @@ const Type *TypeFactory::get_struct_type(
     struct_types_[key] = std::make_unique<StructType>(elements, layout);
   }
   return struct_types_[key].get();
+}
+
+const Type *TypeFactory::get_argpack_type(
+    const std::vector<AbstractDictionaryMember> &elements,
+    const std::string &layout) {
+  std::lock_guard<std::mutex> _(argpack_mut_);
+  auto key = elements;
+
+  if (argpack_types_.find(key) == argpack_types_.end()) {
+    argpack_types_[key] = std::make_unique<ArgPackType>(elements, layout);
+  }
+  return argpack_types_[key].get();
 }
 
 Type *TypeFactory::get_pointer_type(Type *element, bool is_bit_pointer) {
@@ -173,12 +185,12 @@ const Type *TypeFactory::get_ndarray_struct_type(DataType dt,
                                                  int ndim,
                                                  bool needs_grad) {
   ndim = std::max(1, ndim);  // Avoiding empty struct
-  std::vector<StructMember> shape_members;
+  std::vector<AbstractDictionaryMember> shape_members;
   for (int i = 0; i < ndim; i++) {
     shape_members.push_back({PrimitiveType::i32, fmt::format("dim_{}", i)});
   }
   auto *shape_type = get_struct_type(shape_members);
-  std::vector<StructMember> members;
+  std::vector<AbstractDictionaryMember> members;
   members.push_back({shape_type, "shape"});
   auto ptr_type = get_pointer_type(dt->get_compute_type());
   members.push_back({ptr_type, "data_ptr"});

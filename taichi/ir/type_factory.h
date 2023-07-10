@@ -22,8 +22,13 @@ class TypeFactory {
 
   Type *get_tensor_type(std::vector<int> shape, Type *element);
 
-  const Type *get_struct_type(const std::vector<StructMember> &elements,
-                              const std::string &layout = "none");
+  const Type *get_struct_type(
+      const std::vector<AbstractDictionaryMember> &elements,
+      const std::string &layout = "none");
+
+  const Type *get_argpack_type(
+      const std::vector<AbstractDictionaryMember> &elements,
+      const std::string &layout = "none");
 
   const Type *get_ndarray_struct_type(DataType dt,
                                       int ndim,
@@ -73,11 +78,17 @@ class TypeFactory {
   std::mutex tensor_mut_;
 
   std::unordered_map<
-      std::pair<std::vector<StructMember>, std::string>,
+      std::pair<std::vector<AbstractDictionaryMember>, std::string>,
       std::unique_ptr<Type>,
-      hashing::Hasher<std::pair<std::vector<StructMember>, std::string>>>
+      hashing::Hasher<
+          std::pair<std::vector<AbstractDictionaryMember>, std::string>>>
       struct_types_;
   std::mutex struct_mut_;
+  std::unordered_map<std::vector<AbstractDictionaryMember>,
+                     std::unique_ptr<Type>,
+                     hashing::Hasher<std::vector<AbstractDictionaryMember>>>
+      argpack_types_;
+  std::mutex argpack_mut_;
 
   // TODO: is_bit_ptr?
   std::unordered_map<std::pair<Type *, bool>,

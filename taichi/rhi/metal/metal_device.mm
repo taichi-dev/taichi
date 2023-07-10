@@ -7,7 +7,7 @@
 namespace taichi::lang {
 namespace metal {
 
-  MTLPixelFormat format2mtl(BufferFormat format) {
+MTLPixelFormat format2mtl(BufferFormat format) {
   static const std::map<BufferFormat, MTLPixelFormat> map{
       {BufferFormat::unknown, MTLPixelFormatInvalid},
       {BufferFormat::r8, MTLPixelFormatR8Unorm},
@@ -607,7 +607,7 @@ std::unique_ptr<MetalSampler> create_sampler(id<MTLDevice> mtl_device) {
 
 MetalSurface::MetalSurface(MetalDevice *device, const SurfaceConfig &config)
     : config_(config), device_(device) {
-  
+
   width_ = config.width;
   height_ = config.height;
 
@@ -638,9 +638,11 @@ StreamSemaphore MetalSurface::acquire_next_image() {
   current_swap_chain_texture_ = current_drawable_.texture;
 
   if (swapchain_images_.count(current_swap_chain_texture_) == 0) {
-    swapchain_images_[current_swap_chain_texture_] = device_->import_mtl_texture(current_drawable_.texture);
-      RHI_ASSERT(swapchain_images_.size() <= 50); // In case something goes wrong on Metal side, prevent this 
-                                                  // map of images from growing each frame unbounded.
+    swapchain_images_[current_swap_chain_texture_] =
+        device_->import_mtl_texture(current_drawable_.texture);
+    RHI_ASSERT(swapchain_images_.size() <=
+               50); // In case something goes wrong on Metal side, prevent this
+                    // map of images from growing each frame unbounded.
   }
   return nullptr;
 }
@@ -651,7 +653,7 @@ DeviceAllocation MetalSurface::get_target_image() {
 
 void MetalSurface::present_image(
     const std::vector<StreamSemaphore> &wait_semaphores) {
-  
+
   Stream *stream = device_->get_compute_stream();
   auto [cmd_list, res] = stream->new_command_list_unique();
   MetalCommandList *cmd_list2 = (MetalCommandList *)cmd_list.get();
@@ -665,13 +667,9 @@ std::pair<uint32_t, uint32_t> MetalSurface::get_size() {
   return std::make_pair(width_, height_);
 }
 
-int MetalSurface::get_image_count() {
-  return (int) layer_.maximumDrawableCount;
-}
+int MetalSurface::get_image_count() { return (int)layer_.maximumDrawableCount; }
 
-BufferFormat MetalSurface::image_format() {
-  return image_format_;
-}
+BufferFormat MetalSurface::image_format() { return image_format_; }
 
 void MetalSurface::resize(uint32_t width, uint32_t height) {
   destroy_swap_chain();
@@ -704,8 +702,8 @@ void MetalDevice::destroy() {
   }
 }
 
-std::unique_ptr<Surface> MetalDevice::create_surface(
-    const SurfaceConfig &config) {
+std::unique_ptr<Surface>
+MetalDevice::create_surface(const SurfaceConfig &config) {
   return std::make_unique<MetalSurface>(this, config);
 }
 

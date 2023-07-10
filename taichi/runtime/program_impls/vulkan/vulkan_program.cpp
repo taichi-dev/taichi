@@ -68,7 +68,7 @@ std::vector<std::string> get_required_device_extensions() {
 }  // namespace
 
 VulkanProgramImpl::VulkanProgramImpl(CompileConfig &config)
-    : ProgramImpl(config) {
+    : GfxProgramImpl(config) {
 }
 
 void VulkanProgramImpl::materialize_runtime(KernelProfilerBase *profiler,
@@ -140,84 +140,23 @@ void VulkanProgramImpl::materialize_runtime(KernelProfilerBase *profiler,
   gfx::GfxRuntime::Params params;
   params.device = embedded_device_->device();
   params.profiler = profiler;
-  vulkan_runtime_ = std::make_unique<gfx::GfxRuntime>(std::move(params));
-  snode_tree_mgr_ =
-      std::make_unique<gfx::SNodeTreeManager>(vulkan_runtime_.get());
-}
-
-void VulkanProgramImpl::compile_snode_tree_types(SNodeTree *tree) {
-  if (vulkan_runtime_) {
-    snode_tree_mgr_->materialize_snode_tree(tree);
-  } else {
-    gfx::CompiledSNodeStructs compiled_structs =
-        gfx::compile_snode_structs(*tree->root());
-    aot_compiled_snode_structs_.push_back(compiled_structs);
-  }
-}
-
-void VulkanProgramImpl::materialize_snode_tree(SNodeTree *tree,
-                                               uint64 *result_buffer) {
-  snode_tree_mgr_->materialize_snode_tree(tree);
-}
-
-std::unique_ptr<AotModuleBuilder> VulkanProgramImpl::make_aot_module_builder(
-    const DeviceCapabilityConfig &caps) {
-  if (vulkan_runtime_) {
-    return std::make_unique<gfx::AotModuleBuilderImpl>(
-        snode_tree_mgr_->get_compiled_structs(),
-        get_kernel_compilation_manager(), *config, caps);
-  } else {
-    return std::make_unique<gfx::AotModuleBuilderImpl>(
-        aot_compiled_snode_structs_, get_kernel_compilation_manager(), *config,
-        caps);
-  }
-}
-
-DeviceAllocation VulkanProgramImpl::allocate_memory_ndarray(
-    std::size_t alloc_size,
-    uint64 *result_buffer) {
-  DeviceAllocation alloc;
-  RhiResult res = get_compute_device()->allocate_memory(
-      {alloc_size, /*host_write=*/false, /*host_read=*/false,
-       /*export_sharing=*/false},
-      &alloc);
-  TI_ASSERT(res == RhiResult::success);
-  return alloc;
-}
-
-DeviceAllocation VulkanProgramImpl::allocate_texture(
-    const ImageParams &params) {
-  return vulkan_runtime_->create_image(params);
+  runtime_ = std::make_unique<gfx::GfxRuntime>(std::move(params));
+  snode_tree_mgr_ = std::make_unique<gfx::SNodeTreeManager>(runtime_.get());
 }
 
 void VulkanProgramImpl::enqueue_compute_op_lambda(
     std::function<void(Device *device, CommandList *cmdlist)> op,
     const std::vector<ComputeOpImageRef> &image_refs) {
-  vulkan_runtime_->enqueue_compute_op_lambda(op, image_refs);
+  runtime_->enqueue_compute_op_lambda(op, image_refs);
 }
 
-std::unique_ptr<KernelCompiler> VulkanProgramImpl::make_kernel_compiler() {
-  spirv::KernelCompiler::Config cfg;
-  cfg.compiled_struct_data = vulkan_runtime_
-                                 ? &snode_tree_mgr_->get_compiled_structs()
-                                 : &aot_compiled_snode_structs_;
-  return std::make_unique<spirv::KernelCompiler>(std::move(cfg));
-}
-
-std::unique_ptr<KernelLauncher> VulkanProgramImpl::make_kernel_launcher() {
-  gfx::KernelLauncher::Config cfg;
-  cfg.gfx_runtime_ = vulkan_runtime_.get();
-  return std::make_unique<gfx::KernelLauncher>(std::move(cfg));
-}
-
-DeviceCapabilityConfig VulkanProgramImpl::get_device_caps() {
-  TI_ASSERT(vulkan_runtime_);
-  return vulkan_runtime_->get_ti_device()->get_caps();
+void VulkanProgramImpl::finalize() {
+  GfxProgramImpl::finalize();
+  embedded_device_.reset();
 }
 
 VulkanProgramImpl::~VulkanProgramImpl() {
-  vulkan_runtime_.reset();
-  embedded_device_.reset();
+  VulkanProgramImpl::finalize();
 }
 
 }  // namespace taichi::lang

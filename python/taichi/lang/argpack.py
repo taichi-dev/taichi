@@ -1,3 +1,4 @@
+from taichi._lib import core as _ti_core
 from taichi.lang import impl, ops
 from taichi.lang.exception import (
     TaichiSyntaxError,
@@ -55,6 +56,7 @@ class ArgPack:
         for k, v in self.__entries.items():
             self.__entries[k] = v if in_python_scope() else impl.expr_init(v)
         self._register_members()
+        self.__dtype = None
 
     @property
     def keys(self):
@@ -193,29 +195,54 @@ class _IntermediateArgPack(ArgPack):
             raise TaichiSyntaxError("ArgPack annotations keys not equals to entries keys.")
         self._ArgPack__annotations = annotations
         self._register_members()
+        self._ArgPack__dtype = None
 
 
 class ArgPackType(CompoundType):
     def __init__(self, **kwargs):
         self.members = {}
+        elements = []
         for k, dtype in kwargs.items():
             if isinstance(dtype, StructType):
                 self.members[k] = dtype
+                elements.append([dtype.dtype, k])
             elif isinstance(dtype, ArgPackType):
                 self.members[k] = dtype
+                elements.append([dtype.dtype, k])
             elif isinstance(dtype, MatrixType):
                 self.members[k] = dtype
+                elements.append([dtype.tensor_type, k])
             elif isinstance(dtype, sparse_matrix_builder):
                 self.members[k] = dtype
+                elements.append([cook_dtype(primitive_types.u64), k])
             elif isinstance(dtype, ndarray_type.NdarrayType):
                 self.members[k] = dtype
+                root_dtype = dtype.dtype
+                while isinstance(root_dtype, MatrixType):
+                    root_dtype = root_dtype.dtype
+                elements.append(
+                    [
+                        _ti_core.DataType(
+                            _ti_core.get_type_factory_instance().get_ndarray_struct_type(root_dtype, dtype.ndim, False)
+                        ),
+                        k,
+                    ]
+                )
             elif isinstance(dtype, texture_type.RWTextureType):
                 self.members[k] = dtype
+                elements.append(
+                    [_ti_core.DataType(_ti_core.get_type_factory_instance().get_rwtexture_struct_type()), k]
+                )
             elif isinstance(dtype, texture_type.TextureType):
                 self.members[k] = dtype
+                elements.append(
+                    [_ti_core.DataType(_ti_core.get_type_factory_instance().get_rwtexture_struct_type()), k]
+                )
             else:
                 dtype = cook_dtype(dtype)
                 self.members[k] = dtype
+                elements.append([dtype, k])
+        self.dtype = _ti_core.get_type_factory_instance().get_argpack_type(elements)
 
     def __call__(self, *args, **kwargs):
         """Create an instance of this argument pack type."""
@@ -237,7 +264,9 @@ class ArgPackType(CompoundType):
             d[name] = data
 
         entries = ArgPack(self.members, d)
+        entries._ArgPack__dtype = self.dtype
         pack = self.cast(entries)
+        pack._ArgPack__dtype = self.dtype
         return pack
 
     def __instancecheck__(self, instance):
@@ -279,7 +308,9 @@ class ArgPackType(CompoundType):
                     entries[k] = int(v) if dtype in primitive_types.integer_types else float(v)
                 else:
                     entries[k] = ops.cast(pack._ArgPack__entries[k], dtype)
-        return ArgPack(self.members, entries)
+        pack = ArgPack(self.members, entries)
+        pack._ArgPack__dtype = self.dtype
+        return pack
 
     def from_taichi_object(self, arg_load_dict: dict):
         d = {}
@@ -287,7 +318,9 @@ class ArgPackType(CompoundType):
         for index, pair in enumerate(items):
             name, dtype = pair
             d[name] = arg_load_dict[name]
-        return _IntermediateArgPack(self.members, d)
+        pack = _IntermediateArgPack(self.members, d)
+        pack._ArgPack__dtype = self.dtype
+        return pack
 
     def __str__(self):
         """Python scope argpack type print support."""

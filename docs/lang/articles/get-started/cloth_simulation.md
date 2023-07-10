@@ -18,13 +18,13 @@ Before using Taichi in your Python program, you need to import Taichi to your na
 
 1. Import Taichi:
 
-```python
+```python skip-ci:Trivial
 import taichi as ti
 ```
 
 2. Initialize Taichi:
 
-```python
+```python skip-ci:NotRunnable
 # Choose any of the following backend when initializing Taichi
 # - ti.cpu
 # - ti.gpu
@@ -88,7 +88,7 @@ Having initialized Taichi, you can declare the data structures that represent th
 
 1. Declare two arrays `x` and `v` for storing the mass points' positions and velocities. In Taichi, such arrays are called [fields](../basic/field.md).
 
-```python
+```python skip-ci:NotRunnable
 n = 128
 # x is an n x n field consisting of 3D floating-point vectors
 # representing the mass points' positions
@@ -100,7 +100,7 @@ v = ti.Vector.field(3, dtype=float, shape=(n, n))
 
 2. Initialize the defined fields `x` and `v`:
 
-```python
+```python skip-ci:NotRunnable
 # The n x n grid is normalized
 # The distance between two x- or z-axis adjacent points
 # is 1.0 / n
@@ -132,7 +132,7 @@ def initialize_mass_points():
 
 Here, the ball center is a 1D field, whose only element is a 3-dimensional floating-point vector.
 
-```python
+```python skip-ci:NotRunnable
 ball_radius = 0.3
 # Use a 1D field for storing the position of the ball center
 # The only element in the field is a 3-dimentional floating-point vector
@@ -145,7 +145,7 @@ ball_center[0] = [0, 0, 0]
 
 At the end of each time step `dt`, the program simulates the effects of the aforementioned four factors on the mass-spring system. In this case, a kernel function `substep()` is defined.
 
-```python
+```python skip-ci:NotRunnable
 # substep() works out the *accumulative* effects
 # of gravity, internal force, damping, and collision
 # on the mass-spring system
@@ -155,7 +155,7 @@ def substep():
 
 ### Gravity
 
-```python
+```python skip-ci:NotRunnable
 # Gravity is a force applied in the negative direction of the y axis,
 # and so is set to [0, -9.8, 0]
 gravity = ti.Vector([0, -9.8, 0])
@@ -195,7 +195,7 @@ The code below does the following:
 - Accumulates the internal forces that the neighboring points exert on each mass point,
 - Translates the internal forces to velocities.
 
-```python
+```python skip-ci:NotRunnable
 quad_size = 1.0 / n
 # Elastic coefficient of springs
 spring_Y = 3e4
@@ -263,7 +263,7 @@ def substep():
 
 In the real world, when springs oscillate, the energy stored in the springs dissipates into the surrounding environment as the oscillations die away. To capture this effect, we slightly reduce the magnitude of the velocity of each point in the grid at each time step:
 
-```python
+```python skip-ci:NotRunnable
 # Damping coefficient of springs
 drag_damping = 1
 
@@ -281,7 +281,7 @@ We assume that the collision with the ball is an elastic collision: When a mass 
 
 Note that the position of each mass point is updated using the velocity at the end of each time step.
 
-```python
+```python skip-ci:NotRunnable
 # Damping coefficient of springs
 drag_damping = 1
 
@@ -309,7 +309,7 @@ We use Taichi's GPU-based GUI system (also known as [GGUI](../visualization/ggui
 
 GGUI represents a triangle mesh with two Taichi fields: `vertices` and `indices`. The `vertices` fields is a 1-dimensional field where each element is a 3D vector representing the position of a vertex, possibly shared by multiple triangles. In our application, every point mass is a triangle vertex, so we can simply copy data from `x` to `vertices`:
 
-```python
+```python skip-ci:NotRunnable
 vertices = ti.Vector.field(3, dtype=float, shape=n * n)
 
 @ti.kernel
@@ -322,7 +322,7 @@ Note that `update_vertices` needs to be called every frame, because the vertex p
 
 Our cloth is represented by an `n` by `n` grid of mass points, which can also be seen as an `n-1` by `n-1` grid of small squares. Each of these squares will be rendered as two triangles. Thus, there are a total of `(n - 1) * (n - 1) * 2` triangles. Each of these triangles will be represented as three integers in the `vertices` field, which records the indices of the vertices of the triangle in the `vertices` field. The following code snippet captures this structure:
 
-```python
+```python skip-ci:NotRunnable
 @ti.kernel
 def initialize_mesh_indices():
     for i, j in ti.ndrange(n - 1, n - 1):
@@ -463,7 +463,7 @@ window = ti.ui.Window("Taichi Cloth Simulation on GGUI", (1024, 1024),
                       vsync=True)
 canvas = window.get_canvas()
 canvas.set_background_color((1, 1, 1))
-scene = ti.ui.Scene()
+scene = window.get_scene()
 camera = ti.ui.Camera()
 
 current_t = 0.0

@@ -124,15 +124,16 @@ Stmt::Stmt(const Stmt &stmt) : field_manager(this), fields_registered(false) {
   ret_type = stmt.ret_type;
 }
 
-Kernel *Stmt::get_kernel() const {
+Callable *Stmt::get_callable() const {
   Block *parent_block = parent;
-  if (parent_block->parent_kernel()) {
-    return parent_block->parent_kernel();
+  if (parent_block->parent_callable()) {
+    return parent_block->parent_callable();
   }
 
   if (parent_block->parent_stmt()) {
-    return parent_block->parent_stmt()->get_kernel();
+    return parent_block->parent_stmt()->get_callable();
   }
+  irpass::print((IRNode *)this);
 
   TI_ASSERT_INFO(false, "Stmt is not in a kernel.");
   return nullptr;
@@ -374,13 +375,13 @@ Stmt *Block::parent_stmt() const {
   return ptr == nullptr ? nullptr : *ptr;
 }
 
-Kernel *Block::parent_kernel() const {
-  auto ptr = std::get_if<Kernel *>(&parent_);
+Callable *Block::parent_callable() const {
+  auto ptr = std::get_if<Callable *>(&parent_);
   return ptr == nullptr ? nullptr : *ptr;
 }
 
-void Block::set_parent_kernel(Kernel *kernel) {
-  parent_ = kernel;
+void Block::set_parent_callable(Callable *callable) {
+  parent_ = callable;
 }
 
 void Block::set_parent_stmt(Stmt *stmt) {

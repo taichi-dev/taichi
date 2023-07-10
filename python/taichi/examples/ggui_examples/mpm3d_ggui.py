@@ -242,7 +242,7 @@ window = ti.ui.Window("Real MPM 3D", res, vsync=True)
 
 canvas = window.get_canvas()
 gui = window.get_gui()
-scene = ti.ui.Scene()
+scene = window.get_scene()
 camera = ti.ui.Camera()
 camera.position(0.5, 1.0, 1.95)
 camera.lookat(0.5, 0.3, 0.5)

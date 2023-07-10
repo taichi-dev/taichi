@@ -425,9 +425,9 @@ const std::string GatherUniquelyAccessedBitStructsPass::id =
 
 namespace irpass::analysis {
 std::tuple<std::unordered_map<const SNode *, GlobalPtrStmt *>,
-          std::unordered_map<std::vector<int>,
-                             ExternalPtrStmt *,
-                             hashing::Hasher<std::vector<int>>>,
+           std::unordered_map<std::vector<int>,
+                              ExternalPtrStmt *,
+                              hashing::Hasher<std::vector<int>>>,
            std::unordered_set<MatrixPtrStmt *>>
 gather_uniquely_accessed_pointers(IRNode *root) {
   // TODO: What about SNodeOpStmts?

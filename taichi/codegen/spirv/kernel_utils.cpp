@@ -61,6 +61,7 @@ KernelContextAttributes::KernelContextAttributes(
     ArgAttributes aa;
     aa.name = ka.name;
     aa.is_array = ka.is_array;
+    aa.is_argpack = ka.is_argpack;
     aa.indices = k;
     if (ka.is_array && ka.get_dtype()->is<StructType>()) {
       auto struct_type = ka.get_dtype()->as<StructType>();

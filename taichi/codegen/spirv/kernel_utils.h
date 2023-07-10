@@ -184,6 +184,7 @@ class KernelContextAttributes {
   struct ArgAttributes : public AttribsBase {
     // Indices of the arg value in the host `Context`.
     std::vector<int> indices;
+    bool is_argpack{false};
 
     TI_IO_DEF(name,
               stride,
@@ -191,6 +192,7 @@ class KernelContextAttributes {
               indices,
               dtype,
               is_array,
+              is_argpack,
               element_shape,
               field_dim,
               format,

@@ -27,16 +27,24 @@ struct MeshAttribute {
   mat4 model;
 };
 
-layout(binding = 0) uniform UBO {
-  SceneUBO scene;
+layout(binding = 0) uniform UBORenderable {
   vec3 color;
   int use_per_vertex_color;
   int two_sided;
   float has_attribute;
 }
-ubo;
+ubo_renderable;
 
-layout(binding = 2, std430) buffer MeshAttributeBuffer {
+layout(binding = 1) uniform UBOScene {
+  SceneUBO scene;
+  float window_width;
+  float window_height;
+  float tan_half_fov;
+  float aspect_ratio;
+}
+ubo_scene;
+
+layout(binding = 3, std430) buffer MeshAttributeBuffer {
   MeshAttribute mesh_attr[];
 }
 mesh_attr_buffer;
@@ -44,16 +52,16 @@ mesh_attr_buffer;
 void main() {
   mat4 model_tmp = transpose(mesh_attr_buffer.mesh_attr[gl_InstanceIndex].model);
   // if mesh attributes not given, then use Identity as model matrix
-  mat4 model = mat4(1.0) * (1.0 - ubo.has_attribute) + model_tmp * ubo.has_attribute;
+  mat4 model = mat4(1.0) * (1.0 - ubo_renderable.has_attribute) + model_tmp * ubo_renderable.has_attribute;
 
-  gl_Position = ubo.scene.projection * ubo.scene.view * model * vec4(in_position, 1.0);
+  gl_Position = ubo_scene.scene.projection * ubo_scene.scene.view * model * vec4(in_position, 1.0);
   gl_Position.y *= -1.0;
   frag_texcoord = in_texcoord;
   frag_pos = in_position;
   frag_normal = in_normal;
 
-  if (ubo.use_per_vertex_color == 0) {
-    selected_color = vec4(ubo.color, 1.0);
+  if (ubo_renderable.use_per_vertex_color == 0) {
+    selected_color = vec4(ubo_renderable.color, 1.0);
   } else {
     selected_color = in_color;
   }

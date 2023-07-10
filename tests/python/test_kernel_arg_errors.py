@@ -27,7 +27,7 @@ def test_pass_float_as_ndarray():
 
     with pytest.raises(
         ti.TaichiRuntimeTypeError,
-        match=r"Invalid argument into ti.types.ndarray\(\), got 1.2",
+        match=r"Invalid type for argument a, got 1.2",
     ):
         foo(1.2)
 
@@ -43,7 +43,7 @@ def test_random_python_class_as_ndarray():
 
     with pytest.raises(
         ti.TaichiRuntimeTypeError,
-        match=r"Invalid argument into ti.types.ndarray\(\), got",
+        match=r"Invalid type for argument a, got",
     ):
         b = Bla()
         foo(b)

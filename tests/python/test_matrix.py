@@ -3,6 +3,7 @@ import operator
 
 import numpy as np
 import pytest
+from pytest import approx
 from taichi.lang import impl
 from taichi.lang.exception import TaichiCompilationError, TaichiTypeError
 from taichi.lang.misc import get_host_arch_list
@@ -1358,3 +1359,19 @@ def test_matrix_dtype():
 
     b = ti.types.matrix(2, 2, dtype=ti.i32)([[0, 1], [2, 3]])
     assert b.entries.dtype == np.int32
+
+
+@test_utils.test()
+def test_matrix_and_func():
+    vec4d = ti.types.vector(4, float)
+    v = vec4d(1, 2, 3, 4)
+
+    @ti.func
+    def length(w: vec4d):
+        return w.norm()
+
+    @ti.kernel
+    def test() -> ti.f32:
+        return length(v)
+
+    approx(test(), 5.477226)

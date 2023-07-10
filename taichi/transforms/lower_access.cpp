@@ -110,8 +110,14 @@ class LowerAccess : public IRVisitor {
           TypeFactory::get_instance().get_pointer_type(parent_ret_type);
       lowered_ptr->ret_type = DataType(ptr_ret_type);
     } else {
-      lowered_ptr->ret_type = ptr->snode->dt;
+      auto ret_type = TypeFactory::get_instance().get_pointer_type(
+          ptr->ret_type.ptr_removed(), ptr->snode->is_bit_level);
+      lowered_ptr->ret_type = ret_type;
+      if (auto get_ch_ptr = lowered_ptr->cast<GetChStmt>()) {
+        get_ch_ptr->overrided_dtype = ret_type;
+      }
     }
+
     return lowered;
   }
 

@@ -80,15 +80,7 @@ class Graph:
             elif isinstance(v, Texture):
                 flattened[k] = v.tex
             elif isinstance(v, Matrix):
-                mat_val_id = 0
-                for a in range(v.n):
-                    for b in range(v.m):
-                        key = f"{k}_mat_arg_{mat_val_id}"
-                        mat_val_id += 1
-                        if getattr(v, "ndim", 2) == 2:
-                            flattened[key] = v[a, b]
-                        else:
-                            flattened[key] = v[a]
+                flattened[k] = v.entries
             elif isinstance(v, (int, float)):
                 flattened[k] = v
             else:
@@ -240,7 +232,7 @@ def _make_arg_matrix(kwargs: Dict[str, Any]):
     dtype = kwargs["dtype"]
     if not isinstance(dtype, MatrixType):
         raise TaichiRuntimeError(f"Tag ArgKind.MATRIX must specify matrix type, but got {dtype}.")
-    return _ti_core.Arg(ArgKind.MATRIX, f"{name}_mat_arg", dtype.dtype, 0, [dtype.n, dtype.m])
+    return _ti_core.Arg(ArgKind.MATRIX, f"{name}", dtype.dtype, 0, [dtype.n, dtype.m])
 
 
 def _make_arg_texture(kwargs: Dict[str, Any]):

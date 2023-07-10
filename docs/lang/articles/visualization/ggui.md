@@ -86,7 +86,7 @@ The canvas is cleared after every frame. Always call these methods within the re
 ### Create a scene
 
 ```python cont
-scene = ti.ui.Scene()
+scene = window.get_scene()
 ```
 
 ### Configure camera
@@ -154,7 +154,7 @@ init_points_pos(points_pos)
 
 window = ti.ui.Window("Test for Drawing 3d-lines", (768, 768))
 canvas = window.get_canvas()
-scene = ti.ui.Scene()
+scene = window.get_scene()
 camera = ti.ui.Camera()
 camera.position(5, 2, 2)
 
@@ -174,7 +174,8 @@ while window.running:
 ### Advanced 3d Geometries
 
 ```python preludes:vars
-scene = ti.ui.Scene()
+window = ti.ui.Window(name='Advanced 3d Geometries', res = (720, 720))
+scene = window.get_scene()
 width = 2
 radius = 5
 
@@ -193,8 +194,8 @@ The additional arguments `vertex_offset`, `vertex_count`, `index_offset` and `in
 
 1. Example of drawing a part of the mesh/particles
 
-```python preludes:vars
-scene = ti.ui.Scene()
+```python cont
+scene = window.get_scene()
 
 center = ti.Vector.field(3, ti.f32, shape=10)
 
@@ -253,7 +254,7 @@ init_points_indices(points_indices)
 
 window = ti.ui.Window("Test for Drawing 3d-lines", (768, 768))
 canvas = window.get_canvas()
-scene = ti.ui.Scene()
+scene = window.get_scene()
 camera = ti.ui.Camera()
 camera.position(5, 2, 2)
 
@@ -279,7 +280,8 @@ while window.running:
 3. Details of mesh instancing
 
 ```python preludes:vars
-scene = ti.ui.Scene()
+window = ti.ui.Window("Display Instanced Mesh", (1024, 1024))
+scene = window.get_scene()
 
 num_instance = 100
 m_transforms = ti.Matrix.field(4, 4, dtype = ti.f32, shape = num_instance)
@@ -318,7 +320,7 @@ scene.mesh_instance(vertices_3d, indices, transforms = m_transforms, instance_of
 ```python preludes:vars
 window = ti.ui.Window("Display Mesh", (1024, 1024), vsync=True)
 canvas = window.get_canvas()
-scene = ti.ui.Scene()
+scene = window.get_scene()
 camera = ti.ui.Camera()
 
 # slider_int usage
@@ -346,7 +348,7 @@ while window.running:
 If `indices` is not provided, consider using like this:
 
 ```python preludes:vars skip-ci:Taichi-Bug
-scene = ti.ui.Scene()
+scene = window.get_scene()
 scene.mesh(vertices_3d, normals, color, per_vertex_color, vertex_offset=0, vertex_count=50, show_wireframe=True)
 ```
 
@@ -402,7 +404,7 @@ video_manager.make_video(gif=True, mp4=True)
 window_shape = (720, 1080)
 window = ti.ui.Window("Test for copy depth data", window_shape)
 canvas = window.get_canvas()
-scene = ti.ui.Scene()
+scene = window.get_scene()
 camera = ti.ui.Camera()
 
 # Get the shape of the window

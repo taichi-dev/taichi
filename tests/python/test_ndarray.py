@@ -658,9 +658,15 @@ def test_ndarray_as_template():
 
 @pytest.mark.parametrize("shape", [2**31, 1.5, 0, (1, 0), (1, 0.5), (1, 2**31)])
 @test_utils.test(arch=supported_archs_taichi_ndarray)
-def test_ndarray_shape(shape):
+def test_ndarray_shape_invalid(shape):
     with pytest.raises(TaichiRuntimeError, match=r"is not a valid shape for ndarray"):
         x = ti.ndarray(dtype=int, shape=shape)
+
+
+@pytest.mark.parametrize("shape", [1, np.int32(1), (1, np.int32(1), 4096)])
+@test_utils.test(arch=supported_archs_taichi_ndarray)
+def test_ndarray_shape_valid(shape):
+    x = ti.ndarray(dtype=int, shape=shape)
 
 
 @test_utils.test(arch=supported_archs_taichi_ndarray)

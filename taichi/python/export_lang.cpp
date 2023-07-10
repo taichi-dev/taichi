@@ -438,6 +438,13 @@ void export_lang(py::module &m) {
           py::arg("zero_fill") = false, py::return_value_policy::reference)
       .def("delete_ndarray", &Program::delete_ndarray)
       .def(
+          "create_argpack",
+          [&](Program *program, const DataType &dt) -> ArgPack * {
+            return program->create_argpack(dt);
+          },
+          py::arg("dt"), py::return_value_policy::reference)
+      .def("delete_argpack", &Program::delete_argpack)
+      .def(
           "create_texture",
           [&](Program *program, BufferFormat fmt, const std::vector<int> &shape)
               -> Texture * { return program->create_texture(fmt, shape); },
@@ -576,6 +583,13 @@ void export_lang(py::module &m) {
       .def("element_data_type", &Ndarray::get_element_data_type)
       .def_readonly("dtype", &Ndarray::dtype)
       .def_readonly("shape", &Ndarray::shape);
+
+  py::class_<ArgPack>(m, "ArgPack")
+      .def("device_allocation_ptr", &ArgPack::get_device_allocation_ptr_as_int)
+      .def("device_allocation", &ArgPack::get_device_allocation)
+      .def("nelement", &ArgPack::get_nelement)
+      .def("data_type", &ArgPack::get_data_type)
+      .def_readonly("dtype", &ArgPack::dtype);
 
   py::enum_<BufferFormat>(m, "Format")
 #define PER_BUFFER_FORMAT(x) .value(#x, BufferFormat::x)

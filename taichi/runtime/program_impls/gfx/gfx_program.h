@@ -72,6 +72,12 @@ class GfxProgramImpl : public ProgramImpl {
     return gfx::GfxRuntime::get_struct_type_with_data_layout(old_ty, layout);
   }
 
+  std::pair<const ArgPackType *, size_t> get_argpack_type_with_data_layout(
+      const ArgPackType *old_ty,
+      const std::string &layout) override {
+    return gfx::GfxRuntime::get_argpack_type_with_data_layout(old_ty, layout);
+  }
+
   std::string get_kernel_return_data_layout() override {
     return "4-";
   };

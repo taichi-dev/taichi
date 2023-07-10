@@ -44,7 +44,6 @@ class Expr(TaichiOperations):
         if not self.ptr_type_checked:
             self.ptr.type_check(impl.get_runtime().prog.config())
             self.ptr_type_checked = True
-        
 
     def is_tensor(self):
         return self.ptr.is_tensor()

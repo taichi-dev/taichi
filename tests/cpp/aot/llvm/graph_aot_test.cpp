@@ -76,9 +76,9 @@ TEST(LlvmCGraph, RunGraphCpu) {
   exec.synchronize();
 
   auto *data_0 = reinterpret_cast<int32_t *>(
-      exec.get_ndarray_alloc_info_ptr(devalloc_arr_0));
+      exec.get_device_alloc_info_ptr(devalloc_arr_0));
   auto *data_1 = reinterpret_cast<int32_t *>(
-      exec.get_ndarray_alloc_info_ptr(devalloc_arr_1));
+      exec.get_device_alloc_info_ptr(devalloc_arr_1));
   for (int i = 0; i < ArrLength; i++) {
     EXPECT_EQ(data_0[i], 3 * i + base0 + base1 + base2);
   }
@@ -146,7 +146,7 @@ TEST(LlvmCGraph, RunGraphCuda) {
     std::vector<int32_t> cpu_data(ArrLength);
 
     auto *data_0 = reinterpret_cast<int32_t *>(
-        exec.get_ndarray_alloc_info_ptr(devalloc_arr_0));
+        exec.get_device_alloc_info_ptr(devalloc_arr_0));
 
     CUDADriver::get_instance().memcpy_device_to_host(
         (void *)cpu_data.data(), (void *)data_0, ArrLength * sizeof(int32_t));
@@ -156,7 +156,7 @@ TEST(LlvmCGraph, RunGraphCuda) {
     }
 
     auto *data_1 = reinterpret_cast<int32_t *>(
-        exec.get_ndarray_alloc_info_ptr(devalloc_arr_1));
+        exec.get_device_alloc_info_ptr(devalloc_arr_1));
 
     CUDADriver::get_instance().memcpy_device_to_host(
         (void *)cpu_data.data(), (void *)data_1, ArrLength * sizeof(int32_t));

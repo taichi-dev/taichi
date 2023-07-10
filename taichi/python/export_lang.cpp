@@ -592,6 +592,7 @@ void export_lang(py::module &m) {
       .def("set_arg_float", &ArgPack::set_arg_float)
       .def("set_arg_int", &ArgPack::set_arg_int)
       .def("set_arg_uint", &ArgPack::set_arg_uint)
+      .def("set_arg_nested_argpack", &ArgPack::set_arg_nested_argpack)
       .def_readonly("dtype", &ArgPack::dtype);
 
   py::enum_<BufferFormat>(m, "Format")
@@ -1251,6 +1252,9 @@ void export_lang(py::module &m) {
       .def("get_ndarray_struct_type", &TypeFactory::get_ndarray_struct_type,
            py::arg("dt"), py::arg("ndim"), py::arg("needs_grad"),
            py::return_value_policy::reference)
+      .def("get_struct_type_for_argpack_ptr",
+           &TypeFactory::get_struct_type_for_argpack_ptr, py::arg("dt"),
+           py::arg("layout") = "none", py::return_value_policy::reference)
       .def(
           "get_argpack_type",
           [&](TypeFactory *factory,

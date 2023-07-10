@@ -27,14 +27,18 @@ class TI_DLL_EXPORT ArgPack {
   std::size_t get_nelement() const;
 
   TypedConstant read(const std::vector<int> &I) const;
-  void write(const std::vector<int> &I, TypedConstant val);
-  void set_arg_int(const std::vector<int> &i, int64 val);
-  void set_arg_uint(const std::vector<int> &i, uint64 val);
-  void set_arg_float(const std::vector<int> &i, float64 val);
+  void write(const std::vector<int> &I, TypedConstant val) const;
+  void set_arg_int(const std::vector<int> &i, int64 val) const;
+  void set_arg_uint(const std::vector<int> &i, uint64 val) const;
+  void set_arg_float(const std::vector<int> &i, float64 val) const;
+  void set_arg_nested_argpack(int i, const ArgPack &val) const;
+  void set_arg_nested_argpack_ptr(int i, intptr_t val) const;
 
   ~ArgPack();
 
  private:
   Program *prog_{nullptr};
+
+  DataType get_element_dt(const std::vector<int> &i) const;
 };
 }  // namespace taichi::lang

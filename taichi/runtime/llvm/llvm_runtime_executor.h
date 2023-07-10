@@ -55,7 +55,7 @@ class LlvmRuntimeExecutor {
 
   void check_runtime_error(uint64 *result_buffer);
 
-  uint64_t *get_ndarray_alloc_info_ptr(const DeviceAllocation &alloc);
+  uint64_t *get_device_alloc_info_ptr(const DeviceAllocation &alloc);
 
   const CompileConfig &get_config() const {
     return config_;

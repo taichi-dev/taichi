@@ -20,6 +20,7 @@ from taichi.lang.exception import (
 from taichi.lang.field import Field, ScalarField, SNodeHostAccess
 from taichi.lang.util import (
     cook_dtype,
+    get_traceback,
     in_python_scope,
     python_scope,
     taichi_scope,
@@ -1637,7 +1638,11 @@ class MatrixNdarray(Ndarray):
         self.element_type = _type_factory.get_tensor_type((self.n, self.m), self.dtype)
         # TODO: we should pass in element_type, shape, layout instead.
         self.arr = impl.get_runtime().prog.create_ndarray(
-            cook_dtype(self.element_type), shape, Layout.AOS, zero_fill=True
+            cook_dtype(self.element_type),
+            shape,
+            Layout.AOS,
+            zero_fill=True,
+            dbg_info=ti_python_core.DebugInfo(get_traceback()),
         )
 
     @property
@@ -1747,7 +1752,11 @@ class VectorNdarray(Ndarray):
         self.shape = tuple(shape)
         self.element_type = _type_factory.get_tensor_type((n,), self.dtype)
         self.arr = impl.get_runtime().prog.create_ndarray(
-            cook_dtype(self.element_type), shape, Layout.AOS, zero_fill=True
+            cook_dtype(self.element_type),
+            shape,
+            Layout.AOS,
+            zero_fill=True,
+            dbg_info=ti_python_core.DebugInfo(get_traceback()),
         )
 
     @property

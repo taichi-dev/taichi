@@ -96,4 +96,12 @@ class TaichiIrWarning : public TaichiExceptionImpl {
   }
 };
 
+class TaichiIndexWarning : public TaichiExceptionImpl {
+  using TaichiExceptionImpl::TaichiExceptionImpl;
+
+  void emit() noexcept override {
+    taichi::Logger::get_instance().warn("TaichiIndexWarning\n" + msg_);
+  }
+};
+
 }  // namespace taichi::lang

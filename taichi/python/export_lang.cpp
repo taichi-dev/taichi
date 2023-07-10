@@ -138,6 +138,13 @@ void export_lang(py::module &m) {
             return dt;
           }));
 
+  py::class_<DebugInfo>(m, "DebugInfo")
+      .def(py::init<>())
+      .def(py::init<std::string>())
+      .def(py::init<>())
+      .def_readwrite("tb", &DebugInfo::tb)
+      .def_readwrite("src_loc", &DebugInfo::src_loc);
+
   py::class_<CompileConfig>(m, "CompileConfig")
       .def(py::init<>())
       .def_readwrite("arch", &CompileConfig::arch)
@@ -421,12 +428,14 @@ void export_lang(py::module &m) {
           "create_ndarray",
           [&](Program *program, const DataType &dt,
               const std::vector<int> &shape, ExternalArrayLayout layout,
-              bool zero_fill) -> Ndarray * {
-            return program->create_ndarray(dt, shape, layout, zero_fill);
+              bool zero_fill, DebugInfo dbg_info) -> Ndarray * {
+            return program->create_ndarray(dt, shape, layout, zero_fill,
+                                           dbg_info);
           },
           py::arg("dt"), py::arg("shape"),
           py::arg("layout") = ExternalArrayLayout::kNull,
-          py::arg("zero_fill") = false, py::return_value_policy::reference)
+          py::arg("zero_fill") = false, py::arg("dbg_info") = false,
+          py::return_value_policy::reference)
       .def("delete_ndarray", &Program::delete_ndarray)
       .def(
           "create_texture",

@@ -136,7 +136,11 @@ class TypeCheck : public IRVisitor {
       return;
     }
     stmt->ret_type.set_is_pointer(true);
-    if (stmt->snode) {
+
+    if (!stmt->ret_type.ptr_removed().get_element_type()->is_primitive(
+            PrimitiveTypeID::unknown)) {
+      // pass
+    } else if (stmt->snode) {
       stmt->ret_type =
           TypeFactory::get_instance().get_pointer_type(stmt->snode->dt);
     } else

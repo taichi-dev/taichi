@@ -32,7 +32,8 @@ typedef struct TiOpenglImageInteropInfo {
 
 // Function `ti_import_opengl_runtime`
 TI_DLL_EXPORT TiRuntime TI_API_CALL
-ti_import_opengl_runtime(TiOpenglRuntimeInteropInfo *interop_info);
+ti_import_opengl_runtime(TiOpenglRuntimeInteropInfo *interop_info,
+                         bool use_gles);
 
 // Function `ti_export_opengl_runtime`
 TI_DLL_EXPORT void TI_API_CALL

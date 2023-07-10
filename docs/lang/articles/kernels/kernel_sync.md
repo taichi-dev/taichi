@@ -53,8 +53,11 @@ print(end - start)
 Most of the time, Taichi automatically handles data synchronization. For example, Taichi will automatically call `ti.sync()` to synchronize data in the following cases:
 
 1. The kernel has a return value.
-2. The `x.to_numpy()` method is called in the Python scope, and `x` is being used by other kernels.
-3. An attempt is made to access or modify a Taichi field in the Python scope, and this field is being used by other kernels.
+If the `x.to_numpy()` method is invoked in the Python scope while `x` is concurrently being utilized by other kernels, Taichi will ensure the completion of the kernel using `x` before the `x.to_numpy()` method is executed.
+
+Similarly, in cases where there is an attempt to access or modify a Taichi field within the Python scope, and the field is concurrently being utilized by other kernels, Taichi will ensure the kernel that is using the field has finished prior to proceeding with any statements that access or modify the field.
+
+In the provided example, it is necessary to explicitly call `ti.sync()`. This is due to the kernel lacking a return value, not containing any print statements, and not involving any operations on fields.
 
 :::note
 

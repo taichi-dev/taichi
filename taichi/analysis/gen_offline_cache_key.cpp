@@ -226,6 +226,11 @@ class ASTSerializer : public IRVisitor, public ExpressionVisitor {
     emit(expr->axis);
   }
 
+  void visit(ExternalTensorBasePtrExpression *expr) override {
+    emit(ExprOpCode::ExternalTensorBasePtrExpression);
+    emit(expr->ptr);
+  }
+
   void visit(FrontendFuncCallStmt *expr) override {
     emit(StmtOpCode::FrontendFuncCallStmt);
     emit(expr->func);

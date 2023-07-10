@@ -45,14 +45,14 @@ static void run_field_tests(aot::Module *mod,
   // Kernel: init_fields(int)
   {
     LaunchContextBuilder builder(k_init_fields);
-    builder.set_arg(0, base_value);
+    builder.set_arg({0}, base_value);
     k_init_fields->launch(builder);
   }
 
   // Kernel: check_init_x(int)
   {
     LaunchContextBuilder builder(k_check_init_x);
-    builder.set_arg(0, base_value);
+    builder.set_arg({0}, base_value);
     k_check_init_x->launch(builder);
   }
   // Kernel: check_init_y()

@@ -22,7 +22,7 @@ TEST_F(InliningTest, ArgLoadOfArgLoad) {
   IRBuilder builder;
   // def test_func(x: ti.i32) -> ti.i32:
   //     return x + 1
-  auto *arg = builder.create_arg_load(/*arg_id=*/0, get_data_type<int>(),
+  auto *arg = builder.create_arg_load(/*arg_id=*/{0}, get_data_type<int>(),
                                       /*is_ptr=*/false);
   auto *sum = builder.create_add(arg, builder.get_int32(1));
   builder.create_return(sum);
@@ -41,8 +41,9 @@ TEST_F(InliningTest, ArgLoadOfArgLoad) {
 
   // def kernel(x: ti.i32) -> ti.i32:
   //     return test_func(x)
-  auto *kernel_arg = builder.create_arg_load(/*arg_id=*/0, get_data_type<int>(),
-                                             /*is_ptr=*/false);
+  auto *kernel_arg =
+      builder.create_arg_load(/*arg_id=*/{0}, get_data_type<int>(),
+                              /*is_ptr=*/false);
   auto *func_call = builder.create_func_call(func, {kernel_arg});
   builder.create_return(func_call);
   auto kernel_body = builder.extract_ir();

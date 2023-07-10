@@ -152,7 +152,7 @@ void ArgLoadExpression::type_check(const CompileConfig *) {
 
 void ArgLoadExpression::flatten(FlattenContext *ctx) {
   auto arg_load =
-      std::make_unique<ArgLoadStmt>(arg_id[0], dt, is_ptr, create_load);
+      std::make_unique<ArgLoadStmt>(arg_id, dt, is_ptr, create_load);
   arg_load->ret_type = ret_type;
   ctx->push_back(std::move(arg_load));
   stmt = ctx->back_stmt();
@@ -162,7 +162,7 @@ void TexturePtrExpression::type_check(const CompileConfig *config) {
 }
 
 void TexturePtrExpression::flatten(FlattenContext *ctx) {
-  ctx->push_back<ArgLoadStmt>(arg_id[0], PrimitiveType::f32, /*is_ptr=*/true,
+  ctx->push_back<ArgLoadStmt>(arg_id, PrimitiveType::f32, /*is_ptr=*/true,
                               /*create_load*/ true);
   ctx->push_back<TexturePtrStmt>(ctx->back_stmt(), num_dims, is_storage, format,
                                  lod);
@@ -610,7 +610,7 @@ void ExternalTensorExpression::flatten(FlattenContext *ctx) {
       TypeFactory::get_instance().get_ndarray_struct_type(dt, ndim, needs_grad);
   type = TypeFactory::get_instance().get_pointer_type((Type *)type);
 
-  auto ptr = Stmt::make<ArgLoadStmt>(arg_id[0], type, /*is_ptr=*/true,
+  auto ptr = Stmt::make<ArgLoadStmt>(arg_id, type, /*is_ptr=*/true,
                                      /*create_load=*/false);
 
   ptr->tb = tb;
@@ -1231,7 +1231,7 @@ void ExternalTensorShapeAlongAxisExpression::type_check(const CompileConfig *) {
 void ExternalTensorShapeAlongAxisExpression::flatten(FlattenContext *ctx) {
   auto temp = ptr.cast<ExternalTensorExpression>();
   TI_ASSERT(0 <= axis && axis < temp->ndim);
-  ctx->push_back<ExternalTensorShapeAlongAxisStmt>(axis, temp->arg_id[0]);
+  ctx->push_back<ExternalTensorShapeAlongAxisStmt>(axis, temp->arg_id);
   stmt = ctx->back_stmt();
 }
 
@@ -1245,7 +1245,7 @@ void ExternalTensorBasePtrExpression::type_check(const CompileConfig *) {
 
 void ExternalTensorBasePtrExpression::flatten(FlattenContext *ctx) {
   auto tensor = ptr.cast<ExternalTensorExpression>();
-  ctx->push_back<ExternalTensorBasePtrStmt>(tensor->arg_id[0], is_grad);
+  ctx->push_back<ExternalTensorBasePtrStmt>(tensor->arg_id, is_grad);
   stmt = ctx->back_stmt();
   stmt->ret_type = ret_type;
 }

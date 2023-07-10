@@ -35,7 +35,7 @@ TEST(Half2Vectorization, Ndarray) {
       TypeFactory::get_instance().create_tensor_type({2}, PrimitiveType::f16);
 
   auto argload_stmt = block->push_back<ArgLoadStmt>(
-      0 /*arg_id*/, PrimitiveType::f16, /*is_ptr*/ true,
+      std::vector<int>{0} /*arg_id*/, PrimitiveType::f16, /*is_ptr*/ true,
       /*create_load*/ false);
   argload_stmt->ret_type = half2_type;
   auto const_0_stmt = block->push_back<ConstStmt>(TypedConstant(0));

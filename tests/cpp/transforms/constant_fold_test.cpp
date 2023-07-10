@@ -27,7 +27,7 @@ class ConstantFoldTest : public ::testing::Test {
 };
 
 TEST_F(ConstantFoldTest, UnaryNeg) {
-  auto *x = builder.create_arg_load(0, get_data_type<float>(), false);
+  auto *x = builder.create_arg_load({0}, get_data_type<float>(), false);
   auto *op = builder.get_int32(1);
   auto *out = builder.create_neg(op);
   auto *result = builder.create_sub(x, out);
@@ -40,7 +40,7 @@ TEST_F(ConstantFoldTest, UnaryNeg) {
 }
 
 TEST_F(ConstantFoldTest, UnarySqrt) {
-  auto *x = builder.create_arg_load(0, get_data_type<float>(), false);
+  auto *x = builder.create_arg_load({0}, get_data_type<float>(), false);
   auto *op = builder.get_int32(4);
   auto *out = builder.create_sqrt(op);
   auto *result = builder.create_sub(x, out);
@@ -53,7 +53,7 @@ TEST_F(ConstantFoldTest, UnarySqrt) {
 }
 
 TEST_F(ConstantFoldTest, UnaryRound) {
-  auto *x = builder.create_arg_load(0, get_data_type<float>(), false);
+  auto *x = builder.create_arg_load({0}, get_data_type<float>(), false);
   auto *op = builder.get_float32(3.4);
   auto *out = builder.create_round(op);
   auto *result = builder.create_sub(x, out);
@@ -66,7 +66,7 @@ TEST_F(ConstantFoldTest, UnaryRound) {
 }
 
 TEST_F(ConstantFoldTest, UnaryFloor) {
-  auto *x = builder.create_arg_load(0, get_data_type<float>(), false);
+  auto *x = builder.create_arg_load({0}, get_data_type<float>(), false);
   auto *op = builder.get_float32(3.4);
   auto *out = builder.create_floor(op);
   auto *result = builder.create_sub(x, out);
@@ -79,7 +79,7 @@ TEST_F(ConstantFoldTest, UnaryFloor) {
 }
 
 TEST_F(ConstantFoldTest, UnaryCeil) {
-  auto *x = builder.create_arg_load(0, get_data_type<float>(), false);
+  auto *x = builder.create_arg_load({0}, get_data_type<float>(), false);
   auto *op = builder.get_float32(3.4);
   auto *out = builder.create_ceil(op);
   auto *result = builder.create_sub(x, out);
@@ -92,7 +92,7 @@ TEST_F(ConstantFoldTest, UnaryCeil) {
 }
 
 TEST_F(ConstantFoldTest, UnaryBitCast) {
-  auto *x = builder.create_arg_load(0, get_data_type<float>(), false);
+  auto *x = builder.create_arg_load({0}, get_data_type<float>(), false);
   auto *op = builder.get_int32(1);
   auto *out = builder.create_bit_cast(op, PrimitiveType::f32);
   auto *result = builder.create_sub(x, out);
@@ -105,7 +105,7 @@ TEST_F(ConstantFoldTest, UnaryBitCast) {
 }
 
 TEST_F(ConstantFoldTest, UnaryAbs) {
-  auto *x = builder.create_arg_load(0, get_data_type<float>(), false);
+  auto *x = builder.create_arg_load({0}, get_data_type<float>(), false);
   auto *op = builder.get_float32(-3.4);
   auto *out = builder.create_abs(op);
   auto *result = builder.create_sub(x, out);
@@ -118,7 +118,7 @@ TEST_F(ConstantFoldTest, UnaryAbs) {
 }
 
 TEST_F(ConstantFoldTest, UnarySin) {
-  auto *x = builder.create_arg_load(0, get_data_type<float>(), false);
+  auto *x = builder.create_arg_load({0}, get_data_type<float>(), false);
   auto *op = builder.get_float32(1);
   auto *out = builder.create_sin(op);
   auto *result = builder.create_sub(x, out);
@@ -131,7 +131,7 @@ TEST_F(ConstantFoldTest, UnarySin) {
 }
 
 TEST_F(ConstantFoldTest, UnaryAsin) {
-  auto *x = builder.create_arg_load(0, get_data_type<float>(), false);
+  auto *x = builder.create_arg_load({0}, get_data_type<float>(), false);
   auto *op = builder.get_float32(1);
   auto *out = builder.create_asin(op);
   auto *result = builder.create_sub(x, out);
@@ -144,7 +144,7 @@ TEST_F(ConstantFoldTest, UnaryAsin) {
 }
 
 TEST_F(ConstantFoldTest, UnaryCos) {
-  auto *x = builder.create_arg_load(0, get_data_type<float>(), false);
+  auto *x = builder.create_arg_load({0}, get_data_type<float>(), false);
   auto *op = builder.get_float32(0.5);
   auto *out = builder.create_cos(op);
   auto *result = builder.create_sub(x, out);
@@ -157,7 +157,7 @@ TEST_F(ConstantFoldTest, UnaryCos) {
 }
 
 TEST_F(ConstantFoldTest, UnaryAcos) {
-  auto *x = builder.create_arg_load(0, get_data_type<float>(), false);
+  auto *x = builder.create_arg_load({0}, get_data_type<float>(), false);
   auto *op = builder.get_float32(0.5);
   auto *out = builder.create_acos(op);
   auto *result = builder.create_sub(x, out);
@@ -170,7 +170,7 @@ TEST_F(ConstantFoldTest, UnaryAcos) {
 }
 
 TEST_F(ConstantFoldTest, UnaryTan) {
-  auto *x = builder.create_arg_load(0, get_data_type<float>(), false);
+  auto *x = builder.create_arg_load({0}, get_data_type<float>(), false);
   auto *op = builder.get_float32(0.5);
   auto *out = builder.create_tan(op);
   auto *result = builder.create_sub(x, out);
@@ -183,7 +183,7 @@ TEST_F(ConstantFoldTest, UnaryTan) {
 }
 
 TEST_F(ConstantFoldTest, UnaryTanh) {
-  auto *x = builder.create_arg_load(0, get_data_type<float>(), false);
+  auto *x = builder.create_arg_load({0}, get_data_type<float>(), false);
   auto *op = builder.get_float32(0.5);
   auto *out = builder.create_tanh(op);
   auto *result = builder.create_sub(x, out);
@@ -196,7 +196,7 @@ TEST_F(ConstantFoldTest, UnaryTanh) {
 }
 
 TEST_F(ConstantFoldTest, UnaryExp) {
-  auto *x = builder.create_arg_load(0, get_data_type<float>(), false);
+  auto *x = builder.create_arg_load({0}, get_data_type<float>(), false);
   auto *op = builder.get_float32(0.5);
   auto *out = builder.create_exp(op);
   auto *result = builder.create_sub(x, out);
@@ -209,7 +209,7 @@ TEST_F(ConstantFoldTest, UnaryExp) {
 }
 
 TEST_F(ConstantFoldTest, UnaryLog) {
-  auto *x = builder.create_arg_load(0, get_data_type<float>(), false);
+  auto *x = builder.create_arg_load({0}, get_data_type<float>(), false);
   auto *op = builder.get_float32(4);
   auto *out = builder.create_log(op);
   auto *result = builder.create_sub(x, out);
@@ -222,7 +222,7 @@ TEST_F(ConstantFoldTest, UnaryLog) {
 }
 
 TEST_F(ConstantFoldTest, UnaryBitNot) {
-  auto *x = builder.create_arg_load(0, get_data_type<float>(), false);
+  auto *x = builder.create_arg_load({0}, get_data_type<float>(), false);
   auto *op = builder.get_int32(1);
   auto *out = builder.create_not(op);
   auto *result = builder.create_sub(x, out);
@@ -235,7 +235,7 @@ TEST_F(ConstantFoldTest, UnaryBitNot) {
 }
 
 TEST_F(ConstantFoldTest, UnaryLogicNot) {
-  auto *x = builder.create_arg_load(0, get_data_type<float>(), false);
+  auto *x = builder.create_arg_load({0}, get_data_type<float>(), false);
   auto *op = builder.get_int32(1);
   auto *out = builder.create_logical_not(op);
   auto *result = builder.create_sub(x, out);
@@ -248,7 +248,7 @@ TEST_F(ConstantFoldTest, UnaryLogicNot) {
 }
 
 TEST_F(ConstantFoldTest, UnaryCastValue) {
-  auto *x = builder.create_arg_load(0, get_data_type<float>(), false);
+  auto *x = builder.create_arg_load({0}, get_data_type<float>(), false);
   auto *op = builder.get_int32(1);
   auto *out = builder.create_cast(op, PrimitiveType::f32);
   auto *result = builder.create_sub(x, out);
@@ -261,7 +261,7 @@ TEST_F(ConstantFoldTest, UnaryCastValue) {
 }
 
 TEST_F(ConstantFoldTest, UnaryRsqrt) {
-  auto *x = builder.create_arg_load(0, get_data_type<float>(), false);
+  auto *x = builder.create_arg_load({0}, get_data_type<float>(), false);
   auto *op = builder.get_float32(4);
   auto *out = builder.create_rsqrt(op);
   auto *result = builder.create_sub(x, out);
@@ -274,7 +274,7 @@ TEST_F(ConstantFoldTest, UnaryRsqrt) {
 }
 
 TEST_F(ConstantFoldTest, BinaryMul) {
-  auto *x = builder.create_arg_load(0, get_data_type<float>(), false);
+  auto *x = builder.create_arg_load({0}, get_data_type<float>(), false);
   auto *lhs = builder.get_int32(1);
   auto *rhs = builder.get_int32(2);
   auto *out = builder.create_mul(lhs, rhs);
@@ -288,7 +288,7 @@ TEST_F(ConstantFoldTest, BinaryMul) {
 }
 
 TEST_F(ConstantFoldTest, BinaryAdd) {
-  auto *x = builder.create_arg_load(0, get_data_type<float>(), false);
+  auto *x = builder.create_arg_load({0}, get_data_type<float>(), false);
   auto *one = builder.get_int32(1);
   auto *rhs = builder.get_int32(2);
   auto *out = builder.create_add(one, rhs);
@@ -302,7 +302,7 @@ TEST_F(ConstantFoldTest, BinaryAdd) {
 }
 
 TEST_F(ConstantFoldTest, BinarySub) {
-  auto *x = builder.create_arg_load(0, get_data_type<float>(), false);
+  auto *x = builder.create_arg_load({0}, get_data_type<float>(), false);
   auto *one = builder.get_int32(1);
   auto *rhs = builder.get_int32(2);
   auto *out = builder.create_sub(one, rhs);
@@ -316,7 +316,7 @@ TEST_F(ConstantFoldTest, BinarySub) {
 }
 
 TEST_F(ConstantFoldTest, BinaryFloorDiv) {
-  auto *x = builder.create_arg_load(0, get_data_type<float>(), false);
+  auto *x = builder.create_arg_load({0}, get_data_type<float>(), false);
   auto *one = builder.get_float32(1);
   auto *rhs = builder.get_float32(2);
   auto *out = builder.create_floordiv(one, rhs);
@@ -330,7 +330,7 @@ TEST_F(ConstantFoldTest, BinaryFloorDiv) {
 }
 
 TEST_F(ConstantFoldTest, BinaryDiv) {
-  auto *x = builder.create_arg_load(0, get_data_type<float>(), false);
+  auto *x = builder.create_arg_load({0}, get_data_type<float>(), false);
   auto *one = builder.get_float32(1);
   auto *rhs = builder.get_float32(2);
   auto *out = builder.create_div(one, rhs);
@@ -344,7 +344,7 @@ TEST_F(ConstantFoldTest, BinaryDiv) {
 }
 
 TEST_F(ConstantFoldTest, BinaryMod) {
-  auto *x = builder.create_arg_load(0, get_data_type<float>(), false);
+  auto *x = builder.create_arg_load({0}, get_data_type<float>(), false);
   auto *lhs = builder.get_int32(3);
   auto *rhs = builder.get_int32(2);
   auto *out = builder.create_mod(lhs, rhs);
@@ -358,7 +358,7 @@ TEST_F(ConstantFoldTest, BinaryMod) {
 }
 
 TEST_F(ConstantFoldTest, BinaryMax) {
-  auto *x = builder.create_arg_load(0, get_data_type<float>(), false);
+  auto *x = builder.create_arg_load({0}, get_data_type<float>(), false);
   auto *lhs = builder.get_int32(3);
   auto *rhs = builder.get_int32(2);
   auto *out = builder.create_max(lhs, rhs);
@@ -372,7 +372,7 @@ TEST_F(ConstantFoldTest, BinaryMax) {
 }
 
 TEST_F(ConstantFoldTest, BinaryMin) {
-  auto *x = builder.create_arg_load(0, get_data_type<float>(), false);
+  auto *x = builder.create_arg_load({0}, get_data_type<float>(), false);
   auto *lhs = builder.get_int32(3);
   auto *rhs = builder.get_int32(2);
   auto *out = builder.create_min(lhs, rhs);
@@ -386,7 +386,7 @@ TEST_F(ConstantFoldTest, BinaryMin) {
 }
 
 TEST_F(ConstantFoldTest, BinaryBitAnd) {
-  auto *x = builder.create_arg_load(0, get_data_type<float>(), false);
+  auto *x = builder.create_arg_load({0}, get_data_type<float>(), false);
   auto *lhs = builder.get_int32(3);
   auto *rhs = builder.get_int32(2);
   auto *out = builder.create_and(lhs, rhs);
@@ -400,7 +400,7 @@ TEST_F(ConstantFoldTest, BinaryBitAnd) {
 }
 
 TEST_F(ConstantFoldTest, BinaryBitOr) {
-  auto *x = builder.create_arg_load(0, get_data_type<float>(), false);
+  auto *x = builder.create_arg_load({0}, get_data_type<float>(), false);
   auto *lhs = builder.get_int32(3);
   auto *rhs = builder.get_int32(2);
   auto *out = builder.create_or(lhs, rhs);
@@ -414,7 +414,7 @@ TEST_F(ConstantFoldTest, BinaryBitOr) {
 }
 
 TEST_F(ConstantFoldTest, BinaryBitShl) {
-  auto *x = builder.create_arg_load(0, get_data_type<float>(), false);
+  auto *x = builder.create_arg_load({0}, get_data_type<float>(), false);
   auto *lhs = builder.get_int32(3);
   auto *rhs = builder.get_int32(2);
   auto *out = builder.create_shl(lhs, rhs);
@@ -428,7 +428,7 @@ TEST_F(ConstantFoldTest, BinaryBitShl) {
 }
 
 TEST_F(ConstantFoldTest, BinaryBitShrInt32) {
-  auto *x = builder.create_arg_load(0, get_data_type<int>(), false);
+  auto *x = builder.create_arg_load({0}, get_data_type<int>(), false);
   auto *lhs = builder.get_int32(-1);
   auto *rhs = builder.get_uint32(2);
   auto *out = builder.create_shr(lhs, rhs);
@@ -442,7 +442,7 @@ TEST_F(ConstantFoldTest, BinaryBitShrInt32) {
 }
 
 TEST_F(ConstantFoldTest, BinaryBitShrInt64) {
-  auto *x = builder.create_arg_load(0, get_data_type<int64_t>(), false);
+  auto *x = builder.create_arg_load({0}, get_data_type<int64_t>(), false);
   auto *lhs = builder.get_int64(-1);
   auto *rhs = builder.get_uint32(2);
   auto *out = builder.create_shr(lhs, rhs);
@@ -456,7 +456,7 @@ TEST_F(ConstantFoldTest, BinaryBitShrInt64) {
 }
 
 TEST_F(ConstantFoldTest, BinaryBitSar) {
-  auto *x = builder.create_arg_load(0, get_data_type<int>(), false);
+  auto *x = builder.create_arg_load({0}, get_data_type<int>(), false);
   auto *lhs = builder.get_int32(-1);
   auto *rhs = builder.get_uint32(2);
   auto *out = builder.create_sar(lhs, rhs);
@@ -469,7 +469,7 @@ TEST_F(ConstantFoldTest, BinaryBitSar) {
 }
 
 TEST_F(ConstantFoldTest, BinaryCmpLt) {
-  auto *x = builder.create_arg_load(0, get_data_type<float>(), false);
+  auto *x = builder.create_arg_load({0}, get_data_type<float>(), false);
   auto *lhs = builder.get_int32(1);
   auto *rhs = builder.get_int32(2);
   auto *out = builder.create_cmp_lt(lhs, rhs);
@@ -483,7 +483,7 @@ TEST_F(ConstantFoldTest, BinaryCmpLt) {
 }
 
 TEST_F(ConstantFoldTest, BinaryCmpGt) {
-  auto *x = builder.create_arg_load(0, get_data_type<float>(), false);
+  auto *x = builder.create_arg_load({0}, get_data_type<float>(), false);
   auto *lhs = builder.get_int32(2);
   auto *rhs = builder.get_int32(2);
   auto *out = builder.create_cmp_gt(lhs, rhs);
@@ -497,7 +497,7 @@ TEST_F(ConstantFoldTest, BinaryCmpGt) {
 }
 
 TEST_F(ConstantFoldTest, BinaryCmpGe) {
-  auto *x = builder.create_arg_load(0, get_data_type<float>(), false);
+  auto *x = builder.create_arg_load({0}, get_data_type<float>(), false);
   auto *lhs = builder.get_int32(2);
   auto *rhs = builder.get_int32(2);
   auto *out = builder.create_cmp_ge(lhs, rhs);
@@ -511,7 +511,7 @@ TEST_F(ConstantFoldTest, BinaryCmpGe) {
 }
 
 TEST_F(ConstantFoldTest, BinaryCmpEq) {
-  auto *x = builder.create_arg_load(0, get_data_type<float>(), false);
+  auto *x = builder.create_arg_load({0}, get_data_type<float>(), false);
   auto *lhs = builder.get_int32(2);
   auto *rhs = builder.get_int32(2);
   auto *out = builder.create_cmp_eq(lhs, rhs);
@@ -525,7 +525,7 @@ TEST_F(ConstantFoldTest, BinaryCmpEq) {
 }
 
 TEST_F(ConstantFoldTest, BinaryCmpNes) {
-  auto *x = builder.create_arg_load(0, get_data_type<float>(), false);
+  auto *x = builder.create_arg_load({0}, get_data_type<float>(), false);
   auto *lhs = builder.get_int32(2);
   auto *rhs = builder.get_int32(2);
   auto *out = builder.create_cmp_ne(lhs, rhs);
@@ -539,7 +539,7 @@ TEST_F(ConstantFoldTest, BinaryCmpNes) {
 }
 
 TEST_F(ConstantFoldTest, BinaryPow) {
-  auto *x = builder.create_arg_load(0, get_data_type<float>(), false);
+  auto *x = builder.create_arg_load({0}, get_data_type<float>(), false);
   auto *lhs = builder.get_int32(2);
   auto *rhs = builder.get_int32(2);
   auto *out = builder.create_pow(lhs, rhs);
@@ -553,7 +553,7 @@ TEST_F(ConstantFoldTest, BinaryPow) {
 }
 
 TEST_F(ConstantFoldTest, BinaryAtan2) {
-  auto *x = builder.create_arg_load(0, get_data_type<float>(), false);
+  auto *x = builder.create_arg_load({0}, get_data_type<float>(), false);
   auto *lhs = builder.get_int32(0);
   auto *rhs = builder.get_int32(2);
   auto *out = builder.create_atan2(lhs, rhs);

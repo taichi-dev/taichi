@@ -105,6 +105,10 @@ class TI_DLL_EXPORT CallableBase {
   };
 
   std::vector<Parameter> parameter_list;
+  std::unordered_map<std::vector<int>,
+                     Parameter,
+                     hashing::Hasher<std::vector<int>>>
+      not_flattened_parameters;
   std::vector<Ret> rets;
 
   const StructType *ret_type = nullptr;

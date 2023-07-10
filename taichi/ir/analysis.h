@@ -106,7 +106,9 @@ std::vector<Stmt *> gather_statements(IRNode *root,
                                       const std::function<bool(Stmt *)> &test);
 void gather_uniquely_accessed_bit_structs(IRNode *root, AnalysisManager *amgr);
 std::tuple<std::unordered_map<const SNode *, GlobalPtrStmt *>,
-           std::unordered_map<int, ExternalPtrStmt *>,
+           std::unordered_map<std::vector<int>,
+                              ExternalPtrStmt *,
+                              hashing::Hasher<std::vector<int>>>,
            std::unordered_set<MatrixPtrStmt *>>
 gather_uniquely_accessed_pointers(IRNode *root);
 

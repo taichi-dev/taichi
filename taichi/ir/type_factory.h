@@ -30,6 +30,10 @@ class TypeFactory {
       const std::vector<AbstractDictionaryMember> &elements,
       const std::string &layout = "none");
 
+  const Type *get_struct_type_for_argpack_ptr(
+      DataType dt,
+      const std::string &layout = "none");
+
   const Type *get_ndarray_struct_type(DataType dt,
                                       int ndim,
                                       bool needs_grad = false);

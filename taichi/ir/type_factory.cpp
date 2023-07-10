@@ -69,6 +69,17 @@ const Type *TypeFactory::get_argpack_type(
   return argpack_types_[key].get();
 }
 
+const Type *TypeFactory::get_struct_type_for_argpack_ptr(
+    DataType dt,
+    const std::string &layout) {
+  auto *type_inner = this->get_struct_type(dt->get_type()->as<ArgPackType>()->elements(), layout)->as<StructType>();
+  auto *type_pointer = this->get_pointer_type(
+      const_cast<StructType *>(type_inner), false);
+  auto *type_outter = this->get_struct_type({{type_pointer, "data_ptr"}})
+                          ->as<StructType>();
+  return type_outter;
+}
+
 Type *TypeFactory::get_pointer_type(Type *element, bool is_bit_pointer) {
   std::lock_guard<std::mutex> _(pointer_mut_);
 

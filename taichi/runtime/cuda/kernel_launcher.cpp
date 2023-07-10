@@ -83,7 +83,7 @@ void KernelLauncher::launch_llvm_kernel(Handle handle,
           DeviceAllocation devalloc = executor->allocate_memory_on_device(
               arr_sz, (uint64 *)device_result_buffer);
           device_ptrs[data_ptr_idx] =
-              executor->get_ndarray_alloc_info_ptr(devalloc);
+              executor->get_device_alloc_info_ptr(devalloc);
           transfers[data_ptr_idx] = {data_ptr, devalloc};
 
           CUDADriver::get_instance().memcpy_host_to_device(
@@ -93,7 +93,7 @@ void KernelLauncher::launch_llvm_kernel(Handle handle,
                 executor->allocate_memory_on_device(
                     arr_sz, (uint64 *)device_result_buffer);
             device_ptrs[grad_ptr_idx] =
-                executor->get_ndarray_alloc_info_ptr(grad_devalloc);
+                executor->get_device_alloc_info_ptr(grad_devalloc);
             transfers[grad_ptr_idx] = {grad_ptr, grad_devalloc};
 
             CUDADriver::get_instance().memcpy_host_to_device(
@@ -109,12 +109,11 @@ void KernelLauncher::launch_llvm_kernel(Handle handle,
         // Ndarray
         DeviceAllocation *ptr = static_cast<DeviceAllocation *>(data_ptr);
         // Unwrapped raw ptr on device
-        device_ptrs[data_ptr_idx] = executor->get_ndarray_alloc_info_ptr(*ptr);
+        device_ptrs[data_ptr_idx] = executor->get_device_alloc_info_ptr(*ptr);
 
         if (grad_ptr != nullptr) {
           ptr = static_cast<DeviceAllocation *>(grad_ptr);
-          device_ptrs[grad_ptr_idx] =
-              executor->get_ndarray_alloc_info_ptr(*ptr);
+          device_ptrs[grad_ptr_idx] = executor->get_device_alloc_info_ptr(*ptr);
         } else {
           device_ptrs[grad_ptr_idx] = nullptr;
         }
@@ -128,8 +127,15 @@ void KernelLauncher::launch_llvm_kernel(Handle handle,
       auto *argpack = ctx.argpack_ptrs[key];
       auto argpack_ptr = argpack->get_device_allocation();
       device_ptrs[data_ptr_idx] =
-          executor->get_ndarray_alloc_info_ptr(argpack_ptr);
-      ctx.set_argpack_ptr(key, (uint64)device_ptrs[data_ptr_idx]);
+          executor->get_device_alloc_info_ptr(argpack_ptr);
+      if (key.size() == 1) {
+        ctx.set_argpack_ptr(key, (uint64)device_ptrs[data_ptr_idx]);
+      } else {
+        auto key_parent = key;
+        key_parent.pop_back();
+        auto *argpack_parent = ctx.argpack_ptrs[key_parent];
+        argpack_parent->set_arg_nested_argpack_ptr(key.back(), (uint64)device_ptrs[data_ptr_idx]);
+      }
     }
   }
   if (transfers.size() > 0) {

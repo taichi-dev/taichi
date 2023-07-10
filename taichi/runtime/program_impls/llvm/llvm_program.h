@@ -111,8 +111,8 @@ class LlvmProgramImpl : public ProgramImpl {
     runtime_exec_->finalize();
   }
 
-  uint64_t *get_ndarray_alloc_info_ptr(const DeviceAllocation &alloc) override {
-    return runtime_exec_->get_ndarray_alloc_info_ptr(alloc);
+  uint64_t *get_device_alloc_info_ptr(const DeviceAllocation &alloc) override {
+    return runtime_exec_->get_device_alloc_info_ptr(alloc);
   }
 
   void fill_ndarray(const DeviceAllocation &alloc,

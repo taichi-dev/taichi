@@ -500,7 +500,7 @@ void LlvmRuntimeExecutor::deallocate_memory_on_device(DeviceAllocation handle) {
 void LlvmRuntimeExecutor::fill_ndarray(const DeviceAllocation &alloc,
                                        std::size_t size,
                                        uint32_t data) {
-  auto ptr = get_ndarray_alloc_info_ptr(alloc);
+  auto ptr = get_device_alloc_info_ptr(alloc);
   if (config_.arch == Arch::cuda) {
 #if defined(TI_WITH_CUDA)
     CUDADriver::get_instance().memsetd32((void *)ptr, data, size);
@@ -518,7 +518,7 @@ void LlvmRuntimeExecutor::fill_ndarray(const DeviceAllocation &alloc,
   }
 }
 
-uint64_t *LlvmRuntimeExecutor::get_ndarray_alloc_info_ptr(
+uint64_t *LlvmRuntimeExecutor::get_device_alloc_info_ptr(
     const DeviceAllocation &alloc) {
   if (config_.arch == Arch::cuda) {
 #if defined(TI_WITH_CUDA)

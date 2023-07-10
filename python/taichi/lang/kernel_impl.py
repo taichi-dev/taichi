@@ -863,14 +863,14 @@ class Kernel:
                 if not isinstance(v, (float, int, np.floating, np.integer)):
                     raise TaichiRuntimeTypeError.get(indices, needed.to_string(), provided)
                 if in_argpack:
-                    return 0
+                    return 1
                 launch_ctx.set_arg_float(indices, float(v))
                 return 1
             if id(needed) in primitive_types.integer_type_ids:
                 if not isinstance(v, (int, np.integer)):
                     raise TaichiRuntimeTypeError.get(indices, needed.to_string(), provided)
                 if in_argpack:
-                    return 0
+                    return 1
                 if is_signed(cook_dtype(needed)):
                     launch_ctx.set_arg_int(indices, int(v))
                 else:
@@ -908,12 +908,12 @@ class Kernel:
                 return 1
             if isinstance(needed, MatrixType):
                 if in_argpack:
-                    return 0
+                    return 1
                 set_arg_matrix(indices, v, needed)
                 return 1
             if isinstance(needed, StructType):
                 if in_argpack:
-                    return 0
+                    return 1
                 if not isinstance(v, needed):
                     raise TaichiRuntimeTypeError(f"Argument {provided} cannot be converted into required type {needed}")
                 needed.set_kernel_struct_args(v, launch_ctx, indices)

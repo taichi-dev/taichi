@@ -198,7 +198,7 @@ class ArgPack:
         if isinstance(needed, ArgPackType):
             if not isinstance(v, ArgPack):
                 raise TaichiRuntimeTypeError.get(index, str(needed), str(provided))
-            pass  # Do nothing
+            self.__argpack.set_arg_nested_argpack(index, v.__argpack)
         else:
             # Note: do not use sth like "needed == f32". That would be slow.
             if id(needed) in primitive_types.real_type_ids:
@@ -293,7 +293,7 @@ class ArgPackType(CompoundType):
                 elements.append([dtype.dtype, k])
             elif isinstance(dtype, ArgPackType):
                 self.members[k] = dtype
-                raise TaichiSyntaxError("ArgPack nesting is not supported currently.")
+                elements.append([_ti_core.DataType(_ti_core.get_type_factory_instance().get_struct_type_for_argpack_ptr(dtype.dtype)), k])
             elif isinstance(dtype, MatrixType):
                 # Convert MatrixType to StructType
                 if dtype.ndim == 1:
@@ -314,9 +314,9 @@ class ArgPackType(CompoundType):
                 dtype = cook_dtype(dtype)
                 self.members[k] = dtype
                 elements.append([dtype, k])
-            if len(elements) == 0:
-                # Use i32 as a placeholder for empty argpacks
-                elements.append([primitive_types.i32, k])
+        if len(elements) == 0:
+            # Use i32 as a placeholder for empty argpacks
+            elements.append([primitive_types.i32, k])
         self.dtype = _ti_core.get_type_factory_instance().get_argpack_type(elements)
 
     def __call__(self, *args, **kwargs):

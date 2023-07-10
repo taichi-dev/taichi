@@ -648,7 +648,7 @@ class StructType(CompoundType):
             return False
         if (
             hasattr(instance, "_Struct__dtype")
-            and instance._Struct__dtype != None
+            and instance._Struct__dtype is not None
             and instance._Struct__dtype != self.dtype
         ):
             return False

@@ -37,11 +37,11 @@ class ExpressionHumanFriendlyPrinter : public ExpressionPrinter {
 
   void visit(ArgLoadExpression *expr) override {
     emit(fmt::format("arg{}[{}] (dt={})", expr->create_load ? "load" : "addr",
-                     expr->arg_id, data_type_name(expr->dt)));
+                     fmt::join(expr->arg_id, ", "), data_type_name(expr->dt)));
   }
 
   void visit(TexturePtrExpression *expr) override {
-    emit(fmt::format("(Texture *)(arg[{}])", expr->arg_id));
+    emit(fmt::format("(Texture *)(arg[{}])", fmt::join(expr->arg_id, ", ")));
   }
 
   void visit(TextureOpExpression *expr) override {

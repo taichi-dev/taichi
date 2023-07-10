@@ -16,7 +16,7 @@ class Camera:
 
     Example::
 
-        >>> scene = ti.ui.Scene()  # assume you have a scene
+        >>> scene = window.get_scene()  # assumes you have a window
         >>>
         >>> camera = ti.ui.Camera()
         >>> camera.position(1, 1, 1)  # set camera position

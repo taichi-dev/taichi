@@ -293,7 +293,14 @@ class ArgPackType(CompoundType):
                 elements.append([dtype.dtype, k])
             elif isinstance(dtype, ArgPackType):
                 self.members[k] = dtype
-                elements.append([_ti_core.DataType(_ti_core.get_type_factory_instance().get_struct_type_for_argpack_ptr(dtype.dtype)), k])
+                elements.append(
+                    [
+                        _ti_core.DataType(
+                            _ti_core.get_type_factory_instance().get_struct_type_for_argpack_ptr(dtype.dtype)
+                        ),
+                        k,
+                    ]
+                )
             elif isinstance(dtype, MatrixType):
                 # Convert MatrixType to StructType
                 if dtype.ndim == 1:

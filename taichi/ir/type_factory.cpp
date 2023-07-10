@@ -72,11 +72,14 @@ const Type *TypeFactory::get_argpack_type(
 const Type *TypeFactory::get_struct_type_for_argpack_ptr(
     DataType dt,
     const std::string &layout) {
-  auto *type_inner = this->get_struct_type(dt->get_type()->as<ArgPackType>()->elements(), layout)->as<StructType>();
-  auto *type_pointer = this->get_pointer_type(
-      const_cast<StructType *>(type_inner), false);
-  auto *type_outter = this->get_struct_type({{type_pointer, "data_ptr"}})
-                          ->as<StructType>();
+  auto *type_inner =
+      this->get_struct_type(dt->get_type()->as<ArgPackType>()->elements(),
+                            layout)
+          ->as<StructType>();
+  auto *type_pointer =
+      this->get_pointer_type(const_cast<StructType *>(type_inner), false);
+  auto *type_outter =
+      this->get_struct_type({{type_pointer, "data_ptr"}})->as<StructType>();
   return type_outter;
 }
 

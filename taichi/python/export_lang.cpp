@@ -1253,10 +1253,8 @@ void export_lang(py::module &m) {
            py::arg("dt"), py::arg("ndim"), py::arg("needs_grad"),
            py::return_value_policy::reference)
       .def("get_struct_type_for_argpack_ptr",
-           &TypeFactory::get_struct_type_for_argpack_ptr,
-           py::arg("dt"),
-           py::arg("layout") = "none",
-           py::return_value_policy::reference)
+           &TypeFactory::get_struct_type_for_argpack_ptr, py::arg("dt"),
+           py::arg("layout") = "none", py::return_value_policy::reference)
       .def(
           "get_argpack_type",
           [&](TypeFactory *factory,

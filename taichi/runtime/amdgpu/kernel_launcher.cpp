@@ -89,7 +89,8 @@ void KernelLauncher::launch_llvm_kernel(Handle handle,
         auto key_parent = key;
         key_parent.pop_back();
         auto *argpack_parent = ctx.argpack_ptrs[key_parent];
-        argpack_parent->set_arg_nested_argpack_ptr(key.back(), (uint64)device_ptrs[data_ptr_idx]);
+        argpack_parent->set_arg_nested_argpack_ptr(
+            key.back(), (uint64)device_ptrs[data_ptr_idx]);
       }
     }
   }

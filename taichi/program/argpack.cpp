@@ -123,7 +123,8 @@ void ArgPack::set_arg_uint(const std::vector<int> &i, uint64 val) const {
 void ArgPack::set_arg_nested_argpack(int i, const ArgPack &val) const {
   const std::vector<int> indices = {i, TypeFactory::DATA_PTR_POS_IN_ARGPACK};
   DataType element_dt = get_element_dt(indices);
-  write(indices, TypedConstant(element_dt, val.get_device_allocation_ptr_as_int()));
+  write(indices,
+        TypedConstant(element_dt, val.get_device_allocation_ptr_as_int()));
 }
 
 void ArgPack::set_arg_nested_argpack_ptr(int i, intptr_t val) const {

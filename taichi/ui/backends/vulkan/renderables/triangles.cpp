@@ -16,9 +16,10 @@ void Triangles::update_data(const TrianglesInfo &info) {
                           (int)info.renderable_info.has_per_vertex_color};
 
   void *mapped{nullptr};
-  RHI_VERIFY(app_context_->device().map(uniform_buffer_->get_ptr(0), &mapped));
+  RHI_VERIFY(app_context_->device().map(uniform_buffer_renderable_->get_ptr(0),
+                                        &mapped));
   memcpy(mapped, &ubo, sizeof(ubo));
-  app_context_->device().unmap(*uniform_buffer_);
+  app_context_->device().unmap(*uniform_buffer_renderable_);
 }
 
 Triangles::Triangles(AppContext *app_context, VertexAttributes vbo_attrs) {

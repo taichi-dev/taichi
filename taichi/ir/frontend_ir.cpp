@@ -608,6 +608,7 @@ void InternalFuncCallExpression::flatten(FlattenContext *ctx) {
 void ExternalTensorExpression::flatten(FlattenContext *ctx) {
   auto type =
       TypeFactory::get_instance().get_ndarray_struct_type(dt, ndim, needs_grad);
+  type = TypeFactory::get_instance().get_pointer_type((Type *)type);
 
   auto ptr = Stmt::make<ArgLoadStmt>(arg_id, type, /*is_ptr=*/true,
                                      /*create_load=*/false);
@@ -1234,6 +1235,21 @@ void ExternalTensorShapeAlongAxisExpression::flatten(FlattenContext *ctx) {
   stmt = ctx->back_stmt();
 }
 
+void ExternalTensorBasePtrExpression::type_check(const CompileConfig *) {
+  TI_ASSERT_INFO(ptr.is<ExternalTensorExpression>(),
+                 "Invalid ptr [{}] for ExternalTensorBasePtrExpression",
+                 ExpressionHumanFriendlyPrinter::expr_to_string(ptr));
+  ret_type = ptr.cast<ExternalTensorExpression>()->dt.get_element_type();
+  ret_type.set_is_pointer(true);
+}
+
+void ExternalTensorBasePtrExpression::flatten(FlattenContext *ctx) {
+  auto tensor = ptr.cast<ExternalTensorExpression>();
+  ctx->push_back<ExternalTensorBasePtrStmt>(tensor->arg_id, is_grad);
+  stmt = ctx->back_stmt();
+  stmt->ret_type = ret_type;
+}
+
 void GetElementExpression::type_check(const CompileConfig *config) {
   TI_ASSERT_TYPE_CHECKED(src);
   auto src_type = src->ret_type;
@@ -1671,62 +1687,84 @@ std::vector<Expr> ASTBuilder::expand_exprs(const std::vector<Expr> &exprs) {
   std::vector<Expr> expanded_exprs;
   for (auto expr : exprs) {
     TI_ASSERT_TYPE_CHECKED(expr);
-    if (auto struct_type = expr->ret_type.ptr_removed()->cast<StructType>()) {
-      auto num_elem = struct_type->elements().size();
-      for (int i = 0; i < num_elem; i++) {
-        std::vector<int> indices = {i};
-        auto elem = Expr(std::make_shared<GetElementExpression>(expr, indices));
-        elem.expr->ret_type = struct_type->get_element_type(indices);
-        expanded_exprs.push_back(elem);
-      }
-    } else if (!expr->ret_type.ptr_removed()->is<TensorType>()) {
-      expanded_exprs.push_back(expr);
-    } else {
-      // Expand TensorType expr
-      /*
-        Before:
-          TensorType<4 x i32> index = Expr;
 
-        After:
-          TensorType<4 x i32>* id_expr = FrontendAllocaStmt(TensorType<4 x i32>)
-          i32 ind0 = IndexExpression(id_expr, 0)
-          i32 ind1 = IndexExpression(id_expr, 1)
-          i32 ind2 = IndexExpression(id_expr, 2)
-          i32 ind3 = IndexExpression(id_expr, 3)
-
-          return {ind0, ind1, ind2, ind3}
-
-      */
-      auto tensor_type = expr->ret_type.ptr_removed()->cast<TensorType>();
-
-      Expr id_expr;
-      if (expr.is<IdExpression>()) {
-        id_expr = expr;
+    auto expand_tensor_or_scalar = [&](const Expr &expr) {
+      if (!expr->ret_type.ptr_removed()->is<TensorType>()) {
+        expanded_exprs.push_back(expr);
       } else {
-        id_expr = make_var(expr, expr->tb);
-      }
-      auto shape = tensor_type->get_shape();
-      if (shape.size() == 1) {
-        for (int i = 0; i < shape[0]; i++) {
-          auto ind = Expr(std::make_shared<IndexExpression>(
-              id_expr, ExprGroup(Expr(i)), expr->tb));
-          ind->type_check(nullptr);
-          expanded_exprs.push_back(ind);
+        // Expand TensorType expr
+        // clang-format off
+        /*
+          Before:
+            TensorType<4 x i32> index = Expr;
+
+          After:
+            TensorType<4 x i32>* id_expr = FrontendAllocaStmt(TensorType<4 x i32>)
+            i32 ind0 = IndexExpression(id_expr, 0)
+            i32 ind1 = IndexExpression(id_expr, 1)
+            i32 ind2 = IndexExpression(id_expr, 2)
+            i32 ind3 = IndexExpression(id_expr, 3)
+
+            return {ind0, ind1, ind2, ind3}
+
+         */
+        // clang-format on
+        auto tensor_type = expr->ret_type.ptr_removed()->cast<TensorType>();
+
+        Expr id_expr;
+        if (expr.is<IdExpression>()) {
+          id_expr = expr;
+        } else {
+          id_expr = make_var(expr, expr->tb);
         }
-      } else {
-        TI_ASSERT(shape.size() == 2);
-        for (int i = 0; i < shape[0]; i++) {
-          for (int j = 0; j < shape[1]; j++) {
+        auto shape = tensor_type->get_shape();
+        if (shape.size() == 1) {
+          for (int i = 0; i < shape[0]; i++) {
             auto ind = Expr(std::make_shared<IndexExpression>(
-                id_expr, ExprGroup(Expr(i), Expr(j)), expr->tb));
+                id_expr, ExprGroup(Expr(i)), expr->tb));
             ind->type_check(nullptr);
             expanded_exprs.push_back(ind);
           }
+        } else {
+          TI_ASSERT(shape.size() == 2);
+          for (int i = 0; i < shape[0]; i++) {
+            for (int j = 0; j < shape[1]; j++) {
+              auto ind = Expr(std::make_shared<IndexExpression>(
+                  id_expr, ExprGroup(Expr(i), Expr(j)), expr->tb));
+              ind->type_check(nullptr);
+              expanded_exprs.push_back(ind);
+            }
+          }
         }
       }
+    };
+
+    std::function<void(const Expr &, const StructType *, std::vector<int> &)>
+        expand_struct = [&](const Expr &expr, const StructType *struct_type,
+                            std::vector<int> &indices) {
+          auto num_elem = struct_type->elements().size();
+          for (int i = 0; i < num_elem; i++) {
+            indices.push_back(i);
+            auto element_type = struct_type->get_element_type({i});
+            if (auto element_struct_type = element_type->cast<StructType>()) {
+              expand_struct(expr, element_struct_type, indices);
+            } else {
+              auto elem =
+                  Expr(std::make_shared<GetElementExpression>(expr, indices));
+              elem.expr->ret_type = element_type;
+              expand_tensor_or_scalar(elem);
+            }
+            indices.pop_back();
+          }
+        };
+    auto type = expr->ret_type.ptr_removed();
+    if (auto struct_type = type->cast<StructType>()) {
+      std::vector<int> indices;
+      expand_struct(expr, struct_type, indices);
+    } else {
+      expand_tensor_or_scalar(expr);
     }
   }
-
   return expanded_exprs;
 }
 

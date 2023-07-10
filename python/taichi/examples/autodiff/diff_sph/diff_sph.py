@@ -566,7 +566,7 @@ def main():
     if TRAIN:
         show_window = False
     window = ti.ui.Window("Diff SPH", screen_res, show_window=show_window)
-    scene = ti.ui.Scene()
+    scene = window.get_scene()
     camera = ti.ui.Camera()
     camera.position(0.5, 1.0, 2.0)
     camera.up(0.0, 1.0, 0.0)

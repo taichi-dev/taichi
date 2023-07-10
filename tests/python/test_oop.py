@@ -37,6 +37,38 @@ def test_classfunc():
             assert arr.val[i, j] == i * j * 2
 
 
+@test_utils.test(arch=[ti.cpu, ti.cuda])
+def test_class_real_func():
+    @ti.data_oriented
+    class Array2D:
+        def __init__(self, n, m):
+            self.n = n
+            self.m = m
+            self.val = ti.field(ti.f32, shape=(n, m))
+
+        @ti.experimental.real_func
+        def inc(self, i: ti.i32, j: ti.i32):
+            self.val[i, j] += i * j
+
+        @ti.experimental.real_func
+        def mul(self, i: ti.i32, j: ti.i32) -> ti.i32:
+            return i * j
+
+        @ti.kernel
+        def fill(self):
+            for i, j in self.val:
+                self.inc(i, j)
+                self.val[i, j] += self.mul(i, j)
+
+    arr = Array2D(128, 128)
+
+    arr.fill()
+
+    for i in range(arr.n):
+        for j in range(arr.m):
+            assert arr.val[i, j] == i * j * 2
+
+
 @test_utils.test(arch=get_host_arch_list())
 def test_oop():
     @ti.data_oriented

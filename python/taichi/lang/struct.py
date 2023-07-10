@@ -646,7 +646,11 @@ class StructType(CompoundType):
             return False
         if list(self.members.keys()) != list(instance._Struct__entries.keys()):
             return False
-        if hasattr(instance, '_Struct__dtype') and instance._Struct__dtype != None and instance._Struct__dtype != self.dtype:
+        if (
+            hasattr(instance, "_Struct__dtype")
+            and instance._Struct__dtype != None
+            and instance._Struct__dtype != self.dtype
+        ):
             return False
         for index, (name, dtype) in enumerate(self.members.items()):
             val = instance._members[index]

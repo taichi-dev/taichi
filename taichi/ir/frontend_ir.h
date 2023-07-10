@@ -521,7 +521,8 @@ class ExternalTensorExpression : public Expression {
   }
 
   void type_check(const CompileConfig *config) override {
-    ret_type = dt;
+    ret_type = TypeFactory::get_instance().get_ndarray_struct_type(dt, ndim,
+                                                                   needs_grad);
     ret_type.set_is_pointer(true);
     config_ = config;
   }
@@ -809,6 +810,22 @@ class ExternalTensorShapeAlongAxisExpression : public Expression {
 
   ExternalTensorShapeAlongAxisExpression(const Expr &ptr, int axis)
       : ptr(ptr), axis(axis) {
+  }
+
+  void type_check(const CompileConfig *config) override;
+
+  void flatten(FlattenContext *ctx) override;
+
+  TI_DEFINE_ACCEPT_FOR_EXPRESSION
+};
+
+class ExternalTensorBasePtrExpression : public Expression {
+ public:
+  Expr ptr;
+  bool is_grad;
+
+  explicit ExternalTensorBasePtrExpression(const Expr &ptr, bool is_grad)
+      : ptr(ptr), is_grad(is_grad) {
   }
 
   void type_check(const CompileConfig *config) override;

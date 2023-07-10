@@ -40,8 +40,7 @@ struct SceneUBO {
   int point_light_count;
 };
 
-layout(binding = 4) uniform UniformBufferObject {
-  SceneUBO scene;
+layout(binding = 4) uniform UBORenderable {
   vec3 color;
   float line_width;
   int per_vertex_color_offset;
@@ -50,19 +49,27 @@ layout(binding = 4) uniform UniformBufferObject {
   int start_index;
   int num_vertices;
   int is_indexed;
+}
+ubo_renderable;
+
+layout(binding = 5) uniform UBOScene {
+  SceneUBO scene;
+  float window_width;
+  float window_height;
+  float tan_half_fov;
   float aspect_ratio;
 }
-ubo;
+ubo_scene;
 
 layout(local_size_x = 256, local_size_y = 1, local_size_z = 1) in;
 void main() {
   int thread_idx = int(gl_GlobalInvocationID.x);
-  if (thread_idx * 2 >= ubo.num_vertices) return;
+  if (thread_idx * 2 >= ubo_renderable.num_vertices) return;
 
-  uint vert0 = ubo.start_vertex;
-  uint vert1 = ubo.start_vertex;
-  if (ubo.is_indexed != 0) {
-    int index = thread_idx * 2 + ubo.start_index;
+  uint vert0 = ubo_renderable.start_vertex;
+  uint vert1 = ubo_renderable.start_vertex;
+  if (ubo_renderable.is_indexed != 0) {
+    int index = thread_idx * 2 + ubo_renderable.start_index;
     vert0 += ib_in[index];
     vert1 += ib_in[index + 1];
   } else {
@@ -70,33 +77,33 @@ void main() {
     vert1 += thread_idx * 2 + 1;
   }
 
-  vec4 pos0 = vec4(vb_in[vert0 * ubo.vertex_stride    ],
-                   vb_in[vert0 * ubo.vertex_stride + 1],
-                   vb_in[vert0 * ubo.vertex_stride + 2],
+  vec4 pos0 = vec4(vb_in[vert0 * ubo_renderable.vertex_stride    ],
+                   vb_in[vert0 * ubo_renderable.vertex_stride + 1],
+                   vb_in[vert0 * ubo_renderable.vertex_stride + 2],
                    1.0);
-  pos0 = ubo.scene.projection * ubo.scene.view * pos0;
-  vec4 color0 = vec4(ubo.color, 1.0);
-  vec4 pos1 = vec4(vb_in[vert1 * ubo.vertex_stride    ],
-                   vb_in[vert1 * ubo.vertex_stride + 1],
-                   vb_in[vert1 * ubo.vertex_stride + 2],
+  pos0 = ubo_scene.scene.projection * ubo_scene.scene.view * pos0;
+  vec4 color0 = vec4(ubo_renderable.color, 1.0);
+  vec4 pos1 = vec4(vb_in[vert1 * ubo_renderable.vertex_stride    ],
+                   vb_in[vert1 * ubo_renderable.vertex_stride + 1],
+                   vb_in[vert1 * ubo_renderable.vertex_stride + 2],
                    1.0);
-  pos1 = ubo.scene.projection * ubo.scene.view * pos1;
-  vec4 color1 = vec4(ubo.color, 1.0);
+  pos1 = ubo_scene.scene.projection * ubo_scene.scene.view * pos1;
+  vec4 color1 = vec4(ubo_renderable.color, 1.0);
 
-  if (ubo.per_vertex_color_offset > 0) {
-    color0 = vec4(vb_in[vert0 * ubo.vertex_stride + ubo.per_vertex_color_offset],
-                  vb_in[vert0 * ubo.vertex_stride + ubo.per_vertex_color_offset + 1],
-                  vb_in[vert0 * ubo.vertex_stride + ubo.per_vertex_color_offset + 2],
+  if (ubo_renderable.per_vertex_color_offset > 0) {
+    color0 = vec4(vb_in[vert0 * ubo_renderable.vertex_stride + ubo_renderable.per_vertex_color_offset],
+                  vb_in[vert0 * ubo_renderable.vertex_stride + ubo_renderable.per_vertex_color_offset + 1],
+                  vb_in[vert0 * ubo_renderable.vertex_stride + ubo_renderable.per_vertex_color_offset + 2],
                   1.0);
-    color1 = vec4(vb_in[vert1 * ubo.vertex_stride + ubo.per_vertex_color_offset],
-                  vb_in[vert1 * ubo.vertex_stride + ubo.per_vertex_color_offset + 1],
-                  vb_in[vert1 * ubo.vertex_stride + ubo.per_vertex_color_offset + 2],
+    color1 = vec4(vb_in[vert1 * ubo_renderable.vertex_stride + ubo_renderable.per_vertex_color_offset],
+                  vb_in[vert1 * ubo_renderable.vertex_stride + ubo_renderable.per_vertex_color_offset + 1],
+                  vb_in[vert1 * ubo_renderable.vertex_stride + ubo_renderable.per_vertex_color_offset + 2],
                   1.0);
   }
 
-  vec2 aspect_adjust = vec2(ubo.aspect_ratio, 1.0);
+  vec2 aspect_adjust = vec2(ubo_scene.aspect_ratio, 1.0);
   vec2 dir = normalize((pos1.xy / pos1.w - pos0.xy / pos0.w) * aspect_adjust);
-  vec2 tangent = vec2(-dir.y, dir.x) * ubo.line_width / aspect_adjust;
+  vec2 tangent = vec2(-dir.y, dir.x) * ubo_renderable.line_width / aspect_adjust;
 
   vec4 out_pos00 = pos0;
   vec4 out_pos01 = pos0;

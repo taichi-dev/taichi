@@ -295,9 +295,9 @@ void offload_to_executable(IRNode *ir,
   if (config.real_matrix_scalarize) {
     if (irpass::scalarize(ir, half2_optimization_enabled)) {
       // Remove redundant MatrixInitStmt inserted during scalarization
-      irpass::full_simplify(ir, config,
-                            {lower_global_access, /*autodiff_enabled*/ false,
-                             kernel->get_name(), verbose});
+      irpass::full_simplify(
+          ir, config,
+          {false, /*autodiff_enabled*/ false, kernel->get_name(), verbose});
       print("Scalarized");
     }
   }
@@ -354,13 +354,12 @@ void compile_function(IRNode *ir,
       print("Lowered");
     }
 
-    if (config.real_matrix_scalarize) {
-      if (irpass::scalarize(ir)) {
-        // Remove redundant MatrixInitStmt inserted during scalarization
-        irpass::die(ir);
-        print("Scalarized");
-      }
-    }
+    // Removes MatrixOfMatrixPtrStmt & MatrixOfGlobalPtrStmt
+    irpass::lower_matrix_ptr(ir);
+    print("Matrix ptr lowered");
+
+    irpass::demote_atomics(ir, config);
+    print("Atomics demoted");
     func->set_ir_stage(Function::IRStage::BeforeLowerAccess);
   }
 
@@ -383,6 +382,14 @@ void compile_function(IRNode *ir,
 
     irpass::demote_operations(ir, config);
     print("Operations demoted");
+
+    if (config.real_matrix_scalarize) {
+      if (irpass::scalarize(ir)) {
+        // Remove redundant MatrixInitStmt inserted during scalarization
+        irpass::die(ir);
+        print("Scalarized");
+      }
+    }
 
     irpass::full_simplify(ir, config,
                           {true, autodiff_mode != AutodiffMode::kNone,

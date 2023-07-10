@@ -21,6 +21,7 @@ class CacheLoopInvariantGlobalVars : public LoopInvariantDetector {
   DelayedIRModifier modifier;
   std::unordered_map<const SNode *, GlobalPtrStmt *> loop_unique_ptr_;
   std::unordered_map<int, ExternalPtrStmt *> loop_unique_arr_ptr_;
+  std::unordered_set<MatrixPtrStmt *> loop_unique_matrix_ptr_;
 
   OffloadedStmt *current_offloaded;
 
@@ -34,8 +35,10 @@ class CacheLoopInvariantGlobalVars : public LoopInvariantDetector {
         stmt->task_type == OffloadedTaskType::struct_for) {
       auto uniquely_accessed_pointers =
           irpass::analysis::gather_uniquely_accessed_pointers(stmt);
-      loop_unique_ptr_ = std::move(uniquely_accessed_pointers.first);
-      loop_unique_arr_ptr_ = std::move(uniquely_accessed_pointers.second);
+      loop_unique_ptr_ = std::move(std::get<0>(uniquely_accessed_pointers));
+      loop_unique_arr_ptr_ = std::move(std::get<1>(uniquely_accessed_pointers));
+      loop_unique_matrix_ptr_ =
+          std::move(std::get<2>(uniquely_accessed_pointers));
     }
     current_offloaded = stmt;
     // We don't need to visit TLS/BLS prologues/epilogues.
@@ -63,6 +66,11 @@ class CacheLoopInvariantGlobalVars : public LoopInvariantDetector {
       global_ptr = stmt->as<GlobalPtrStmt>();
     } else if (stmt->is<MatrixPtrStmt>() &&
                stmt->as<MatrixPtrStmt>()->origin->is<GlobalPtrStmt>()) {
+      if (loop_unique_matrix_ptr_.find(stmt->as<MatrixPtrStmt>()) ==
+          loop_unique_matrix_ptr_.end()) {
+        return false;
+      }
+
       is_global_ptr_stmt = true;
       global_ptr = stmt->as<MatrixPtrStmt>()->origin->as<GlobalPtrStmt>();
     }
@@ -92,6 +100,11 @@ class CacheLoopInvariantGlobalVars : public LoopInvariantDetector {
       dest_ptr = stmt->as<ExternalPtrStmt>();
     } else if (stmt->is<MatrixPtrStmt>() &&
                stmt->as<MatrixPtrStmt>()->origin->is<ExternalPtrStmt>()) {
+      if (loop_unique_matrix_ptr_.find(stmt->as<MatrixPtrStmt>()) ==
+          loop_unique_matrix_ptr_.end()) {
+        return false;
+      }
+
       is_external_ptr_stmt = true;
       dest_ptr = stmt->as<MatrixPtrStmt>()->origin->as<ExternalPtrStmt>();
     }

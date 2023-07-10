@@ -207,6 +207,12 @@ class ExpressionHumanFriendlyPrinter : public ExpressionPrinter {
     emit(", ", expr->axis, ')');
   }
 
+  void visit(ExternalTensorBasePtrExpression *expr) override {
+    emit("external_tensor_base_ptr(");
+    expr->ptr->accept(this);
+    emit(", is_grad=", expr->is_grad, ')');
+  }
+
   void visit(MeshPatchIndexExpression *expr) override {
     emit("mesh_patch_idx()");
   }

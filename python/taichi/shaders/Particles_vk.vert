@@ -14,18 +14,22 @@ struct SceneUBO {
   int point_light_count;
 };
 
-layout(binding = 0) uniform UBO {
-  SceneUBO scene;
+layout(binding = 0) uniform UBORenderable {
   vec3 color;
   int use_per_vertex_color;
   int use_per_vertex_radius;
   float radius;
+}
+ubo_renderable;
+
+layout(binding = 1) uniform UBOScene {
+  SceneUBO scene;
   float window_width;
   float window_height;
   float tan_half_fov;
+  float aspect_ratio;
 }
-ubo;
-
+ubo_scene;
 layout(location = 0) out vec4 pos_camera_space;
 layout(location = 1) out vec4 selected_color;
 layout(location = 2) out vec2 pos_2d;
@@ -41,28 +45,28 @@ const vec2 offsets[6] = {
 };
 
 void main() {
-  float distance = length(in_position - ubo.scene.camera_pos);
+  float distance = length(in_position - ubo_scene.scene.camera_pos);
 
-  if (ubo.use_per_vertex_radius == 0) {
-    selected_radius = ubo.radius;
+  if (ubo_renderable.use_per_vertex_radius == 0) {
+    selected_radius = ubo_renderable.radius;
   } else {
     selected_radius = in_normal.x;
   }
 
-  float hsize = selected_radius / (ubo.tan_half_fov * distance);
+  float hsize = selected_radius / (ubo_scene.tan_half_fov * distance);
 
-  pos_camera_space = ubo.scene.view * vec4(in_position, 1.0);
+  pos_camera_space = ubo_scene.scene.view * vec4(in_position, 1.0);
 
   pos_2d = offsets[gl_VertexIndex % 6];
 
-  vec4 pos_proj = ubo.scene.projection * pos_camera_space;
-  pos_proj.xy += pos_2d * vec2(hsize, hsize * ubo.window_width / ubo.window_height) * pos_proj.w;
+  vec4 pos_proj = ubo_scene.scene.projection * pos_camera_space;
+  pos_proj.xy += pos_2d * vec2(hsize, hsize * ubo_scene.window_width / ubo_scene.window_height) * pos_proj.w;
 
   gl_Position = pos_proj;
   gl_Position.y *= -1.0;
 
-  if (ubo.use_per_vertex_color == 0) {
-    selected_color = vec4(ubo.color, 1.0);
+  if (ubo_renderable.use_per_vertex_color == 0) {
+    selected_color = vec4(ubo_renderable.color, 1.0);
   } else {
     selected_color = in_color;
   }

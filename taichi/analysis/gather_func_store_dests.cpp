@@ -62,7 +62,17 @@ class GatherFuncStoreDests : public BasicStmtVisitor {
       return;
     }
     auto result = irpass::analysis::get_store_destination(stmt);
-    results_.insert(result.begin(), result.end());
+    for (const auto &dest : result) {
+      if (dest->is<ExternalPtrStmt>()) {
+        continue;
+      }
+      if (auto matrix_ptr = dest->cast<MatrixPtrStmt>()) {
+        if (matrix_ptr->origin->is<ExternalPtrStmt>()) {
+          continue;
+        }
+      }
+      results_.insert(dest);
+    }
   }
 
   void visit(FuncCallStmt *stmt) override {

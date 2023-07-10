@@ -195,7 +195,7 @@ def test_rw_texture_2d_struct_for_dim_check():
 
     with pytest.raises(
         ti.TaichiRuntimeError,
-        match="RWTextureType dimension mismatch: expected 2, got 3",
+        match="RWTextureType dimension mismatch for argument tex: expected 2, got 3",
     ) as e:
         write(tex)
 
@@ -211,7 +211,7 @@ def test_rw_texture_wrong_fmt():
 
     with pytest.raises(
         ti.TaichiRuntimeError,
-        match="RWTextureType format mismatch: expected Format.r32f, got Format.rgba8",
+        match="RWTextureType format mismatch for argument tex: expected Format.r32f, got Format.rgba8",
     ) as e:
         write(tex)
 
@@ -227,6 +227,6 @@ def test_rw_texture_wrong_ndim():
 
     with pytest.raises(
         ti.TaichiRuntimeError,
-        match="RWTextureType dimension mismatch: expected 1, got 2",
+        match="RWTextureType dimension mismatch for argument tex: expected 1, got 2",
     ) as e:
         write(tex)

@@ -45,30 +45,41 @@ struct SceneLinesInfo {
 
 class SceneBase {
  public:
-  void set_camera(const Camera &camera) {
-    camera_ = camera;
-  }
-  void lines(const SceneLinesInfo &info) {
-    scene_lines_infos_.push_back(info);
-    scene_lines_infos_.back().object_id = next_object_id_++;
-  }
-  void mesh(const MeshInfo &info) {
-    mesh_infos_.push_back(info);
-    mesh_infos_.back().object_id = next_object_id_++;
-  }
-  void particles(const ParticlesInfo &info) {
-    particles_infos_.push_back(info);
-    particles_infos_.back().object_id = next_object_id_++;
-  }
-  void point_light(glm::vec3 pos, glm::vec3 color) {
-    point_lights_.push_back({glm::vec4(pos, 1.0), glm::vec4(color, 1.0)});
-  }
-  void ambient_light(glm::vec3 color) {
-    ambient_light_color_ = color;
-  }
+  virtual void set_camera(const Camera &camera) = 0;
+  virtual void lines(const SceneLinesInfo &info) = 0;
+  virtual void mesh(const MeshInfo &info) = 0;
+  virtual void particles(const ParticlesInfo &info) = 0;
+  virtual void point_light(glm::vec3 pos, glm::vec3 color) = 0;
+  virtual void ambient_light(glm::vec3 color) = 0;
   virtual ~SceneBase() = default;
 
- protected:
+  struct SceneData {
+    alignas(16) glm::vec3 camera_pos;
+    alignas(16) glm::mat4 view;
+    alignas(16) glm::mat4 projection;
+    alignas(16) glm::vec3 ambient_light;
+    int point_light_count;
+  };
+  SceneData current_scene_data_;
+
+  struct UBOScene {
+    SceneData scene;
+    float window_width;
+    float window_height;
+    float tan_half_fov;
+    float aspect_ratio;
+  };
+
+  void update_ubo(float aspect_ratio) {
+    current_scene_data_.camera_pos = camera_.position;
+    current_scene_data_.view = camera_.get_view_matrix();
+    current_scene_data_.projection =
+        camera_.get_projection_matrix(aspect_ratio);
+    current_scene_data_.point_light_count = point_lights_.size();
+
+    current_scene_data_.ambient_light = ambient_light_color_;
+  }
+
   Camera camera_;
   glm::vec3 ambient_light_color_ = glm::vec3(0.1, 0.1, 0.1);
   std::vector<PointLight> point_lights_;

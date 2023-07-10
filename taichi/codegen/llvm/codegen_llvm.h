@@ -326,6 +326,8 @@ class TaskCodeGenLLVM : public IRVisitor, public LLVMModuleBuilder {
 
   void visit(ExternalTensorShapeAlongAxisStmt *stmt) override;
 
+  void visit(ExternalTensorBasePtrStmt *stmt) override;
+
   virtual bool kernel_argument_by_val() const {
     return false;  // on CPU devices just pass in a pointer
   }

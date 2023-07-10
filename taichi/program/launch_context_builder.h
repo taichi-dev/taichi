@@ -54,6 +54,7 @@ class LaunchContextBuilder {
   void set_ndarray_ptrs(const std::vector<int> &arg_id,
                         uint64 data_ptr,
                         uint64 grad_ptr);
+  void set_argpack_ptr(const std::vector<int> &arg_id, uint64 data_ptr);
 
   template <typename T>
   T get_arg(const std::vector<int> &i);

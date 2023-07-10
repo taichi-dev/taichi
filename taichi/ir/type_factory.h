@@ -64,6 +64,7 @@ class TypeFactory {
   constexpr static int SHAPE_POS_IN_NDARRAY = 0;
   constexpr static int DATA_PTR_POS_IN_NDARRAY = 1;
   constexpr static int GRAD_PTR_POS_IN_NDARRAY = 2;
+  constexpr static int DATA_PTR_POS_IN_ARGPACK = 0;
 
  private:
   TypeFactory();
@@ -91,9 +92,9 @@ class TypeFactory {
   std::mutex argpack_mut_;
 
   // TODO: is_bit_ptr?
-  std::unordered_map<std::pair<Type *, bool>,
+  std::unordered_map<std::pair<const Type *, bool>,
                      std::unique_ptr<Type>,
-                     hashing::Hasher<std::pair<Type *, bool>>>
+                     hashing::Hasher<std::pair<const Type *, bool>>>
       pointer_types_;
   std::mutex pointer_mut_;
 

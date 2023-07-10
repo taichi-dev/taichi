@@ -41,6 +41,7 @@ def test_argpack_multiple():
     assert foo(pack1, pack2) == test_utils.approx(1 * 2.1 + 2.0, rel=1e-3)
 
 
+@pytest.mark.skip(reason="nested argpacks not supported currently")
 @test_utils.test(arch=[ti.gles, ti.opengl, ti.vulkan, ti.metal, ti.dx11])
 def test_argpack_nested():
     arr = ti.ndarray(dtype=ti.math.vec3, shape=(4, 4))

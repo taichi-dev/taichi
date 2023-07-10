@@ -71,7 +71,7 @@ class ArgPack:
         self.__dtype = dtype
         self.__argpack = impl.get_runtime().prog.create_argpack(self.__dtype)
         for i, (k, v) in enumerate(self.__entries.items()):
-            self._write_to_device(self.__annotations[k], type(v), v, i)
+            self._write_to_device(self.__annotations[k], type(v), v, self._calc_element_true_index(i))
 
     def __del__(self):
         if impl is not None and impl.get_runtime() is not None and impl.get_runtime().prog is not None:
@@ -119,7 +119,7 @@ class ArgPack:
 
     def __setitem__(self, key, value):
         self.__entries[key] = value
-        index = list(self.__annotations).index(key)
+        index = self._calc_element_true_index(list(self.__annotations).index(key))
         self._write_to_device(self.__annotations[key], type(value), value, index)
 
     def _set_entries(self, value):
@@ -180,6 +180,19 @@ class ArgPack:
             for k, v in self.__entries.items()
         }
         return res_dict
+
+    def _calc_element_true_index(self, old_index):
+        for i in range(old_index):
+            anno = list(self.__annotations.values())[i]
+            if (
+                isinstance(anno, sparse_matrix_builder)
+                or isinstance(anno, ndarray_type.NdarrayType)
+                or isinstance(anno, texture_type.TextureType)
+                or isinstance(anno, texture_type.RWTextureType)
+                or isinstance(anno, ndarray_type.NdarrayType)
+            ):
+                old_index -= 1
+        return old_index
 
     def _write_to_device(self, needed, provided, v, index):
         if isinstance(needed, ArgPackType):
@@ -280,8 +293,7 @@ class ArgPackType(CompoundType):
                 elements.append([dtype.dtype, k])
             elif isinstance(dtype, ArgPackType):
                 self.members[k] = dtype
-                # Use i32 as a placeholder for nested argpacks
-                elements.append([primitive_types.i32, k])
+                raise TaichiSyntaxError("ArgPack nesting is not supported currently.")
             elif isinstance(dtype, MatrixType):
                 # Convert MatrixType to StructType
                 if dtype.ndim == 1:
@@ -292,34 +304,19 @@ class ArgPackType(CompoundType):
                 elements.append([_ti_core.get_type_factory_instance().get_struct_type(elements_), k])
             elif isinstance(dtype, sparse_matrix_builder):
                 self.members[k] = dtype
-                elements.append([cook_dtype(primitive_types.u64), k])
             elif isinstance(dtype, ndarray_type.NdarrayType):
                 self.members[k] = dtype
-                root_dtype = dtype.dtype
-                while isinstance(root_dtype, MatrixType):
-                    root_dtype = root_dtype.dtype
-                elements.append(
-                    [
-                        _ti_core.DataType(
-                            _ti_core.get_type_factory_instance().get_ndarray_struct_type(root_dtype, dtype.ndim, False)
-                        ),
-                        k,
-                    ]
-                )
             elif isinstance(dtype, texture_type.RWTextureType):
                 self.members[k] = dtype
-                elements.append(
-                    [_ti_core.DataType(_ti_core.get_type_factory_instance().get_rwtexture_struct_type()), k]
-                )
             elif isinstance(dtype, texture_type.TextureType):
                 self.members[k] = dtype
-                elements.append(
-                    [_ti_core.DataType(_ti_core.get_type_factory_instance().get_rwtexture_struct_type()), k]
-                )
             else:
                 dtype = cook_dtype(dtype)
                 self.members[k] = dtype
                 elements.append([dtype, k])
+            if len(elements) == 0:
+                # Use i32 as a placeholder for empty argpacks
+                elements.append([primitive_types.i32, k])
         self.dtype = _ti_core.get_type_factory_instance().get_argpack_type(elements)
 
     def __call__(self, *args, **kwargs):

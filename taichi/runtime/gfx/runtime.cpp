@@ -101,8 +101,6 @@ class HostDeviceContextBlitter {
           host_ctx_.set_ndarray_ptrs(
               indices, addr, (uint64)host_ctx_.array_ptrs[grad_ptr_idx]);
         }
-      } else if (arg.is_argpack) {
-        // Temporarily do nothing here.
       }
     }
 
@@ -476,15 +474,20 @@ void GfxRuntime::launch_kernel(KernelHandle handle,
           any_arrays[indices] = *allocated.get();
           ctx_buffers_.push_back(std::move(allocated));
         }
-      } else if (arg.is_argpack) {
-        TI_ASSERT(host_ctx.device_allocation_type[indices] ==
-                  LaunchContextBuilder::DevAllocType::kArgPack);
-        TI_ASSERT(host_ctx.argpack_ptrs.count(indices));
-        const ArgPack *argpack = host_ctx.argpack_ptrs[indices];
-        DeviceAllocation devalloc = argpack->get_device_allocation();
-        argpacks_in_use_.insert(devalloc.alloc_id);
-        argpacks[indices] = argpack;
       }
+    }
+
+    auto argpack_types =
+        ti_kernel->ti_kernel_attribs().ctx_attribs.argpack_types();
+    for (const auto &kv : argpack_types) {
+      const auto &indices = kv.first;
+      TI_ASSERT(host_ctx.device_allocation_type[indices] ==
+                LaunchContextBuilder::DevAllocType::kArgPack);
+      TI_ASSERT(host_ctx.argpack_ptrs.count(indices));
+      const ArgPack *argpack = host_ctx.argpack_ptrs[indices];
+      DeviceAllocation devalloc = argpack->get_device_allocation();
+      argpacks_in_use_.insert(devalloc.alloc_id);
+      argpacks[indices] = argpack;
     }
 
     ctx_blitter->host_to_device(any_arrays, ext_array_size, argpacks);

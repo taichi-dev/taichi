@@ -173,7 +173,8 @@ class UnaryOpStmt : public Stmt {
  * Load a kernel argument. The data type should be known when constructing this
  * statement. |is_ptr| should be true iff the result can be used as a base
  * pointer of an ExternalPtrStmt. |arg_depth| indicates the nested depth in the
- * argpack of this value.
+ * argpack of this value. |argpack_ptr| holds buffer for argpack, only valid if
+ * |arg_depth| > 0.
  */
 class ArgLoadStmt : public Stmt {
  public:

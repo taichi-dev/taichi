@@ -36,8 +36,8 @@ KernelCompiler::CKDPtr KernelCompiler::compile(
   auto codegen = KernelCodeGen::create(compile_config, &kernel_def, &chi_ir,
                                        *config_.tlctx);
   data.compiled_data = codegen->compile_kernel_to_module();
-  data.args.reserve(kernel_def.not_flattened_parameters.size());
-  for (const auto &p : kernel_def.not_flattened_parameters)
+  data.args.reserve(kernel_def.nested_parameters.size());
+  for (const auto &p : kernel_def.nested_parameters)
     data.args.push_back(p);
   data.rets = kernel_def.rets;
   data.args_type = kernel_def.args_type;

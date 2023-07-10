@@ -4,8 +4,7 @@ import taichi as ti
 from tests import test_utils
 
 
-@pytest.mark.skip(reason="Temporarily disabled argpack functionalities")
-@test_utils.test()
+@test_utils.test(arch=[ti.gles, ti.opengl, ti.vulkan, ti.metal, ti.dx11])
 def test_argpack_basic():
     pack_type = ti.types.argpack(a=ti.i32, b=bool, c=ti.f32)
     pack1 = pack_type(a=1, b=False, c=2.1)
@@ -24,8 +23,7 @@ def test_argpack_basic():
     assert foo(pack2) == test_utils.approx(2 + 2.1, rel=1e-3)
 
 
-@pytest.mark.skip(reason="Temporarily disabled argpack functionalities")
-@test_utils.test()
+@test_utils.test(arch=[ti.gles, ti.opengl, ti.vulkan, ti.metal, ti.dx11])
 def test_argpack_multiple():
     arr = ti.ndarray(dtype=ti.math.vec3, shape=(4, 4))
     arr.fill([1.0, 2.0, 3.0])
@@ -43,8 +41,7 @@ def test_argpack_multiple():
     assert foo(pack1, pack2) == test_utils.approx(1 * 2.1 + 2.0, rel=1e-3)
 
 
-@pytest.mark.skip(reason="Temporarily disabled argpack functionalities")
-@test_utils.test()
+@test_utils.test(arch=[ti.gles, ti.opengl, ti.vulkan, ti.metal, ti.dx11])
 def test_argpack_nested():
     arr = ti.ndarray(dtype=ti.math.vec3, shape=(4, 4))
     arr.fill([1.0, 2.0, 3.0])
@@ -71,8 +68,7 @@ def test_argpack_nested():
     assert h(pack) == 233
 
 
-@pytest.mark.skip(reason="Temporarily disabled argpack functionalities")
-@test_utils.test()
+@test_utils.test(arch=[ti.gles, ti.opengl, ti.vulkan, ti.metal, ti.dx11])
 def test_argpack_as_return():
     pack_type = ti.types.argpack(a=ti.i32, b=bool)
 
@@ -85,8 +81,7 @@ def test_argpack_as_return():
         foo()
 
 
-@pytest.mark.skip(reason="Temporarily disabled argpack functionalities")
-@test_utils.test()
+@test_utils.test(arch=[ti.gles, ti.opengl, ti.vulkan, ti.metal, ti.dx11])
 def test_argpack_as_struct_type_element():
     with pytest.raises(ValueError, match="Invalid data type <ti.ArgPackType a=i32, b=u1>"):
         pack_type = ti.types.argpack(a=ti.i32, b=bool)
@@ -94,8 +89,7 @@ def test_argpack_as_struct_type_element():
         print(struct_with_argpack_inside)
 
 
-@pytest.mark.skip(reason="Temporarily disabled argpack functionalities")
-@test_utils.test()
+@test_utils.test(arch=[ti.gles, ti.opengl, ti.vulkan, ti.metal, ti.dx11])
 def test_argpack_with_ndarray():
     arr = ti.ndarray(dtype=ti.math.vec3, shape=(4, 4))
     arr.fill([1.0, 2.0, 3.0])

@@ -31,6 +31,7 @@ using pStmt = std::unique_ptr<Stmt>;
 class SNode;
 
 class Kernel;
+class Callable;
 struct CompileConfig;
 
 enum class SNodeAccessFlag : int { block_local, read_only, mesh_local };
@@ -453,7 +454,7 @@ class Stmt : public IRNode {
   virtual void replace_operand_with(Stmt *old_stmt, Stmt *new_stmt);
 
   IRNode *get_parent() const override;
-  virtual Kernel *get_kernel() const;
+  virtual Callable *get_callable() const;
 
   // returns the inserted stmt
   Stmt *insert_before_me(std::unique_ptr<Stmt> &&new_stmt);
@@ -502,7 +503,7 @@ class Stmt : public IRNode {
 
 class Block : public IRNode {
  public:
-  std::variant<Stmt *, Kernel *> parent_;
+  std::variant<Stmt *, Callable *> parent_;
   stmt_vector statements;
   stmt_vector trash_bin;
   std::vector<SNode *> stop_gradients;
@@ -511,17 +512,17 @@ class Block : public IRNode {
   // variables, and AllocaStmt for other variables.
   std::map<Identifier, Stmt *> local_var_to_stmt;
 
-  explicit Block(Kernel *kernel = nullptr) {
-    parent_ = kernel;
+  explicit Block(Callable *callable = nullptr) {
+    parent_ = callable;
   }
 
   Stmt *parent_stmt() const;
 
-  void set_parent_kernel(Kernel *kernel);
+  void set_parent_callable(Callable *callable);
 
   void set_parent_stmt(Stmt *stmt);
 
-  Kernel *parent_kernel() const;
+  Callable *parent_callable() const;
 
   Block *parent_block() const;
 

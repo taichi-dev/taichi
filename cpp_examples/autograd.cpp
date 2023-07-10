@@ -159,19 +159,19 @@ void autograd() {
       auto *i = builder.get_loop_index(loop);
 
       auto *ext_a = builder.create_external_ptr(
-          builder.create_arg_load({0}, PrimitiveType::f32, true), {i});
+          builder.create_arg_load({0}, PrimitiveType::f32, true, 0), {i});
       auto *a_grad_i = builder.create_global_load(
           builder.create_global_ptr(a->get_adjoint(), {i}));
       builder.create_global_store(ext_a, a_grad_i);
 
       auto *ext_b = builder.create_external_ptr(
-          builder.create_arg_load({1}, PrimitiveType::f32, true), {i});
+          builder.create_arg_load({1}, PrimitiveType::f32, true, 0), {i});
       auto *b_grad_i = builder.create_global_load(
           builder.create_global_ptr(b->get_adjoint(), {i}));
       builder.create_global_store(ext_b, b_grad_i);
 
       auto *ext_c = builder.create_external_ptr(
-          builder.create_arg_load({2}, PrimitiveType::f32, true), {i});
+          builder.create_arg_load({2}, PrimitiveType::f32, true, 0), {i});
       auto *c_i = builder.create_global_load(builder.create_global_ptr(c, {i}));
       builder.create_global_store(ext_c, c_i);
     }

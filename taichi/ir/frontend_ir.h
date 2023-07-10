@@ -324,11 +324,18 @@ class ArgLoadExpression : public Expression {
    */
   bool create_load;
 
+  int arg_depth;
+
   ArgLoadExpression(const std::vector<int> &arg_id,
                     DataType dt,
                     bool is_ptr = false,
-                    bool create_load = true)
-      : arg_id(arg_id), dt(dt), is_ptr(is_ptr), create_load(create_load) {
+                    bool create_load = true,
+                    int arg_depth = 0)
+      : arg_id(arg_id),
+        dt(dt),
+        is_ptr(is_ptr),
+        create_load(create_load),
+        arg_depth(arg_depth) {
   }
 
   void type_check(const CompileConfig *config) override;
@@ -349,26 +356,32 @@ class TexturePtrExpression : public Expression {
   const std::vector<int> arg_id;
   int num_dims;
   bool is_storage{false};
+  int arg_depth;
 
   // Optional, for storage textures
   BufferFormat format{BufferFormat::unknown};
   int lod{0};
 
-  explicit TexturePtrExpression(const std::vector<int> &arg_id, int num_dims)
+  explicit TexturePtrExpression(const std::vector<int> &arg_id,
+                                int num_dims,
+                                int arg_depth)
       : arg_id(arg_id),
         num_dims(num_dims),
         is_storage(false),
+        arg_depth(arg_depth),
         format(BufferFormat::rgba8),
         lod(0) {
   }
 
   TexturePtrExpression(const std::vector<int> &arg_id,
                        int num_dims,
+                       int arg_depth,
                        BufferFormat format,
                        int lod)
       : arg_id(arg_id),
         num_dims(num_dims),
         is_storage(true),
+        arg_depth(arg_depth),
         format(format),
         lod(lod) {
   }
@@ -480,19 +493,22 @@ class ExternalTensorExpression : public Expression {
   std::vector<int> arg_id;
   bool needs_grad{false};
   bool is_grad{false};
+  int arg_depth{0};
   BoundaryMode boundary{BoundaryMode::kUnsafe};
 
   ExternalTensorExpression(const DataType &dt,
                            int ndim,
                            const std::vector<int> &arg_id,
                            bool needs_grad = false,
+                           int arg_depth = false,
                            BoundaryMode boundary = BoundaryMode::kUnsafe) {
-    init(dt, ndim, arg_id, needs_grad, boundary);
+    init(dt, ndim, arg_id, needs_grad, arg_depth, boundary);
   }
 
   explicit ExternalTensorExpression(Expr *expr) : is_grad(true) {
     auto ptr = expr->cast<ExternalTensorExpression>();
-    init(ptr->dt, ptr->ndim, ptr->arg_id, ptr->needs_grad, ptr->boundary);
+    init(ptr->dt, ptr->ndim, ptr->arg_id, ptr->needs_grad, ptr->arg_depth,
+         ptr->boundary);
   }
 
   void flatten(FlattenContext *ctx) override;
@@ -518,11 +534,13 @@ class ExternalTensorExpression : public Expression {
             int ndim,
             const std::vector<int> &arg_id,
             bool needs_grad,
+            int arg_depth,
             BoundaryMode boundary) {
     this->dt = dt;
     this->ndim = ndim;
     this->arg_id = arg_id;
     this->needs_grad = needs_grad;
+    this->arg_depth = arg_depth;
     this->boundary = boundary;
   }
 };

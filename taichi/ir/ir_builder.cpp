@@ -180,9 +180,10 @@ RandStmt *IRBuilder::create_rand(DataType value_type) {
 
 ArgLoadStmt *IRBuilder::create_arg_load(const std::vector<int> &arg_id,
                                         DataType dt,
-                                        bool is_ptr) {
-  return insert(
-      Stmt::make_typed<ArgLoadStmt>(arg_id, dt, is_ptr, /*create_load*/ true));
+                                        bool is_ptr,
+                                        int arg_depth) {
+  return insert(Stmt::make_typed<ArgLoadStmt>(arg_id, dt, is_ptr,
+                                              /*create_load*/ true, arg_depth));
 }
 
 ReturnStmt *IRBuilder::create_return(Stmt *value) {
@@ -501,11 +502,13 @@ MeshPatchIndexStmt *IRBuilder::get_patch_index() {
 }
 ArgLoadStmt *IRBuilder::create_ndarray_arg_load(const std::vector<int> &arg_id,
                                                 DataType dt,
-                                                int ndim) {
+                                                int ndim,
+                                                int arg_depth) {
   auto type = TypeFactory::get_instance().get_ndarray_struct_type(dt, ndim);
 
   return insert(Stmt::make_typed<ArgLoadStmt>(arg_id, type, /*is_ptr=*/true,
-                                              /*create_load=*/false));
+                                              /*create_load=*/false,
+                                              /*arg_depth=*/arg_depth));
 }
 
 }  // namespace taichi::lang

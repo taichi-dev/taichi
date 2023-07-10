@@ -3,7 +3,7 @@ import copy
 import numpy as np
 import pytest
 from taichi.lang import impl
-from taichi.lang.exception import TaichiIndexError, TaichiTypeError
+from taichi.lang.exception import TaichiIndexError, TaichiRuntimeError, TaichiTypeError
 from taichi.lang.misc import get_host_arch_list
 from taichi.lang.util import has_pytorch
 from taichi.math import vec3, ivec3
@@ -654,6 +654,13 @@ def test_ndarray_as_template():
     arr_1 = ti.ndarray(ti.f32, shape=(5, 10))
     with pytest.raises(ti.TaichiRuntimeTypeError, match=r"Ndarray shouldn't be passed in via"):
         func(arr_0, arr_1)
+
+
+@pytest.mark.parametrize("shape", [2**31, 1.5, 0, (1, 0), (1, 0.5), (1, 2**31)])
+@test_utils.test(arch=supported_archs_taichi_ndarray)
+def test_ndarray_shape(shape):
+    with pytest.raises(TaichiRuntimeError, match=r"is not a valid shape for ndarray"):
+        x = ti.ndarray(dtype=int, shape=shape)
 
 
 @test_utils.test(arch=supported_archs_taichi_ndarray)

@@ -829,6 +829,8 @@ def ndarray(dtype, shape, needs_grad=False):
 
     if isinstance(shape, numbers.Number):
         shape = (shape,)
+    if not all(isinstance(x, int) and x > 0 and x <= 2**31 - 1 for x in shape):
+        raise TaichiRuntimeError(f"{shape} is not a valid shape for ndarray")
     if dtype in all_types:
         dt = cook_dtype(dtype)
         x = ScalarNdarray(dt, shape)

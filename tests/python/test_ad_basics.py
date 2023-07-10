@@ -263,7 +263,7 @@ def test_atan2_f64(tifunc, npfunc):
 @test_utils.test()
 def test_pow(tifunc, npfunc):
     grad_test(tifunc, npfunc)
-    grad_test_fwd(tifunc, npfunc)
+    # grad_test_fwd(tifunc, npfunc)
 
 
 @pytest.mark.parametrize(

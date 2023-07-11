@@ -1,14 +1,15 @@
 #pragma once
 
+#include <exception>
+#include <string>
+#include <string_view>
 namespace taichi::lang {
 
 class IRModified {};
+struct DebugInfo;
 
 class TaichiExceptionImpl : public std::exception {
   friend struct ErrorEmitter;
-
- private:
-  virtual void emit() = 0;
 
  protected:
   std::string msg_;
@@ -24,83 +25,103 @@ class TaichiExceptionImpl : public std::exception {
   }
 };
 
-class TaichiTypeError : public TaichiExceptionImpl {
+class TaichiError : public TaichiExceptionImpl {
+  using TaichiExceptionImpl::TaichiExceptionImpl;
+};
+
+class TaichiWarning : public TaichiExceptionImpl {
   using TaichiExceptionImpl::TaichiExceptionImpl;
 
-  [[noreturn]] void emit() override {
-    throw *this;
+ protected:
+  static constexpr std::string_view name_;
+
+ public:
+  void emit() {
+    taichi::Logger::get_instance().warn(std::string(name_) + "\n" + msg_);
   }
 };
 
-class TaichiSyntaxError : public TaichiExceptionImpl {
-  using TaichiExceptionImpl::TaichiExceptionImpl;
-
-  [[noreturn]] void emit() override {
-    throw *this;
-  }
+class TaichiTypeError : public TaichiError {
+  using TaichiError::TaichiError;
 };
 
-class TaichiIndexError : public TaichiExceptionImpl {
-  using TaichiExceptionImpl::TaichiExceptionImpl;
-
-  [[noreturn]] void emit() override {
-    throw *this;
-  }
+class TaichiSyntaxError : public TaichiError {
+  using TaichiError::TaichiError;
 };
 
-class TaichiRuntimeError : public TaichiExceptionImpl {
-  using TaichiExceptionImpl::TaichiExceptionImpl;
-
-  [[noreturn]] void emit() override {
-    throw *this;
-  }
+class TaichiIndexError : public TaichiError {
+  using TaichiError::TaichiError;
 };
 
-class TaichiAssertionError : public TaichiExceptionImpl {
-  using TaichiExceptionImpl::TaichiExceptionImpl;
-
-  [[noreturn]] void emit() override {
-    throw *this;
-  }
+class TaichiRuntimeError : public TaichiError {
+  using TaichiError::TaichiError;
 };
 
-class TaichiIrError : public TaichiExceptionImpl {
-  using TaichiExceptionImpl::TaichiExceptionImpl;
-
-  [[noreturn]] void emit() override {
-    throw *this;
-  }
+class TaichiAssertionError : public TaichiError {
+  using TaichiError::TaichiError;
 };
 
-class TaichiCastWarning : public TaichiExceptionImpl {
-  using TaichiExceptionImpl::TaichiExceptionImpl;
-
-  void emit() noexcept override {
-    taichi::Logger::get_instance().warn("TaichiCastWarning\n" + msg_);
-  }
+class TaichiIrError : public TaichiError {
+  using TaichiError::TaichiError;
 };
 
-class TaichiTypeWarning : public TaichiExceptionImpl {
-  using TaichiExceptionImpl::TaichiExceptionImpl;
+class TaichiCastWarning : public TaichiWarning {
+  using TaichiWarning::TaichiWarning;
 
-  void emit() noexcept override {
-    taichi::Logger::get_instance().warn("TaichiTypeWarning\n" + msg_);
-  }
+  static constexpr std::string_view name_ = "TaichiCastWarning";
 };
 
-class TaichiIrWarning : public TaichiExceptionImpl {
-  using TaichiExceptionImpl::TaichiExceptionImpl;
-
-  void emit() noexcept override {
-    taichi::Logger::get_instance().warn("TaichiIrWarning\n" + msg_);
-  }
+class TaichiTypeWarning : public TaichiWarning {
+  using TaichiWarning::TaichiWarning;
+  static constexpr std::string_view name_ = "TaichiTypeWarning";
 };
 
-class TaichiIndexWarning : public TaichiExceptionImpl {
-  using TaichiExceptionImpl::TaichiExceptionImpl;
+class TaichiIrWarning : public TaichiWarning {
+  using TaichiWarning::TaichiWarning;
+  static constexpr std::string_view name_ = "TaichiIrWarning";
+};
 
-  void emit() noexcept override {
-    taichi::Logger::get_instance().warn("TaichiIndexWarning\n" + msg_);
+class TaichiIndexWarning : public TaichiWarning {
+  using TaichiWarning::TaichiWarning;
+  static constexpr std::string_view name_ = "TaichiIndexWarning";
+};
+
+struct ErrorEmitter {
+  ErrorEmitter() = delete;
+
+  // Emit an error on stmt with error message
+  template <typename E,
+            typename = std::enable_if_t<
+                std::is_base_of_v<TaichiExceptionImpl, std::decay_t<E>>>,
+            typename T,
+            typename = std::enable_if_t<
+                std::is_same_v<std::decay_t<decltype(std::declval<T>()->tb)>,
+                               std::string>>>
+  ErrorEmitter(E &&error, T p_stmt, std::string &&error_msg) {
+    if constexpr (std::is_same_v<std::decay_t<T>, DebugInfo> &&
+                  std::is_base_of_v<TaichiError, std::decay_t<E>>) {
+      // Indicates a failed C++ API call from Python side, we should not print
+      // tb here
+      error.msg_ = error_msg;
+    } else {
+      error.msg_ = p_stmt->tb + error_msg;
+    }
+
+    if constexpr (std::is_base_of_v<TaichiWarning, std::decay_t<E>>) {
+      error.emit();
+    } else if constexpr (std::is_base_of_v<TaichiError, std::decay_t<E>>) {
+      throw error;
+    } else {
+      TI_STOP;
+    }
+  }
+
+  // Emit an error when expression is false
+  template <typename E, typename T>
+  ErrorEmitter(bool expression, E &&error, T p_stmt, std::string &&error_msg) {
+    if (!expression) {
+      ErrorEmitter(std::move(error), p_stmt, std::move(error_msg));
+    }
   }
 };
 

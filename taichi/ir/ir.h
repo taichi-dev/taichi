@@ -398,7 +398,10 @@ struct DebugInfo {
 
   explicit DebugInfo() = default;
 
-  explicit DebugInfo(std::string tb_) : tb(tb_) {
+  DebugInfo(std::string tb_) : tb(tb_) {
+  }
+
+  DebugInfo(const char *tb_) : tb(tb_) {
   }
 
   explicit DebugInfo(std::string tb_, int line_number, std::string var_name)
@@ -519,31 +522,6 @@ class Stmt : public IRNode {
 
   static void reset_counter() {
     instance_id_counter = 0;
-  }
-};
-
-struct ErrorEmitter {
-  ErrorEmitter() = delete;
-
-  // Emit an error on stmt with error message
-  template <typename T,
-            typename = std::enable_if_t<
-                std::is_same_v<std::decay_t<decltype(std::declval<T>()->tb)>,
-                               std::string>>>
-  ErrorEmitter(TaichiExceptionImpl &&error, T p_stmt, std::string &&error_msg) {
-    error.msg_ = p_stmt->tb + error_msg;
-    error.emit();
-  }
-
-  // Emit an error when expression is false
-  template <typename T>
-  ErrorEmitter(bool expression,
-               TaichiExceptionImpl &&error,
-               T p_stmt,
-               std::string &&error_msg) {
-    if (!expression) {
-      ErrorEmitter(std::move(error), p_stmt, std::move(error_msg));
-    }
   }
 };
 

@@ -88,6 +88,8 @@ class TaichiIndexWarning : public TaichiWarning {
 
 struct ErrorEmitter {
   ErrorEmitter() = delete;
+  ErrorEmitter(ErrorEmitter &) = delete;
+  ErrorEmitter(ErrorEmitter &&) = delete;
 
   // Emit an error on stmt with error message
   template <typename E,
@@ -98,8 +100,9 @@ struct ErrorEmitter {
                 std::is_same_v<std::decay_t<decltype(std::declval<T>()->tb)>,
                                std::string>>>
   ErrorEmitter(E &&error, T p_stmt, std::string &&error_msg) {
-    if constexpr (std::is_same_v<std::decay_t<T>, DebugInfo> &&
-                  std::is_base_of_v<TaichiError, std::decay_t<E>>) {
+    if constexpr ((std::is_same_v<std::decay_t<T>, DebugInfo *> ||
+                   std::is_same_v<std::decay_t<T>, const DebugInfo *>)&&std::
+                      is_base_of_v<TaichiError, std::decay_t<E>>) {
       // Indicates a failed C++ API call from Python side, we should not print
       // tb here
       error.msg_ = error_msg;

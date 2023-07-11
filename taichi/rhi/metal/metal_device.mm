@@ -657,13 +657,9 @@ DeviceAllocation MetalSurface::get_target_image() {
 void MetalSurface::present_image(
     const std::vector<StreamSemaphore> &wait_semaphores) {
 
-  Stream *stream = device_->get_compute_stream();
-  auto [cmd_list, res] = stream->new_command_list_unique();
-  MetalCommandList *cmd_list2 = (MetalCommandList *)cmd_list.get();
-  RHI_ASSERT(res == RhiResult::success);
+  [current_drawable_ present];
 
-  [cmd_list2->finalize() presentDrawable:current_drawable_];
-  stream->submit_synced(cmd_list2);
+  device_->wait_idle();
 }
 
 std::pair<uint32_t, uint32_t> MetalSurface::get_size() {

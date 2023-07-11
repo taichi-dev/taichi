@@ -42,7 +42,7 @@ target_include_directories(${TAICHI_DEVICE_API} SYSTEM
 if (TI_WITH_METAL)
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DTI_WITH_METAL")
     add_subdirectory(metal)
-    target_link_libraries(${TAICHI_DEVICE_API} PRIVATE metal_rhi)
+    target_link_libraries(${TAICHI_DEVICE_API} PUBLIC metal_rhi)
 endif()
 
 if (TI_WITH_OPENGL)

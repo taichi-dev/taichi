@@ -335,11 +335,11 @@ def test_return_struct_field():
     f = tp.field(shape=1)
 
     @ti.func
-    def bar()->tp:
+    def bar() -> tp:
         return f[0]
 
     @ti.kernel
-    def foo()->tp:
+    def foo() -> tp:
         return bar()
 
     assert foo().a == 0

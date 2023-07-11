@@ -207,6 +207,10 @@ void TaskCodeGenLLVM::emit_extra_unary(UnaryOpStmt *stmt) {
     llvm_val[stmt] =
         builder->CreateIntrinsic(llvm::Intrinsic::ctpop, {input_type}, {input});
   }
+  else if (op == UnaryOpType::clz) {
+    llvm_val[stmt] =
+        builder->CreateIntrinsic(llvm::Intrinsic::ctlz, {input_type}, {input});
+  }
   else {
     TI_P(unary_op_type_name(op));
     TI_NOT_IMPLEMENTED

@@ -1119,6 +1119,15 @@ def ifte(cond, x1, x2):
 
     return _ternary_operation(_ti_core.expr_ifte, py_ifte, cond, x1, x2)
 
+def clz(a):
+    """Count the number of leading zeros for a 32bit integer"""
+    def _clz(x):
+        for i in range(32):
+            if 2**i > x:
+                return 32 - i
+    
+    return _unary_operation(_ti_core.expr_clz, _clz, a)
+    
 
 @writeback_binary
 def atomic_add(x, y):

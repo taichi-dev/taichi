@@ -811,6 +811,9 @@ def vdir(ang):
 def popcnt(x):
     return ops.popcnt(x)
 
+@func
+def clz(x):
+    return ops.clz(x)
 
 __all__ = [
     "acos",

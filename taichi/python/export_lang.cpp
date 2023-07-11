@@ -485,23 +485,23 @@ void export_lang(py::module &m) {
       .def("dense",
            (SNode & (SNode::*)(const std::vector<Axis> &,
                                const std::vector<int> &,
-                               const std::string &))(&SNode::dense),
+                               const DebugInfo &))(&SNode::dense),
            py::return_value_policy::reference)
       .def("pointer",
            (SNode & (SNode::*)(const std::vector<Axis> &,
                                const std::vector<int> &,
-                               const std::string &))(&SNode::pointer),
+                               const DebugInfo &))(&SNode::pointer),
            py::return_value_policy::reference)
       .def("hash",
            (SNode & (SNode::*)(const std::vector<Axis> &,
                                const std::vector<int> &,
-                               const std::string &))(&SNode::hash),
+                               const DebugInfo &))(&SNode::hash),
            py::return_value_policy::reference)
       .def("dynamic", &SNode::dynamic, py::return_value_policy::reference)
       .def("bitmasked",
            (SNode & (SNode::*)(const std::vector<Axis> &,
                                const std::vector<int> &,
-                               const std::string &))(&SNode::bitmasked),
+                               const DebugInfo &))(&SNode::bitmasked),
            py::return_value_policy::reference)
       .def("bit_struct", &SNode::bit_struct, py::return_value_policy::reference)
       .def("quant_array", &SNode::quant_array,

@@ -11,6 +11,7 @@
 namespace taichi::lang {
 class Program;
 class SNodeRwAccessorsBank;
+struct DebugInfo;
 
 /**
  * Dimension (or axis) of a tensor.
@@ -138,81 +139,87 @@ class SNode {
   SNode &create_node(std::vector<Axis> axes,
                      std::vector<int> sizes,
                      SNodeType type,
-                     const std::string &tb);
+                     const DebugInfo &dbg_info);
 
   // SNodes maintains how flattened index bits are taken from indices
   SNode &dense(const std::vector<Axis> &axes,
                const std::vector<int> &sizes,
-               const std::string &tb) {
-    return create_node(axes, sizes, SNodeType::dense, tb);
+               const DebugInfo &dbg_info) {
+    return create_node(axes, sizes, SNodeType::dense, dbg_info);
   }
 
   SNode &dense(const std::vector<Axis> &axes,
                int sizes,
-               const std::string &tb) {
-    return create_node(axes, std::vector<int>{sizes}, SNodeType::dense, tb);
+               const DebugInfo &dbg_info) {
+    return create_node(axes, std::vector<int>{sizes}, SNodeType::dense,
+                       dbg_info);
   }
 
-  SNode &dense(const Axis &axis, int size, const std::string &tb) {
-    return SNode::dense(std::vector<Axis>{axis}, size, tb);
+  SNode &dense(const Axis &axis, int size, const DebugInfo &dbg_info) {
+    return SNode::dense(std::vector<Axis>{axis}, size, dbg_info);
   }
 
   SNode &pointer(const std::vector<Axis> &axes,
                  const std::vector<int> &sizes,
-                 const std::string &tb) {
-    return create_node(axes, sizes, SNodeType::pointer, tb);
+                 const DebugInfo &dbg_info) {
+    return create_node(axes, sizes, SNodeType::pointer, dbg_info);
   }
 
   SNode &pointer(const std::vector<Axis> &axes,
                  int sizes,
-                 const std::string &tb) {
-    return create_node(axes, std::vector<int>{sizes}, SNodeType::pointer, tb);
+                 const DebugInfo &dbg_info) {
+    return create_node(axes, std::vector<int>{sizes}, SNodeType::pointer,
+                       dbg_info);
   }
 
-  SNode &pointer(const Axis &axis, int size, const std::string &tb) {
-    return SNode::pointer(std::vector<Axis>{axis}, size, tb);
+  SNode &pointer(const Axis &axis, int size, const DebugInfo &dbg_info) {
+    return SNode::pointer(std::vector<Axis>{axis}, size, dbg_info);
   }
 
   SNode &bitmasked(const std::vector<Axis> &axes,
                    const std::vector<int> &sizes,
-                   const std::string &tb) {
-    return create_node(axes, sizes, SNodeType::bitmasked, tb);
+                   const DebugInfo &dbg_info) {
+    return create_node(axes, sizes, SNodeType::bitmasked, dbg_info);
   }
 
   SNode &bitmasked(const std::vector<Axis> &axes,
                    int sizes,
-                   const std::string &tb) {
-    return create_node(axes, std::vector<int>{sizes}, SNodeType::bitmasked, tb);
+                   const DebugInfo &dbg_info) {
+    return create_node(axes, std::vector<int>{sizes}, SNodeType::bitmasked,
+                       dbg_info);
   }
 
-  SNode &bitmasked(const Axis &axis, int size, const std::string &tb) {
-    return SNode::bitmasked(std::vector<Axis>{axis}, size, tb);
+  SNode &bitmasked(const Axis &axis, int size, const DebugInfo &dbg_info) {
+    return SNode::bitmasked(std::vector<Axis>{axis}, size, dbg_info);
   }
 
   SNode &hash(const std::vector<Axis> &axes,
               const std::vector<int> &sizes,
-              const std::string &tb) {
-    return create_node(axes, sizes, SNodeType::hash, tb);
+              const DebugInfo &dbg_info) {
+    return create_node(axes, sizes, SNodeType::hash, dbg_info);
   }
 
-  SNode &hash(const std::vector<Axis> &axes, int sizes, const std::string &tb) {
-    return create_node(axes, std::vector<int>{sizes}, SNodeType::hash, tb);
+  SNode &hash(const std::vector<Axis> &axes,
+              int sizes,
+              const DebugInfo &dbg_info) {
+    return create_node(axes, std::vector<int>{sizes}, SNodeType::hash,
+                       dbg_info);
   }
 
-  SNode &hash(const Axis &axis, int size, const std::string &tb) {
-    return hash(std::vector<Axis>{axis}, size, tb);
+  SNode &hash(const Axis &axis, int size, const DebugInfo &dbg_info) {
+    return hash(std::vector<Axis>{axis}, size, dbg_info);
   }
 
   std::string type_name() {
     return snode_type_name(type);
   }
 
-  SNode &bit_struct(BitStructType *bit_struct_type, const std::string &tb);
+  SNode &bit_struct(BitStructType *bit_struct_type, const DebugInfo &dbg_info);
 
   SNode &quant_array(const std::vector<Axis> &axes,
                      const std::vector<int> &sizes,
                      int bits,
-                     const std::string &tb);
+                     const DebugInfo &dbg_info);
 
   void print();
 
@@ -221,7 +228,7 @@ class SNode {
   SNode &dynamic(const Axis &expr,
                  int n,
                  int chunk_size,
-                 const std::string &tb);
+                 const DebugInfo &dbg_info);
 
   SNode &morton(bool val = true) {
     _morton = val;

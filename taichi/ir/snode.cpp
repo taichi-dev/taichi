@@ -37,11 +37,14 @@ SNode &SNode::insert_children(SNodeType t) {
 SNode &SNode::create_node(std::vector<Axis> axes,
                           std::vector<int> sizes,
                           SNodeType type,
-                          const std::string &tb) {
-  TI_ASSERT(axes.size() == sizes.size() || sizes.size() == 1);
+                          const DebugInfo &dbg_info) {
   if (sizes.size() == 1) {
     sizes = std::vector<int>(axes.size(), sizes[0]);
   }
+  ErrorEmitter(
+      axes.size() == sizes.size(), TaichiRuntimeError(), &dbg_info,
+      fmt::format("axes and sizes must have the same size, but got {} and {}.",
+                  axes.size(), sizes.size()));
 
   if (type == SNodeType::hash)
     TI_ASSERT_INFO(depth == 0,
@@ -65,7 +68,7 @@ SNode &SNode::create_node(std::vector<Axis> axes,
           !bit::is_power_of_two(sizes[i]),
           "Shape {} is detected on non-first division of axis {}:\n{} For "
           "best performance, we recommend that you set it to a power of two.",
-          sizes[i], char('i' + ind), tb);
+          sizes[i], char('i' + ind), dbg_info.tb);
     }
     new_node.extractors[ind].active = true;
     new_node.extractors[ind].num_elements_from_root *= sizes[i];
@@ -110,15 +113,15 @@ SNode &SNode::create_node(std::vector<Axis> axes,
 SNode &SNode::dynamic(const Axis &expr,
                       int n,
                       int chunk_size,
-                      const std::string &tb) {
-  auto &snode = create_node({expr}, {n}, SNodeType::dynamic, tb);
+                      const DebugInfo &dbg_info) {
+  auto &snode = create_node({expr}, {n}, SNodeType::dynamic, dbg_info);
   snode.chunk_size = chunk_size;
   return snode;
 }
 
 SNode &SNode::bit_struct(BitStructType *bit_struct_type,
-                         const std::string &tb) {
-  auto &snode = create_node({}, {}, SNodeType::bit_struct, tb);
+                         const DebugInfo &dbg_info) {
+  auto &snode = create_node({}, {}, SNodeType::bit_struct, dbg_info);
   snode.dt = bit_struct_type;
   snode.physical_type = bit_struct_type->get_physical_type();
   return snode;
@@ -127,8 +130,8 @@ SNode &SNode::bit_struct(BitStructType *bit_struct_type,
 SNode &SNode::quant_array(const std::vector<Axis> &axes,
                           const std::vector<int> &sizes,
                           int bits,
-                          const std::string &tb) {
-  auto &snode = create_node(axes, sizes, SNodeType::quant_array, tb);
+                          const DebugInfo &dbg_info) {
+  auto &snode = create_node(axes, sizes, SNodeType::quant_array, dbg_info);
   snode.physical_type =
       TypeFactory::get_instance().get_primitive_int_type(bits, false);
   return snode;

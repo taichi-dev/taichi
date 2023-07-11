@@ -254,7 +254,6 @@ TiRuntime ti_create_runtime(TiArch arch, uint32_t device_index) {
       VulkanRuntimeOwned *vulkan_runtime;
       if (is_ci()) {
         auto param = make_vulkan_runtime_creator_params();
-        param.device_id = device_index;
         param.enable_validation_layer = true;
         vulkan_runtime = new VulkanRuntimeOwned(std::move(param));
       } else {

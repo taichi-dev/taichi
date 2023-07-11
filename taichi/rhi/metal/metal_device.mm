@@ -615,10 +615,13 @@ MetalSurface::MetalSurface(MetalDevice *device, const SurfaceConfig &config)
 
   layer_ = [CAMetalLayer layer];
   layer_.device = device->mtl_device();
-  layer_.displaySyncEnabled = config.vsync;
   layer_.pixelFormat = format2mtl(image_format_);
   layer_.drawableSize = CGSizeMake(width_, height_);
   layer_.allowsNextDrawableTimeout = NO;
+  if ([CAMetalLayer instancesRespondToSelector:@selector(displaySyncEnabled)]) {
+    // Older versions may not have this property, so check if it exists first.
+    layer_.displaySyncEnabled = config.vsync;
+  }
 }
 
 MetalSurface::~MetalSurface() {

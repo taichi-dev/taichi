@@ -67,7 +67,6 @@ class TaichiIrError : public TaichiError {
 
 class TaichiCastWarning : public TaichiWarning {
   using TaichiWarning::TaichiWarning;
-
   static constexpr std::string_view name_ = "TaichiCastWarning";
 };
 
@@ -84,6 +83,11 @@ class TaichiIrWarning : public TaichiWarning {
 class TaichiIndexWarning : public TaichiWarning {
   using TaichiWarning::TaichiWarning;
   static constexpr std::string_view name_ = "TaichiIndexWarning";
+};
+
+class TaichiRuntimeWarning : public TaichiWarning {
+  using TaichiWarning::TaichiWarning;
+  static constexpr std::string_view name_ = "TaichiRuntimeWarning";
 };
 
 struct ErrorEmitter {

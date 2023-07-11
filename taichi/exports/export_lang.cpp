@@ -16,10 +16,6 @@
     return TIE_ERROR_INVALID_HANDLE; \
   }
 
-int ticore_hello_world(const char *extra_msg) {
-  std::printf("Hello World! %s\n", extra_msg);
-  return std::strlen(extra_msg);
-}
 
 int tie_LaunchContextBuilder_create(TieKernelHandle kernel_handle,
                                     TieLaunchContextBuilderHandle *ret_handle) {

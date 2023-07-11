@@ -618,7 +618,7 @@ MetalSurface::MetalSurface(MetalDevice *device, const SurfaceConfig &config)
   layer_.pixelFormat = format2mtl(image_format_);
   layer_.drawableSize = CGSizeMake(width_, height_);
   layer_.allowsNextDrawableTimeout = NO;
-#if TARGET_OS_MAC
+#if TARGET_OS_OSX
   // Older versions may not have this property, so check if it exists first.
   layer_.displaySyncEnabled = config.vsync;
 #endif

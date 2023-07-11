@@ -47,7 +47,7 @@ class MetalStream;
 class MetalDevice;
 
 struct MetalMemory {
-public:
+ public:
   // `mtl_buffer` should be already retained.
   explicit MetalMemory(MTLBuffer_id mtl_buffer, bool host_access);
   ~MetalMemory();
@@ -58,14 +58,14 @@ public:
   size_t size() const;
   RhiResult mapped_ptr(void **mapped_ptr) const;
 
-private:
+ private:
   MTLBuffer_id mtl_buffer_;
   bool can_map_{false};
   bool dont_destroy_{false};
 };
 
 struct MetalImage {
-public:
+ public:
   // `mtl_texture` should be already retained.
   explicit MetalImage(MTLTexture_id mtl_texture);
   ~MetalImage();
@@ -74,20 +74,20 @@ public:
 
   MTLTexture_id mtl_texture() const;
 
-private:
+ private:
   MTLTexture_id mtl_texture_;
   bool dont_destroy_{false};
 };
 
 struct MetalSampler {
-public:
+ public:
   // `mtl_texture` should be already retained.
   explicit MetalSampler(MTLSamplerState_id mtl_sampler_state);
   ~MetalSampler();
 
   MTLSamplerState_id mtl_sampler_state() const;
 
-private:
+ private:
   MTLSamplerState_id mtl_sampler_state_;
 };
 
@@ -96,8 +96,8 @@ struct MetalWorkgroupSize {
   uint32_t y{0};
   uint32_t z{0};
 };
-class MetalPipeline final : public Pipeline {
-public:
+class MetalPipeline final :  public Pipeline {
+ public:
   // `mtl_library`, `mtl_function`, `mtl_compute_pipeline_state` should be
   // already retained.
   explicit MetalPipeline(const MetalDevice &device, MTLLibrary_id mtl_library,
@@ -118,7 +118,7 @@ public:
     return workgroup_size_;
   }
 
-private:
+ private:
   const MetalDevice *device_;
   MTLLibrary_id mtl_library_;
   MTLFunction_id mtl_function_;
@@ -148,8 +148,8 @@ struct MetalShaderResource {
     MetalShaderTextureResource texture;
   };
 };
-class MetalShaderResourceSet final : public ShaderResourceSet {
-public:
+class MetalShaderResourceSet final :  public ShaderResourceSet {
+ public:
   explicit MetalShaderResourceSet(const MetalDevice &device);
   ~MetalShaderResourceSet() final;
 
@@ -170,13 +170,13 @@ public:
     return resources_;
   }
 
-private:
+ private:
   const MetalDevice *device_;
   std::vector<MetalShaderResource> resources_; // TODO: need raster resources
 };
 
-class MetalCommandList final : public CommandList {
-public:
+class MetalCommandList final :  public CommandList {
+ public:
   explicit MetalCommandList(const MetalDevice &device,
                             MTLCommandQueue_id cmd_queue);
   ~MetalCommandList() final;
@@ -198,7 +198,7 @@ public:
 
   MTLCommandBuffer_id finalize();
 
-private:
+ private:
   friend class MetalStream;
 
   const MetalDevice *device_;
@@ -209,8 +209,8 @@ private:
   const MetalShaderResourceSet *current_shader_resource_set_;
 };
 
-class MetalStream final : public Stream {
-public:
+class MetalStream final :  public Stream {
+ public:
   // `mtl_command_queue` should be already retained.
   explicit MetalStream(const MetalDevice &device,
                        MTLCommandQueue_id mtl_command_queue);
@@ -231,15 +231,15 @@ public:
 
   void command_sync() override;
 
-private:
+ private:
   const MetalDevice *device_;
   MTLCommandQueue_id mtl_command_queue_;
   std::vector<MTLCommandBuffer_id> pending_cmdbufs_;
   bool is_destroyed_{false};
 };
 
-class MetalSurface final : public Surface {
-public:
+class MetalSurface final :  public Surface {
+ public:
   MetalSurface(MetalDevice *device, const SurfaceConfig &config);
   ~MetalSurface() override;
 
@@ -260,7 +260,7 @@ public:
   }
   DeviceAllocation get_image_data() override { TI_NOT_IMPLEMENTED; }
 
-private:
+ private:
   void destroy_swap_chain();
 
   SurfaceConfig config_;
@@ -278,8 +278,8 @@ private:
   CAMetalLayer *layer_;
 };
 
-class MetalDevice final : public GraphicsDevice {
-public:
+class MetalDevice final :  public GraphicsDevice {
+ public:
   // `mtl_device` should be already retained.
   explicit MetalDevice(MTLDevice_id mtl_device);
   ~MetalDevice() override;
@@ -335,7 +335,7 @@ public:
 
   const MetalSampler &get_default_sampler() const { return *default_sampler_; }
 
-private:
+ private:
   MTLDevice_id mtl_device_;
   rhi_impl::SyncedPtrStableObjectList<MetalMemory> memory_allocs_;
   rhi_impl::SyncedPtrStableObjectList<MetalImage> image_allocs_;

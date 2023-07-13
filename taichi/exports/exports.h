@@ -67,8 +67,12 @@ extern "C" {
 // Func signature:
 //     Rules:
 //         1. All functions are prefixed with "tie_", which means "taichi exports".
-//         2. Return type is always int, which is the error code (TieError).
-//         3. Return value (except error code) is always the last parameters. And the parameter name always starts with "ret_".
+//         2. The name of general parameters can be arbitrary, but cannot be "self", "ret_" or "ap_" prefixed.
+//             2.1 The parameter named "self" is the object itself.
+//             2.2 The parameter named "ret_" prefixed is the return value (output parameter).
+//             2.3 The parameter named "ap_" prefixed is the array type parameter, and the parameter specifying the size of the array must follow it.
+//         3. Return type is always int, which is the error code (TieError).
+//         4. Return value (except error code) is always the last parameters. And the parameter name always starts with "ret_".
 //     1. Create Object: int TI_API_CALL tie_<ClassName>_create(<Params...>, Tie<ClassName>Handle *ret_handle);
 //     2. Destroy Object: int TI_API_CALL tie_<ClassName>_destroy(Tie<ClassName>Handle self);
 //     3. Member Function: int TI_API_CALL tie_<ClassName>_<MemFuncName>(Tie<ClassName>Handle self, <Params...>, <RetType> *ret_<RetName>);
@@ -106,13 +110,13 @@ TI_DLL_EXPORT int TI_API_CALL tie_LaunchContextBuilder_set_arg_uint(TieLaunchCon
 
 TI_DLL_EXPORT int TI_API_CALL tie_LaunchContextBuilder_set_arg_float(TieLaunchContextBuilderHandle self, int arg_id, double d);
 
-TI_DLL_EXPORT int TI_API_CALL tie_LaunchContextBuilder_set_struct_arg_int(TieLaunchContextBuilderHandle self, int *arg_indices, size_t arg_indices_dim, int64_t i64);
+TI_DLL_EXPORT int TI_API_CALL tie_LaunchContextBuilder_set_struct_arg_int(TieLaunchContextBuilderHandle self, int *ap_arg_indices, size_t arg_indices_dim, int64_t i64);
 
-TI_DLL_EXPORT int TI_API_CALL tie_LaunchContextBuilder_set_struct_arg_uint(TieLaunchContextBuilderHandle self, int *arg_indices, size_t arg_indices_dim, uint64_t u64);
+TI_DLL_EXPORT int TI_API_CALL tie_LaunchContextBuilder_set_struct_arg_uint(TieLaunchContextBuilderHandle self, int *ap_arg_indices, size_t arg_indices_dim, uint64_t u64);
 
-TI_DLL_EXPORT int TI_API_CALL tie_LaunchContextBuilder_set_struct_arg_float(TieLaunchContextBuilderHandle self, int *arg_indices, size_t arg_indices_dim, double d);
+TI_DLL_EXPORT int TI_API_CALL tie_LaunchContextBuilder_set_struct_arg_float(TieLaunchContextBuilderHandle self, int *ap_arg_indices, size_t arg_indices_dim, double d);
 
-TI_DLL_EXPORT int TI_API_CALL tie_LaunchContextBuilder_set_arg_external_array_with_shape(TieLaunchContextBuilderHandle self, int arg_id, uintptr_t ptr, uint64_t size, int64_t *shape, size_t shape_dim, uintptr_t grad_ptr);
+TI_DLL_EXPORT int TI_API_CALL tie_LaunchContextBuilder_set_arg_external_array_with_shape(TieLaunchContextBuilderHandle self, int arg_id, uintptr_t ptr, uint64_t size, int64_t *ap_shape, size_t shape_dim, uintptr_t grad_ptr);
 
 TI_DLL_EXPORT int TI_API_CALL tie_LaunchContextBuilder_set_arg_ndarray(TieLaunchContextBuilderHandle self, int arg_id, TieNdarrayHandle arr);
 
@@ -122,11 +126,11 @@ TI_DLL_EXPORT int TI_API_CALL tie_LaunchContextBuilder_set_arg_texture(TieLaunch
 
 TI_DLL_EXPORT int TI_API_CALL tie_LaunchContextBuilder_set_arg_rw_texture(TieLaunchContextBuilderHandle self, int arg_id, TieTextureHandle tex);
 
-TI_DLL_EXPORT int TI_API_CALL tie_LaunchContextBuilder_get_struct_ret_int(TieLaunchContextBuilderHandle self, int *index, size_t index_dim, int64_t *ret_i64);
+TI_DLL_EXPORT int TI_API_CALL tie_LaunchContextBuilder_get_struct_ret_int(TieLaunchContextBuilderHandle self, int *ap_index, size_t index_dim, int64_t *ret_i64);
 
-TI_DLL_EXPORT int TI_API_CALL tie_LaunchContextBuilder_get_struct_ret_uint(TieLaunchContextBuilderHandle self, int *index, size_t index_dim, uint64_t *ret_u64);
+TI_DLL_EXPORT int TI_API_CALL tie_LaunchContextBuilder_get_struct_ret_uint(TieLaunchContextBuilderHandle self, int *ap_index, size_t index_dim, uint64_t *ret_u64);
 
-TI_DLL_EXPORT int TI_API_CALL tie_LaunchContextBuilder_get_struct_ret_float(TieLaunchContextBuilderHandle self, int *index, size_t index_dim, double *ret_d);
+TI_DLL_EXPORT int TI_API_CALL tie_LaunchContextBuilder_get_struct_ret_float(TieLaunchContextBuilderHandle self, int *ap_index, size_t index_dim, double *ret_d);
 
 #ifdef __cplusplus
 }  // extern "C"

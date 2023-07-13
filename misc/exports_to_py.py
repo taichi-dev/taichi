@@ -85,8 +85,18 @@ C_BUILTIN_TYPE_TO_CTYPES_TYPE = {
 }
 
 
-class Type(CASTDecl):
-    pass
+Type = CASTDecl
+
+
+def is_cstr_type(type: Type):
+    from pycparser.c_ast import PtrDecl, TypeDecl, IdentifierType
+
+    return (
+        isinstance(type.type, PtrDecl)
+        and isinstance(type.type.type, TypeDecl)
+        and isinstance(type.type.type.type, IdentifierType)
+        and type.type.type.type.names[0] == "char"
+    )
 
 
 class EnumDecl:
@@ -105,6 +115,12 @@ class FuncParameter:
 
     def is_out_param(self):
         return self.name.startswith("ret_")
+
+    def is_arr_param(self):
+        return self.name.startswith("ap_")
+
+    def is_cstr_param(self):
+        return is_cstr_type(self.type)
 
 
 class FuncDecl:
@@ -184,7 +200,7 @@ class ExportsHeaderASTVisitor(NodeVisitor):
         ret_type = c_ast_func_decl.type
         in_params, out_params = [], []
         for p in args.params:
-            param = FuncParameter(name=p.name, type=p.type)
+            param = FuncParameter(name=p.name, type=p)
             if param.is_in_param():
                 in_params.append(param)
             elif param.is_out_param():
@@ -311,15 +327,78 @@ def translate_func_decl(
 def translate_arg_from_python_to_c(arg_name: str, param: FuncParameter) -> str:
     from pycparser.c_ast import PtrDecl
 
-    # TODO: Process c-style array (from python list to c-style array)
     arg_type = param.type
-    if param.is_in_param():
+    if param.name == "self":
+        assert arg_name == "self"
+        return f"self._handle"
+    elif param.is_arr_param():
+        assert isinstance(arg_type.type, PtrDecl)
+        return f"{arg_name}, len({arg_name})"
+    elif param.is_cstr_param():
+        return f'{arg_name}.encode("utf-8")'
+    elif param.is_in_param():
         return arg_name
     elif param.is_out_param():
-        assert isinstance(arg_type, PtrDecl)
+        assert isinstance(arg_type.type, PtrDecl)
         return f"ctypes.byref({arg_name})"
     else:
         raise ValueError(f"Unknown type: {arg_type}")
+
+
+def generate_func_def_code_from_func_decl(
+    func_def_name: str, original_func: FuncDecl, fp, indent: int, tab: str = None
+):
+    tab = tab or " " * 4
+
+    def fp_write(content: str):
+        fp.write(tab * indent)
+        fp.write(content)
+
+    in_params = original_func.in_params
+    out_params = original_func.out_params
+    # Func def
+    in_params = [
+        in_params[i]
+        for i in range(len(in_params))
+        if i == 0 or not in_params[i - 1].is_arr_param()
+    ]
+    fp_write(
+        f"def {func_def_name}("
+        + ", ".join([param.name for param in in_params])
+        + "):\n"
+    )
+    # Func body
+    args = []
+    args.extend(
+        [translate_arg_from_python_to_c(param.name, param) for param in in_params]
+    )
+    args.extend(
+        [translate_arg_from_python_to_c(param.name, param) for param in out_params]
+    )
+    for param in in_params:
+        if param.is_arr_param():
+            fp_write(
+                f"{tab}{param.name} = ({translate_c_type_to_ctypes_type(param.type, exclude_ptr_levels=1)} * len({param.name}))(*{param.name})\n"
+            )
+    for param in out_params:
+        fp_write(
+            f"{tab}{param.name} = {translate_c_type_to_ctypes_type(param.type, exclude_ptr_levels=1)}()\n"
+        )
+    fp_write(f"{tab}ret = taichi_ccore.{original_func.name}(" + ", ".join(args) + ")\n")
+
+    # Process ret (error code)
+    assert original_func.ret_type.type.names[0] == "int"
+    # TODO: Translate error code to exception
+    fp_write(f"{tab}if ret != 0:\n")
+    fp_write(f'{tab*2}raise RuntimeError(f"Call failed with error code {{ret}}")\n')
+
+    # Return values
+    if len(out_params) > 0:
+        fp_write(f"{tab}return (\n")
+        fp_write(",\n".join([f"{tab*2}{param.name}.value" for param in out_params]))
+        fp_write("\n")
+        fp_write(f"{tab})\n")
+    fp_write("\n")
 
 
 def generate_py_module_from_exports_header(dirname: str, header: ExportsHeader):
@@ -387,61 +466,13 @@ from .ccore import taichi_ccore
             f.write("        self._handle = handle\n")
             f.write("\n")
             for method_name, method_decl in class_decl.methods.items():
-                # Func def
-                f.write(
-                    f"    def {method_name}("
-                    + ", ".join(
-                        [
-                            param.name
-                            for param in method_decl.original_func_decl.in_params
-                        ]
-                    )
-                    + "):\n"
+                generate_func_def_code_from_func_decl(
+                    func_def_name=method_name,
+                    original_func=method_decl.original_func_decl,
+                    fp=f,
+                    indent=1,
+                    tab=" " * 4,
                 )
-                # Func body
-                args = []
-                if method_decl.type in (
-                    ClassMethodDecl.METHOD_TYPE,
-                    ClassMethodDecl.DESTRUCTOR_TYPE,
-                ):
-                    args.append("self._handle")
-                args.extend(
-                    [
-                        translate_arg_from_python_to_c(param.name, param)
-                        for param in method_decl.original_func_decl.in_params
-                    ]
-                )
-                args.extend(
-                    [
-                        translate_arg_from_python_to_c(param.name, param)
-                        for param in method_decl.original_func_decl.out_params
-                    ]
-                )
-                for param in method_decl.original_func_decl.out_params:
-                    f.write(
-                        f"        {param.name} = {translate_c_type_to_ctypes_type(param.type, exclude_ptr_levels=1)}()\n"
-                    )
-                f.write(
-                    f"        ret = taichi_ccore.{method_decl.original_func_decl.name}("
-                    + ", ".join(args)
-                    + ")\n"
-                )
-
-                # Process ret (error code)
-                assert method_decl.original_func_decl.ret_type.type.names[0] == "int"
-                # TODO: Translate error code to exception
-                f.write("        if ret != 0:\n")
-                f.write(
-                    '            raise RuntimeError(f"Call failed with error code {ret}")\n'
-                )
-
-                # Return values
-                if len(method_decl.original_func_decl.out_params) > 0:
-                    f.write("        return (\n")
-                    for param in method_decl.original_func_decl.out_params:
-                        f.write(f"            {param.name}.value,\n")
-                    f.write("        )\n")
-                f.write("\n")
 
     with open(os.path.join(dirname, "global_functions.py"), "w") as f:
         f.write(COMMENT_HEADER)
@@ -449,53 +480,13 @@ from .ccore import taichi_ccore
         f.write(IMPORTS)
         f.write("\n")
         for func in global_functions:
-            func_name = func.name.replace("tie_G_", "")
-            original_func_name = func.name
-            # Func def
-            f.write(
-                f"def {func_name}("
-                + ", ".join([param.name for param in func.in_params])
-                + "):\n"
+            generate_func_def_code_from_func_decl(
+                func_def_name=func.name.replace("tie_G_", ""),
+                original_func=func,
+                fp=f,
+                indent=0,
+                tab=" " * 4,
             )
-            # Func body
-            args = []
-            args.extend(
-                [
-                    translate_arg_from_python_to_c(param.name, param)
-                    for param in func.in_params
-                ]
-            )
-            args.extend(
-                [
-                    translate_arg_from_python_to_c(param.name, param)
-                    for param in func.out_params
-                ]
-            )
-            for param in func.out_params:
-                f.write(
-                    f"    {param.name} = {translate_c_type_to_ctypes_type(param.type, exclude_ptr_levels=1)}()\n"
-                )
-            f.write(
-                f"    ret = taichi_ccore.{original_func_name}("
-                + ", ".join(args)
-                + ")\n"
-            )
-            f.write("\n")
-
-            # Process ret (error code)
-            assert func.ret_type.type.names[0] == "int"
-            # TODO: Translate error code to exception
-            f.write("    if ret != 0:\n")
-            f.write(
-                '        raise RuntimeError(f"Call failed with error code {ret}")\n'
-            )
-
-            # Return values
-            if len(func.out_params) > 0:
-                f.write("        return (\n")
-                for param in func.out_params:
-                    f.write(f"            {param.name}.value,\n")
-                f.write("        )\n")
 
     # Generate __init__.py
     with open(os.path.join(dirname, "__init__.py"), "w") as f:

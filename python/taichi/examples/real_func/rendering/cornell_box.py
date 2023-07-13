@@ -66,7 +66,7 @@ def signed_distance(obj: SDFObject, pos: vec3) -> float:
 
 
 @ti.experimental.real_func
-def nearest_object(p: vec3)->(int, float):
+def nearest_object(p: vec3) -> (int, float):
     index, min_dis = 0, 1e32
     for i in ti.static(range(8)):
         dis = signed_distance(objects[i], p)
@@ -87,7 +87,7 @@ def calc_normal(obj: SDFObject, p: vec3) -> vec3:
 
 
 @ti.experimental.real_func
-def raycast(ray: Ray)->(SDFObject, vec3, bool):
+def raycast(ray: Ray) -> (SDFObject, vec3, bool):
     w, s, d, cerr = 1.6, 0.0, 0.0, 1e32
     index, t, position, hit = 0, 0.005, vec3(0), False
     for _ in range(64):

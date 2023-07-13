@@ -789,10 +789,7 @@ void offload(IRNode *root, const CompileConfig &config) {
   }
   insert_gc(root, config);
   associate_continue_scope(root, config);
-
 }
-
-
 
 }  // namespace irpass
 

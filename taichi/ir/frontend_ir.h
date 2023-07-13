@@ -980,8 +980,8 @@ class ASTBuilder {
   int id_counter_{0};
 
  public:
-  ASTBuilder(Block *initial, Arch arch, bool is_kernel) :
-        is_kernel(is_kernel), arch_(arch) {
+  ASTBuilder(Block *initial, Arch arch, bool is_kernel)
+      : is_kernel(is_kernel), arch_(arch) {
     stack_.push_back(initial);
     loop_state_stack_.push_back(None);
   }
@@ -1116,7 +1116,8 @@ class FrontendContext {
  public:
   explicit FrontendContext(Arch arch, bool is_kernel) {
     root_node_ = std::make_unique<Block>();
-    current_builder_ = std::make_unique<ASTBuilder>(root_node_.get(), arch, is_kernel);
+    current_builder_ =
+        std::make_unique<ASTBuilder>(root_node_.get(), arch, is_kernel);
   }
 
   ASTBuilder &builder() {

@@ -13,7 +13,7 @@
 #import <MetalKit/MetalKit.h>
 #import <QuartzCore/QuartzCore.h>
 #define DEFINE_METAL_ID_TYPE(x) typedef id<x> x##_id;
-#define DEFINE_OBJC_TYPE(x) @class x;
+#define DEFINE_OBJC_TYPE(x) // Should be defined by included headers
 #else
 #define DEFINE_METAL_ID_TYPE(x) typedef struct x##_t *x##_id;
 #define DEFINE_OBJC_TYPE(x) typedef void x;

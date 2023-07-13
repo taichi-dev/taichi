@@ -106,7 +106,8 @@ void Kernel::init(Program &program,
   this->program = &program;
 
   is_accessor = false;
-  context = std::make_unique<FrontendContext>(program.compile_config().arch);
+  context = std::make_unique<FrontendContext>(program.compile_config().arch,
+                                              /*is_kernel=*/true);
   ir = context->get_root();
 
   TI_ASSERT(ir->is<Block>());

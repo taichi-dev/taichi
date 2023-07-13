@@ -768,6 +768,11 @@ class AssociateContinueScope : public BasicStmtVisitor {
 };
 
 }  // namespace
+void associate_continue_scope(IRNode *root, const CompileConfig &config) {
+  AssociateContinueScope::run(root);
+  type_check(root, config);
+  re_id(root);
+}
 
 void offload(IRNode *root, const CompileConfig &config) {
   TI_AUTO_PROF;
@@ -783,11 +788,7 @@ void offload(IRNode *root, const CompileConfig &config) {
                                    stmt_to_offloaded, &offloaded_ranges);
   }
   insert_gc(root, config);
-  // TODO(k-ye): Move this into its own pass. However, we need to wait for all
-  // backends to integrate with https://github.com/taichi-dev/taichi/pull/700
-  AssociateContinueScope::run(root);
-  type_check(root, config);
-  re_id(root);
+  associate_continue_scope(root, config);
 }
 
 }  // namespace irpass

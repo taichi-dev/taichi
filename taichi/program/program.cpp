@@ -480,22 +480,29 @@ void Program::fill_ndarray_fast_u32(Ndarray *ndarray, uint32_t val) {
       val);
 }
 
-std::pair<const ArgPackType *, size_t> Program::get_argpack_type_with_data_layout(
-    const ArgPackType *old_ty,
-    const std::string &layout) {
-    // Convert to StructType
-    auto *struct_type_old = TypeFactory::get_instance().get_struct_type(old_ty->elements(), old_ty->get_layout())->as<StructType>();
-    // Call get_struct_type_with_data_layout
-    auto [struct_type, size] = program_impl_->get_struct_type_with_data_layout(const_cast<StructType *>(struct_type_old), layout);
-    // Convert back to ArgPackType
-    auto *new_ty = TypeFactory::get_instance().get_argpack_type(struct_type->elements(), struct_type->get_layout())->as<ArgPackType>();
-    return {new_ty, size};
+std::pair<const ArgPackType *, size_t>
+Program::get_argpack_type_with_data_layout(const ArgPackType *old_ty,
+                                           const std::string &layout) {
+  // Convert to StructType
+  auto *struct_type_old =
+      TypeFactory::get_instance()
+          .get_struct_type(old_ty->elements(), old_ty->get_layout())
+          ->as<StructType>();
+  // Call get_struct_type_with_data_layout
+  auto [struct_type, size] = program_impl_->get_struct_type_with_data_layout(
+      const_cast<StructType *>(struct_type_old), layout);
+  // Convert back to ArgPackType
+  auto *new_ty =
+      TypeFactory::get_instance()
+          .get_argpack_type(struct_type->elements(), struct_type->get_layout())
+          ->as<ArgPackType>();
+  return {new_ty, size};
 }
 
 std::pair<const StructType *, size_t> Program::get_struct_type_with_data_layout(
     const StructType *old_ty,
     const std::string &layout) {
-    return program_impl_->get_struct_type_with_data_layout(old_ty, layout);
+  return program_impl_->get_struct_type_with_data_layout(old_ty, layout);
 }
 
 Program::~Program() {

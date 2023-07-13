@@ -97,7 +97,7 @@ struct MetalWorkgroupSize {
   uint32_t z{0};
 };
 class MetalPipeline final : public Pipeline {
- public:
+public:
   // `mtl_library`, `mtl_function`, `mtl_compute_pipeline_state` should be
   // already retained.
   explicit MetalPipeline(const MetalDevice &device, MTLLibrary_id mtl_library,

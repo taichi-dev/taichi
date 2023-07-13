@@ -187,12 +187,14 @@ CUSPARSEDriver &CUSPARSEDriver::get_instance() {
 }
 
 bool CUSPARSEDriver::load_cusparse() {
-  cusparse_loaded_ = load_lib(
-      "libcusparse.so",
-      "cusparse64_" +
-          std::to_string(CUDADriver::get_instance().get_version_major()) +
-          ".dll");
-
+  /* 
+  Load the cuSparse lib whose version follows the CUDA driver's version.
+  See load_cusolver() for more information.
+  */  
+  // Get the CUDA Driver's version
+  int cuda_version = CUDADriver::get_instance().get_version_major();
+  // Try to load the cusparse lib whose version is derived from the CUDA driver
+  cusparse_loaded_ = try_load_lib_any_version("cusparse", "64_", {cuda_version, cuda_version - 1});
   if (!cusparse_loaded_) {
     return false;
   }

@@ -6,7 +6,7 @@
 namespace taichi::lang {
 
 class FrontendTypeCheck : public IRVisitor {
-  void check_cond_type(const Expr& cond, const std::string& stmt_name) {
+  void check_cond_type(const Expr &cond, const std::string &stmt_name) {
     DataType cond_type = cond.get_rvalue_type();
     if (!cond_type->is<PrimitiveType>() || !is_integral(cond_type)) {
       ErrorEmitter(

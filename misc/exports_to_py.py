@@ -462,10 +462,21 @@ from .ccore import taichi_ccore
             f.write("\n")
             f.write(f"# Class {class_name}\n")
             f.write(f"class {class_name}:\n")
-            f.write("    def __init__(self, handle):\n")
-            f.write("        self._handle = handle\n")
+            f.write("    def __init__(self, *args):\n")
+            f.write("        self._handle = self.create(*args)\n")
+            f.write("\n")
+            f.write("    def __del__(self):\n")
+            f.write("        self.destroy()\n")
+            f.write("\n")
+            f.write("    def get_handle(self):\n")
+            f.write("        return self._handle\n")
             f.write("\n")
             for method_name, method_decl in class_decl.methods.items():
+                if method_decl.type in (
+                    ClassMethodDecl.CONSTRACTOR_TYPE,
+                    ClassMethodDecl.STATIC_METHOD_TYPE,
+                ):
+                    f.write(f"    @staticmethod\n")
                 generate_func_def_code_from_func_decl(
                     func_def_name=method_name,
                     original_func=method_decl.original_func_decl,

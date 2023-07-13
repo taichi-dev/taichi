@@ -152,6 +152,7 @@ class FrontendIfStmt : public Stmt {
   std::unique_ptr<Block> true_statements, false_statements;
 
   explicit FrontendIfStmt(const Expr &condition) : condition(condition) {
+    set_tb(condition->tb);
   }
 
   bool is_container_statement() const override {

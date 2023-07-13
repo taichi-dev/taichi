@@ -403,11 +403,6 @@ struct DebugInfo {
 
   DebugInfo(const char *tb_) : tb(tb_) {
   }
-
-  explicit DebugInfo(std::string tb_, int line_number, std::string var_name)
-      : src_loc(Location{.line_number = line_number, .var_name = var_name}),
-        tb(tb_) {
-  }
 };
 
 class Stmt : public IRNode {

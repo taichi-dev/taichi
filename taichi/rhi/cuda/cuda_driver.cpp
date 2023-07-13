@@ -156,11 +156,17 @@ CUSOLVERDriver &CUSOLVERDriver::get_instance() {
 }
 
 bool CUSOLVERDriver::load_cusolver() {
-  cusolver_loaded_ = load_lib(
-      "libcusolver.so",
-      "cusolver64_" +
-          std::to_string(CUDADriver::get_instance().get_version_major()) +
-          ".dll");
+  /* 
+  Load the cuSolver lib whose version follows the CUDA driver's version.
+  Note that cusolver's filename is NOT necessarily the same with CUDA Toolkit (on Windows).
+  For instance, CUDA Toolkit 12.2 ships a cusolver64_11.dll (checked on 2023.7.13)
+  Therefore, the following function attempts to load a cusolver lib which is
+  one version backward from the CUDA Driver's version.
+  */  
+  // Get the CUDA Driver's version
+  int cuda_version = CUDADriver::get_instance().get_version_major();
+  // Try to load the cusolver lib whose version is derived from the CUDA driver
+  cusolver_loaded_ = try_load_lib_any_version("cusolver", "64_", {cuda_version, cuda_version - 1});
   if (!cusolver_loaded_) {
     return false;
   }

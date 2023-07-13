@@ -53,10 +53,10 @@ print(p(view_params))  # 1.0
 Argument packs could cache parameters in device buffer, which significantly enhancing the performance of kernels when called multiple times with the same parameters.
 
 - Without argument packs, parameter values are copied to device memory each time, resulting in time overhead due to memory copying.
-  ![Copying Operations Performed Without ArgPacks](https://raw.githubusercontent.com/listerily/taichi_public_files/master/taichi/doc/without_argpack_memory_copying.svg)
+  ![Copying Operations Performed Without ArgPacks](https://raw.githubusercontent.com/taichi-dev/public_files/master/taichi/doc/without_argpack_memory_copying.svg)
 
 - With argument packs, parameter values can be cached in the device buffer, which eliminates the need for repetitive and resource-intensive memory copying.
-  ![Copying Operations Performed With ArgPacks](https://raw.githubusercontent.com/listerily/taichi_public_files/master/taichi/doc/argument_pack_memory_copying.svg)
+  ![Copying Operations Performed With ArgPacks](https://raw.githubusercontent.com/taichi-dev/public_files/master/taichi/doc/argument_pack_memory_copying.svg)
 
 
 ### Argpack Nesting
@@ -71,11 +71,11 @@ To enable nested argpacks, the parent argpack creates a pointer to the argpack b
 
 For example, consider that we want to load a value in `Value #3.1`. We first load Arguments Buffer, then load the pointer to argpack #1. Then we load pointer to argpack #3 inside argpack buffer #1. Finally we load value #3.1 in argpack buffer #3.
 
-![Load Value 3.1 in Nested ArgPacks](https://raw.githubusercontent.com/listerily/taichi_public_files/master/taichi/doc/argpack_nesting_structure.svg)
+![Load Value 3.1 in Nested ArgPacks](https://raw.githubusercontent.com/taichi-dev/public_files/master/taichi/doc/argpack_nesting_structure.svg)
 
 Value #3.1 is a struct value containing a child struct and an integer. The child struct contains an integer and a float. Consider that we'd like to load this float value. This diagram illustrates the steps to load this float. It also explains `arg_id` and `arg_depth` in detail.
 
-![Load Float Value in Value 3.1](https://raw.githubusercontent.com/listerily/taichi_public_files/master/taichi/doc/argload_stmt_for_argpack_nesting.svg)
+![Load Float Value in Value 3.1](https://raw.githubusercontent.com/taichi-dev/public_files/master/taichi/doc/argload_stmt_for_argpack_nesting.svg)
 
 
 ### Buffer Values in Argpack

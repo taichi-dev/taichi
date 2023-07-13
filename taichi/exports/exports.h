@@ -80,13 +80,33 @@ extern "C" {
 //     5. Global Function: int TI_API_CALL tie_G_<GlobalFuncName>(<Params...>, <RetType> *ret_<RetName>);
 
 typedef enum TieError {
+  // Success (always 0)
   TIE_ERROR_SUCCESS = 0,
-  TIE_ERROR_INVALID_RETURN_PARAM = -1,
-  TIE_ERROR_INVALID_HANDLE = -2,
-  TIE_ERROR_UNKNOWN = 0xFFFFFFF
+
+  // Invliad argument
+  TIE_ERROR_INVALID_ARGUMENT = -101,
+  TIE_ERROR_INVALID_RETURN_ARG = -102,
+  TIE_ERROR_INVALID_HANDLE = -103,
+
+  // CXX exceptions
+  TIE_ERROR_TAICHI_TYPE_ERROR = -201,       // taichi::lang::TaichiTypeError
+  TIE_ERROR_TAICHI_SYNTAX_ERROR = -202,     // taichi::lang::TaichiSyntaxError
+  TIE_ERROR_TAICHI_INDEX_ERROR = -203,      // taichi::lang::TaichiIndexError
+  TIE_ERROR_TAICHI_RUNTIME_ERROR = -204,    // taichi::lang::TaichiRuntimeError
+  TIE_ERROR_TAICHI_ASSERTION_ERROR = -205,  // taichi::lang::TaichiAssertionError
+  TIE_ERROR_OUT_OF_MEMORY = -298,           // std::bad_alloc
+  TIE_ERROR_UNKNOWN_CXX_EXCEPTION = -299,   // std::exception
+
+  // Unknown error
+  TIE_ERROR_UNKNOWN = -0x7FFFFFFF // INT_MIN
 } TieError;
 
-typedef void * TieHandle;
+typedef void *TieHandle;
+
+// Error processing
+TI_DLL_EXPORT int TI_API_CALL tie_G_set_last_error(int error, const char *msg);
+
+TI_DLL_EXPORT int TI_API_CALL tie_G_get_last_error(int *ret_error, const char **ret_msg);
 
 // class Kernel
 typedef TieHandle TieKernelHandle;

@@ -2,7 +2,44 @@ import os, sys
 
 from typing import Mapping, List, Union
 from pycparser import parse_file
-from pycparser.c_ast import Decl as CASTDecl, NodeVisitor
+from pycparser.c_ast import Decl as CASTDecl, PtrDecl as CASTPtrDecl, NodeVisitor
+
+
+UTILS_PYTHON_FILE_CODE = """from .TieError import *
+from taichi.lang.exception import TaichiTypeError, TaichiSyntaxError, TaichiIndexError, TaichiAssertionError, TaichiRuntimeError
+
+
+class TieAPIError(Exception):
+    pass
+
+    
+TIE_ERROR_TO_PYTHON_EXCEPTION = {
+    TIE_ERROR_INVALID_ARGUMENT: TieAPIError,
+    TIE_ERROR_INVALID_RETURN_ARG: TieAPIError,
+    TIE_ERROR_INVALID_HANDLE: TieAPIError,
+    TIE_ERROR_TAICHI_TYPE_ERROR: TaichiTypeError,
+    TIE_ERROR_TAICHI_SYNTAX_ERROR: TaichiSyntaxError,
+    TIE_ERROR_TAICHI_INDEX_ERROR: TaichiIndexError,
+    TIE_ERROR_TAICHI_RUNTIME_ERROR: TaichiRuntimeError,
+    TIE_ERROR_TAICHI_ASSERTION_ERROR: TaichiAssertionError,
+    TIE_ERROR_OUT_OF_MEMORY: TieAPIError,
+    TIE_ERROR_UNKNOWN_CXX_EXCEPTION: TieAPIError,
+}
+
+
+def get_exception_to_throw_if_not_success(ret, last_err, last_err_msg):
+    assert ret == 0 or ret == last_err
+    if ret != 0:
+        assert ret in TIE_ERROR_TO_PYTHON_EXCEPTION
+        return TIE_ERROR_TO_PYTHON_EXCEPTION[ret](last_err_msg)
+    return None
+
+
+__all__ = [
+    "TieAPIError",
+    "get_exception_to_throw_if_not_success",
+]
+"""
 
 
 CCORE_PYTHON_FILE_FORMAT = """import os
@@ -88,14 +125,30 @@ C_BUILTIN_TYPE_TO_CTYPES_TYPE = {
 Type = CASTDecl
 
 
-def is_cstr_type(type: Type):
+def type_exclude_ptr(type, levels: int):
+    from pycparser.c_ast import PtrDecl
+
+    if isinstance(type, Type):
+        type = type.type
+
+    if levels == 0:
+        return type
+    if isinstance(type, PtrDecl):
+        return type_exclude_ptr(type.type, levels - 1)
+    return type
+
+
+def type_is_cstr(type: Union[Type, CASTPtrDecl]) -> bool:
     from pycparser.c_ast import PtrDecl, TypeDecl, IdentifierType
 
+    if isinstance(type, Type):
+        type = type.type
+
     return (
-        isinstance(type.type, PtrDecl)
-        and isinstance(type.type.type, TypeDecl)
-        and isinstance(type.type.type.type, IdentifierType)
-        and type.type.type.type.names[0] == "char"
+        isinstance(type, PtrDecl)
+        and isinstance(type.type, TypeDecl)
+        and isinstance(type.type.type, IdentifierType)
+        and type.type.type.names[0] == "char"
     )
 
 
@@ -120,7 +173,7 @@ class FuncParameter:
         return self.name.startswith("ap_")
 
     def is_cstr_param(self):
-        return is_cstr_type(self.type)
+        return type_is_cstr(self.type)
 
 
 class FuncDecl:
@@ -250,7 +303,7 @@ def parse_exports_header(filename: str) -> ExportsHeader:
     return ExportsHeader(enums=visitor.enums, funcs=visitor.funcs)
 
 
-def translate_c_type_to_ctypes_type(type: Type, exclude_ptr_levels: int = 0) -> str:
+def translate_c_type_to_ctypes_type(type, exclude_ptr_levels: int = 0) -> str:
     from pycparser.c_ast import TypeDecl, IdentifierType, PtrDecl
 
     ctype = type.type if isinstance(type, Type) else type
@@ -345,6 +398,16 @@ def translate_arg_from_python_to_c(arg_name: str, param: FuncParameter) -> str:
         raise ValueError(f"Unknown type: {arg_type}")
 
 
+def translate_ret_from_c_to_python(ret_var_name: str, out_param: FuncParameter) -> str:
+    assert out_param.is_out_param()
+
+    value_type = type_exclude_ptr(out_param.type, 1)
+    if type_is_cstr(value_type):
+        return f'ctypes.string_at({ret_var_name}.value).decode("utf-8")'
+    else:
+        return f"{ret_var_name}.value"
+
+
 def generate_func_def_code_from_func_decl(
     func_def_name: str, original_func: FuncDecl, fp, indent: int, tab: str = None
 ):
@@ -388,14 +451,29 @@ def generate_func_def_code_from_func_decl(
 
     # Process ret (error code)
     assert original_func.ret_type.type.names[0] == "int"
-    # TODO: Translate error code to exception
-    fp_write(f"{tab}if ret != 0:\n")
-    fp_write(f'{tab*2}raise RuntimeError(f"Call failed with error code {{ret}}")\n')
+    if func_def_name == "get_last_error":  # NOTE: Avoid infinite recursion
+        fp_write(f"{tab}if ret != 0:\n")
+        fp_write(
+            f'{tab*2}raise RuntimeError(f"Failed to call get_last_error, err={{ret}}")\n'
+        )
+    else:
+        fp_write(
+            f"{tab}ex = get_exception_to_throw_if_not_success(ret, *get_last_error())\n"
+        )
+        fp_write(f"{tab}if ex is not None:\n")
+        fp_write(f"{tab*2}raise ex\n")
 
     # Return values
     if len(out_params) > 0:
         fp_write(f"{tab}return (\n")
-        fp_write(",\n".join([f"{tab*2}{param.name}.value" for param in out_params]))
+        fp_write(
+            ",\n".join(
+                [
+                    f"{tab*2}{translate_ret_from_c_to_python(param.name, param)}"
+                    for param in out_params
+                ]
+            )
+        )
         fp_write("\n")
         fp_write(f"{tab})\n")
     fp_write("\n")
@@ -410,9 +488,17 @@ def generate_py_module_from_exports_header(dirname: str, header: ExportsHeader):
 
     IMPORTS = """import ctypes
 from .ccore import taichi_ccore
-    """
+from .utils import get_exception_to_throw_if_not_success
+
+"""
 
     os.makedirs(dirname, exist_ok=True)
+
+    # Dump utils.py
+    with open(os.path.join(dirname, "utils.py"), "w") as f:
+        f.write(COMMENT_HEADER)
+        f.write("\n")
+        f.write(UTILS_PYTHON_FILE_CODE)
 
     # Generate enums (enum0.py, enum1.py, ...)
     for enum in header.enums:
@@ -429,7 +515,7 @@ from .ccore import taichi_ccore
             "EXPORTED_FUNCTIONS = (\n"
             + ",\n".join(
                 [
-                    f'    ("{func.name}", [{", ".join([f"{translate_c_type_to_ctypes_type(param.type)}" for param in func.in_params])}, {", ".join([f"{translate_c_type_to_ctypes_type(param.type)}" for param in func.out_params])}], {translate_c_type_to_ctypes_type(func.ret_type)})'
+                    f'    ("{func.name}", [{", ".join([f"{translate_c_type_to_ctypes_type(param.type)}" for param in (func.in_params + func.out_params)])}], {translate_c_type_to_ctypes_type(func.ret_type)})'
                     for func in header.funcs
                 ]
             )
@@ -460,13 +546,18 @@ from .ccore import taichi_ccore
             f.write("\n")
             f.write(IMPORTS)
             f.write("\n")
+            f.write(f"from .global_functions import get_last_error\n\n")
+            f.write("\n")
             f.write(f"# Class {class_name}\n")
             f.write(f"class {class_name}:\n")
             f.write("    def __init__(self, *args):\n")
             f.write("        self._handle = self.create(*args)\n")
             f.write("\n")
             f.write("    def __del__(self):\n")
-            f.write("        self.destroy()\n")
+            f.write("        try:\n")
+            f.write("            self.destroy()\n")
+            f.write("        except:\n")
+            f.write("            pass\n")
             f.write("\n")
             f.write("    def get_handle(self):\n")
             f.write("        return self._handle\n")
@@ -484,6 +575,8 @@ from .ccore import taichi_ccore
                     indent=1,
                     tab=" " * 4,
                 )
+            f.write("\n")
+            f.write(f"__all__ = ['{class_name}']\n")
 
     with open(os.path.join(dirname, "global_functions.py"), "w") as f:
         f.write(COMMENT_HEADER)
@@ -498,6 +591,17 @@ from .ccore import taichi_ccore
                 indent=0,
                 tab=" " * 4,
             )
+        f.write("\n")
+        f.write(f"__all__ = [\n")
+        f.write(
+            ",\n".join(
+                [
+                    f'    "{func.name.replace("tie_G_", "")}"'
+                    for func in global_functions
+                ]
+            )
+        )
+        f.write("\n]\n")
 
     # Generate __init__.py
     with open(os.path.join(dirname, "__init__.py"), "w") as f:

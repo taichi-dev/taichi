@@ -5,6 +5,7 @@
 #include "taichi/rhi/metal/metal_api.h"
 #include <memory>
 
+// clang-format off
 #if defined(__APPLE__) && defined(__OBJC__)
 #import <CoreGraphics/CoreGraphics.h>
 #import <Foundation/Foundation.h>
@@ -17,6 +18,7 @@
 #define DEFINE_METAL_ID_TYPE(x) typedef struct x##_t *x##_id;
 #define DEFINE_OBJC_TYPE(x) typedef void x;
 #endif
+// clang-format on
 
 DEFINE_METAL_ID_TYPE(MTLDevice);
 DEFINE_METAL_ID_TYPE(MTLBuffer);

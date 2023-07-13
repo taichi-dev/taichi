@@ -1,19 +1,24 @@
 #pragma once
-#include <memory>
 #include "taichi/common/logging.h"
 #include "taichi/rhi/device.h"
-#include "taichi/rhi/metal/metal_api.h"
 #include "taichi/rhi/impl_support.h"
+#include "taichi/rhi/metal/metal_api.h"
+#include <memory>
 
+// clang-format off
 #if defined(__APPLE__) && defined(__OBJC__)
+#import <CoreGraphics/CoreGraphics.h>
 #import <Foundation/Foundation.h>
 #import <Metal/Metal.h>
 #import <MetalKit/MetalKit.h>
-#import <CoreGraphics/CoreGraphics.h>
+#import <QuartzCore/QuartzCore.h>
 #define DEFINE_METAL_ID_TYPE(x) typedef id<x> x##_id;
+#define DEFINE_OBJC_TYPE(x) // Should be defined by included headers
 #else
 #define DEFINE_METAL_ID_TYPE(x) typedef struct x##_t *x##_id;
+#define DEFINE_OBJC_TYPE(x) typedef void x;
 #endif
+// clang-format on
 
 DEFINE_METAL_ID_TYPE(MTLDevice);
 DEFINE_METAL_ID_TYPE(MTLBuffer);
@@ -26,8 +31,11 @@ DEFINE_METAL_ID_TYPE(MTLCommandQueue);
 DEFINE_METAL_ID_TYPE(MTLCommandBuffer);
 DEFINE_METAL_ID_TYPE(MTLBlitCommandEncoder);
 DEFINE_METAL_ID_TYPE(MTLComputeCommandEncoder);
+DEFINE_METAL_ID_TYPE(CAMetalDrawable);
+DEFINE_OBJC_TYPE(CAMetalLayer);
 
 #undef DEFINE_METAL_ID_TYPE
+#undef DEFINE_OBJC_TYPE
 
 namespace taichi::lang {
 
@@ -171,7 +179,7 @@ class MetalShaderResourceSet final : public ShaderResourceSet {
 
  private:
   const MetalDevice *device_;
-  std::vector<MetalShaderResource> resources_;
+  std::vector<MetalShaderResource> resources_;  // TODO: need raster resources
 };
 
 class MetalCommandList final : public CommandList {
@@ -240,6 +248,50 @@ class MetalStream final : public Stream {
   bool is_destroyed_{false};
 };
 
+class MetalSurface final : public Surface {
+ public:
+  MetalSurface(MetalDevice *device, const SurfaceConfig &config);
+  ~MetalSurface() override;
+
+  CAMetalLayer *mtl_layer() {
+    return layer_;
+  }
+
+  StreamSemaphore acquire_next_image() override;
+  DeviceAllocation get_target_image() override;
+
+  void present_image(
+      const std::vector<StreamSemaphore> &wait_semaphores = {}) override;
+  std::pair<uint32_t, uint32_t> get_size() override;
+  int get_image_count() override;
+  BufferFormat image_format() override;
+  void resize(uint32_t width, uint32_t height) override;
+
+  DeviceAllocation get_depth_data(DeviceAllocation &depth_alloc) override {
+    TI_NOT_IMPLEMENTED;
+  }
+  DeviceAllocation get_image_data() override {
+    TI_NOT_IMPLEMENTED;
+  }
+
+ private:
+  void destroy_swap_chain();
+
+  SurfaceConfig config_;
+
+  BufferFormat image_format_{BufferFormat::unknown};
+
+  uint32_t width_{0};
+  uint32_t height_{0};
+
+  MTLTexture_id current_swap_chain_texture_;
+  std::unordered_map<MTLTexture_id, DeviceAllocation> swapchain_images_;
+  CAMetalDrawable_id current_drawable_;
+
+  MetalDevice *device_{nullptr};
+  CAMetalLayer *layer_;
+};
+
 class MetalDevice final : public GraphicsDevice {
  public:
   // `mtl_device` should be already retained.
@@ -256,10 +308,7 @@ class MetalDevice final : public GraphicsDevice {
   static MetalDevice *create();
   void destroy();
 
-  std::unique_ptr<Surface> create_surface(
-      const SurfaceConfig &config) override {
-    TI_NOT_IMPLEMENTED;
-  }
+  std::unique_ptr<Surface> create_surface(const SurfaceConfig &config) override;
 
   RhiResult allocate_memory(const AllocParams &params,
                             DeviceAllocation *out_devalloc) override;

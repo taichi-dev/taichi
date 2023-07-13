@@ -18,4 +18,4 @@ target_include_directories(${METAL_RHI}
     ${PROJECT_SOURCE_DIR}/external/glad/include
     ${PROJECT_SOURCE_DIR}/external/glfw/include
   )
-target_link_libraries(${METAL_RHI} PRIVATE spirv-cross-msl spirv-cross-core)
+target_link_libraries(${METAL_RHI} PRIVATE spirv-cross-msl spirv-cross-core "-framework QuartzCore")

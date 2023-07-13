@@ -82,10 +82,6 @@ class TaichiLLVMContext {
       const StructType *old_ty,
       const std::string &layout);
 
-  std::pair<const ArgPackType *, size_t> get_argpack_type_with_data_layout(
-      const ArgPackType *old_ty,
-      const std::string &layout);
-
   template <typename T>
   llvm::Value *get_constant(T t);
 

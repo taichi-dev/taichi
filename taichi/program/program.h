@@ -268,15 +268,11 @@ class TI_DLL_EXPORT Program {
 
   std::pair<const StructType *, size_t> get_struct_type_with_data_layout(
       const StructType *old_ty,
-      const std::string &layout) {
-    return program_impl_->get_struct_type_with_data_layout(old_ty, layout);
-  }
+      const std::string &layout);
 
   std::pair<const ArgPackType *, size_t> get_argpack_type_with_data_layout(
       const ArgPackType *old_ty,
-      const std::string &layout) {
-    return program_impl_->get_argpack_type_with_data_layout(old_ty, layout);
-  }
+      const std::string &layout);
 
   void delete_ndarray(Ndarray *ndarray);
 

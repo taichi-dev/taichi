@@ -117,7 +117,7 @@ struct ErrorEmitter {
     if constexpr (std::is_base_of_v<TaichiWarning, std::decay_t<E>>) {
       error.emit();
     } else if constexpr (std::is_base_of_v<TaichiError, std::decay_t<E>>) {
-      throw error;
+      throw std::move(error);
     } else {
       TI_STOP;
     }

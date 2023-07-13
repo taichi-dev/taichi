@@ -147,19 +147,22 @@ def test_shared_array_atomics():
 def test_shared_array_tensor_type():
     data_type = vec4
     block_dim = 16
+    N = 64
 
-    y = ti.Vector.field(4, dtype=ti.f32, shape=())
+    y = ti.Vector.field(4, dtype=ti.f32, shape=(block_dim))
 
     @ti.kernel
-    def test(x: ti.i32):
-        for i in range(10):
+    def test():
+        ti.loop_config(block_dim=block_dim)
+        for i in range(N):
+            tid = i % block_dim
+            val = ti.Vector([1.0, 2.0, 3.0, 4.0])
+
             shared_mem = ti.simt.block.SharedArray((block_dim), data_type)
+            shared_mem[tid] = val
+            ti.simt.block.sync()
 
-            for j in range(block_dim):
-                shared_mem[j] = ti.Vector([1.0, 2.0, 3.0, 4.0])
+            y[tid] += shared_mem[tid]
 
-            if x:
-                y[None] = shared_mem[x]
-
-    test(1)
-    assert (y.to_numpy() == [1.0, 2.0, 3.0, 4.0]).all()
+    test()
+    assert (y.to_numpy()[0] == [4.0, 8.0, 12.0, 16.0]).all()

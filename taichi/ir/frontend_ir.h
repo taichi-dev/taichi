@@ -953,7 +953,6 @@ class ASTBuilder {
  private:
   enum LoopState { None, Outermost, Inner };
   enum LoopType { NotLoop, For, While };
-  bool is_kernel;
 
   class ForLoopDecoratorRecorder {
    public:
@@ -975,13 +974,14 @@ class ASTBuilder {
 
   std::vector<Block *> stack_;
   std::vector<LoopState> loop_state_stack_;
+  bool is_kernel_{false};
   Arch arch_;
   ForLoopDecoratorRecorder for_loop_dec_;
   int id_counter_{0};
 
  public:
   ASTBuilder(Block *initial, Arch arch, bool is_kernel)
-      : is_kernel(is_kernel), arch_(arch) {
+      : is_kernel_(is_kernel), arch_(arch) {
     stack_.push_back(initial);
     loop_state_stack_.push_back(None);
   }

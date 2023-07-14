@@ -13,7 +13,7 @@ Function::Function(Program *program, const FunctionKey &func_key)
 
 void Function::set_function_body(const std::function<void()> &func) {
   context = std::make_unique<FrontendContext>(program->compile_config().arch,
-                                              /*is_kernel=*/false);
+                                              /*is_kernel_=*/false);
   ir = context->get_root();
   ir_stage_ = IRStage::AST;
 

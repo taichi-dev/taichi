@@ -508,3 +508,21 @@ def test_real_func_struct_ret_with_matrix():
         return s.a + s.b.a[0] + s.b.a[1] + s.b.a[2] + s.b.b
 
     assert foo() == pytest.approx(105.2)
+
+
+@test_utils.test(arch=[ti.cpu, ti.cuda])
+def test_break_in_real_func():
+    @ti.experimental.real_func
+    def bar() -> int:
+        a = 0
+        for i in range(10):
+            if i == 5:
+                break
+            a += 1
+        return a
+
+    @ti.kernel
+    def foo() -> int:
+        return bar()
+
+    assert foo() == 5

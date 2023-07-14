@@ -52,7 +52,7 @@ print(p(view_params))  # 1.0
 
 Argument packs facilitate the caching of parameters within the device buffer, leading to significant performance enhancements for kernels that are repeatedly invoked with identical parameters.
 
-- Without argument packs, parameter values are copied to device memory each time, resulting in time overhead due to memory copying.
+- In the absence of argument packs, parameter values are copied to device memory every time, leading to additional time overhead caused by the memory copying process.
   ![Copying Operations Performed Without ArgPacks](https://raw.githubusercontent.com/taichi-dev/public_files/master/taichi/doc/without_argpack_memory_copying.svg)
 
 - With argument packs, parameter values can be cached in the device buffer, which eliminates the need for repetitive and resource-intensive memory copying.

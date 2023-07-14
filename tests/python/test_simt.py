@@ -34,6 +34,34 @@ def test_all_nonzero():
     for i in range(32):
         assert a[i] == 0
 
+@test_utils.test(arch=ti.cuda)
+def test_sync_all_nonzero():
+    a = ti.field(dtype=ti.i32, shape=256)
+    b = ti.field(dtype=ti.i32, shape=256)
+
+    @ti.kernel
+    def foo():
+        ti.loop_config(block_dim=256)
+        for i in range(256):
+            a[i] = ti.simt.block.sync_all_nonzero(b[i])
+
+    for i in range(256):
+        b[i] = 1
+        a[i] = -1
+
+    foo()
+
+    for i in range(256):
+        assert a[i] == 1
+
+    b[np.random.randint(0, 256)] = 0
+
+    foo()
+
+    for i in range(256):
+        assert a[i] == 0
+
+
 
 @test_utils.test(arch=ti.cuda)
 def test_any_nonzero():

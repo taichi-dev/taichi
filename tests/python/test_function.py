@@ -526,3 +526,21 @@ def test_break_in_real_func():
         return bar()
 
     assert foo() == 5
+
+
+@test_utils.test(arch=[ti.cpu, ti.cuda])
+def test_continue_in_real_func():
+    @ti.experimental.real_func
+    def bar() -> int:
+        a = 0
+        for i in range(10):
+            if i % 2 == 0:
+                continue
+            a += 1
+        return a
+
+    @ti.kernel
+    def foo() -> int:
+        return bar()
+
+    assert foo() == 5

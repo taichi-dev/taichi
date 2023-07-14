@@ -1793,7 +1793,7 @@ void ASTBuilder::create_scope(std::unique_ptr<Block> &list, LoopType tp) {
   LoopState prev = loop_state_stack_.back();
   if (tp == NotLoop) {
     loop_state_stack_.push_back(prev);
-  } else if (tp == For && stack_.size() == 1 && is_kernel) {
+  } else if (tp == For && stack_.size() == 1 && is_kernel_) {
     loop_state_stack_.push_back(Outermost);
   } else {
     loop_state_stack_.push_back(Inner);

@@ -65,3 +65,6 @@
 [submodule "external/backward_cpp"]
 	path = external/backward_cpp
 	url = https://github.com/bombela/backward-cpp.git
+[submodule "external/pycparser"]
+	path = external/pycparser
+	url = https://github.com/eliben/pycparser.git

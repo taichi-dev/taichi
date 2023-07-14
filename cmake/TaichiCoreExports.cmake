@@ -38,6 +38,32 @@ elseif (${CMAKE_GENERATOR} STREQUAL "XCode")
                 ${CORE_EXPORTS_OUTPUT_DIRECTORY}/lib${TAICHI_CORE_EXPORTS_NAME}.dylib)
 endif()
 
+function(generate_py_module_from_exports_h exports_header output_dir)
+    # Rerun the script if the exports header or the script itself is changed.
+    add_custom_command(
+        OUTPUT ${output_dir}/__init__.py
+        # Command: python misc/exports_to_py.py \
+        #              --exports-header taichi/exports/exports.h \
+        #              --cpp-path ${CMAKE_C_COMPILER} \
+        #              --cpp-args "['-E', '-DTI_EXPORTS_TO_PY', '-Iexternal/pycparser/utils/fake_libc_include']" \
+        #              --output-dir python/taichi/_lib/exports \
+        #              --verbose 2
+        COMMAND ${PYTHON_EXECUTABLE} ${PROJECT_SOURCE_DIR}/misc/exports_to_py.py
+            --exports-header ${exports_header}
+            --cpp-path ${CMAKE_C_COMPILER}
+            --cpp-args "['-E', '-DTI_EXPORTS_TO_PY', '-I${PROJECT_SOURCE_DIR}/external/pycparser/utils/fake_libc_include']"
+            --output-dir ${output_dir}
+            --verbose 2
+        DEPENDS ${PROJECT_SOURCE_DIR}/misc/exports_to_py.py ${exports_header}
+        WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
+    )
+    add_custom_target(
+        "taichi_generate_py_module_from_exports_h"
+        ALL
+        DEPENDS ${output_dir}/__init__.py
+    )
+endfunction()
+
 function(install_taichi_core_exports INSTALL_NAME TAICHI_CORE_EXPORTS_DIR)
 
   # This is the `CMAKE_INSTALL_PREFIX` from command line.
@@ -62,4 +88,5 @@ endfunction()
 
 if (TI_WITH_PYTHON)
   install_taichi_core_exports(PyTaichi python/taichi/_lib/core_exports)
+  generate_py_module_from_exports_h(${PROJECT_SOURCE_DIR}/taichi/exports/exports.h ${PROJECT_SOURCE_DIR}/python/taichi/_lib/exports)
 endif()

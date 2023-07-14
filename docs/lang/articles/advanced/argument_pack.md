@@ -55,7 +55,7 @@ Argument packs facilitate the caching of parameters within the device buffer, le
 - In the absence of argument packs, parameter values are copied to device memory every time, leading to additional time overhead caused by the memory copying process.
   ![Copying Operations Performed Without ArgPacks](https://raw.githubusercontent.com/taichi-dev/public_files/master/taichi/doc/without_argpack_memory_copying.svg)
 
-- With argument packs, parameter values can be cached in the device buffer, which eliminates the need for repetitive and resource-intensive memory copying.
+- By employing argument packs, parameter values can be stored and cached directly in the device buffer, eliminating the need for redundant and resource-consuming memory copying operations.
   ![Copying Operations Performed With ArgPacks](https://raw.githubusercontent.com/taichi-dev/public_files/master/taichi/doc/argument_pack_memory_copying.svg)
 
 

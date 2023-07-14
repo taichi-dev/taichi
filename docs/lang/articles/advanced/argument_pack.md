@@ -62,7 +62,7 @@ Argument packs facilitate the caching of parameters within the device buffer, le
 ### Argpack Nesting
 
 :::note
-This subsection covers implementation details regarding argpack. Taichi users can safely skip reading it as it does not pertain to their usage or requirements.
+This subsection delves into implementation specifics related to argpack, which may not be relevant or necessary for Taichi users to understand or utilize in their own workflows. Therefore, Taichi users can safely skip reading this section as it does not directly impact their usage or requirements.
 :::
 
 To enhance usability and convenience, argpacks have the ability to be nested within other argpacks. This feature allows for the organization and encapsulation of multiple argument packs within a single parent argpack. By enabling nesting, users can efficiently manage and handle complex sets of arguments, improving code clarity and maintainability.

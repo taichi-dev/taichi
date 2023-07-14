@@ -84,7 +84,7 @@ Value #3.1 is a struct value containing a child struct and an integer. The child
 This subsection delves into implementation specifics related to argpack, which may not be relevant or necessary for Taichi users to understand or utilize in their own workflows. Therefore, Taichi users can safely skip reading this section as it does not directly impact their usage or requirements.
 :::
 
-In its implementation, argpack is designed to store only constant values, such as primitive types, matrices, and dataclasses, directly in its buffer. However, for resource types that require more complex handling like Ndarrays, external arrays, sparse matrices and textures, argpack takes a different approach. Rather than storing these resources directly in the argpack buffer, argpack temporarily holds them within the Python `ArgPack` class. It then passes the pointers to these resources to the kernel by storing the pointers in the argument buffer during kernel launching.
+In its implementation, an argpack is specifically designed to store constant values like primitive types, matrices, and dataclasses directly within its buffer. However, for resource types that require more intricate handling, such as Ndarrays, external arrays, sparse matrices, and textures, argpack employs a different approach. Instead of storing these resources directly in the argpack buffer, it temporarily holds them within the Python `ArgPack` class. During kernel launching, argpack passes the pointers to these resources by storing them in the argument buffer.
 
 ## Limitations
 

@@ -88,11 +88,11 @@ In its implementation, argpack is designed to store only constant values, such a
 
 ## Limitations
 
-Argpacks are primarily designed as a parameter cache, which naturally impose certain limitations on their usage:
+Argpacks are primarily designed to serve as a parameter cache, which naturally introduces certain limitations on their usage:
 
-- Argpacks can only be used as kernel parameters
-- Argpacks cannot be used as return types
-- Argpacks cannot be nested in Compound Types, but can be nested in other argpacks
-- Currently, some types in argpacks are read-only in kernels, but their value can be changed outside kernels.
-  - Constant Values: Primitive types, matrices and dataclasses (structs). These types are passed by **values**, thus read-only in kernels
-  - Resources: Ndarrays, external arrays, sparse matrices and textures. These types are passed by **pointers to buffers**, thus both readable and writeable in kernels.
+- Argpacks can only be used as kernel parameters.
+- Argpacks cannot be used as return types.
+- While argpacks can be nested within other argpacks, they cannot be nested within Compound Types.
+- Presently, certain types within argpacks are read-only when used in kernels, but their values can be modified outside of kernels.
+  - Constant Values: These include primitive types, matrices, and dataclasses (structs). They are passed by value, making them read-only in kernels.
+  - Resources: This category encompasses Ndarrays, external arrays, sparse matrices, and textures. They are passed by pointers to buffers, allowing both reading and writing operations in kernels.

@@ -152,6 +152,19 @@ def type_is_cstr(type: Union[Type, CASTPtrDecl]) -> bool:
     )
 
 
+def type_is_handle(type: Union[Type, CASTPtrDecl]) -> bool:
+    from pycparser.c_ast import PtrDecl, TypeDecl, IdentifierType
+
+    if isinstance(type, Type):
+        type = type.type
+
+    if isinstance(type, TypeDecl) and isinstance(type.type, IdentifierType):
+        typename = type.type.names[0]
+        return typename.startswith("Tie") and typename.endswith("Handle")
+
+    return False
+
+
 class EnumDecl:
     def __init__(self, name: str, values: Mapping[str, int]):
         self.name = name
@@ -174,6 +187,9 @@ class FuncParameter:
 
     def is_cstr_param(self):
         return type_is_cstr(self.type)
+
+    def is_handle_param(self):
+        return type_is_handle(self.type)
 
 
 class FuncDecl:
@@ -395,9 +411,8 @@ def translate_arg_from_python_to_c(arg_name: str, param: FuncParameter) -> str:
     from pycparser.c_ast import PtrDecl
 
     arg_type = param.type
-    if param.name == "self":
-        assert arg_name == "self"
-        return f"self._handle"
+    if param.is_handle_param():
+        return f"{arg_name}.get_handle()"
     elif param.is_arr_param():
         assert isinstance(arg_type.type, PtrDecl)
         return f"{arg_name}, len({arg_name})"

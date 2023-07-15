@@ -383,6 +383,7 @@ if(TI_WITH_PYTHON)
 
     target_link_libraries(${CORE_WITH_PYBIND_LIBRARY_NAME} PRIVATE taichi_ui)
     target_link_libraries(${CORE_WITH_PYBIND_LIBRARY_NAME} PRIVATE ${CORE_LIBRARY_NAME})
+    target_link_libraries(${CORE_WITH_PYBIND_LIBRARY_NAME} PRIVATE taichi_core_exports)
 
     target_include_directories(${CORE_WITH_PYBIND_LIBRARY_NAME}
       PRIVATE

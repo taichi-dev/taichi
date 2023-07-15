@@ -68,7 +68,9 @@ def _load_dll(path):
 
 
 def load_core_exports_dll():
-    bin_path = os.path.join(package_root, "_lib", "core_exports", "bin")
+    from glob import glob
+
+    bin_path = os.path.join(package_root, "_lib", "core")
     if os.name == "nt":
         if (
             sys.version_info[0] > 3
@@ -78,13 +80,12 @@ def load_core_exports_dll():
             os.add_dll_directory(bin_path)
         else:
             os.environ["PATH"] = bin_path + os.pathsep + os.environ["PATH"]
-        dll_path = os.path.join(bin_path, "taichi_core_exports.dll")
-    elif sys.platform == "darwin":
-        dll_path = os.path.join(bin_path, "libtaichi_core_exports.dylib")
-    else:
-        dll_path = os.path.join(bin_path, "taichi_core_exports.so")
 
-    return _load_dll(dll_path)
+    dll_path = glob(os.path.join(bin_path, "taichi_python*"))
+    if len(dll_path) != 1:
+        return None
+
+    return _load_dll(dll_path[0])
 
 
 class TaichiCCore:

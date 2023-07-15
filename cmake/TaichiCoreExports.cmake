@@ -1,7 +1,20 @@
 # ./taichi/exports/CMakeLists.txt
 
+# TODO&NOTE(PGZXB): The taichi_core_exports should be a shared library to be
+# dynamically loaded by the Python module. But we cannot do this now, because
+# the C API implementation is still in progress. There are many unfinished APIs
+# that still need to be called from taichi_python, so we need to load both
+# taichi_python and taichi_core_exports, which will cause the global state of
+# taichi to be inconsistent. To solve this problem, we need to implement all C
+# APIs in taichi_core_exports, and then gradually migrate the APIs in
+# taichi_python to taichi_core_exports, and finally delete taichi_python. But
+# this process will take a long time, so we cannot do it now. The current
+# approach is to include taichi_core_exports as an object library into
+# taichi_python, which will be dynamically loaded. When all C APIs are
+# implemented, taichi_core_exports will be separated.
+
 set(TAICHI_CORE_EXPORTS_NAME taichi_core_exports)
-add_library(${TAICHI_CORE_EXPORTS_NAME} SHARED)
+add_library(${TAICHI_CORE_EXPORTS_NAME} OBJECT)
 target_sources(${TAICHI_CORE_EXPORTS_NAME}
   PRIVATE
     ${PROJECT_SOURCE_DIR}/taichi/exports/export_lang.cpp
@@ -16,27 +29,6 @@ target_include_directories(${TAICHI_CORE_EXPORTS_NAME}
   )
 
 target_link_libraries(${TAICHI_CORE_EXPORTS_NAME} PRIVATE taichi_core)
-
-set(CORE_EXPORTS_OUTPUT_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/build")
-set_target_properties(${TAICHI_CORE_EXPORTS_NAME} PROPERTIES
-    LIBRARY_OUTPUT_DIRECTORY ${CORE_EXPORTS_OUTPUT_DIRECTORY}
-    ARCHIVE_OUTPUT_DIRECTORY ${CORE_EXPORTS_OUTPUT_DIRECTORY})
-
-if (${CMAKE_GENERATOR} MATCHES "^Visual Studio")
-  # Visual Studio is a multi-config generator, which appends ${CMAKE_BUILD_TYPE} to the output folder
-  add_custom_command(
-        TARGET ${TAICHI_CORE_EXPORTS_NAME} POST_BUILD
-        COMMAND ${CMAKE_COMMAND} -E copy
-                ${CORE_EXPORTS_OUTPUT_DIRECTORY}/${CMAKE_BUILD_TYPE}/${TAICHI_CORE_EXPORTS_NAME}.dll
-                ${CORE_EXPORTS_OUTPUT_DIRECTORY}/${TAICHI_CORE_EXPORTS_NAME}.dll)
-elseif (${CMAKE_GENERATOR} STREQUAL "XCode")
-  # XCode is also a multi-config generator
-  add_custom_command(
-        TARGET ${TAICHI_CORE_EXPORTS_NAME} POST_BUILD
-        COMMAND ${CMAKE_COMMAND} -E copy
-                ${CORE_EXPORTS_OUTPUT_DIRECTORY}/${CMAKE_BUILD_TYPE}/lib${TAICHI_CORE_EXPORTS_NAME}.dylib
-                ${CORE_EXPORTS_OUTPUT_DIRECTORY}/lib${TAICHI_CORE_EXPORTS_NAME}.dylib)
-endif()
 
 function(generate_py_module_from_exports_h exports_header output_dir)
     # Rerun the script if the exports header or the script itself is changed.
@@ -64,29 +56,6 @@ function(generate_py_module_from_exports_h exports_header output_dir)
     )
 endfunction()
 
-function(install_taichi_core_exports INSTALL_NAME TAICHI_CORE_EXPORTS_DIR)
-
-  # This is the `CMAKE_INSTALL_PREFIX` from command line.
-  set(CMAKE_INSTALL_PREFIX_BACKUP ${CMAKE_INSTALL_PREFIX})
-  # This thing is read by `install(EXPORT ...)` to generate `_IMPORT_PREFIX` in
-  # `TaichiTargets.cmake`. Replace the original value to avoid the absolute
-  # path.
-  set(CMAKE_INSTALL_PREFIX ${CMAKE_INSTALL_PREFIX_BACKUP}/${TAICHI_CORE_EXPORTS_DIR})
-
-  message("Installing to ${CMAKE_INSTALL_PREFIX}")
-
-  install(TARGETS ${TAICHI_CORE_EXPORTS_NAME} EXPORT TaichiExportTargets${INSTALL_NAME}
-      # LIBRARY DESTINATION ${TAICHI_CORE_EXPORTS_DIR}/${CMAKE_INSTALL_LIBDIR}
-      # ARCHIVE DESTINATION ${TAICHI_CORE_EXPORTS_DIR}/${CMAKE_INSTALL_LIBDIR}
-      RUNTIME DESTINATION ${TAICHI_CORE_EXPORTS_DIR}/${CMAKE_INSTALL_BINDIR}
-      # PUBLIC_HEADER DESTINATION ${TAICHI_CORE_EXPORTS_DIR}/${CMAKE_INSTALL_INCLUDEDIR}/taichi/core
-      )
-
-  # Recover the original value in case it's used by other targets.
-  set(CMAKE_INSTALL_PREFIX ${CMAKE_INSTALL_PREFIX_BACKUP})
-endfunction()
-
 if (TI_WITH_PYTHON)
-  install_taichi_core_exports(PyTaichi python/taichi/_lib/core_exports)
   generate_py_module_from_exports_h(${PROJECT_SOURCE_DIR}/taichi/exports/exports.h ${PROJECT_SOURCE_DIR}/python/taichi/_lib/exports)
 endif()

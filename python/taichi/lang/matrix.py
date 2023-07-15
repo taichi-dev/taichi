@@ -4,7 +4,7 @@ from collections.abc import Iterable
 from itertools import product
 
 import numpy as np
-from taichi._lib import core as ti_python_core, ccore as _ti_ccore
+from taichi._lib import core as ti_python_core
 from taichi.lang import expr, impl
 from taichi.lang import ops as ops_mod
 from taichi.lang import runtime_ops

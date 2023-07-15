@@ -2,7 +2,7 @@ import numbers
 from types import MethodType
 
 import numpy as np
-from taichi._lib import core as _ti_core, ccore as _ti_ccore
+from taichi._lib import core as _ti_core
 from taichi.lang import expr, impl, ops
 from taichi.lang.enums import Layout
 from taichi.lang.exception import (

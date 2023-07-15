@@ -580,7 +580,7 @@ void export_lang(py::module &m) {
       .def("total_shape", &Ndarray::total_shape)
       .def("element_shape", &Ndarray::get_element_shape)
       .def("element_data_type", &Ndarray::get_element_data_type)
-      .def("get_raw_ptr",
+      .def("get_handle",
            [](Ndarray *self) -> std::uintptr_t {
              return reinterpret_cast<std::uintptr_t>(self);
            })
@@ -597,7 +597,7 @@ void export_lang(py::module &m) {
       .def("device_allocation_ptr", &Texture::get_device_allocation_ptr_as_int)
       .def("from_ndarray", &Texture::from_ndarray)
       .def("from_snode", &Texture::from_snode)
-      .def("get_raw_ptr", [](Texture *self) -> std::uintptr_t {
+      .def("get_handle", [](Texture *self) -> std::uintptr_t {
         return reinterpret_cast<std::uintptr_t>(self);
       });
 
@@ -758,7 +758,7 @@ void export_lang(py::module &m) {
             return &self->context->builder();
           },
           py::return_value_policy::reference)
-      .def("get_raw_ptr", [](Kernel *self) -> std::uintptr_t {
+      .def("get_handle", [](Kernel *self) -> std::uintptr_t {
         return reinterpret_cast<std::uintptr_t>(self);
       });
 

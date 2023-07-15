@@ -674,7 +674,7 @@ class Kernel:
         callbacks = []
 
         actual_argument_slot = 0
-        launch_ctx = _ti_ccore.tie_LaunchContextBuilder_create(t_kernel.get_raw_ptr())
+        launch_ctx = _ti_ccore.LaunchContextBuilder(t_kernel)
         max_arg_num = 64
         exceed_max_arg_num = False
         for i, val in enumerate(args):
@@ -705,28 +705,28 @@ class Kernel:
                 if id(needed) in primitive_types.real_type_ids:
                     if not isinstance(v, (float, int, np.floating, np.integer)):
                         raise TaichiRuntimeTypeError.get(i, needed.to_string(), provided)
-                    _ti_ccore.tie_LaunchContextBuilder_set_arg_float(launch_ctx, actual_argument_slot, float(v))
+                    launch_ctx.set_arg_float(actual_argument_slot, float(v))
                 elif id(needed) in primitive_types.integer_type_ids:
                     if not isinstance(v, (int, np.integer)):
                         raise TaichiRuntimeTypeError.get(i, needed.to_string(), provided)
                     if is_signed(cook_dtype(needed)):
-                        _ti_ccore.tie_LaunchContextBuilder_set_arg_int(launch_ctx, actual_argument_slot, int(v))
+                        launch_ctx.set_arg_int(actual_argument_slot, int(v))
                     else:
-                        _ti_ccore.tie_LaunchContextBuilder_set_arg_uint(launch_ctx, actual_argument_slot, int(v))
+                        launch_ctx.set_arg_int(actual_argument_slot, int(v))
                 elif isinstance(needed, sparse_matrix_builder):
                     # Pass only the base pointer of the ti.types.sparse_matrix_builder() argument
-                    _ti_ccore.tie_LaunchContextBuilder_set_arg_uint(launch_ctx, actual_argument_slot, v._get_base_ptr())
+                    launch_ctx.set_arg_uint(actual_argument_slot, v._get_ndarray_addr())
                 elif isinstance(needed, ndarray_type.NdarrayType) and isinstance(v, taichi.lang._ndarray.Ndarray):
                     v_primal = v.arr
                     v_grad = v.grad.arr if v.grad else None
                     if v_grad is None:
-                        _ti_ccore.tie_LaunchContextBuilder_set_arg_ndarray(launch_ctx, actual_argument_slot, v_primal.get_raw_ptr())
+                        launch_ctx.set_arg_ndarray(actual_argument_slot, v_primal)
                     else:
-                        _ti_ccore.tie_LaunchContextBuilder_set_arg_ndarray_with_grad(launch_ctx, actual_argument_slot, v_primal.get_raw_ptr(), v_grad.get_raw_ptr())
+                        launch_ctx.set_arg_ndarray_with_grad(actual_argument_slot, v_primal, v_grad)
                 elif isinstance(needed, texture_type.TextureType) and isinstance(v, taichi.lang._texture.Texture):
-                    _ti_ccore.tie_LaunchContextBuilder_set_arg_texture(launch_ctx, actual_argument_slot, v.tex.get_raw_ptr())
+                    launch_ctx.set_arg_texture(actual_argument_slot, v.tex)
                 elif isinstance(needed, texture_type.RWTextureType) and isinstance(v, taichi.lang._texture.Texture):
-                    _ti_ccore.tie_LaunchContextBuilder_set_arg_rw_texture(launch_ctx, actual_argument_slot, v.tex.get_raw_ptr())
+                    launch_ctx.set_arg_rw_texture(actual_argument_slot, v.tex)
                 elif isinstance(needed, ndarray_type.NdarrayType):
                     # Element shapes are already specialized in Taichi codegen.
                     # The shape information for element dims are no longer needed.
@@ -745,9 +745,7 @@ class Kernel:
                         array_shape = v.shape[element_dim:] if is_soa else v.shape[:-element_dim]
                     if isinstance(v, np.ndarray):
                         if v.flags.c_contiguous:
-                            _ti_ccore.tie_LaunchContextBuilder_set_arg_external_array_with_shape(
-                                launch_ctx, actual_argument_slot, int(v.ctypes.data), v.nbytes, array_shape, 0
-                            )
+                            launch_ctx.set_arg_external_array_with_shape(actual_argument_slot, int(v.ctypes.data), v.nbytes, array_shape, 0)
                         elif v.flags.f_contiguous:
                             # TODO: A better way that avoids copying is saving strides info.
                             tmp = np.ascontiguousarray(v)
@@ -758,9 +756,7 @@ class Kernel:
                                 np.copyto(original, np.asfortranarray(updated))
 
                             callbacks.append(functools.partial(callback, v, tmp))
-                            _ti_ccore.tie_LaunchContextBuilder_set_arg_external_array_with_shape(
-                                launch_ctx, actual_argument_slot, int(tmp.ctypes.data), tmp.nbytes, array_shape, 0
-                            )
+                            launch_ctx.set_arg_external_array_with_shape(actual_argument_slot, int(tmp.ctypes.data), tmp.nbytes, array_shape, 0)
                         else:
                             raise ValueError(
                                 "Non contiguous numpy arrays are not supported, please call np.ascontiguousarray(arr) "
@@ -796,8 +792,7 @@ class Kernel:
                                 tmp = host_v
                                 callbacks.append(get_call_back(v, host_v))
 
-                            _ti_ccore.tie_LaunchContextBuilder_set_arg_external_array_with_shape(
-                                launch_ctx,
+                            launch_ctx.set_arg_external_array_with_shape(
                                 actual_argument_slot,
                                 int(tmp.data_ptr()),
                                 tmp.element_size() * tmp.nelement(),
@@ -836,8 +831,7 @@ class Kernel:
                                 raise TaichiRuntimeTypeError(
                                     f"Taichi do not support backend {v.place} that Paddle support"
                                 )
-                            _ti_ccore.tie_LaunchContextBuilder_set_arg_external_array_with_shape(
-                                launch_ctx,
+                            launch_ctx.set_arg_external_array_with_shape(
                                 actual_argument_slot,
                                 int(tmp._ptr()),
                                 v.element_size() * v.size,
@@ -891,7 +885,7 @@ class Kernel:
             # Compile kernel (& Online Cache & Offline Cache)
             compiled_kernel_data = prog.compile_kernel(prog.config(), prog.get_device_caps(), t_kernel)
             # Launch kernel
-            prog.c_launch_kernel(compiled_kernel_data, launch_ctx)
+            prog.c_launch_kernel(compiled_kernel_data, launch_ctx.get_handle())
         except Exception as e:
             e = handle_exception_from_cpp(e)
             if impl.get_runtime().print_full_traceback:
@@ -922,10 +916,10 @@ class Kernel:
             return ret_type.from_kernel_struct_ret(launch_ctx, index)
         if ret_type in primitive_types.integer_types:
             if is_signed(cook_dtype(ret_type)):
-                return _ti_ccore.tie_LaunchContextBuilder_get_struct_ret_int(launch_ctx, index)
-            return _ti_ccore.tie_LaunchContextBuilder_get_struct_ret_uint(launch_ctx, index)
+                return launch_ctx.get_struct_ret_int(index)
+            return launch_ctx.get_struct_ret_uint(index)
         if ret_type in primitive_types.real_types:
-            return _ti_ccore.tie_LaunchContextBuilder_get_struct_ret_float(launch_ctx, index)
+            return launch_ctx.get_struct_ret_float(index)
         raise TaichiRuntimeTypeError(f"Invalid return type on index={index}")
 
     def ensure_compiled(self, *args):

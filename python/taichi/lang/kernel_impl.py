@@ -712,7 +712,7 @@ class Kernel:
                     if is_signed(cook_dtype(needed)):
                         launch_ctx.set_arg_int(actual_argument_slot, int(v))
                     else:
-                        launch_ctx.set_arg_int(actual_argument_slot, int(v))
+                        launch_ctx.set_arg_uint(actual_argument_slot, int(v))
                 elif isinstance(needed, sparse_matrix_builder):
                     # Pass only the base pointer of the ti.types.sparse_matrix_builder() argument
                     launch_ctx.set_arg_uint(actual_argument_slot, v._get_ndarray_addr())

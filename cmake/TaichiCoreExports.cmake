@@ -48,6 +48,7 @@ function(generate_py_module_from_exports_h exports_header output_dir)
             --verbose 2
         DEPENDS ${PROJECT_SOURCE_DIR}/misc/exports_to_py.py ${exports_header}
         WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
+        VERBATIM
     )
     add_custom_target(
         "taichi_generate_py_module_from_exports_h"

@@ -5,6 +5,7 @@
 #define _Atomic(x) x  // To make pycparser happy
 #endif // defined(TI_EXPORTS_TO_PY)
 
+#include <stddef.h>
 #include <stdint.h>
 
 #ifndef _CRT_SECURE_NO_WARNINGS

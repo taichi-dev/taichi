@@ -91,6 +91,7 @@ class Clean(clean):
             "python/taichi/assets",
             "python/taichi/_lib/runtime",
             "python/taichi/_lib/c_api",
+            "python/taichi/_lib/exports",
             "taichi.egg-info",
             "python/taichi.egg-info",
             "build",
@@ -102,7 +103,6 @@ class Clean(clean):
         generated_files += glob.glob("taichi/runtime/llvm/runtime_*.bc")
         generated_files += glob.glob("python/taichi/_lib/core/*.so")
         generated_files += glob.glob("python/taichi/_lib/core/*.pyd")
-        generated_files += glob.glob("python/taichi/_lib/exports/**/*.py", recursive=True)
         for f in generated_files:
             if os.path.exists(f):
                 print(f"removing generated file {f}")

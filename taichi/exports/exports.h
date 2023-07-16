@@ -84,7 +84,7 @@ typedef enum TieError {
   // Success (always 0)
   TIE_ERROR_SUCCESS = 0,
 
-  // Invliad argument
+  // Invalid argument
   TIE_ERROR_INVALID_ARGUMENT = -101,
   TIE_ERROR_INVALID_RETURN_ARG = -102,
   TIE_ERROR_INVALID_HANDLE = -103,

@@ -836,7 +836,7 @@ class Kernel:
                                 int(tmp._ptr()),
                                 v.element_size() * v.size,
                                 array_shape,
-                                0,
+                                0
                             )
                         else:
                             raise TaichiRuntimeTypeError.get(i, needed.to_string(), v)

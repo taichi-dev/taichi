@@ -123,47 +123,53 @@ C_BUILTIN_TYPE_TO_CTYPES_TYPE = {
 }
 
 
-Type = CASTDecl
+class CType:
+    def __init__(self, base_type_name: str, ptr_levels: int = 0):
+        self.base_type_name = base_type_name
+        self.ptr_levels = ptr_levels
 
+    @staticmethod
+    def from_cast_node(node, added_ptr_levels: int = 0):
+        from pycparser.c_ast import TypeDecl, IdentifierType, PtrDecl
 
-def type_exclude_ptr(type, levels: int):
-    from pycparser.c_ast import PtrDecl
+        type = node.type if isinstance(node, CASTDecl) else node
+        if isinstance(type, TypeDecl):
+            return CType.from_cast_node(type.type, added_ptr_levels)
+        elif isinstance(type, IdentifierType):
+            return CType(type.names[0], added_ptr_levels)
+        elif isinstance(type, PtrDecl):
+            return CType.from_cast_node(type.type, added_ptr_levels + 1)
+        else:
+            raise ValueError(f"Unknown type: {type}")
 
-    if isinstance(type, Type):
-        type = type.type
+    def exclude_ptr(self, levels: int):
+        assert self.ptr_levels >= levels
+        return CType(self.base_type_name, self.ptr_levels - levels)
 
-    if levels == 0:
-        return type
-    if isinstance(type, PtrDecl):
-        return type_exclude_ptr(type.type, levels - 1)
-    return type
+    def is_ptr(self):
+        return self.ptr_levels > 0
 
+    def is_cstr(self):
+        return self.base_type_name == "char" and self.ptr_levels == 1
 
-def type_is_cstr(type: Union[Type, CASTPtrDecl]) -> bool:
-    from pycparser.c_ast import PtrDecl, TypeDecl, IdentifierType
+    def is_handle(self):
+        typename = self.base_type_name
+        return (
+            typename.startswith("Tie")
+            and typename.endswith("Handle")
+            and self.ptr_levels == 0
+        )
 
-    if isinstance(type, Type):
-        type = type.type
+    def __str__(self):
+        return f"{self.base_type_name}{'*' * self.ptr_levels}"
 
-    return (
-        isinstance(type, PtrDecl)
-        and isinstance(type.type, TypeDecl)
-        and isinstance(type.type.type, IdentifierType)
-        and type.type.type.names[0] == "char"
-    )
-
-
-def type_is_handle(type: Union[Type, CASTPtrDecl]) -> bool:
-    from pycparser.c_ast import PtrDecl, TypeDecl, IdentifierType
-
-    if isinstance(type, Type):
-        type = type.type
-
-    if isinstance(type, TypeDecl) and isinstance(type.type, IdentifierType):
-        typename = type.type.names[0]
-        return typename.startswith("Tie") and typename.endswith("Handle")
-
-    return False
+    def __eq__(self, other: object) -> bool:
+        if not isinstance(other, CType):
+            return False
+        return (
+            self.base_type_name == other.base_type_name
+            and self.ptr_levels == other.ptr_levels
+        )
 
 
 class EnumDecl:
@@ -173,7 +179,7 @@ class EnumDecl:
 
 
 class FuncParameter:
-    def __init__(self, name: str, type: Type):
+    def __init__(self, name: str, type: CType):
         self.name = name
         self.type = type
 
@@ -181,16 +187,16 @@ class FuncParameter:
         return not self.is_out_param()
 
     def is_out_param(self):
-        return self.name.startswith("ret_")
+        return self.type.is_ptr() and self.name.startswith("ret_")
 
     def is_arr_param(self):
-        return self.name.startswith("ap_")
+        return self.type.is_ptr() and self.name.startswith("ap_")
 
     def is_cstr_param(self):
-        return type_is_cstr(self.type)
+        return self.type.is_cstr()
 
     def is_handle_param(self):
-        return type_is_handle(self.type)
+        return self.type.is_handle()
 
 
 class FuncDecl:
@@ -199,7 +205,7 @@ class FuncDecl:
         name: str,
         in_params: List[FuncParameter],
         out_params: List[FuncParameter],
-        ret_type: Type,
+        ret_type: CType,
     ):
         self.name = name
         self.in_params = in_params
@@ -271,18 +277,18 @@ class ExportsHeaderASTVisitor(NodeVisitor):
         ret_type = c_ast_func_decl.type
         in_params, out_params = [], []
         for p in args.params:
-            param = FuncParameter(name=p.name, type=p)
+            param = FuncParameter(name=p.name, type=CType.from_cast_node(p))
             if param.is_in_param():
                 in_params.append(param)
             elif param.is_out_param():
                 out_params.append(param)
             else:
-                raise ValueError(f"Unknown type: {param.type}")
+                raise ValueError(f"Unknown type: {p.name}")
         func_decl = FuncDecl(
             name=func_name,
             in_params=in_params,
             out_params=out_params,
-            ret_type=ret_type,
+            ret_type=CType.from_cast_node(ret_type),
         )
         self.funcs.append(func_decl)
         self._printer(f"Found function: {func_name}", verbose_level=2)
@@ -334,28 +340,24 @@ def parse_exports_header(
     return ExportsHeader(enums=enums, funcs=funcs)
 
 
-def translate_c_type_to_ctypes_type(type, exclude_ptr_levels: int = 0) -> str:
-    from pycparser.c_ast import TypeDecl, IdentifierType, PtrDecl
+def translate_c_type_to_ctypes_type(type: CType, exclude_ptr_levels: int = 0) -> str:
+    type = type.exclude_ptr(exclude_ptr_levels)
+    typename = type.base_type_name
+    ptr_levels = type.ptr_levels
 
-    ctype = type.type if isinstance(type, Type) else type
-    if isinstance(ctype, TypeDecl):
-        return translate_c_type_to_ctypes_type(ctype.type, exclude_ptr_levels)
-    elif isinstance(ctype, IdentifierType):
-        typename = ctype.names[0]
+    if ptr_levels == 0:
         if typename in C_BUILTIN_TYPE_TO_CTYPES_TYPE:
             return C_BUILTIN_TYPE_TO_CTYPES_TYPE[typename]
-        if typename.startswith("Tie") and typename.endswith("Handle"):
+        elif type.is_handle():
             return "ctypes.c_void_p"
-    elif isinstance(ctype, PtrDecl):
-        if exclude_ptr_levels > 0:
-            return translate_c_type_to_ctypes_type(ctype.type, exclude_ptr_levels - 1)
-        if isinstance(ctype.type.type, IdentifierType):
-            typename = ctype.type.type.names[0]
-            if typename == "char":
-                return "ctypes.c_char_p"
-        return f"ctypes.POINTER({translate_c_type_to_ctypes_type(ctype.type, 0)})"
+        else:
+            raise ValueError(f"Unknown type: {typename}")
+    elif type.is_cstr():
+        return "ctypes.c_char_p"
     else:
-        raise ValueError(f"Unknown type: {ctype}")
+        return (
+            f"ctypes.POINTER({translate_c_type_to_ctypes_type(type.exclude_ptr(1), 0)})"
+        )
 
 
 def translate_func_decl(
@@ -409,20 +411,16 @@ def translate_func_decl(
 
 
 def translate_arg_from_python_to_c(arg_name: str, param: FuncParameter) -> str:
-    from pycparser.c_ast import PtrDecl
-
     arg_type = param.type
     if param.is_handle_param():
         return f"{arg_name}.get_handle()"
     elif param.is_arr_param():
-        assert isinstance(arg_type.type, PtrDecl)
         return f"{arg_name}, len({arg_name})"
     elif param.is_cstr_param():
         return f'{arg_name}.encode("utf-8")'
     elif param.is_in_param():
         return arg_name
     elif param.is_out_param():
-        assert isinstance(arg_type.type, PtrDecl)
         return f"ctypes.byref({arg_name})"
     else:
         raise ValueError(f"Unknown type: {arg_type}")
@@ -431,8 +429,8 @@ def translate_arg_from_python_to_c(arg_name: str, param: FuncParameter) -> str:
 def translate_ret_from_c_to_python(ret_var_name: str, out_param: FuncParameter) -> str:
     assert out_param.is_out_param()
 
-    value_type = type_exclude_ptr(out_param.type, 1)
-    if type_is_cstr(value_type):
+    value_type = out_param.type.exclude_ptr(1)
+    if value_type.is_cstr():
         return f'ctypes.string_at({ret_var_name}.value).decode("utf-8")'
     else:
         return f"{ret_var_name}.value"
@@ -480,7 +478,7 @@ def generate_func_def_code_from_func_decl(
     fp_write(f"{tab}ret = taichi_ccore.{original_func.name}(" + ", ".join(args) + ")\n")
 
     # Process ret (error code)
-    assert original_func.ret_type.type.names[0] == "int"
+    assert original_func.ret_type == CType("int")
     if func_def_name == "get_last_error":  # NOTE: Avoid infinite recursion
         fp_write(f"{tab}if ret != 0:\n")
         fp_write(

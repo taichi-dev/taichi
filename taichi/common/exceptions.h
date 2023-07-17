@@ -3,10 +3,37 @@
 #include <exception>
 #include <string>
 #include <string_view>
+#include "taichi/common/logging.h"
+
 namespace taichi::lang {
 
 class IRModified {};
-struct DebugInfo;
+
+struct Location {
+  int line_number = 0;
+  std::string var_name = "";
+};
+
+struct DebugInfo {
+  Location src_loc;
+  std::string tb;
+
+  explicit DebugInfo() = default;
+
+  explicit DebugInfo(std::string tb_) : tb(tb_) {
+  }
+
+  explicit DebugInfo(const char *tb_) : tb(tb_) {
+  }
+
+  std::string const &get_tb() const {
+    return tb;
+  }
+
+  void set_tb(std::string const &tb) {
+    this->tb = tb;
+  }
+};
 
 class TaichiExceptionImpl : public std::exception {
   friend struct ErrorEmitter;
@@ -99,11 +126,14 @@ struct ErrorEmitter {
   template <typename E,
             typename = std::enable_if_t<
                 std::is_base_of_v<TaichiExceptionImpl, std::decay_t<E>>>,
+            // The expected type for T is `Stmt`, `Expression`, or `DebugInfo`.
+            // These types have a member function named get_tb() that returns
+            // trace back information as a `std::string`.
             typename T,
-            typename = std::enable_if_t<
-                std::is_same_v<std::decay_t<decltype(std::declval<T>()->tb)>,
-                               std::string>>>
-  ErrorEmitter(E &&error, T p_stmt, std::string &&error_msg) {
+            typename = std::enable_if_t<std::is_same_v<
+                std::decay_t<decltype(std::declval<T>()->get_tb())>,
+                std::string>>>
+  ErrorEmitter(E &&error, T p_dbg_info, std::string &&error_msg) {
     if constexpr ((std::is_same_v<std::decay_t<T>, DebugInfo *> ||
                    std::is_same_v<std::decay_t<T>, const DebugInfo *>)&&std::
                       is_base_of_v<TaichiError, std::decay_t<E>>) {
@@ -111,7 +141,7 @@ struct ErrorEmitter {
       // tb here
       error.msg_ = error_msg;
     } else {
-      error.msg_ = p_stmt->tb + error_msg;
+      error.msg_ = p_dbg_info->get_tb() + error_msg;
     }
 
     if constexpr (std::is_base_of_v<TaichiWarning, std::decay_t<E>>) {
@@ -119,15 +149,7 @@ struct ErrorEmitter {
     } else if constexpr (std::is_base_of_v<TaichiError, std::decay_t<E>>) {
       throw std::move(error);
     } else {
-      TI_STOP;
-    }
-  }
-
-  // Emit an error when expression is false
-  template <typename E, typename T>
-  ErrorEmitter(bool expression, E &&error, T p_stmt, std::string &&error_msg) {
-    if (!expression) {
-      ErrorEmitter(std::move(error), p_stmt, std::move(error_msg));
+      TI_NOT_IMPLEMENTED;
     }
   }
 };

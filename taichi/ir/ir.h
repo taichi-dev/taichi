@@ -387,24 +387,6 @@ class StmtFieldManager {
   mark_fields_registered(); \
   io(field_manager)
 
-struct Location {
-  int line_number;
-  std::string var_name;
-};
-
-struct DebugInfo {
-  Location src_loc;
-  std::string tb;
-
-  explicit DebugInfo() = default;
-
-  DebugInfo(std::string tb_) : tb(tb_) {
-  }
-
-  DebugInfo(const char *tb_) : tb(tb_) {
-  }
-};
-
 class Stmt : public IRNode {
  protected:
   std::vector<Stmt **> operands;

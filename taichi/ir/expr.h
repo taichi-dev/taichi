@@ -95,6 +95,8 @@ class Expr {
   // traceback for type checking error message
   void set_tb(const std::string &tb);
 
+  const std::string &get_tb() const;
+
   void set_adjoint(const Expr &o);
 
   void set_dual(const Expr &o);

@@ -1376,7 +1376,7 @@ class MakeAdjoint : public ADTransform {
 
     } else {
       TI_WARN("gradient of binary op {}\n{}", binary_op_type_name(bin->op_type),
-              bin->tb);
+              bin->get_tb());
       TI_NOT_IMPLEMENTED;
     }
   }
@@ -2012,7 +2012,7 @@ class MakeDual : public ADTransform {
       // do nothing
     } else {
       TI_WARN("gradient of binary op {}\n{}", binary_op_type_name(bin->op_type),
-              bin->tb);
+              bin->get_tb());
       TI_NOT_IMPLEMENTED
     }
   }
@@ -2455,7 +2455,7 @@ class GloablDataAccessRuleChecker : public BasicStmtVisitor {
         "(kernel={}) Breaks the global data access rule. Snode {} is "
         "overwritten unexpectedly.",
         kernel_name_, dest->snode->get_node_type_name());
-    msg += "\n" + stmt->tb;
+    msg += "\n" + stmt->get_tb();
 
     stmt->insert_before_me(
         Stmt::make<AssertStmt>(check_equal, msg, std::vector<Stmt *>()));

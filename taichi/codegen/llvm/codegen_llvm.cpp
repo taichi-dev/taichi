@@ -569,7 +569,7 @@ void TaskCodeGenLLVM::visit(BinaryOpStmt *stmt) {
       llvm_val[stmt] =
           call("debug_add_" + stmt->ret_type->to_string(), get_arg(0),
                llvm_val[stmt->lhs], llvm_val[stmt->rhs],
-               builder->CreateGlobalStringPtr(stmt->tb));
+               builder->CreateGlobalStringPtr(stmt->get_tb()));
 #endif
     } else {
       llvm_val[stmt] =
@@ -584,7 +584,7 @@ void TaskCodeGenLLVM::visit(BinaryOpStmt *stmt) {
       llvm_val[stmt] =
           call("debug_sub_" + stmt->ret_type->to_string(), get_arg(0),
                llvm_val[stmt->lhs], llvm_val[stmt->rhs],
-               builder->CreateGlobalStringPtr(stmt->tb));
+               builder->CreateGlobalStringPtr(stmt->get_tb()));
 #endif
     } else {
       llvm_val[stmt] =
@@ -599,7 +599,7 @@ void TaskCodeGenLLVM::visit(BinaryOpStmt *stmt) {
       llvm_val[stmt] =
           call("debug_mul_" + stmt->ret_type->to_string(), get_arg(0),
                llvm_val[stmt->lhs], llvm_val[stmt->rhs],
-               builder->CreateGlobalStringPtr(stmt->tb));
+               builder->CreateGlobalStringPtr(stmt->get_tb()));
 #endif
     } else {
       llvm_val[stmt] =
@@ -646,7 +646,7 @@ void TaskCodeGenLLVM::visit(BinaryOpStmt *stmt) {
       llvm_val[stmt] =
           call("debug_shl_" + stmt->ret_type->to_string(), get_arg(0),
                llvm_val[stmt->lhs], llvm_val[stmt->rhs],
-               builder->CreateGlobalStringPtr(stmt->tb));
+               builder->CreateGlobalStringPtr(stmt->get_tb()));
     } else {
       llvm_val[stmt] =
           builder->CreateShl(llvm_val[stmt->lhs], llvm_val[stmt->rhs]);

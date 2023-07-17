@@ -101,7 +101,7 @@ MatrixPtrStmt::MatrixPtrStmt(Stmt *origin_input,
                              const std::string &tb) {
   origin = origin_input;
   offset = offset_input;
-  this->tb = tb;
+  this->set_tb(tb);
 
   if (origin->is<AllocaStmt>() || origin->is<GlobalTemporaryStmt>() ||
       origin->is<ExternalPtrStmt>() || origin->is<MatrixOfGlobalPtrStmt>() ||

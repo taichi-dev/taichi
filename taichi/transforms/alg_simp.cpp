@@ -127,7 +127,7 @@ class AlgSimp : public BasicStmtVisitor {
       auto result = Stmt::make<BinaryOpStmt>(BinaryOpType::bit_shl, stmt->lhs,
                                              new_rhs.get());
       result->ret_type = stmt->ret_type;
-      result->set_tb(stmt->tb);
+      result->dbg_info = stmt->dbg_info;
       stmt->replace_usages_with(result.get());
       modifier.insert_before(stmt, std::move(new_rhs));
       modifier.insert_before(stmt, std::move(result));
@@ -142,7 +142,7 @@ class AlgSimp : public BasicStmtVisitor {
       cast_to_result_type(a, stmt);
       auto sum = Stmt::make<BinaryOpStmt>(BinaryOpType::add, a, a);
       sum->ret_type = a->ret_type;
-      sum->set_tb(stmt->tb);
+      sum->dbg_info = stmt->dbg_info;
       stmt->replace_usages_with(sum.get());
       modifier.insert_before(stmt, std::move(sum));
       modifier.erase(stmt);
@@ -172,7 +172,7 @@ class AlgSimp : public BasicStmtVisitor {
     if (fast_math && rhs && is_real(rhs->ret_type) &&
         stmt->op_type != BinaryOpType::floordiv) {
       if (alg_is_zero(rhs)) {
-        TI_WARN("Potential division by 0\n{}", stmt->tb);
+        TI_WARN("Potential division by 0\n{}", stmt->get_tb());
       } else {
         // a / const -> a * (1 / const)
         auto reciprocal =

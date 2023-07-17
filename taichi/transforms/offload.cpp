@@ -240,7 +240,7 @@ class Offloader {
         TI_WARN(
             "Specified block dim {} is bigger than SNode element size {}. "
             "Clipping.\n{}",
-            for_stmt->block_dim, snode_num_elements, for_stmt->tb);
+            for_stmt->block_dim, snode_num_elements, for_stmt->get_tb());
         offloaded_struct_for->block_dim = snode_num_elements;
       } else {
         offloaded_struct_for->block_dim = for_stmt->block_dim;

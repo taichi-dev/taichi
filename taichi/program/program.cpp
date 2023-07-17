@@ -311,7 +311,7 @@ Kernel &Program::get_snode_writer(SNode *snode) {
     auto argload_expr = Expr::make<ArgLoadExpression>(
         snode->num_active_indices, snode->dt->get_compute_type());
     argload_expr->type_check(&this->compile_config());
-    builder.insert_assignment(expr, argload_expr, expr->tb);
+    builder.insert_assignment(expr, argload_expr, expr->get_tb());
   });
   ker.name = kernel_name;
   ker.is_accessor = true;

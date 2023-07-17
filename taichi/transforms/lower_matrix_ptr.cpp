@@ -532,7 +532,7 @@ class LowerMatrixPtr : public BasicStmtVisitor {
         TI_ASSERT_INFO(
             origin->dynamic_indexable,
             "Element of the MatrixField is not dynamic indexable.\n{}",
-            stmt->tb);
+            stmt->get_tb());
         auto stride = std::make_unique<ConstStmt>(
             TypedConstant(origin->dynamic_index_stride));
         auto offset = std::make_unique<BinaryOpStmt>(

@@ -315,7 +315,7 @@ class PyTaichi:
         self.prog = None
         self.src_info_stack = []
         self.inside_kernel = False
-        self.compiling_callable = None  # pointer to instance of lang::Kernel/Function
+        self.compiling_callable = None  # _ti_ccore.Kernel or _ti_ccore.Function
         self.current_kernel = None
         self.global_vars = []
         self.grad_vars = []

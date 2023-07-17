@@ -41,7 +41,7 @@ class Sequential:
     def dispatch(self, kernel_fn, *args):
         kernel_cpp = gen_cpp_kernel(kernel_fn, args)
         unzipped_args = flatten_args(args)
-        self.seq_.dispatch(kernel_cpp, unzipped_args)
+        self.seq_.c_dispatch(kernel_cpp.get_handle(), unzipped_args)
 
 
 class GraphBuilder:
@@ -51,7 +51,7 @@ class GraphBuilder:
     def dispatch(self, kernel_fn, *args):
         kernel_cpp = gen_cpp_kernel(kernel_fn, args)
         unzipped_args = flatten_args(args)
-        self._graph_builder.dispatch(kernel_cpp, unzipped_args)
+        self._graph_builder.c_dispatch(kernel_cpp.get_handle(), unzipped_args)
 
     def create_sequential(self):
         return Sequential(self._graph_builder.create_sequential())

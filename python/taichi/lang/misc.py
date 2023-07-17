@@ -7,6 +7,7 @@ import warnings
 from copy import deepcopy as _deepcopy
 
 from taichi._lib import core as _ti_core
+from taichi._lib import ccore as _ti_ccore
 from taichi.lang import impl
 from taichi.lang.expr import Expr
 from taichi.lang.impl import axes, get_runtime
@@ -469,7 +470,7 @@ def init(
 
 def no_activate(*args):
     """Deactivates a SNode pointer."""
-    assert isinstance(get_runtime().compiling_callable, _ti_core.Kernel)
+    assert isinstance(get_runtime().compiling_callable, _ti_ccore.Kernel)
     for v in args:
         get_runtime().compiling_callable.no_activate(v._snode.ptr)
 

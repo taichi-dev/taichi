@@ -6,6 +6,7 @@
 #include <exception>
 
 #include "taichi/common/exceptions.h"
+#include "taichi/ir/frontend_ir.h"
 #include "taichi/program/kernel.h"
 #include "taichi/program/launch_context_builder.h"
 
@@ -94,6 +95,8 @@ void tie_api_set_last_error_impl(int error, std::string msg) {
 
 }  // namespace
 
+// Error proessing
+
 int tie_G_set_last_error(int error, const char *msg) {
   tie_api_set_last_error_impl(error, msg ? msg : "");
   return TIE_ERROR_SUCCESS;
@@ -107,6 +110,158 @@ int tie_G_get_last_error(int *ret_error, const char **ret_msg) {
   *ret_msg = tie_last_error.msg.c_str();
   TIE_FUNCTION_BODY_END();
 }
+
+// class Kernel
+
+int tie_Kernel_insert_scalar_param(TieKernelHandle self,
+                                   TieDataTypeHandle dt,
+                                   const char *name,
+                                   int *ret_param_index) {
+  TIE_FUNCTION_BODY_BEGIN();
+  TIE_CHECK_HANDLE(self);
+  TIE_CHECK_HANDLE(dt);
+  TIE_CHECK_PTR_NOT_NULL(name);
+  TIE_CHECK_RETURN_ARG(ret_param_index);
+  auto *kernel = reinterpret_cast<taichi::lang::Kernel *>(self);
+  auto *data_type = reinterpret_cast<taichi::lang::DataType *>(dt);
+  *ret_param_index = kernel->insert_scalar_param(*data_type, name);
+  TIE_FUNCTION_BODY_END();
+}
+
+int tie_Kernel_insert_arr_param(TieKernelHandle self,
+                                TieDataTypeHandle dt,
+                                int total_dim,
+                                int *ap_element_shape,
+                                size_t element_shape_dim,
+                                const char *name,
+                                int *ret_param_index) {
+  TIE_FUNCTION_BODY_BEGIN();
+  TIE_CHECK_HANDLE(self);
+  TIE_CHECK_HANDLE(dt);
+  TIE_CHECK_PTR_NOT_NULL(ap_element_shape);
+  TIE_CHECK_PTR_NOT_NULL(name);
+  TIE_CHECK_RETURN_ARG(ret_param_index);
+  auto *kernel = reinterpret_cast<taichi::lang::Kernel *>(self);
+  auto *data_type = reinterpret_cast<taichi::lang::DataType *>(dt);
+  std::vector<int> element_shape(ap_element_shape,
+                                 ap_element_shape + element_shape_dim);
+  *ret_param_index =
+      kernel->insert_arr_param(*data_type, total_dim, element_shape, name);
+  TIE_FUNCTION_BODY_END();
+}
+
+int tie_Kernel_insert_ndarray_param(TieKernelHandle self,
+                                    TieDataTypeHandle dt,
+                                    int ndim,
+                                    const char *name,
+                                    int needs_grad,
+                                    int *ret_param_index) {
+  TIE_FUNCTION_BODY_BEGIN();
+  TIE_CHECK_HANDLE(self);
+  TIE_CHECK_HANDLE(dt);
+  TIE_CHECK_PTR_NOT_NULL(name);
+  TIE_CHECK_RETURN_ARG(ret_param_index);
+  auto *kernel = reinterpret_cast<taichi::lang::Kernel *>(self);
+  auto *data_type = reinterpret_cast<taichi::lang::DataType *>(dt);
+  *ret_param_index =
+      kernel->insert_ndarray_param(*data_type, ndim, name, (bool)needs_grad);
+  TIE_FUNCTION_BODY_END();
+}
+
+int tie_Kernel_insert_texture_param(TieKernelHandle self,
+                                    int total_dim,
+                                    const char *name,
+                                    int *ret_param_index) {
+  TIE_FUNCTION_BODY_BEGIN();
+  TIE_CHECK_HANDLE(self);
+  TIE_CHECK_PTR_NOT_NULL(name);
+  TIE_CHECK_RETURN_ARG(ret_param_index);
+  auto *kernel = reinterpret_cast<taichi::lang::Kernel *>(self);
+  *ret_param_index = kernel->insert_texture_param(total_dim, name);
+  TIE_FUNCTION_BODY_END();
+}
+
+int tie_Kernel_insert_pointer_param(TieKernelHandle self,
+                                    TieDataTypeHandle dt,
+                                    const char *name,
+                                    int *ret_param_index) {
+  TIE_FUNCTION_BODY_BEGIN();
+  TIE_CHECK_HANDLE(self);
+  TIE_CHECK_HANDLE(dt);
+  TIE_CHECK_PTR_NOT_NULL(name);
+  TIE_CHECK_RETURN_ARG(ret_param_index);
+  auto *kernel = reinterpret_cast<taichi::lang::Kernel *>(self);
+  auto *data_type = reinterpret_cast<taichi::lang::DataType *>(dt);
+  *ret_param_index = kernel->insert_pointer_param(*data_type, name);
+  TIE_FUNCTION_BODY_END();
+}
+
+int tie_Kernel_insert_rw_texture_param(TieKernelHandle self,
+                                       int total_dim,
+                                       int format,
+                                       const char *name,
+                                       int *ret_param_index) {
+  TIE_FUNCTION_BODY_BEGIN();
+  TIE_CHECK_HANDLE(self);
+  TIE_CHECK_PTR_NOT_NULL(name);
+  TIE_CHECK_RETURN_ARG(ret_param_index);
+  auto *kernel = reinterpret_cast<taichi::lang::Kernel *>(self);
+  *ret_param_index = kernel->insert_rw_texture_param(
+      total_dim, static_cast<taichi::lang::BufferFormat>(format), name);
+  TIE_FUNCTION_BODY_END();
+}
+
+int tie_Kernel_insert_ret(TieKernelHandle self,
+                          TieDataTypeHandle dt,
+                          int *ret_ret_index) {
+  TIE_FUNCTION_BODY_BEGIN();
+  TIE_CHECK_HANDLE(self);
+  TIE_CHECK_HANDLE(dt);
+  TIE_CHECK_RETURN_ARG(ret_ret_index);
+  auto *kernel = reinterpret_cast<taichi::lang::Kernel *>(self);
+  auto *data_type = reinterpret_cast<taichi::lang::DataType *>(dt);
+  *ret_ret_index = kernel->insert_ret(*data_type);
+  TIE_FUNCTION_BODY_END();
+}
+
+int tie_Kernel_finalize_rets(TieKernelHandle self) {
+  TIE_FUNCTION_BODY_BEGIN();
+  TIE_CHECK_HANDLE(self);
+  auto *kernel = reinterpret_cast<taichi::lang::Kernel *>(self);
+  kernel->finalize_rets();
+  TIE_FUNCTION_BODY_END();
+}
+
+int tie_Kernel_finalize_params(TieKernelHandle self) {
+  TIE_FUNCTION_BODY_BEGIN();
+  TIE_CHECK_HANDLE(self);
+  auto *kernel = reinterpret_cast<taichi::lang::Kernel *>(self);
+  kernel->finalize_params();
+  TIE_FUNCTION_BODY_END();
+}
+
+int tie_Kernel_ast_builder(TieKernelHandle self,
+                           TieASTBuilderHandle *ret_ast_builder) {
+  TIE_FUNCTION_BODY_BEGIN();
+  TIE_CHECK_HANDLE(self);
+  TIE_CHECK_RETURN_ARG(ret_ast_builder);
+  auto *kernel = reinterpret_cast<taichi::lang::Kernel *>(self);
+  *ret_ast_builder =
+      reinterpret_cast<TieASTBuilderHandle>(&kernel->context->builder());
+  TIE_FUNCTION_BODY_END();
+}
+
+int tie_Kernel_no_activate(TieKernelHandle self, TieSNodeHandle snode) {
+  TIE_FUNCTION_BODY_BEGIN();
+  TIE_CHECK_HANDLE(self);
+  TIE_CHECK_HANDLE(snode);
+  auto *kernel = reinterpret_cast<taichi::lang::Kernel *>(self);
+  auto *t_snode = reinterpret_cast<taichi::lang::SNode *>(snode);
+  kernel->no_activate.push_back(t_snode);
+  TIE_FUNCTION_BODY_END();
+}
+
+// class LaunchContextBuilder
 
 int tie_LaunchContextBuilder_create(TieKernelHandle kernel_handle,
                                     TieLaunchContextBuilderHandle *ret_handle) {

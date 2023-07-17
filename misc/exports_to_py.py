@@ -2,7 +2,7 @@ import os, sys, argparse
 
 from typing import Mapping, List, Union
 from pycparser import parse_file
-from pycparser.c_ast import Decl as CASTDecl, PtrDecl as CASTPtrDecl, NodeVisitor
+from pycparser.c_ast import NodeVisitor
 
 
 UTILS_PYTHON_FILE_CODE = """from .TieError import *
@@ -27,6 +27,11 @@ TIE_ERROR_TO_PYTHON_EXCEPTION = {
 }
 
 
+TIE_TEMP_CCORE_TYPE_TO_CORE_TYPE = {
+    "ASTBuilder": "taichi._lib.core.ASTBuilder",
+}
+
+
 def get_exception_to_throw_if_not_success(ret, last_err, last_err_msg):
     assert ret == 0 or ret == last_err
     if ret != 0:
@@ -35,9 +40,24 @@ def get_exception_to_throw_if_not_success(ret, last_err, last_err_msg):
     return None
 
 
+def get_object_ref_from_handle(handle_type_name, handle):
+    if handle is None or handle == 0:
+        return None
+
+    taichi = __import__("taichi")
+    assert isinstance(handle, int)
+    assert handle_type_name.startswith("Tie")
+    assert handle_type_name.endswith("Handle")
+    typename = handle_type_name[3:-6]
+    if typename in TIE_TEMP_CCORE_TYPE_TO_CORE_TYPE:
+        return eval(f"{TIE_TEMP_CCORE_TYPE_TO_CORE_TYPE[typename]}.from_handle_to_ref({handle})")
+    return eval(f"taichi._lib.ccore.{typename}(handle={handle}, manage_handle=False)")
+
+    
 __all__ = [
     "TieAPIError",
     "get_exception_to_throw_if_not_success",
+    "get_object_ref_from_handle",
 ]
 """
 
@@ -130,9 +150,9 @@ class CType:
 
     @staticmethod
     def from_cast_node(node, added_ptr_levels: int = 0):
-        from pycparser.c_ast import TypeDecl, IdentifierType, PtrDecl
+        from pycparser.c_ast import Decl, TypeDecl, IdentifierType, PtrDecl
 
-        type = node.type if isinstance(node, CASTDecl) else node
+        type = node.type if isinstance(node, Decl) else node
         if isinstance(type, TypeDecl):
             return CType.from_cast_node(type.type, added_ptr_levels)
         elif isinstance(type, IdentifierType):
@@ -266,7 +286,7 @@ class ExportsHeaderASTVisitor(NodeVisitor):
     def visit_Decl(self, node):
         from pycparser import c_ast
 
-        assert isinstance(node, CASTDecl)
+        assert isinstance(node, c_ast.Decl)
         if not isinstance(node.type, c_ast.FuncDecl):
             self.generic_visit(node)
             return
@@ -426,18 +446,27 @@ def translate_arg_from_python_to_c(arg_name: str, param: FuncParameter) -> str:
         raise ValueError(f"Unknown type: {arg_type}")
 
 
-def translate_ret_from_c_to_python(ret_var_name: str, out_param: FuncParameter) -> str:
+def translate_ret_from_c_to_python(
+    ret_var_name: str, out_param: FuncParameter, trans_handle_to_object_ref: bool = True
+) -> str:
     assert out_param.is_out_param()
 
     value_type = out_param.type.exclude_ptr(1)
     if value_type.is_cstr():
         return f'ctypes.string_at({ret_var_name}.value).decode("utf-8")'
+    elif value_type.is_handle() and trans_handle_to_object_ref:
+        return f"get_object_ref_from_handle('{value_type.base_type_name}', {ret_var_name}.value)"
     else:
         return f"{ret_var_name}.value"
 
 
 def generate_func_def_code_from_func_decl(
-    func_def_name: str, original_func: FuncDecl, fp, indent: int, tab: str = None
+    func_def_name: str,
+    original_func: FuncDecl,
+    method_type,
+    fp,
+    indent: int,
+    tab: str = None,
 ):
     tab = tab or " " * 4
 
@@ -497,7 +526,7 @@ def generate_func_def_code_from_func_decl(
         fp_write(
             ",\n".join(
                 [
-                    f"{tab*2}{translate_ret_from_c_to_python(param.name, param)}"
+                    f"{tab*2}{translate_ret_from_c_to_python(param.name, param, method_type != ClassMethodDecl.CONSTRACTOR_TYPE)}"
                     for param in out_params
                 ]
             )
@@ -518,7 +547,7 @@ def generate_py_module_from_exports_header(
 
     IMPORTS = """import ctypes
 from .ccore import taichi_ccore
-from .utils import get_exception_to_throw_if_not_success
+from .utils import get_exception_to_throw_if_not_success, get_object_ref_from_handle
 
 """
 
@@ -586,14 +615,22 @@ from .utils import get_exception_to_throw_if_not_success
             f.write("\n")
             f.write(f"# Class {class_name}\n")
             f.write(f"class {class_name}:\n")
-            f.write("    def __init__(self, *args):\n")
-            f.write("        self._handle = self.create(*args)\n")
+            f.write(
+                "    def __init__(self, *args, handle=None, manage_handle=False):\n"
+            )
+            f.write("        if handle is not None:\n")
+            f.write("            self._manage_handle = manage_handle\n")
+            f.write("            self._handle = handle\n")
+            f.write("        else:\n")
+            f.write("            self._manage_handle = True\n")
+            f.write("            self._handle = self.create(*args)\n")
             f.write("\n")
             f.write("    def __del__(self):\n")
-            f.write("        try:\n")
-            f.write("            self.destroy()\n")
-            f.write("        except:\n")
-            f.write("            pass\n")
+            f.write("        if self._manage_handle:\n")
+            f.write("            try:\n")
+            f.write("                self.destroy()\n")
+            f.write("            except:\n")
+            f.write("                pass\n")
             f.write("\n")
             f.write("    def get_handle(self):\n")
             f.write("        return self._handle\n")
@@ -607,6 +644,7 @@ from .utils import get_exception_to_throw_if_not_success
                 generate_func_def_code_from_func_decl(
                     func_def_name=method_name,
                     original_func=method_decl.original_func_decl,
+                    method_type=method_decl.type,
                     fp=f,
                     indent=1,
                     tab=" " * 4,
@@ -627,6 +665,7 @@ from .utils import get_exception_to_throw_if_not_success
             generate_func_def_code_from_func_decl(
                 func_def_name=func.name.replace("tie_G_", ""),
                 original_func=func,
+                method_type=None,
                 fp=f,
                 indent=0,
                 tab=" " * 4,

@@ -637,33 +637,32 @@ class Kernel:
         if self.autodiff_mode != AutodiffMode.NONE:
             KernelSimplicityASTChecker(self.func).visit(tree)
 
-        # Do not change the name of 'taichi_ast_generator'
-        # The warning system needs this identifier to remove unnecessary messages
-        def taichi_ast_generator(kernel_cxx):
-            if self.runtime.inside_kernel:
-                raise TaichiSyntaxError(
-                    "Kernels cannot call other kernels. I.e., nested kernels are not allowed. "
-                    "Please check if you have direct/indirect invocation of kernels within kernels. "
-                    "Note that some methods provided by the Taichi standard library may invoke kernels, "
-                    "and please move their invocations to Python-scope."
-                )
-            self.kernel_cpp = kernel_cxx
-            self.runtime.inside_kernel = True
-            self.runtime.current_kernel = self
-            assert self.runtime.compiling_callable is None
-            self.runtime.compiling_callable = kernel_cxx
-            try:
-                ctx.ast_builder = kernel_cxx.ast_builder()
-                transform_tree(tree, ctx)
-                if not ctx.is_real_function:
-                    if self.return_type and ctx.returned != ReturnStatus.ReturnedValue:
-                        raise TaichiSyntaxError("Kernel has a return type but does not have a return statement")
-            finally:
-                self.runtime.inside_kernel = False
-                self.runtime.current_kernel = None
-                self.runtime.compiling_callable = None
+        # FIXME: Remove the lambda argument
+        taichi_kernel = _ti_ccore.Kernel(handle=impl.get_runtime().prog.c_create_kernel(lambda k: None, kernel_name, self.autodiff_mode))
 
-        taichi_kernel = impl.get_runtime().prog.create_kernel(taichi_ast_generator, kernel_name, self.autodiff_mode)
+        if self.runtime.inside_kernel:
+            raise TaichiSyntaxError(
+                "Kernels cannot call other kernels. I.e., nested kernels are not allowed. "
+                "Please check if you have direct/indirect invocation of kernels within kernels. "
+                "Note that some methods provided by the Taichi standard library may invoke kernels, "
+                "and please move their invocations to Python-scope."
+            )
+        self.kernel_cpp = taichi_kernel
+        self.runtime.inside_kernel = True
+        self.runtime.current_kernel = self
+        assert self.runtime.compiling_callable is None
+        self.runtime.compiling_callable = taichi_kernel
+        try:
+            ctx.ast_builder = taichi_kernel.ast_builder()
+            transform_tree(tree, ctx)
+            if not ctx.is_real_function:
+                if self.return_type and ctx.returned != ReturnStatus.ReturnedValue:
+                    raise TaichiSyntaxError("Kernel has a return type but does not have a return statement")
+        finally:
+            self.runtime.inside_kernel = False
+            self.runtime.current_kernel = None
+            self.runtime.compiling_callable = None
+
         assert key not in self.compiled_kernels
         self.compiled_kernels[key] = taichi_kernel
 
@@ -883,7 +882,7 @@ class Kernel:
         try:
             prog = impl.get_runtime().prog
             # Compile kernel (& Online Cache & Offline Cache)
-            compiled_kernel_data = prog.compile_kernel(prog.config(), prog.get_device_caps(), t_kernel)
+            compiled_kernel_data = prog.c_compile_kernel(prog.config(), prog.get_device_caps(), t_kernel.get_handle())
             # Launch kernel
             prog.c_launch_kernel(compiled_kernel_data, launch_ctx.get_handle())
         except Exception as e:

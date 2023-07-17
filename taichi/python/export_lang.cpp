@@ -145,7 +145,10 @@ void export_lang(py::module &m) {
                 PrimitiveType::get((PrimitiveTypeID)(t[0].cast<std::size_t>()));
 
             return dt;
-          }));
+          }))
+      .def("get_handle", [](DataType *self) -> std::uintptr_t {
+        return reinterpret_cast<std::uintptr_t>(self);
+      });
 
   py::class_<CompileConfig>(m, "CompileConfig")
       .def(py::init<>())
@@ -338,7 +341,13 @@ void export_lang(py::module &m) {
       .def("strictly_serialize", &ASTBuilder::strictly_serialize)
       .def("block_dim", &ASTBuilder::block_dim)
       .def("insert_snode_access_flag", &ASTBuilder::insert_snode_access_flag)
-      .def("reset_snode_access_flag", &ASTBuilder::reset_snode_access_flag);
+      .def("reset_snode_access_flag", &ASTBuilder::reset_snode_access_flag)
+      .def_static(
+          "from_handle_to_ref",
+          [](std::uintptr_t handle) -> ASTBuilder * {
+            return reinterpret_cast<ASTBuilder *>(handle);
+          },
+          py::return_value_policy::reference);
 
   py::class_<DeviceCapabilityConfig>(
       m, "DeviceCapabilityConfig");  // NOLINT(bugprone-unused-raii)
@@ -402,6 +411,14 @@ void export_lang(py::module &m) {
             return &program->kernel(body, name, autodiff_mode);
           },
           py::return_value_policy::reference)
+      .def("c_create_kernel",
+           [](Program *program, const std::function<void(Kernel *)> &body,
+              const std::string &name,
+              AutodiffMode autodiff_mode) -> std::uintptr_t {
+             py::gil_scoped_release release;
+             return reinterpret_cast<std::uintptr_t>(
+                 &program->kernel(body, name, autodiff_mode));
+           })
       .def("create_function", &Program::create_function,
            py::return_value_policy::reference)
       .def("create_sparse_matrix",
@@ -465,6 +482,15 @@ void export_lang(py::module &m) {
            [](Program *program) { return program->get_graphics_device(); })
       .def("compile_kernel", &Program::compile_kernel,
            py::return_value_policy::reference)
+      .def(
+          "c_compile_kernel",
+          [](Program *program, const CompileConfig &compile_config,
+             const DeviceCapabilityConfig &caps,
+             std::uintptr_t kernel_handle) -> const CompiledKernelData & {
+            auto *kernel = reinterpret_cast<Kernel *>(kernel_handle);
+            return program->compile_kernel(compile_config, caps, *kernel);
+          },
+          py::return_value_policy::reference)
       .def("launch_kernel", &Program::launch_kernel)
       .def("c_launch_kernel",
            [](Program *self, const CompiledKernelData &compiled_kernel_data,
@@ -477,7 +503,19 @@ void export_lang(py::module &m) {
   py::class_<AotModuleBuilder>(m, "AotModuleBuilder")
       .def("add_field", &AotModuleBuilder::add_field)
       .def("add", &AotModuleBuilder::add)
+      .def("c_add",
+           [](AotModuleBuilder *self, const std::string &identifier,
+              std::uintptr_t kernel_handle) {
+             auto *kernel = reinterpret_cast<Kernel *>(kernel_handle);
+             self->add(identifier, kernel);
+           })
       .def("add_kernel_template", &AotModuleBuilder::add_kernel_template)
+      .def("c_add_kernel_template",
+           [](AotModuleBuilder *self, const std::string &identifier,
+              const std::string &key, std::uintptr_t kernel_handle) {
+             auto *kernel = reinterpret_cast<Kernel *>(kernel_handle);
+             self->add_kernel_template(identifier, key, kernel);
+           })
       .def("add_graph", &AotModuleBuilder::add_graph)
       .def("dump", &AotModuleBuilder::dump);
 
@@ -546,6 +584,10 @@ void export_lang(py::module &m) {
            })
       .def("num_active_indices",
            [](SNode *snode) { return snode->num_active_indices; })
+      .def("get_handle",
+           [](SNode *self) -> std::uintptr_t {
+             return reinterpret_cast<std::uintptr_t>(self);
+           })
       .def_readonly("cell_size_bytes", &SNode::cell_size_bytes)
       .def_readonly("offset_bytes_in_parent_cell",
                     &SNode::offset_bytes_in_parent_cell);
@@ -633,11 +675,22 @@ void export_lang(py::module &m) {
   py::class_<Sequential, Node>(m, "Sequential")
       .def(py::init<GraphBuilder *>())
       .def("append", &Sequential::append)
-      .def("dispatch", &Sequential::dispatch);
+      .def("dispatch", &Sequential::dispatch)
+      .def("c_dispatch", [](Sequential *self, std::uintptr_t kernel_handle,
+                            const std::vector<aot::Arg> &args) {
+        auto *kernel = reinterpret_cast<Kernel *>(kernel_handle);
+        self->dispatch(kernel, args);
+      });
 
   py::class_<GraphBuilder>(m, "GraphBuilder")
       .def(py::init<>())
       .def("dispatch", &GraphBuilder::dispatch)
+      .def("c_dispatch",
+           [](GraphBuilder *self, std::uintptr_t kernel_handle,
+              const std::vector<aot::Arg> &args) {
+             auto *kernel = reinterpret_cast<Kernel *>(kernel_handle);
+             self->dispatch(kernel, args);
+           })
       .def("compile", &GraphBuilder::compile)
       .def("create_sequential", &GraphBuilder::new_sequential_node,
            py::return_value_policy::reference)

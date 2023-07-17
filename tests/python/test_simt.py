@@ -90,6 +90,63 @@ def test_any_nonzero():
     for i in range(32):
         assert a[i] == 1
 
+@test_utils.test(arch=ti.cuda)
+def test_sync_any_nonzero():
+    a = ti.field(dtype=ti.i32, shape=256)
+    b = ti.field(dtype=ti.i32, shape=256)
+
+    @ti.kernel
+    def foo():
+        ti.loop_config(block_dim=256)
+        for i in range(256):
+            a[i] = ti.simt.block.sync_any_nonzero(b[i])
+
+    for i in range(256):
+        b[i] = 0
+        a[i] = -1
+
+    foo()
+
+    for i in range(256):
+        assert a[i] == 0
+
+    b[np.random.randint(0, 256)] = 1
+
+    foo()
+
+    for i in range(256):
+        assert a[i] == 1
+
+@test_utils.test(arch=ti.cuda)
+def test_sync_count_nonzero():
+    a = ti.field(dtype=ti.i32, shape=256)
+    b = ti.field(dtype=ti.i32, shape=256)
+
+    @ti.kernel
+    def foo():
+        ti.loop_config(block_dim=256)
+        for i in range(256):
+            a[i] = ti.simt.block.sync_count_nonzero(b[i])
+
+    for i in range(256):
+        b[i] = 0
+        a[i] = -1
+
+    foo()
+
+    for i in range(256):
+        assert a[i] == 0
+
+    random_idx_count = np.random.randint(0, 256)
+    random_idx = np.random.choice(256, random_idx_count, replace=False)
+    for i in range(random_idx_count):
+        b[random_idx[i]] = 1
+
+    foo()
+
+    for i in range(256):
+        assert a[i] == random_idx_count
+
 
 @test_utils.test(arch=ti.cuda)
 def test_unique():

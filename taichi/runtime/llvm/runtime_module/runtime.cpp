@@ -1169,12 +1169,16 @@ uint32 cuda_active_mask() {
 void block_barrier() {
 }
 
-bool block_barrier_and(bool bit) {
-  return false;
+int32 block_barrier_and_i32(int32 predicate) {
+  return 0;
 }
 
-int32 block_barrier_and_i32(int32 predicate) {
-  return (int32)block_barrier_and((bool)predicate);
+int32 block_barrier_or_i32(int32 predicate) {
+  return 0;
+}
+
+int32 block_barrier_count_i32(int32 predicate) {
+  return 0;
 }
 
 void warp_barrier(uint32 mask) {

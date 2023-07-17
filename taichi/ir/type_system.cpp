@@ -330,6 +330,8 @@ void Operations::init_internals() {
 
   PLAIN_OP(block_barrier, i32_void, false);
   PLAIN_OP(block_barrier_and_i32, i32, false, i32);
+  PLAIN_OP(block_barrier_or_i32, i32, false, i32);
+  PLAIN_OP(block_barrier_count_i32, i32, false, i32);
   PLAIN_OP(grid_memfence, i32_void, false);
   CUDA_VOTE_SYNC(all);
   CUDA_VOTE_SYNC(any);

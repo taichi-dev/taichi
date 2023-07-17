@@ -51,17 +51,17 @@ TEST(LlvmCGraph, Mpm88Cpu) {
 
   /* Prepare arguments */
   constexpr int kArrBytes_x = NR_PARTICLES * 2 * sizeof(float);
-  auto devalloc_x = exec.allocate_memory_ndarray(kArrBytes_x, result_buffer);
+  auto devalloc_x = exec.allocate_memory_on_device(kArrBytes_x, result_buffer);
   auto x = taichi::lang::Ndarray(devalloc_x, taichi::lang::PrimitiveType::f32,
                                  {NR_PARTICLES}, {2});
 
   constexpr int kArrBytes_v = NR_PARTICLES * 2 * sizeof(float);
-  auto devalloc_v = exec.allocate_memory_ndarray(kArrBytes_v, result_buffer);
+  auto devalloc_v = exec.allocate_memory_on_device(kArrBytes_v, result_buffer);
   auto v = taichi::lang::Ndarray(devalloc_v, taichi::lang::PrimitiveType::f32,
                                  {NR_PARTICLES}, {2});
 
   constexpr int kArrBytes_J = NR_PARTICLES * sizeof(float);
-  auto devalloc_J = exec.allocate_memory_ndarray(kArrBytes_J, result_buffer);
+  auto devalloc_J = exec.allocate_memory_on_device(kArrBytes_J, result_buffer);
   auto J = taichi::lang::Ndarray(devalloc_J, taichi::lang::PrimitiveType::f32,
                                  {NR_PARTICLES});
 
@@ -78,24 +78,24 @@ TEST(LlvmCGraph, Mpm88Cpu) {
 
   constexpr int kArrBytes_grid_v = N_GRID * N_GRID * 2 * sizeof(float);
   auto devalloc_grid_v =
-      exec.allocate_memory_ndarray(kArrBytes_grid_v, result_buffer);
+      exec.allocate_memory_on_device(kArrBytes_grid_v, result_buffer);
   auto grid_v = taichi::lang::Ndarray(
       devalloc_grid_v, taichi::lang::PrimitiveType::f32, {N_GRID, N_GRID}, {2});
 
   constexpr int kArrBytes_grid_m = N_GRID * N_GRID * sizeof(float);
   auto devalloc_grid_m =
-      exec.allocate_memory_ndarray(kArrBytes_grid_m, result_buffer);
+      exec.allocate_memory_on_device(kArrBytes_grid_m, result_buffer);
   auto grid_m = taichi::lang::Ndarray(
       devalloc_grid_m, taichi::lang::PrimitiveType::f32, {N_GRID, N_GRID});
 
   constexpr int kArrBytes_pos = NR_PARTICLES * 3 * sizeof(float);
   auto devalloc_pos =
-      exec.allocate_memory_ndarray(kArrBytes_pos, result_buffer);
+      exec.allocate_memory_on_device(kArrBytes_pos, result_buffer);
   auto pos = taichi::lang::Ndarray(
       devalloc_pos, taichi::lang::PrimitiveType::f32, {NR_PARTICLES}, {3});
 
   constexpr int kArrBytes_C = NR_PARTICLES * sizeof(float) * 2 * 2;
-  auto devalloc_C = exec.allocate_memory_ndarray(kArrBytes_C, result_buffer);
+  auto devalloc_C = exec.allocate_memory_on_device(kArrBytes_C, result_buffer);
   auto C = taichi::lang::Ndarray(devalloc_C, taichi::lang::PrimitiveType::f32,
                                  {NR_PARTICLES}, {2, 2});
 
@@ -136,17 +136,20 @@ TEST(LlvmCGraph, Mpm88Cuda) {
 
     /* Prepare arguments */
     constexpr int kArrBytes_x = NR_PARTICLES * 2 * sizeof(float);
-    auto devalloc_x = exec.allocate_memory_ndarray(kArrBytes_x, result_buffer);
+    auto devalloc_x =
+        exec.allocate_memory_on_device(kArrBytes_x, result_buffer);
     auto x = taichi::lang::Ndarray(devalloc_x, taichi::lang::PrimitiveType::f32,
                                    {NR_PARTICLES}, {2});
 
     constexpr int kArrBytes_v = NR_PARTICLES * 2 * sizeof(float);
-    auto devalloc_v = exec.allocate_memory_ndarray(kArrBytes_v, result_buffer);
+    auto devalloc_v =
+        exec.allocate_memory_on_device(kArrBytes_v, result_buffer);
     auto v = taichi::lang::Ndarray(devalloc_v, taichi::lang::PrimitiveType::f32,
                                    {NR_PARTICLES}, {2});
 
     constexpr int kArrBytes_J = NR_PARTICLES * sizeof(float);
-    auto devalloc_J = exec.allocate_memory_ndarray(kArrBytes_J, result_buffer);
+    auto devalloc_J =
+        exec.allocate_memory_on_device(kArrBytes_J, result_buffer);
     auto J = taichi::lang::Ndarray(devalloc_J, taichi::lang::PrimitiveType::f32,
                                    {NR_PARTICLES});
 
@@ -163,25 +166,26 @@ TEST(LlvmCGraph, Mpm88Cuda) {
 
     constexpr int kArrBytes_grid_v = N_GRID * N_GRID * 2 * sizeof(float);
     auto devalloc_grid_v =
-        exec.allocate_memory_ndarray(kArrBytes_grid_v, result_buffer);
+        exec.allocate_memory_on_device(kArrBytes_grid_v, result_buffer);
     auto grid_v =
         taichi::lang::Ndarray(devalloc_grid_v, taichi::lang::PrimitiveType::f32,
                               {N_GRID, N_GRID}, {2});
 
     constexpr int kArrBytes_grid_m = N_GRID * N_GRID * sizeof(float);
     auto devalloc_grid_m =
-        exec.allocate_memory_ndarray(kArrBytes_grid_m, result_buffer);
+        exec.allocate_memory_on_device(kArrBytes_grid_m, result_buffer);
     auto grid_m = taichi::lang::Ndarray(
         devalloc_grid_m, taichi::lang::PrimitiveType::f32, {N_GRID, N_GRID});
 
     constexpr int kArrBytes_pos = NR_PARTICLES * 3 * sizeof(float);
     auto devalloc_pos =
-        exec.allocate_memory_ndarray(kArrBytes_pos, result_buffer);
+        exec.allocate_memory_on_device(kArrBytes_pos, result_buffer);
     auto pos = taichi::lang::Ndarray(
         devalloc_pos, taichi::lang::PrimitiveType::f32, {NR_PARTICLES}, {3});
 
     constexpr int kArrBytes_C = NR_PARTICLES * sizeof(float) * 2 * 2;
-    auto devalloc_C = exec.allocate_memory_ndarray(kArrBytes_C, result_buffer);
+    auto devalloc_C =
+        exec.allocate_memory_on_device(kArrBytes_C, result_buffer);
     auto C = taichi::lang::Ndarray(devalloc_C, taichi::lang::PrimitiveType::f32,
                                    {NR_PARTICLES}, {2, 2});
 

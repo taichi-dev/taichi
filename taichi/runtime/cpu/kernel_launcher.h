@@ -12,7 +12,7 @@ class KernelLauncher : public LLVM::KernelLauncher {
   struct Context {
     using TaskFunc = int32 (*)(void *);
     std::vector<TaskFunc> task_funcs;
-    std::vector<Callable::Parameter> parameters;
+    std::vector<std::pair<std::vector<int>, Callable::Parameter>> parameters;
   };
 
  public:

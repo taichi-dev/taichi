@@ -1,13 +1,24 @@
+from taichi.lang.matrix import Matrix
+from taichi.lang.util import in_python_scope, python_scope
+import numpy as np
+import taichi.lang
+from taichi._lib import core as _ti_core
 from taichi.lang import impl, ops
 from taichi.lang.exception import (
+    TaichiRuntimeTypeError,
     TaichiSyntaxError,
-    TaichiTypeError,
 )
-from taichi.lang.matrix import Matrix, MatrixType
+from taichi.lang.matrix import MatrixType
 from taichi.lang.struct import StructType
-from taichi.lang.util import cook_dtype, in_python_scope, python_scope, taichi_scope
-from taichi.types import primitive_types, sparse_matrix_builder, ndarray_type, texture_type
+from taichi.lang.util import cook_dtype
+from taichi.types import (
+    ndarray_type,
+    primitive_types,
+    sparse_matrix_builder,
+    texture_type,
+)
 from taichi.types.compound_types import CompoundType
+from taichi.types.utils import is_signed
 
 
 class ArgPack:
@@ -22,6 +33,8 @@ class ArgPack:
     Args:
         annotations (Dict[str, Union[Dict, Matrix, Struct]]): \
             The keys and types for `ArgPack` members.
+        dtype (ArgPackType): \
+            The ArgPackType class of this ArgPack object.
         entries (Dict[str, Union[Dict, Matrix, Struct]]): \
             The keys and corresponding values for `ArgPack` members.
 
@@ -39,7 +52,7 @@ class ArgPack:
 
     _instance_count = 0
 
-    def __init__(self, annotations, *args, **kwargs):
+    def __init__(self, annotations, dtype, *args, **kwargs):
         # converts dicts to argument packs
         if len(args) == 1 and kwargs == {} and isinstance(args[0], dict):
             self.__entries = args[0]
@@ -55,6 +68,14 @@ class ArgPack:
         for k, v in self.__entries.items():
             self.__entries[k] = v if in_python_scope() else impl.expr_init(v)
         self._register_members()
+        self.__dtype = dtype
+        self.__argpack = impl.get_runtime().prog.create_argpack(self.__dtype)
+        for i, (k, v) in enumerate(self.__entries.items()):
+            self._write_to_device(self.__annotations[k], type(v), v, self._calc_element_true_index(i))
+
+    def __del__(self):
+        if impl is not None and impl.get_runtime() is not None and impl.get_runtime().prog is not None:
+            impl.get_runtime().prog.delete_argpack(self.__argpack)
 
     @property
     def keys(self):
@@ -98,6 +119,8 @@ class ArgPack:
 
     def __setitem__(self, key, value):
         self.__entries[key] = value
+        index = self._calc_element_true_index(list(self.__annotations).index(key))
+        self._write_to_device(self.__annotations[key], type(value), value, index)
 
     def _set_entries(self, value):
         if isinstance(value, dict):
@@ -120,18 +143,6 @@ class ArgPack:
             self[key] = value
 
         return setter
-
-    @taichi_scope
-    def _assign(self, other):
-        if not isinstance(other, (dict, ArgPack)):
-            raise TaichiTypeError("Only dict or ArgPack can be assigned to a ArgPack")
-        if isinstance(other, dict):
-            other = ArgPack(self.__annotations, other)
-        if self.__entries.keys() != other.__entries.keys():
-            raise TaichiTypeError(f"Member mismatch between argument packs {self.keys}, {other.keys}")
-        for k, v in self.items:
-            v._assign(other.__entries[k])
-        return self
 
     def _register_members(self):
         # https://stackoverflow.com/questions/48448074/adding-a-property-to-an-existing-object-instance
@@ -170,6 +181,78 @@ class ArgPack:
         }
         return res_dict
 
+    def _calc_element_true_index(self, old_index):
+        for i in range(old_index):
+            anno = list(self.__annotations.values())[i]
+            if (
+                isinstance(anno, sparse_matrix_builder)
+                or isinstance(anno, ndarray_type.NdarrayType)
+                or isinstance(anno, texture_type.TextureType)
+                or isinstance(anno, texture_type.RWTextureType)
+                or isinstance(anno, ndarray_type.NdarrayType)
+            ):
+                old_index -= 1
+        return old_index
+
+    def _write_to_device(self, needed, provided, v, index):
+        if isinstance(needed, ArgPackType):
+            if not isinstance(v, ArgPack):
+                raise TaichiRuntimeTypeError.get(index, str(needed), str(provided))
+            self.__argpack.set_arg_nested_argpack(index, v.__argpack)
+        else:
+            # Note: do not use sth like "needed == f32". That would be slow.
+            if id(needed) in primitive_types.real_type_ids:
+                if not isinstance(v, (float, int, np.floating, np.integer)):
+                    raise TaichiRuntimeTypeError.get(index, needed.to_string(), provided)
+                self.__argpack.set_arg_float((index,), float(v))
+            elif id(needed) in primitive_types.integer_type_ids:
+                if not isinstance(v, (int, np.integer)):
+                    raise TaichiRuntimeTypeError.get(index, needed.to_string(), provided)
+                if is_signed(cook_dtype(needed)):
+                    self.__argpack.set_arg_int((index,), int(v))
+                else:
+                    self.__argpack.set_arg_uint((index,), int(v))
+            elif isinstance(needed, sparse_matrix_builder):
+                pass
+            elif isinstance(needed, ndarray_type.NdarrayType) and isinstance(v, taichi.lang._ndarray.Ndarray):
+                pass
+            elif isinstance(needed, texture_type.TextureType) and isinstance(v, taichi.lang._texture.Texture):
+                pass
+            elif isinstance(needed, texture_type.RWTextureType) and isinstance(v, taichi.lang._texture.Texture):
+                pass
+            elif isinstance(needed, ndarray_type.NdarrayType):
+                pass
+            elif isinstance(needed, MatrixType):
+                if needed.dtype in primitive_types.real_types:
+
+                    def cast_func(x):
+                        if not isinstance(x, (int, float, np.integer, np.floating)):
+                            raise TaichiRuntimeTypeError.get(index, needed.dtype.to_string(), type(x))
+                        return float(x)
+
+                elif needed.dtype in primitive_types.integer_types:
+
+                    def cast_func(x):
+                        if not isinstance(x, (int, np.integer)):
+                            raise TaichiRuntimeTypeError.get(index, needed.dtype.to_string(), type(x))
+                        return int(x)
+
+                else:
+                    raise ValueError(f"Matrix dtype {needed.dtype} is not integer type or real type.")
+
+                if needed.ndim == 2:
+                    v = [cast_func(v[i, j]) for i in range(needed.n) for j in range(needed.m)]
+                else:
+                    v = [cast_func(v[i]) for i in range(needed.n)]
+                v = needed(*v)
+                needed.set_argpack_struct_args(v, self.__argpack, (index,))
+            elif isinstance(needed, StructType):
+                if not isinstance(v, needed):
+                    raise TaichiRuntimeTypeError.get(index, str(needed), provided)
+                needed.set_argpack_struct_args(v, self.__argpack, (index,))
+            else:
+                raise ValueError(f"Argument type mismatch. Expecting {needed}, got {type(v)}.")
+
 
 class _IntermediateArgPack(ArgPack):
     """Intermediate argument pack class for compiler internal use only.
@@ -179,7 +262,7 @@ class _IntermediateArgPack(ArgPack):
         entries (Dict[str, Union[Expr, Matrix, Struct]]): keys and values for struct members.
     """
 
-    def __init__(self, annotations, *args, **kwargs):
+    def __init__(self, annotations, dtype, *args, **kwargs):
         # converts dicts to argument packs
         if len(args) == 1 and kwargs == {} and isinstance(args[0], dict):
             self._ArgPack__entries = args[0]
@@ -193,18 +276,39 @@ class _IntermediateArgPack(ArgPack):
             raise TaichiSyntaxError("ArgPack annotations keys not equals to entries keys.")
         self._ArgPack__annotations = annotations
         self._register_members()
+        self._ArgPack__dtype = dtype
+        self._ArgPack__argpack = impl.get_runtime().prog.create_argpack(dtype)
+
+    def __del__(self):
+        pass
 
 
 class ArgPackType(CompoundType):
     def __init__(self, **kwargs):
         self.members = {}
+        elements = []
         for k, dtype in kwargs.items():
             if isinstance(dtype, StructType):
                 self.members[k] = dtype
+                elements.append([dtype.dtype, k])
             elif isinstance(dtype, ArgPackType):
                 self.members[k] = dtype
+                elements.append(
+                    [
+                        _ti_core.DataType(
+                            _ti_core.get_type_factory_instance().get_struct_type_for_argpack_ptr(dtype.dtype)
+                        ),
+                        k,
+                    ]
+                )
             elif isinstance(dtype, MatrixType):
+                # Convert MatrixType to StructType
+                if dtype.ndim == 1:
+                    elements_ = [(dtype.dtype, f"{k}_{i}") for i in range(dtype.n)]
+                else:
+                    elements_ = [(dtype.dtype, f"{k}_{i}_{j}") for i in range(dtype.n) for j in range(dtype.m)]
                 self.members[k] = dtype
+                elements.append([_ti_core.get_type_factory_instance().get_struct_type(elements_), k])
             elif isinstance(dtype, sparse_matrix_builder):
                 self.members[k] = dtype
             elif isinstance(dtype, ndarray_type.NdarrayType):
@@ -216,6 +320,11 @@ class ArgPackType(CompoundType):
             else:
                 dtype = cook_dtype(dtype)
                 self.members[k] = dtype
+                elements.append([dtype, k])
+        if len(elements) == 0:
+            # Use i32 as a placeholder for empty argpacks
+            elements.append([primitive_types.i32, k])
+        self.dtype = _ti_core.get_type_factory_instance().get_argpack_type(elements)
 
     def __call__(self, *args, **kwargs):
         """Create an instance of this argument pack type."""
@@ -236,7 +345,7 @@ class ArgPackType(CompoundType):
 
             d[name] = data
 
-        entries = ArgPack(self.members, d)
+        entries = ArgPack(self.members, self.dtype, d)
         pack = self.cast(entries)
         return pack
 
@@ -279,7 +388,8 @@ class ArgPackType(CompoundType):
                     entries[k] = int(v) if dtype in primitive_types.integer_types else float(v)
                 else:
                     entries[k] = ops.cast(pack._ArgPack__entries[k], dtype)
-        return ArgPack(self.members, entries)
+        pack = ArgPack(self.members, self.dtype, entries)
+        return pack
 
     def from_taichi_object(self, arg_load_dict: dict):
         d = {}
@@ -287,7 +397,9 @@ class ArgPackType(CompoundType):
         for index, pair in enumerate(items):
             name, dtype = pair
             d[name] = arg_load_dict[name]
-        return _IntermediateArgPack(self.members, d)
+        pack = _IntermediateArgPack(self.members, self.dtype, d)
+        pack._ArgPack__dtype = self.dtype
+        return pack
 
     def __str__(self):
         """Python scope argpack type print support."""

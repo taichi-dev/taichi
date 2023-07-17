@@ -1,5 +1,6 @@
 #include "canvas.h"
 #include "taichi/ui/utils/utils.h"
+#include "taichi/ui/backends/vulkan/sceneV2.h"
 
 namespace taichi::ui {
 
@@ -35,7 +36,11 @@ void Canvas::circles(const CirclesInfo &info) {
 }
 
 void Canvas::scene(SceneBase *scene_base) {
-  renderer_->scene(scene_base);
+  if (SceneV2 *scene = dynamic_cast<SceneV2 *>(scene_base)) {
+    renderer_->scene_v2(scene);
+  } else {
+    renderer_->scene(scene_base);
+  }
 }
 
 }  // namespace vulkan

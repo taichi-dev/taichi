@@ -15,6 +15,7 @@
 #include "taichi/ir/type_factory.h"
 #include "taichi/ir/snode.h"
 #include "taichi/util/lang_util.h"
+#include "taichi/program/argpack.h"
 #include "taichi/program/program_impl.h"
 #include "taichi/program/callable.h"
 #include "taichi/program/function.h"
@@ -241,9 +242,9 @@ class TI_DLL_EXPORT Program {
   }
 
   // TODO: do we still need result_buffer?
-  DeviceAllocation allocate_memory_ndarray(std::size_t alloc_size,
-                                           uint64 *result_buffer) {
-    return program_impl_->allocate_memory_ndarray(alloc_size, result_buffer);
+  DeviceAllocation allocate_memory_on_device(std::size_t alloc_size,
+                                             uint64 *result_buffer) {
+    return program_impl_->allocate_memory_on_device(alloc_size, result_buffer);
   }
   DeviceAllocation allocate_texture(const ImageParams &params) {
     return program_impl_->allocate_texture(params);
@@ -255,6 +256,8 @@ class TI_DLL_EXPORT Program {
       ExternalArrayLayout layout = ExternalArrayLayout::kNull,
       bool zero_fill = false);
 
+  ArgPack *create_argpack(const DataType dt);
+
   std::string get_kernel_return_data_layout() {
     return program_impl_->get_kernel_return_data_layout();
   };
@@ -265,11 +268,15 @@ class TI_DLL_EXPORT Program {
 
   std::pair<const StructType *, size_t> get_struct_type_with_data_layout(
       const StructType *old_ty,
-      const std::string &layout) {
-    return program_impl_->get_struct_type_with_data_layout(old_ty, layout);
-  }
+      const std::string &layout);
+
+  std::pair<const ArgPackType *, size_t> get_argpack_type_with_data_layout(
+      const ArgPackType *old_ty,
+      const std::string &layout);
 
   void delete_ndarray(Ndarray *ndarray);
+
+  void delete_argpack(ArgPack *argpack);
 
   Texture *create_texture(BufferFormat buffer_format,
                           const std::vector<int> &shape);
@@ -335,8 +342,9 @@ class TI_DLL_EXPORT Program {
   static std::atomic<int> num_instances_;
   bool finalized_{false};
 
-  // TODO: Move ndarrays_ and textures_ to be managed by runtime
+  // TODO: Move ndarrays_, argpacks_ and textures_ to be managed by runtime
   std::unordered_map<void *, std::unique_ptr<Ndarray>> ndarrays_;
+  std::unordered_map<void *, std::unique_ptr<ArgPack>> argpacks_;
   std::vector<std::unique_ptr<Texture>> textures_;
 };
 

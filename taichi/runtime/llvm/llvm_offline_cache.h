@@ -27,7 +27,7 @@ struct LlvmOfflineCache {
 
   struct KernelCacheData {
     std::string kernel_key;
-    std::vector<Callable::Parameter> args;
+    std::vector<std::pair<std::vector<int>, Callable::Parameter>> args;
     std::vector<Callable::Ret> rets;
     LLVMCompiledKernel compiled_data;
 

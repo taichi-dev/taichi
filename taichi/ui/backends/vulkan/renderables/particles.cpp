@@ -19,6 +19,7 @@ Particles::Particles(AppContext *app_context, VertexAttributes vbo_attrs) {
   config.vertex_shader_path =
       app_context->config.package_path + "/shaders/Particles_vk_vert.spv";
   config.vertex_input_rate_instance = true;  // point instancing
+  is_3d_renderable = true;
 
   Renderable::init(config, app_context);
 }

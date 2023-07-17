@@ -52,8 +52,11 @@ void KernelLauncher::launch_llvm_kernel(Handle handle,
   ctx.get_context().runtime = executor->get_llvm_runtime();
 
   for (int i = 0; i < (int)parameters.size(); i++) {
-    if (parameters[i].is_array) {
-      const auto arr_sz = ctx.array_runtime_sizes[i];
+    const auto &kv = parameters[i];
+    const auto &key = kv.first;
+    const auto &parameter = kv.second;
+    if (parameter.is_array) {
+      const auto arr_sz = ctx.array_runtime_sizes[key];
       // Note: both numpy and PyTorch support arrays/tensors with zeros
       // in shapes, e.g., shape=(0) or shape=(100, 0, 200). This makes
       // `arr_sz` zero.
@@ -61,12 +64,14 @@ void KernelLauncher::launch_llvm_kernel(Handle handle,
         continue;
       }
 
-      std::vector<int> data_ptr_idx{i, TypeFactory::DATA_PTR_POS_IN_NDARRAY};
+      std::vector<int> data_ptr_idx = key;
+      data_ptr_idx.push_back(TypeFactory::DATA_PTR_POS_IN_NDARRAY);
       auto data_ptr = ctx.array_ptrs[data_ptr_idx];
+      std::vector<int> grad_ptr_idx = key;
+      grad_ptr_idx.push_back(TypeFactory::GRAD_PTR_POS_IN_NDARRAY);
 
-      std::vector<int> grad_ptr_idx{i, TypeFactory::GRAD_PTR_POS_IN_NDARRAY};
       auto grad_ptr = ctx.array_ptrs[grad_ptr_idx];
-      if (ctx.device_allocation_type[i] ==
+      if (ctx.device_allocation_type[key] ==
           LaunchContextBuilder::DevAllocType::kNone) {
         // External array
         // Note: assuming both data & grad are on the same device
@@ -75,19 +80,20 @@ void KernelLauncher::launch_llvm_kernel(Handle handle,
           device_ptrs[data_ptr_idx] = data_ptr;
           device_ptrs[grad_ptr_idx] = grad_ptr;
         } else {
-          DeviceAllocation devalloc = executor->allocate_memory_ndarray(
+          DeviceAllocation devalloc = executor->allocate_memory_on_device(
               arr_sz, (uint64 *)device_result_buffer);
           device_ptrs[data_ptr_idx] =
-              executor->get_ndarray_alloc_info_ptr(devalloc);
+              executor->get_device_alloc_info_ptr(devalloc);
           transfers[data_ptr_idx] = {data_ptr, devalloc};
 
           CUDADriver::get_instance().memcpy_host_to_device(
               (void *)device_ptrs[data_ptr_idx], data_ptr, arr_sz);
           if (grad_ptr != nullptr) {
-            DeviceAllocation grad_devalloc = executor->allocate_memory_ndarray(
-                arr_sz, (uint64 *)device_result_buffer);
+            DeviceAllocation grad_devalloc =
+                executor->allocate_memory_on_device(
+                    arr_sz, (uint64 *)device_result_buffer);
             device_ptrs[grad_ptr_idx] =
-                executor->get_ndarray_alloc_info_ptr(grad_devalloc);
+                executor->get_device_alloc_info_ptr(grad_devalloc);
             transfers[grad_ptr_idx] = {grad_ptr, grad_devalloc};
 
             CUDADriver::get_instance().memcpy_host_to_device(
@@ -97,24 +103,39 @@ void KernelLauncher::launch_llvm_kernel(Handle handle,
           }
         }
 
-        ctx.set_ndarray_ptrs(i, (uint64)device_ptrs[data_ptr_idx],
+        ctx.set_ndarray_ptrs(key, (uint64)device_ptrs[data_ptr_idx],
                              (uint64)device_ptrs[grad_ptr_idx]);
       } else if (arr_sz > 0) {
         // Ndarray
         DeviceAllocation *ptr = static_cast<DeviceAllocation *>(data_ptr);
         // Unwrapped raw ptr on device
-        device_ptrs[data_ptr_idx] = executor->get_ndarray_alloc_info_ptr(*ptr);
+        device_ptrs[data_ptr_idx] = executor->get_device_alloc_info_ptr(*ptr);
 
         if (grad_ptr != nullptr) {
           ptr = static_cast<DeviceAllocation *>(grad_ptr);
-          device_ptrs[grad_ptr_idx] =
-              executor->get_ndarray_alloc_info_ptr(*ptr);
+          device_ptrs[grad_ptr_idx] = executor->get_device_alloc_info_ptr(*ptr);
         } else {
           device_ptrs[grad_ptr_idx] = nullptr;
         }
 
-        ctx.set_ndarray_ptrs(i, (uint64)device_ptrs[data_ptr_idx],
+        ctx.set_ndarray_ptrs(key, (uint64)device_ptrs[data_ptr_idx],
                              (uint64)device_ptrs[grad_ptr_idx]);
+      }
+    } else if (parameter.is_argpack) {
+      std::vector<int> data_ptr_idx = key;
+      data_ptr_idx.push_back(TypeFactory::DATA_PTR_POS_IN_ARGPACK);
+      auto *argpack = ctx.argpack_ptrs[key];
+      auto argpack_ptr = argpack->get_device_allocation();
+      device_ptrs[data_ptr_idx] =
+          executor->get_device_alloc_info_ptr(argpack_ptr);
+      if (key.size() == 1) {
+        ctx.set_argpack_ptr(key, (uint64)device_ptrs[data_ptr_idx]);
+      } else {
+        auto key_parent = key;
+        key_parent.pop_back();
+        auto *argpack_parent = ctx.argpack_ptrs[key_parent];
+        argpack_parent->set_arg_nested_argpack_ptr(
+            key.back(), (uint64)device_ptrs[data_ptr_idx]);
       }
     }
   }
@@ -155,10 +176,12 @@ void KernelLauncher::launch_llvm_kernel(Handle handle,
     CUDADriver::get_instance().stream_synchronize(nullptr);
     for (auto itr = transfers.begin(); itr != transfers.end(); itr++) {
       auto &idx = itr->first;
+      auto arg_id = idx;
+      arg_id.pop_back();
       CUDADriver::get_instance().memcpy_device_to_host(
           itr->second.first, (void *)device_ptrs[idx],
-          ctx.array_runtime_sizes[idx[0]]);
-      executor->deallocate_memory_ndarray(itr->second.second);
+          ctx.array_runtime_sizes[arg_id]);
+      executor->deallocate_memory_on_device(itr->second.second);
     }
   }
 }

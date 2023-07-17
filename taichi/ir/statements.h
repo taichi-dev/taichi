@@ -172,11 +172,13 @@ class UnaryOpStmt : public Stmt {
 /**
  * Load a kernel argument. The data type should be known when constructing this
  * statement. |is_ptr| should be true iff the result can be used as a base
- * pointer of an ExternalPtrStmt.
+ * pointer of an ExternalPtrStmt. |arg_depth| indicates the nested depth in the
+ * argpack of this value. |argpack_ptr| holds buffer for argpack, only valid if
+ * |arg_depth| > 0.
  */
 class ArgLoadStmt : public Stmt {
  public:
-  int arg_id;
+  std::vector<int> arg_id;
 
   /* TODO(zhanlue): more organized argument-type information
 
@@ -192,8 +194,17 @@ class ArgLoadStmt : public Stmt {
 
   bool create_load;
 
-  ArgLoadStmt(int arg_id, const DataType &dt, bool is_ptr, bool create_load)
-      : arg_id(arg_id), is_ptr(is_ptr), create_load(create_load) {
+  int arg_depth;
+
+  ArgLoadStmt(const std::vector<int> &arg_id,
+              const DataType &dt,
+              bool is_ptr,
+              bool create_load,
+              int arg_depth)
+      : arg_id(arg_id),
+        is_ptr(is_ptr),
+        create_load(create_load),
+        arg_depth(arg_depth) {
     this->ret_type = dt;
     TI_STMT_REG_FIELDS;
   }
@@ -202,7 +213,7 @@ class ArgLoadStmt : public Stmt {
     return false;
   }
 
-  TI_STMT_DEF_FIELDS(ret_type, arg_id, is_ptr);
+  TI_STMT_DEF_FIELDS(ret_type, arg_id, is_ptr, arg_depth);
   TI_DEFINE_ACCEPT_AND_CLONE
 };
 
@@ -562,15 +573,30 @@ class SNodeOpStmt : public Stmt, public ir_traits::Store {
 class ExternalTensorShapeAlongAxisStmt : public Stmt {
  public:
   int axis;
-  int arg_id;
+  std::vector<int> arg_id;
 
-  ExternalTensorShapeAlongAxisStmt(int axis, int arg_id);
+  ExternalTensorShapeAlongAxisStmt(int axis, const std::vector<int> &arg_id);
 
   bool has_global_side_effect() const override {
     return false;
   }
 
   TI_STMT_DEF_FIELDS(ret_type, axis, arg_id);
+  TI_DEFINE_ACCEPT_AND_CLONE
+};
+
+class ExternalTensorBasePtrStmt : public Stmt {
+ public:
+  std::vector<int> arg_id;
+  bool is_grad;
+
+  ExternalTensorBasePtrStmt(const std::vector<int> &arg_id, bool is_grad);
+
+  bool has_global_side_effect() const override {
+    return false;
+  }
+
+  TI_STMT_DEF_FIELDS(ret_type, arg_id, is_grad);
   TI_DEFINE_ACCEPT_AND_CLONE
 };
 
@@ -2017,5 +2043,35 @@ class MatrixInitStmt : public Stmt {
   TI_STMT_DEF_FIELDS(ret_type, values);
   TI_DEFINE_ACCEPT_AND_CLONE
 };
+
+template <typename T>
+std::vector<std::unique_ptr<Stmt>> get_const_stmt_with_value(DataType dt,
+                                                             T value) {
+  if (dt->is<PrimitiveType>()) {
+    TypedConstant constant(dt, value);
+    auto const_stmt = std::make_unique<ConstStmt>(constant);
+
+    std::vector<std::unique_ptr<Stmt>> ret;
+    ret.push_back(std::move(const_stmt));
+    return ret;
+
+  } else if (dt->is<TensorType>()) {
+    DataType element_dt = dt.get_element_type();
+    std::vector<std::unique_ptr<Stmt>> stmts =
+        get_const_stmt_with_value(element_dt, value);
+
+    Stmt *elem_stmt = stmts.back().get();
+    std::vector<Stmt *> elem_stmts(dt->as<TensorType>()->get_num_elements(),
+                                   elem_stmt);
+
+    auto matrix_init_stmt = std::make_unique<MatrixInitStmt>(elem_stmts);
+    matrix_init_stmt->ret_type = dt;
+
+    stmts.push_back(std::move(matrix_init_stmt));
+    return stmts;
+  } else {
+    TI_NOT_IMPLEMENTED
+  }
+}
 
 }  // namespace taichi::lang

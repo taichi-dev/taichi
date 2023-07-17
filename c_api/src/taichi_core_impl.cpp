@@ -5,6 +5,7 @@
 #include "taichi_metal_impl.h"
 #include "taichi/program/ndarray.h"
 #include "taichi/program/texture.h"
+#include "taichi/program/matrix.h"
 #include "taichi/program/launch_context_builder.h"
 #include "taichi/common/virtual_dir.h"
 #include "taichi/common/utils.h"
@@ -728,19 +729,19 @@ void ti_launch_kernel(TiRuntime runtime,
           case TI_DATA_TYPE_I16: {
             int16_t arg_val;
             std::memcpy(&arg_val, &arg.value.scalar.value.x16, sizeof(arg_val));
-            builder.set_arg(i, arg_val);
+            builder.set_arg({(int)i}, arg_val);
             break;
           }
           case TI_DATA_TYPE_U16: {
             uint16_t arg_val = arg.value.scalar.value.x16;
-            builder.set_arg(i, arg_val);
+            builder.set_arg({(int)i}, arg_val);
             break;
           }
           case TI_DATA_TYPE_F16: {
             float arg_val;
             std::memcpy(&arg_val, &arg.value.scalar.value.x32, sizeof(arg_val));
             // FIXME: temporary workaround for f16
-            builder.set_arg_float(i, arg_val);
+            builder.set_arg_float({(int)i}, arg_val);
             break;
           }
           default: {
@@ -754,11 +755,11 @@ void ti_launch_kernel(TiRuntime runtime,
       }
 
       case TI_ARGUMENT_TYPE_I32: {
-        builder.set_arg(i, arg.value.i32);
+        builder.set_arg({(int)i}, arg.value.i32);
         break;
       }
       case TI_ARGUMENT_TYPE_F32: {
-        builder.set_arg(i, arg.value.f32);
+        builder.set_arg({(int)i}, arg.value.f32);
         break;
       }
       case TI_ARGUMENT_TYPE_NDARRAY: {
@@ -774,7 +775,7 @@ void ti_launch_kernel(TiRuntime runtime,
         std::vector<int> shape(ndarray.shape.dims,
                                ndarray.shape.dims + ndarray.shape.dim_count);
 
-        builder.set_arg_ndarray_impl(i, (intptr_t)devalloc.get(), shape);
+        builder.set_arg_ndarray_impl({(int)i}, (intptr_t)devalloc.get(), shape);
 
         devallocs.emplace_back(std::move(devalloc));
         break;
@@ -787,7 +788,7 @@ void ti_launch_kernel(TiRuntime runtime,
         int width = arg.value.texture.extent.width;
         int height = arg.value.texture.extent.height;
         int depth = arg.value.texture.extent.depth;
-        builder.set_arg_rw_texture_impl(i, (intptr_t)devalloc.get(),
+        builder.set_arg_rw_texture_impl({(int)i}, (intptr_t)devalloc.get(),
                                         {width, height, depth});
         devallocs.emplace_back(std::move(devalloc));
         break;
@@ -842,6 +843,8 @@ void ti_launch_compute_graph(TiRuntime runtime,
   ndarrays.reserve(arg_count);
   std::vector<taichi::lang::Texture> textures;
   textures.reserve(arg_count);
+  std::vector<taichi::lang::Matrix> matrices;
+  matrices.reserve(arg_count);
 
   for (uint32_t i = 0; i < arg_count; ++i) {
     TI_CAPI_ARGUMENT_NULL(args[i].name);
@@ -980,6 +983,62 @@ void ti_launch_compute_graph(TiRuntime runtime,
             taichi::lang::Texture(devalloc, format, width, height, depth));
         arg_map.emplace(std::make_pair(
             arg.name, taichi::lang::aot::IValue::create(textures.back())));
+        break;
+      }
+      case TI_ARGUMENT_TYPE_TENSOR: {
+        TI_CAPI_ARGUMENT_NULL(args[i].argument.value.tensor.contents.data.x8);
+
+        uint32_t length = arg.argument.value.tensor.contents.length;
+        const taichi::lang::DataType *prim_ty;
+        switch (arg.argument.value.tensor.type) {
+          case TI_DATA_TYPE_F16:
+            prim_ty = &taichi::lang::PrimitiveType::f16;
+            break;
+          case TI_DATA_TYPE_F32:
+            prim_ty = &taichi::lang::PrimitiveType::f32;
+            break;
+          case TI_DATA_TYPE_F64:
+            prim_ty = &taichi::lang::PrimitiveType::f64;
+            break;
+          case TI_DATA_TYPE_I8:
+            prim_ty = &taichi::lang::PrimitiveType::i8;
+            break;
+          case TI_DATA_TYPE_I16:
+            prim_ty = &taichi::lang::PrimitiveType::i16;
+            break;
+          case TI_DATA_TYPE_I32:
+            prim_ty = &taichi::lang::PrimitiveType::i32;
+            break;
+          case TI_DATA_TYPE_I64:
+            prim_ty = &taichi::lang::PrimitiveType::i64;
+            break;
+          case TI_DATA_TYPE_U8:
+            prim_ty = &taichi::lang::PrimitiveType::u8;
+            break;
+          case TI_DATA_TYPE_U16:
+            prim_ty = &taichi::lang::PrimitiveType::u16;
+            break;
+          case TI_DATA_TYPE_U32:
+            prim_ty = &taichi::lang::PrimitiveType::u32;
+            break;
+          case TI_DATA_TYPE_U64:
+            prim_ty = &taichi::lang::PrimitiveType::u64;
+            break;
+          default: {
+            ti_set_last_error(
+                TI_ERROR_ARGUMENT_OUT_OF_RANGE,
+                ("args[" + std::to_string(i) + "].argument.value.tensor.type")
+                    .c_str());
+            return;
+          }
+        }
+        intptr_t data = reinterpret_cast<intptr_t>(
+            arg.argument.value.tensor.contents.data.x8);
+
+        taichi::lang::DataType dtype = *prim_ty;
+        matrices.emplace_back(taichi::lang::Matrix(length, dtype, data));
+        arg_map.emplace(std::make_pair(
+            arg.name, taichi::lang::aot::IValue::create(matrices.back())));
         break;
       }
       default: {

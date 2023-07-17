@@ -152,7 +152,7 @@ void ArgLoadExpression::type_check(const CompileConfig *) {
 
 void ArgLoadExpression::flatten(FlattenContext *ctx) {
   auto arg_load =
-      std::make_unique<ArgLoadStmt>(arg_id, dt, is_ptr, create_load);
+      std::make_unique<ArgLoadStmt>(arg_id, dt, is_ptr, create_load, arg_depth);
   arg_load->ret_type = ret_type;
   ctx->push_back(std::move(arg_load));
   stmt = ctx->back_stmt();
@@ -163,7 +163,7 @@ void TexturePtrExpression::type_check(const CompileConfig *config) {
 
 void TexturePtrExpression::flatten(FlattenContext *ctx) {
   ctx->push_back<ArgLoadStmt>(arg_id, PrimitiveType::f32, /*is_ptr=*/true,
-                              /*create_load*/ true);
+                              /*create_load=*/true, /*arg_depth=*/arg_depth);
   ctx->push_back<TexturePtrStmt>(ctx->back_stmt(), num_dims, is_storage, format,
                                  lod);
   stmt = ctx->back_stmt();
@@ -228,7 +228,7 @@ void UnaryOpExpression::type_check(const CompileConfig *config) {
   }
 
   if (type == UnaryOpType::frexp) {
-    std::vector<StructMember> elements;
+    std::vector<AbstractDictionaryMember> elements;
     TI_ASSERT(operand_primitive_type->is_primitive(PrimitiveTypeID::f32) ||
               operand_primitive_type->is_primitive(PrimitiveTypeID::f64));
     elements.push_back({operand_primitive_type, "mantissa", 0});
@@ -610,8 +610,9 @@ void ExternalTensorExpression::flatten(FlattenContext *ctx) {
       TypeFactory::get_instance().get_ndarray_struct_type(dt, ndim, needs_grad);
   type = TypeFactory::get_instance().get_pointer_type((Type *)type);
 
-  auto ptr = Stmt::make<ArgLoadStmt>(arg_id, type, /*is_ptr=*/true,
-                                     /*create_load=*/false);
+  auto ptr =
+      Stmt::make<ArgLoadStmt>(arg_id, type, /*is_ptr=*/true,
+                              /*create_load=*/false, /*arg_depth=*/arg_depth);
 
   ptr->set_tb(get_tb());
   ctx->push_back(std::move(ptr));
@@ -1235,6 +1236,21 @@ void ExternalTensorShapeAlongAxisExpression::flatten(FlattenContext *ctx) {
   stmt = ctx->back_stmt();
 }
 
+void ExternalTensorBasePtrExpression::type_check(const CompileConfig *) {
+  TI_ASSERT_INFO(ptr.is<ExternalTensorExpression>(),
+                 "Invalid ptr [{}] for ExternalTensorBasePtrExpression",
+                 ExpressionHumanFriendlyPrinter::expr_to_string(ptr));
+  ret_type = ptr.cast<ExternalTensorExpression>()->dt.get_element_type();
+  ret_type.set_is_pointer(true);
+}
+
+void ExternalTensorBasePtrExpression::flatten(FlattenContext *ctx) {
+  auto tensor = ptr.cast<ExternalTensorExpression>();
+  ctx->push_back<ExternalTensorBasePtrStmt>(tensor->arg_id, is_grad);
+  stmt = ctx->back_stmt();
+  stmt->ret_type = ret_type;
+}
+
 void GetElementExpression::type_check(const CompileConfig *config) {
   TI_ASSERT_TYPE_CHECKED(src);
   auto src_type = src->ret_type;
@@ -1777,7 +1793,7 @@ void ASTBuilder::create_scope(std::unique_ptr<Block> &list, LoopType tp) {
   LoopState prev = loop_state_stack_.back();
   if (tp == NotLoop) {
     loop_state_stack_.push_back(prev);
-  } else if (tp == For && stack_.size() == 1) {
+  } else if (tp == For && stack_.size() == 1 && is_kernel_) {
     loop_state_stack_.push_back(Outermost);
   } else {
     loop_state_stack_.push_back(Inner);

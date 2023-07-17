@@ -1276,7 +1276,12 @@ llvm::Value *TaskCodeGenLLVM::bitcast_to_u64(llvm::Value *val, DataType type) {
 }
 
 void TaskCodeGenLLVM::visit(ArgLoadStmt *stmt) {
-  llvm_val[stmt] = get_struct_arg({stmt->arg_id}, stmt->create_load);
+  if (stmt->arg_depth > 0) {
+    llvm_val[stmt] =
+        get_argpack_arg(stmt->arg_id, stmt->arg_depth, stmt->create_load);
+  } else {
+    llvm_val[stmt] = get_struct_arg(stmt->arg_id, stmt->create_load);
+  }
 }
 
 void TaskCodeGenLLVM::visit(ReturnStmt *stmt) {
@@ -1981,8 +1986,18 @@ void TaskCodeGenLLVM::visit(ExternalPtrStmt *stmt) {
 void TaskCodeGenLLVM::visit(ExternalTensorShapeAlongAxisStmt *stmt) {
   const auto arg_id = stmt->arg_id;
   const auto axis = stmt->axis;
-  llvm_val[stmt] = get_struct_arg(
-      {arg_id, TypeFactory::SHAPE_POS_IN_NDARRAY, axis}, /*create_load=*/true);
+  auto extended_arg_id = arg_id;
+  extended_arg_id.push_back(TypeFactory::SHAPE_POS_IN_NDARRAY);
+  extended_arg_id.push_back(axis);
+  llvm_val[stmt] = get_struct_arg(extended_arg_id, /*create_load=*/true);
+}
+
+void TaskCodeGenLLVM::visit(ExternalTensorBasePtrStmt *stmt) {
+  auto arg_id = stmt->arg_id;
+  int pos = stmt->is_grad ? TypeFactory::GRAD_PTR_POS_IN_NDARRAY
+                          : TypeFactory::DATA_PTR_POS_IN_NDARRAY;
+  arg_id.push_back(pos);
+  llvm_val[stmt] = get_struct_arg(arg_id, /*create_load=*/true);
 }
 
 std::string TaskCodeGenLLVM::init_offloaded_task_function(OffloadedStmt *stmt,
@@ -2868,7 +2883,43 @@ void TaskCodeGenLLVM::set_struct_to_buffer(
                        current_element, current_index);
 }
 
-llvm::Value *TaskCodeGenLLVM::get_struct_arg(std::vector<int> index,
+llvm::Value *TaskCodeGenLLVM::get_argpack_arg(const std::vector<int> &arg_id,
+                                              int arg_depth,
+                                              bool create_load) {
+  const std::vector<int> indices_l(arg_id.begin(), arg_id.begin() + arg_depth);
+  const std::vector<int> indices_r(arg_id.begin() + arg_depth, arg_id.end());
+  llvm::Value *data_ptr_value;
+  auto argpack_iterator =
+      std::find_if(current_callable->argpack_types.begin(),
+                   current_callable->argpack_types.end(),
+                   [&](const auto &kv) { return kv.first == indices_l; });
+  TI_ASSERT(argpack_iterator != current_callable->argpack_types.end());
+  const auto *argpack_type = (*argpack_iterator).second;
+  auto *arg_type = argpack_type->get_element_type(indices_r);
+  if (arg_depth > 1) {
+    auto key = arg_id;
+    key.back() = TypeFactory::DATA_PTR_POS_IN_ARGPACK;
+    data_ptr_value = get_argpack_arg(key, arg_depth - 1, true);
+  } else {
+    auto indices_data_ptr = indices_l;
+    indices_data_ptr.push_back(TypeFactory::DATA_PTR_POS_IN_ARGPACK);
+    data_ptr_value = get_struct_arg(indices_data_ptr, true);
+  }
+  std::vector<llvm::Value *> gep_index;
+  gep_index.reserve(indices_r.size());
+  gep_index.push_back(tlctx->get_constant(0));
+  for (int ind : indices_r) {
+    gep_index.push_back(tlctx->get_constant(ind));
+  }
+  auto *gep = builder->CreateGEP(tlctx->get_data_type(argpack_type),
+                                 data_ptr_value, gep_index);
+  if (!create_load) {
+    return gep;
+  }
+  return builder->CreateLoad(tlctx->get_data_type(arg_type), gep);
+}
+
+llvm::Value *TaskCodeGenLLVM::get_struct_arg(const std::vector<int> &index,
                                              bool create_load) {
   auto *args_ptr = get_args_ptr(current_callable, get_context());
   auto *args_type = current_callable->args_type;

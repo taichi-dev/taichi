@@ -125,7 +125,7 @@ class TI_DLL_EXPORT GfxRuntime {
       const std::vector<ComputeOpImageRef> &image_refs);
 
   bool used_in_kernel(DeviceAllocationId id) {
-    return ndarrays_in_use_.count(id) > 0;
+    return ndarrays_in_use_.count(id) > 0 || argpacks_in_use_.count(id) > 0;
   }
 
   static std::pair<const lang::StructType *, size_t>
@@ -169,6 +169,7 @@ class TI_DLL_EXPORT GfxRuntime {
   // ndarray_in_use_ to track this so that we can free memory allocated for
   // ndarray whenever it's safe to do so.
   std::unordered_set<DeviceAllocationId> ndarrays_in_use_;
+  std::unordered_set<DeviceAllocationId> argpacks_in_use_;
 };
 
 GfxRuntime::RegisterParams run_codegen(

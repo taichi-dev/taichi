@@ -18,7 +18,7 @@ Mesh::Mesh(AppContext *app_context, VertexAttributes vbo_attrs) {
       app_context->config.package_path + "/shaders/Mesh_vk_frag.spv";
   config.vertex_shader_path =
       app_context->config.package_path + "/shaders/Mesh_vk_vert.spv";
-
+  is_3d_renderable = true;
   Renderable::init(config, app_context);
 }
 

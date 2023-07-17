@@ -14,6 +14,30 @@ AliasResult alias_analysis(Stmt *var1, Stmt *var2) {
   if (!var1 || !var2)
     return AliasResult::different;
 
+  if (var1->is<ExternalTensorBasePtrStmt>() ||
+      var2->is<ExternalTensorBasePtrStmt>()) {
+    auto *base = var1->cast<ExternalTensorBasePtrStmt>();
+    Stmt *other = var2;
+    if (!base) {
+      base = var2->cast<ExternalTensorBasePtrStmt>();
+      other = var1;
+    }
+    auto *external_ptr = other->cast<ExternalPtrStmt>();
+    if (!external_ptr) {
+      if (auto *matrix_ptr = other->cast<MatrixPtrStmt>()) {
+        external_ptr = matrix_ptr->origin->cast<ExternalPtrStmt>();
+      }
+      if (!external_ptr)
+        return AliasResult::different;
+    }
+    if (base->is_grad != external_ptr->is_grad)
+      return AliasResult::different;
+    if (base->arg_id == external_ptr->base_ptr->as<ArgLoadStmt>()->arg_id) {
+      return AliasResult::uncertain;
+    }
+    return AliasResult::different;
+  }
+
   // TODO: further optimize with offset inside MatrixPtrStmt
   // If at least one of var1 and var2 is local, they will be treated here.
   auto retrieve_local = [&](Stmt *var) {

@@ -3,7 +3,7 @@ import copy
 import numpy as np
 import pytest
 from taichi.lang import impl
-from taichi.lang.exception import TaichiIndexError, TaichiTypeError
+from taichi.lang.exception import TaichiIndexError, TaichiRuntimeError, TaichiTypeError
 from taichi.lang.misc import get_host_arch_list
 from taichi.lang.util import has_pytorch
 from taichi.math import vec3, ivec3
@@ -656,6 +656,19 @@ def test_ndarray_as_template():
         func(arr_0, arr_1)
 
 
+@pytest.mark.parametrize("shape", [2**31, 1.5, 0, (1, 0), (1, 0.5), (1, 2**31)])
+@test_utils.test(arch=supported_archs_taichi_ndarray)
+def test_ndarray_shape_invalid(shape):
+    with pytest.raises(TaichiRuntimeError, match=r"is not a valid shape for ndarray"):
+        x = ti.ndarray(dtype=int, shape=shape)
+
+
+@pytest.mark.parametrize("shape", [1, np.int32(1), (1, np.int32(1), 4096)])
+@test_utils.test(arch=supported_archs_taichi_ndarray)
+def test_ndarray_shape_valid(shape):
+    x = ti.ndarray(dtype=int, shape=shape)
+
+
 @test_utils.test(arch=supported_archs_taichi_ndarray)
 def test_gaussian_kernel():
     M_PI = 3.14159265358979323846
@@ -1103,3 +1116,48 @@ def test_ndarray_clamp_verify():
     ao = ti.ndarray(ti.f32, shape=(height, width))
     test(ao)
     assert (ao.to_numpy() == np.zeros((height, width))).all()
+
+
+@test_utils.test(arch=supported_archs_taichi_ndarray)
+def test_ndarray_arg_builtin_float_type():
+    @ti.kernel
+    def foo(x: ti.types.ndarray(float, ndim=0)) -> ti.f32:
+        return x[None]
+
+    x = ti.ndarray(ti.f32, shape=())
+    x[None] = 42
+    assert foo(x) == 42
+
+
+@test_utils.test(arch=[ti.cpu, ti.cuda])
+def test_real_func_vector_ndarray_arg():
+    @ti.experimental.real_func
+    def foo(x: ti.types.ndarray(ndim=1)) -> vec3:
+        return x[0]
+
+    @ti.kernel
+    def test(x: ti.types.ndarray(ndim=1)) -> vec3:
+        return foo(x)
+
+    x = ti.Vector.ndarray(3, ti.f32, shape=(1))
+    x[0] = vec3(1, 2, 3)
+    assert (test(x) == vec3(1, 2, 3)).all()
+
+
+@test_utils.test(arch=[ti.cpu, ti.cuda])
+def test_real_func_write_ndarray_cfg():
+    @ti.experimental.real_func
+    def bar(a: ti.types.ndarray(ndim=1)):
+        a[0] = vec3(1)
+
+    @ti.kernel
+    def foo(
+        a: ti.types.ndarray(ndim=1),
+    ):
+        a[0] = vec3(3)
+        bar(a)
+        a[0] = vec3(3)
+
+    a = ti.Vector.ndarray(3, float, shape=(2,))
+    foo(a)
+    assert (a[0] == vec3(3)).all()

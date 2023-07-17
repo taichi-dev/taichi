@@ -314,7 +314,7 @@ class FrontendReturnStmt : public Stmt {
 
 class ArgLoadExpression : public Expression {
  public:
-  int arg_id;
+  const std::vector<int> arg_id;
   DataType dt;
   bool is_ptr;
 
@@ -324,11 +324,18 @@ class ArgLoadExpression : public Expression {
    */
   bool create_load;
 
-  ArgLoadExpression(int arg_id,
+  int arg_depth;
+
+  ArgLoadExpression(const std::vector<int> &arg_id,
                     DataType dt,
                     bool is_ptr = false,
-                    bool create_load = true)
-      : arg_id(arg_id), dt(dt), is_ptr(is_ptr), create_load(create_load) {
+                    bool create_load = true,
+                    int arg_depth = 0)
+      : arg_id(arg_id),
+        dt(dt),
+        is_ptr(is_ptr),
+        create_load(create_load),
+        arg_depth(arg_depth) {
   }
 
   void type_check(const CompileConfig *config) override;
@@ -346,26 +353,35 @@ class Texture;
 
 class TexturePtrExpression : public Expression {
  public:
-  int arg_id;
+  const std::vector<int> arg_id;
   int num_dims;
   bool is_storage{false};
+  int arg_depth;
 
   // Optional, for storage textures
   BufferFormat format{BufferFormat::unknown};
   int lod{0};
 
-  explicit TexturePtrExpression(int arg_id, int num_dims)
+  explicit TexturePtrExpression(const std::vector<int> &arg_id,
+                                int num_dims,
+                                int arg_depth)
       : arg_id(arg_id),
         num_dims(num_dims),
         is_storage(false),
+        arg_depth(arg_depth),
         format(BufferFormat::rgba8),
         lod(0) {
   }
 
-  TexturePtrExpression(int arg_id, int num_dims, BufferFormat format, int lod)
+  TexturePtrExpression(const std::vector<int> &arg_id,
+                       int num_dims,
+                       int arg_depth,
+                       BufferFormat format,
+                       int lod)
       : arg_id(arg_id),
         num_dims(num_dims),
         is_storage(true),
+        arg_depth(arg_depth),
         format(format),
         lod(lod) {
   }
@@ -474,22 +490,25 @@ class ExternalTensorExpression : public Expression {
  public:
   DataType dt;
   int ndim;
-  int arg_id;
+  std::vector<int> arg_id;
   bool needs_grad{false};
   bool is_grad{false};
+  int arg_depth{0};
   BoundaryMode boundary{BoundaryMode::kUnsafe};
 
   ExternalTensorExpression(const DataType &dt,
                            int ndim,
-                           int arg_id,
+                           const std::vector<int> &arg_id,
                            bool needs_grad = false,
+                           int arg_depth = false,
                            BoundaryMode boundary = BoundaryMode::kUnsafe) {
-    init(dt, ndim, arg_id, needs_grad, boundary);
+    init(dt, ndim, arg_id, needs_grad, arg_depth, boundary);
   }
 
   explicit ExternalTensorExpression(Expr *expr) : is_grad(true) {
     auto ptr = expr->cast<ExternalTensorExpression>();
-    init(ptr->dt, ptr->ndim, ptr->arg_id, ptr->needs_grad, ptr->boundary);
+    init(ptr->dt, ptr->ndim, ptr->arg_id, ptr->needs_grad, ptr->arg_depth,
+         ptr->boundary);
   }
 
   void flatten(FlattenContext *ctx) override;
@@ -513,13 +532,15 @@ class ExternalTensorExpression : public Expression {
 
   void init(const DataType &dt,
             int ndim,
-            int arg_id,
+            const std::vector<int> &arg_id,
             bool needs_grad,
+            int arg_depth,
             BoundaryMode boundary) {
     this->dt = dt;
     this->ndim = ndim;
     this->arg_id = arg_id;
     this->needs_grad = needs_grad;
+    this->arg_depth = arg_depth;
     this->boundary = boundary;
   }
 };
@@ -798,6 +819,22 @@ class ExternalTensorShapeAlongAxisExpression : public Expression {
   TI_DEFINE_ACCEPT_FOR_EXPRESSION
 };
 
+class ExternalTensorBasePtrExpression : public Expression {
+ public:
+  Expr ptr;
+  bool is_grad;
+
+  explicit ExternalTensorBasePtrExpression(const Expr &ptr, bool is_grad)
+      : ptr(ptr), is_grad(is_grad) {
+  }
+
+  void type_check(const CompileConfig *config) override;
+
+  void flatten(FlattenContext *ctx) override;
+
+  TI_DEFINE_ACCEPT_FOR_EXPRESSION
+};
+
 class FrontendFuncCallStmt : public Stmt {
  public:
   std::optional<Identifier> ident;
@@ -937,12 +974,14 @@ class ASTBuilder {
 
   std::vector<Block *> stack_;
   std::vector<LoopState> loop_state_stack_;
+  bool is_kernel_{false};
   Arch arch_;
   ForLoopDecoratorRecorder for_loop_dec_;
   int id_counter_{0};
 
  public:
-  ASTBuilder(Block *initial, Arch arch) : arch_(arch) {
+  ASTBuilder(Block *initial, Arch arch, bool is_kernel)
+      : is_kernel_(is_kernel), arch_(arch) {
     stack_.push_back(initial);
     loop_state_stack_.push_back(None);
   }
@@ -1075,9 +1114,10 @@ class FrontendContext {
   std::unique_ptr<Block> root_node_;
 
  public:
-  explicit FrontendContext(Arch arch) {
+  explicit FrontendContext(Arch arch, bool is_kernel) {
     root_node_ = std::make_unique<Block>();
-    current_builder_ = std::make_unique<ASTBuilder>(root_node_.get(), arch);
+    current_builder_ =
+        std::make_unique<ASTBuilder>(root_node_.get(), arch, is_kernel);
   }
 
   ASTBuilder &builder() {

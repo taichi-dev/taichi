@@ -110,6 +110,7 @@ void differentiation_validation_check(IRNode *root,
  */
 bool determine_ad_stack_size(IRNode *root, const CompileConfig &config);
 bool constant_fold(IRNode *root);
+void associate_continue_scope(IRNode *root, const CompileConfig &config);
 void offload(IRNode *root, const CompileConfig &config);
 bool transform_statements(
     IRNode *root,
@@ -155,8 +156,10 @@ ENUM_FLAGS(ExternalPtrAccess){NONE = 0, READ = 1, WRITE = 2};
  * @return
  *   The analyzed result.
  */
-std::unordered_map<int, ExternalPtrAccess> detect_external_ptr_access_in_task(
-    OffloadedStmt *offload);
+std::unordered_map<std::vector<int>,
+                   ExternalPtrAccess,
+                   hashing::Hasher<std::vector<int>>>
+detect_external_ptr_access_in_task(OffloadedStmt *offload);
 
 // compile_to_offloads does the basic compilation to create all the offloaded
 // tasks of a Taichi kernel.

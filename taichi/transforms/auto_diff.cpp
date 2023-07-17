@@ -338,7 +338,7 @@ class PromoteSSA2LocalVar : public BasicStmtVisitor {
       return;
     if (!(stmt->is<UnaryOpStmt>() || stmt->is<BinaryOpStmt>() ||
           stmt->is<TernaryOpStmt>() || stmt->is<GlobalLoadStmt>() ||
-          stmt->is<AllocaStmt>())) {
+          stmt->is<LoopIndexStmt>() || stmt->is<AllocaStmt>())) {
       // TODO: this list may be incomplete
       return;
     }

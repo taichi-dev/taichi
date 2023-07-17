@@ -111,8 +111,8 @@ class LlvmProgramImpl : public ProgramImpl {
     runtime_exec_->finalize();
   }
 
-  uint64_t *get_ndarray_alloc_info_ptr(const DeviceAllocation &alloc) override {
-    return runtime_exec_->get_ndarray_alloc_info_ptr(alloc);
+  uint64_t *get_device_alloc_info_ptr(const DeviceAllocation &alloc) override {
+    return runtime_exec_->get_device_alloc_info_ptr(alloc);
   }
 
   void fill_ndarray(const DeviceAllocation &alloc,
@@ -121,9 +121,9 @@ class LlvmProgramImpl : public ProgramImpl {
     return runtime_exec_->fill_ndarray(alloc, size, data);
   }
 
-  DeviceAllocation allocate_memory_ndarray(std::size_t alloc_size,
-                                           uint64 *result_buffer) override {
-    return runtime_exec_->allocate_memory_ndarray(alloc_size, result_buffer);
+  DeviceAllocation allocate_memory_on_device(std::size_t alloc_size,
+                                             uint64 *result_buffer) override {
+    return runtime_exec_->allocate_memory_on_device(alloc_size, result_buffer);
   }
 
   Device *get_compute_device() override {
@@ -221,6 +221,7 @@ class LlvmProgramImpl : public ProgramImpl {
   std::string get_kernel_argument_data_layout() override {
     return get_llvm_context()->get_data_layout_string();
   };
+
   std::pair<const StructType *, size_t> get_struct_type_with_data_layout(
       const StructType *old_ty,
       const std::string &layout) override {

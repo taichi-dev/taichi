@@ -87,7 +87,11 @@ class TaskCodeGenLLVM : public IRVisitor, public LLVMModuleBuilder {
 
   llvm::Value *get_arg(int i);
 
-  llvm::Value *get_struct_arg(std::vector<int> index, bool create_load);
+  llvm::Value *get_argpack_arg(const std::vector<int> &index,
+                               int arg_depth,
+                               bool create_load);
+
+  llvm::Value *get_struct_arg(const std::vector<int> &index, bool create_load);
 
   llvm::Value *get_args_ptr(const Callable *callable, llvm::Value *context);
 
@@ -325,6 +329,8 @@ class TaskCodeGenLLVM : public IRVisitor, public LLVMModuleBuilder {
   void visit(ExternalPtrStmt *stmt) override;
 
   void visit(ExternalTensorShapeAlongAxisStmt *stmt) override;
+
+  void visit(ExternalTensorBasePtrStmt *stmt) override;
 
   virtual bool kernel_argument_by_val() const {
     return false;  // on CPU devices just pass in a pointer

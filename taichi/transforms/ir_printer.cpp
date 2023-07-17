@@ -477,7 +477,7 @@ class IRPrinter : public IRVisitor {
 
   void visit(ArgLoadStmt *stmt) override {
     print("{}{} = arg{}[{}]", stmt->type_hint(), stmt->name(),
-          stmt->create_load ? "load" : "addr", stmt->arg_id);
+          stmt->create_load ? "load" : "addr", fmt::join(stmt->arg_id, ", "));
   }
 
   void visit(TexturePtrStmt *stmt) override {
@@ -769,8 +769,15 @@ class IRPrinter : public IRVisitor {
   }
 
   void visit(ExternalTensorShapeAlongAxisStmt *stmt) override {
-    print("{}{} = external_tensor_shape_along_axis {}, arg_id {}",
-          stmt->type_hint(), stmt->name(), stmt->axis, stmt->arg_id);
+    print("{}{} = external_tensor_shape_along_axis {}, arg_id [{}]",
+          stmt->type_hint(), stmt->name(), stmt->axis,
+          fmt::join(stmt->arg_id, ", "));
+  }
+
+  void visit(ExternalTensorBasePtrStmt *stmt) override {
+    print("{}{} = external_tensor_base_ptr (arg_id=[{}], is_grad={})",
+          stmt->type_hint(), stmt->name(), fmt::join(stmt->arg_id, ", "),
+          stmt->is_grad);
   }
 
   void visit(BitStructStoreStmt *stmt) override {

@@ -3,6 +3,7 @@
 #include "taichi/program/ndarray.h"
 #include "taichi/program/texture.h"
 #include "taichi/program/kernel.h"
+#include "taichi/program/matrix.h"
 
 #include <numeric>
 
@@ -44,41 +45,6 @@ void CompiledGraph::init_runtime_context(
     LaunchContextBuilder &ctx) {
   for (int i = 0; i < paramter_list.size(); ++i) {
     auto &symbolic_arg = paramter_list[i];
-    if (symbolic_arg.tag == aot::ArgKind::kMatrix) {
-      int size = symbolic_arg.element_shape[0] * symbolic_arg.element_shape[1];
-      for (int j = 0; j < size; j++) {
-        auto found = args.find(symbolic_arg.name + "_" + std::to_string(j));
-        TI_ERROR_IF(found == args.end(), "Missing runtime value for {}",
-                    symbolic_arg.name);
-        const aot::IValue &ival = found->second;
-        TI_ASSERT(ival.tag == aot::ArgKind::kScalar);
-        int type_size = data_type_size(symbolic_arg.dtype());
-        switch (type_size) {
-          case 1:
-            ctx.set_struct_arg_impl(
-                {i, j}, taichi_union_cast_with_different_sizes<int8>(ival.val));
-            break;
-          case 2:
-            ctx.set_struct_arg_impl(
-                {i, j},
-                taichi_union_cast_with_different_sizes<int16>(ival.val));
-            break;
-          case 4:
-            ctx.set_struct_arg_impl(
-                {i, j},
-                taichi_union_cast_with_different_sizes<int32>(ival.val));
-            break;
-          case 8:
-            ctx.set_struct_arg_impl(
-                {i, j},
-                taichi_union_cast_with_different_sizes<int64>(ival.val));
-            break;
-          default:
-            TI_ERROR("Unsupported type size {}", type_size);
-        }
-      }
-      continue;
-    }
     auto found = args.find(symbolic_arg.name);
     TI_ERROR_IF(found == args.end(), "Missing runtime value for {}",
                 symbolic_arg.name);
@@ -123,26 +89,26 @@ void CompiledGraph::init_runtime_context(
                   "dtype={} but got an ndarray with dtype={}",
                   symbolic_arg.name, symbolic_arg_primitive_dtype.to_string(),
                   arr_primitive_dtype.to_string());
-      ctx.set_arg_ndarray(i, *arr);
+      ctx.set_arg_ndarray({i}, *arr);
     } else if (symbolic_arg.tag == aot::ArgKind::kScalar) {
       TI_ASSERT(ival.tag == aot::ArgKind::kScalar);
       // Matrix args are flattened so they're same as scalars.
       int type_size = data_type_size(symbolic_arg.dtype());
       switch (type_size) {
         case 1:
-          ctx.set_arg(i,
+          ctx.set_arg({i},
                       taichi_union_cast_with_different_sizes<int8>(ival.val));
           break;
         case 2:
-          ctx.set_arg(i,
+          ctx.set_arg({i},
                       taichi_union_cast_with_different_sizes<int16>(ival.val));
           break;
         case 4:
-          ctx.set_arg(i,
+          ctx.set_arg({i},
                       taichi_union_cast_with_different_sizes<int32>(ival.val));
           break;
         case 8:
-          ctx.set_arg(i,
+          ctx.set_arg({i},
                       taichi_union_cast_with_different_sizes<int64>(ival.val));
           break;
         default:
@@ -151,11 +117,25 @@ void CompiledGraph::init_runtime_context(
     } else if (symbolic_arg.tag == aot::ArgKind::kTexture) {
       TI_ASSERT(ival.tag == aot::ArgKind::kTexture);
       Texture *tex = reinterpret_cast<Texture *>(ival.val);
-      ctx.set_arg_texture(i, *tex);
+      ctx.set_arg_texture({i}, *tex);
     } else if (symbolic_arg.tag == aot::ArgKind::kRWTexture) {
       TI_ASSERT(ival.tag == aot::ArgKind::kTexture);
       Texture *tex = reinterpret_cast<Texture *>(ival.val);
-      ctx.set_arg_rw_texture(i, *tex);
+      ctx.set_arg_rw_texture({i}, *tex);
+    } else if (symbolic_arg.tag == aot::ArgKind::kMatrix) {
+      TI_ASSERT(ival.tag == aot::ArgKind::kMatrix);
+      Matrix *mat = reinterpret_cast<Matrix *>(ival.val);
+
+      uint32_t symbolic_arg_size = (uint32_t)(symbolic_arg.element_shape[0] *
+                                              symbolic_arg.element_shape[1]);
+      TI_ERROR_IF(symbolic_arg_size != mat->length(),
+                  "Dispatch node is compiled for argument {} with "
+                  "size={} but got a matrix with size={}",
+                  symbolic_arg.name, symbolic_arg_size, mat->length());
+      TI_ERROR_IF(mat->length() * data_type_size(mat->dtype()) > 128,
+                  "Matrix size={} is out of bound",
+                  mat->length() * data_type_size(mat->dtype()));
+      ctx.set_arg_matrix(i, *mat);
     } else {
       TI_ERROR("Error in compiled graph: unknown tag {}", ival.tag);
     }

@@ -48,7 +48,8 @@ class CheckOutOfBound : public BasicStmtVisitor {
     Stmt *result = new_stmts.push_back<ConstStmt>(TypedConstant(true));
     std::string msg = fmt::format(
         "[kernel={}] Out of bound access to ndarray at arg {} with indices [",
-        kernel_name, stmt->base_ptr->as<ArgLoadStmt>()->arg_id);
+        kernel_name,
+        fmt::join(stmt->base_ptr->as<ArgLoadStmt>()->arg_id, ", "));
     std::vector<Stmt *> args;
     int flattened_element = 1;
     for (int i = 0; i < stmt->element_shape.size(); i++) {

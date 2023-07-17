@@ -401,7 +401,6 @@ class Stmt : public IRNode {
   bool fields_registered;
   std::string tb;
   DataType ret_type;
-  Location src_location;
 
   Stmt();
   Stmt(const Stmt &stmt);

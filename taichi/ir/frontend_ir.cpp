@@ -178,8 +178,8 @@ void RandExpression::type_check(const CompileConfig *) {
     ErrorEmitter(
         TaichiTypeError(), this,
         fmt::format("Invalid dt [{}] for RandExpression", dt->to_string()));
-    ret_type = dt;
   }
+  ret_type = dt;
 }
 
 void RandExpression::flatten(FlattenContext *ctx) {

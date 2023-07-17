@@ -7,7 +7,11 @@
 namespace taichi::lang {
 
 void Expr::set_tb(const std::string &tb) {
-  expr->tb = tb;
+  expr->set_tb(tb);
+}
+
+const std::string &Expr::get_tb() const {
+  return expr->get_tb();
 }
 
 DataType Expr::get_ret_type() const {

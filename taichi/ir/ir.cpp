@@ -120,7 +120,7 @@ Stmt::Stmt(const Stmt &stmt) : field_manager(this), fields_registered(false) {
   instance_id = instance_id_counter++;
   id = instance_id;
   erased = stmt.erased;
-  tb = stmt.tb;
+  dbg_info = stmt.dbg_info;
   ret_type = stmt.ret_type;
 }
 

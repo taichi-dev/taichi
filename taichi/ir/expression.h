@@ -15,7 +15,7 @@ class Expression {
   Stmt *stmt;
 
  public:
-  std::string tb;
+  DebugInfo dbg_info;
   std::map<std::string, std::string> attributes;
   DataType ret_type;
 
@@ -58,6 +58,14 @@ class Expression {
 
   Stmt *get_flattened_stmt() const {
     return stmt;
+  }
+
+  std::string const &get_tb() const {
+    return dbg_info.tb;
+  }
+
+  void set_tb(std::string const &tb) {
+    dbg_info.tb = tb;
   }
 };
 

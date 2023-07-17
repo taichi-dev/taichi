@@ -90,7 +90,7 @@ class CheckOutOfBound : public BasicStmtVisitor {
         msg += ", ";
       msg += "%d";
     }
-    msg += "]\n" + stmt->tb;
+    msg += "]\n" + stmt->get_tb();
 
     new_stmts.push_back<AssertStmt>(result, msg, args);
     modifier.insert_before(stmt, std::move(new_stmts));
@@ -153,7 +153,7 @@ class CheckOutOfBound : public BasicStmtVisitor {
       msg += "%d";
     }
     msg += ")";
-    msg += "\n" + stmt->tb;
+    msg += "\n" + stmt->get_tb();
 
     new_stmts.push_back<AssertStmt>(result, msg, args);
     modifier.insert_before(stmt, std::move(new_stmts));
@@ -198,7 +198,7 @@ class CheckOutOfBound : public BasicStmtVisitor {
         msg += ", ";
       msg += std::to_string(matrix_shape[i]);
     }
-    msg += "] matrix with index [%d]\n" + stmt->tb;
+    msg += "] matrix with index [%d]\n" + stmt->get_tb();
 
     std::vector<Stmt *> args = {index};
     new_stmts.push_back<AssertStmt>(result, msg, args);
@@ -219,7 +219,7 @@ class CheckOutOfBound : public BasicStmtVisitor {
             BinaryOpType::cmp_ge, stmt->rhs, compare_rhs.get());
         compare->ret_type = PrimitiveType::i32;
         std::string msg = "Negative exponent in pow(int, int) is not allowed.";
-        msg += "\n" + stmt->tb;
+        msg += "\n" + stmt->get_tb();
         auto assert_stmt = std::make_unique<AssertStmt>(compare.get(), msg,
                                                         std::vector<Stmt *>());
         assert_stmt->accept(this);

@@ -34,7 +34,7 @@ class TypeCheck : public IRVisitor {
       if (dst_type != promoted) {
         TI_WARN("[{}] {} may lose precision: {} <- {}\n{}", stmt->name(),
                 stmt_name, dst_type->to_string(), val->ret_data_type_name(),
-                stmt->tb);
+                stmt->get_tb());
       }
       val = insert_type_cast_before(stmt, val, dst_type);
     }
@@ -145,7 +145,7 @@ class TypeCheck : public IRVisitor {
           TypeFactory::get_instance().get_pointer_type(stmt->snode->dt);
     } else
       TI_WARN("[{}] Type inference failed: snode is nullptr.\n{}", stmt->name(),
-              stmt->tb);
+              stmt->get_tb());
     auto check_indices = [&](SNode *snode) {
       if (snode->num_active_indices != stmt->indices.size()) {
         TI_ERROR("[{}] {} has {} indices. Indexed with {}.", stmt->name(),
@@ -159,7 +159,7 @@ class TypeCheck : public IRVisitor {
         TI_WARN(
             "[{}] Field index {} not int32, casting into int32 "
             "implicitly\n{}",
-            stmt->name(), i, stmt->tb);
+            stmt->name(), i, stmt->get_tb());
         stmt->indices[i] =
             insert_type_cast_before(stmt, stmt->indices[i], PrimitiveType::i32);
       }
@@ -275,7 +275,7 @@ class TypeCheck : public IRVisitor {
     std::string msg =
         "Detected overflow for bit_shift_op with rhs = %d, exceeding limit of "
         "%d.";
-    msg += "\n" + stmt->tb;
+    msg += "\n" + stmt->get_tb();
     std::vector<Stmt *> args = {rhs, const_stmt.get()};
     auto assert_stmt =
         Stmt::make<AssertStmt>(cond_stmt.get(), msg, std::move(args));
@@ -302,9 +302,9 @@ class TypeCheck : public IRVisitor {
       if (comment == "") {
         TI_WARN("[{}] Type mismatch (left = {}, right = {}, stmt_id = {})\n{}",
                 stmt->name(), stmt->lhs->ret_data_type_name(),
-                stmt->rhs->ret_data_type_name(), stmt->id, stmt->tb);
+                stmt->rhs->ret_data_type_name(), stmt->id, stmt->get_tb());
       } else {
-        TI_WARN("[{}] {}\n{}", stmt->name(), comment, stmt->tb);
+        TI_WARN("[{}] {}\n{}", stmt->name(), comment, stmt->get_tb());
       }
       TI_WARN("Compilation stopped due to type mismatch.");
       throw std::runtime_error("Binary operator type mismatch");

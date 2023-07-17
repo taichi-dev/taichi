@@ -55,7 +55,7 @@ class FrontendTypeCheck : public IRVisitor {
 
     auto error = [&]() {
       throw TaichiTypeError(fmt::format("{}cannot assign '{}' to '{}'",
-                                        stmt->tb, rhs_type->to_string(),
+                                        stmt->get_tb(), rhs_type->to_string(),
                                         lhs_type->to_string()));
     };
 
@@ -68,6 +68,8 @@ class FrontendTypeCheck : public IRVisitor {
 
   void visit(FrontendIfStmt *stmt) override {
     // TODO: use PrimitiveType::u1 when it's supported
+    std::cerr << fmt::format("[debug] stmt->dbg_info.tb {}\n",
+                             stmt->dbg_info.tb);
     check_cond_type(stmt->condition, "if");
     if (stmt->true_statements)
       stmt->true_statements->accept(this);
@@ -109,7 +111,7 @@ class FrontendTypeCheck : public IRVisitor {
 
       if (unsupported_group.find(conversion) != std::string::npos) {
         throw TaichiTypeError(fmt::format("{}conversion '{}' is not supported.",
-                                          stmt->tb, conversion));
+                                          stmt->get_tb(), conversion));
       }
 
       if ((real_group.find(conversion) != std::string::npos &&
@@ -119,7 +121,7 @@ class FrontendTypeCheck : public IRVisitor {
           (unsigned_group.find(conversion) != std::string::npos &&
            !(is_integral(data_type) && is_unsigned(data_type)))) {
         throw TaichiTypeError(fmt::format("{} '{}' doesn't match '{}'.",
-                                          stmt->tb, format_spec,
+                                          stmt->get_tb(), format_spec,
                                           data_type->to_string()));
       }
     }

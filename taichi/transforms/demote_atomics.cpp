@@ -151,7 +151,7 @@ class DemoteAtomics : public BasicStmtVisitor {
         TI_WARN(
             "AtomicOp on QuantFloatType is not supported. "
             "Demoting to non-atomic RMW.\n{}",
-            stmt->tb);
+            stmt->get_tb());
         demote = true;
       }
     }

@@ -1139,31 +1139,31 @@ class TaskCodegen : public IRVisitor {
     TI_WARN_IF(lhs_value.stype.id != rhs_value.stype.id,
                "${} type {} != ${} type {}\n{}", lhs_name,
                lhs_value.stype.dt->to_string(), rhs_name,
-               rhs_value.stype.dt->to_string(), bin->tb);
+               rhs_value.stype.dt->to_string(), bin->get_tb());
 
     bool debug = caps_->get(DeviceCapability::spirv_has_non_semantic_info);
 
     if (debug && op_type == BinaryOpType::add && is_integral(dst_type.dt)) {
       if (is_unsigned(dst_type.dt)) {
-        bin_value = generate_uadd_overflow(lhs_value, rhs_value, bin->tb);
+        bin_value = generate_uadd_overflow(lhs_value, rhs_value, bin->get_tb());
       } else {
-        bin_value = generate_sadd_overflow(lhs_value, rhs_value, bin->tb);
+        bin_value = generate_sadd_overflow(lhs_value, rhs_value, bin->get_tb());
       }
       bin_value = ir_->cast(dst_type, bin_value);
     } else if (debug && op_type == BinaryOpType::sub &&
                is_integral(dst_type.dt)) {
       if (is_unsigned(dst_type.dt)) {
-        bin_value = generate_usub_overflow(lhs_value, rhs_value, bin->tb);
+        bin_value = generate_usub_overflow(lhs_value, rhs_value, bin->get_tb());
       } else {
-        bin_value = generate_ssub_overflow(lhs_value, rhs_value, bin->tb);
+        bin_value = generate_ssub_overflow(lhs_value, rhs_value, bin->get_tb());
       }
       bin_value = ir_->cast(dst_type, bin_value);
     } else if (debug && op_type == BinaryOpType::mul &&
                is_integral(dst_type.dt)) {
       if (is_unsigned(dst_type.dt)) {
-        bin_value = generate_umul_overflow(lhs_value, rhs_value, bin->tb);
+        bin_value = generate_umul_overflow(lhs_value, rhs_value, bin->get_tb());
       } else {
-        bin_value = generate_smul_overflow(lhs_value, rhs_value, bin->tb);
+        bin_value = generate_smul_overflow(lhs_value, rhs_value, bin->get_tb());
       }
       bin_value = ir_->cast(dst_type, bin_value);
     }
@@ -1187,9 +1187,9 @@ class TaskCodegen : public IRVisitor {
 
     else if (debug && op_type == BinaryOpType::bit_shl) {
       if (is_unsigned(dst_type.dt)) {
-        bin_value = generate_ushl_overflow(lhs_value, rhs_value, bin->tb);
+        bin_value = generate_ushl_overflow(lhs_value, rhs_value, bin->get_tb());
       } else {
-        bin_value = generate_sshl_overflow(lhs_value, rhs_value, bin->tb);
+        bin_value = generate_sshl_overflow(lhs_value, rhs_value, bin->get_tb());
       }
     }
     BINARY_OP_TO_SPIRV_BITWISE(bit_and, OpBitwiseAnd)

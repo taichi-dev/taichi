@@ -440,7 +440,7 @@ class LowerAST : public IRVisitor {
                 dest.cast<ArgLoadExpression>()->is_ptr);
       fctx.push_back<GlobalStoreStmt>(dest_stmt, expr_stmt);
     }
-    fctx.stmts.back()->set_tb(assign->tb);
+    fctx.stmts.back()->dbg_info = assign->dbg_info;
     assign->parent->replace_with(assign, std::move(fctx.stmts));
   }
 

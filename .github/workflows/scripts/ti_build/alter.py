@@ -117,7 +117,7 @@ def enter_shell():
         if shell.name in ("pwsh.exe", "powershell.exe"):
             pwsh = Command(shell.exe)
             path = _write_ti_pwshrc()
-            pwsh("-Interactive", "-NoExit", "-File", str(path))
+            pwsh("-ExecutionPolicy", "Bypass", "-NoExit", "-File", str(path))
         elif shell.name == "cmd.exe":
             cmd = Command(shell.exe)
             cmd("/k", "set", "PROMPT=TaichiBuild $P$G")

@@ -138,74 +138,82 @@ class SNode {
   SNode &create_node(std::vector<Axis> axes,
                      std::vector<int> sizes,
                      SNodeType type,
-                     const DebugInfo &dbg_info);
+                     const DebugInfo &dbg_info = DebugInfo());
 
   // SNodes maintains how flattened index bits are taken from indices
   SNode &dense(const std::vector<Axis> &axes,
                const std::vector<int> &sizes,
-               const DebugInfo &dbg_info) {
+               const DebugInfo &dbg_info = DebugInfo()) {
     return create_node(axes, sizes, SNodeType::dense, dbg_info);
   }
 
   SNode &dense(const std::vector<Axis> &axes,
                int sizes,
-               const DebugInfo &dbg_info) {
+               const DebugInfo &dbg_info = DebugInfo()) {
     return create_node(axes, std::vector<int>{sizes}, SNodeType::dense,
                        dbg_info);
   }
 
-  SNode &dense(const Axis &axis, int size, const DebugInfo &dbg_info) {
+  SNode &dense(const Axis &axis,
+               int size,
+               const DebugInfo &dbg_info = DebugInfo()) {
     return SNode::dense(std::vector<Axis>{axis}, size, dbg_info);
   }
 
   SNode &pointer(const std::vector<Axis> &axes,
                  const std::vector<int> &sizes,
-                 const DebugInfo &dbg_info) {
+                 const DebugInfo &dbg_info = DebugInfo()) {
     return create_node(axes, sizes, SNodeType::pointer, dbg_info);
   }
 
   SNode &pointer(const std::vector<Axis> &axes,
                  int sizes,
-                 const DebugInfo &dbg_info) {
+                 const DebugInfo &dbg_info = DebugInfo()) {
     return create_node(axes, std::vector<int>{sizes}, SNodeType::pointer,
                        dbg_info);
   }
 
-  SNode &pointer(const Axis &axis, int size, const DebugInfo &dbg_info) {
+  SNode &pointer(const Axis &axis,
+                 int size,
+                 const DebugInfo &dbg_info = DebugInfo()) {
     return SNode::pointer(std::vector<Axis>{axis}, size, dbg_info);
   }
 
   SNode &bitmasked(const std::vector<Axis> &axes,
                    const std::vector<int> &sizes,
-                   const DebugInfo &dbg_info) {
+                   const DebugInfo &dbg_info = DebugInfo()) {
     return create_node(axes, sizes, SNodeType::bitmasked, dbg_info);
   }
 
   SNode &bitmasked(const std::vector<Axis> &axes,
                    int sizes,
-                   const DebugInfo &dbg_info) {
+                   const DebugInfo &dbg_info = DebugInfo()) {
     return create_node(axes, std::vector<int>{sizes}, SNodeType::bitmasked,
                        dbg_info);
   }
 
-  SNode &bitmasked(const Axis &axis, int size, const DebugInfo &dbg_info) {
+  SNode &bitmasked(const Axis &axis,
+                   int size,
+                   const DebugInfo &dbg_info = DebugInfo()) {
     return SNode::bitmasked(std::vector<Axis>{axis}, size, dbg_info);
   }
 
   SNode &hash(const std::vector<Axis> &axes,
               const std::vector<int> &sizes,
-              const DebugInfo &dbg_info) {
+              const DebugInfo &dbg_info = DebugInfo()) {
     return create_node(axes, sizes, SNodeType::hash, dbg_info);
   }
 
   SNode &hash(const std::vector<Axis> &axes,
               int sizes,
-              const DebugInfo &dbg_info) {
+              const DebugInfo &dbg_info = DebugInfo()) {
     return create_node(axes, std::vector<int>{sizes}, SNodeType::hash,
                        dbg_info);
   }
 
-  SNode &hash(const Axis &axis, int size, const DebugInfo &dbg_info) {
+  SNode &hash(const Axis &axis,
+              int size,
+              const DebugInfo &dbg_info = DebugInfo()) {
     return hash(std::vector<Axis>{axis}, size, dbg_info);
   }
 
@@ -213,12 +221,13 @@ class SNode {
     return snode_type_name(type);
   }
 
-  SNode &bit_struct(BitStructType *bit_struct_type, const DebugInfo &dbg_info);
+  SNode &bit_struct(BitStructType *bit_struct_type,
+                    const DebugInfo &dbg_info = DebugInfo());
 
   SNode &quant_array(const std::vector<Axis> &axes,
                      const std::vector<int> &sizes,
                      int bits,
-                     const DebugInfo &dbg_info);
+                     const DebugInfo &dbg_info = DebugInfo());
 
   void print();
 
@@ -227,7 +236,7 @@ class SNode {
   SNode &dynamic(const Axis &expr,
                  int n,
                  int chunk_size,
-                 const DebugInfo &dbg_info);
+                 const DebugInfo &dbg_info = DebugInfo());
 
   SNode &morton(bool val = true) {
     _morton = val;

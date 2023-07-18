@@ -23,7 +23,7 @@ class TI_DLL_EXPORT Ndarray {
                    const DataType type,
                    const std::vector<int> &shape,
                    ExternalArrayLayout layout = ExternalArrayLayout::kNull,
-                   const DebugInfo& dbg_info = DebugInfo());
+                   const DebugInfo &dbg_info = DebugInfo());
 
   /* Constructs a Ndarray from an existing DeviceAllocation.
    * It doesn't handle the allocation and deallocation.
@@ -34,7 +34,7 @@ class TI_DLL_EXPORT Ndarray {
                    const DataType type,
                    const std::vector<int> &shape,
                    ExternalArrayLayout layout = ExternalArrayLayout::kNull,
-                   const DebugInfo& dbg_info = DebugInfo());
+                   const DebugInfo &dbg_info = DebugInfo());
 
   /* Constructs a Ndarray from an existing DeviceAllocation.
    * This is an overloaded constructor for constructing Ndarray with TensorType
@@ -45,7 +45,7 @@ class TI_DLL_EXPORT Ndarray {
                    const std::vector<int> &shape,
                    const std::vector<int> &element_shape,
                    ExternalArrayLayout layout = ExternalArrayLayout::kNull,
-                   const DebugInfo& dbg_info = DebugInfo());
+                   const DebugInfo &dbg_info = DebugInfo());
 
   DeviceAllocation ndarray_alloc_{kDeviceNullAllocation};
   DataType dtype;

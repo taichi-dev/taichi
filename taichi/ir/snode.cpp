@@ -41,23 +41,28 @@ SNode &SNode::create_node(std::vector<Axis> axes,
   if (sizes.size() == 1) {
     sizes = std::vector<int>(axes.size(), sizes[0]);
   }
-  ErrorEmitter(
-      axes.size() == sizes.size(), TaichiRuntimeError(), &dbg_info,
-      fmt::format("axes and sizes must have the same size, but got {} and {}.",
-                  axes.size(), sizes.size()));
+  if (axes.size() != sizes.size()) {
+    ErrorEmitter(
+        TaichiRuntimeError(), &dbg_info,
+        fmt::format(
+            "axes and sizes must have the same size, but got {} and {}.",
+            axes.size(), sizes.size()));
+  }
 
-  if (type == SNodeType::hash) {
-    ErrorEmitter(depth == 0, TaichiRuntimeError(), &dbg_info,
+  if (type == SNodeType::hash && depth != 0) {
+    ErrorEmitter(TaichiRuntimeError(), &dbg_info,
                  "hashed node must be child of root due to initialization "
                  "memset limitation.");
   }
 
   auto &new_node = insert_children(type);
   for (int i = 0; i < (int)axes.size(); i++) {
-    ErrorEmitter(sizes[i] > 0, TaichiRuntimeError(), &dbg_info,
-                 fmt::format("Every dimension of a Taichi field should be "
-                             "positive, got {} in demension {}.",
-                             sizes[i], i));
+    if (sizes[i] <= 0) {
+      ErrorEmitter(TaichiRuntimeError(), &dbg_info,
+                   fmt::format("Every dimension of a Taichi field should be "
+                               "positive, got {} in demension {}.",
+                               sizes[i], i));
+    }
 
     int ind = axes[i].value;
     auto end = new_node.physical_index_position + new_node.num_active_indices;
@@ -65,9 +70,9 @@ SNode &SNode::create_node(std::vector<Axis> axes,
         std::find(new_node.physical_index_position, end, ind) == end;
     if (is_first_division) {
       new_node.physical_index_position[new_node.num_active_indices++] = ind;
-    } else {
+    } else if (!bit::is_power_of_two(sizes[i])) {
       ErrorEmitter(
-          bit::is_power_of_two(sizes[i]), TaichiRuntimeWarning(), &dbg_info,
+          TaichiRuntimeWarning(), &dbg_info,
           fmt::format(
               "Shape {} is detected on non-first division of axis {}. For "
               "best performance, we recommend that you set it to a power of "
@@ -87,11 +92,12 @@ SNode &SNode::create_node(std::vector<Axis> axes,
     new_node.extractors[i].acc_shape = static_cast<int>(acc_shape);
     acc_shape *= new_node.extractors[i].shape;
   }
-  ErrorEmitter(
-      acc_shape <= std::numeric_limits<int>::max(), TaichiIndexWarning(),
-      &dbg_info,
-      "SNode index might be out of int32 boundary but int64 indexing is not "
-      "supported yet. Struct fors might not work either.");
+  if (acc_shape > std::numeric_limits<int>::max()) {
+    ErrorEmitter(
+        TaichiIndexWarning(), &dbg_info,
+        "SNode index might be out of int32 boundary but int64 indexing is not "
+        "supported yet. Struct fors might not work either.");
+  }
   new_node.num_cells_per_container = acc_shape;
 
   if (new_node.type == SNodeType::dynamic) {
@@ -101,15 +107,19 @@ SNode &SNode::create_node(std::vector<Axis> axes,
         active_extractor_counder += 1;
         SNode *p = new_node.parent;
         while (p) {
-          ErrorEmitter(!p->extractors[i].active, TaichiRuntimeError(),
-                       &dbg_info,
-                       "Dynamic SNode must have a standalone dimensionality.");
+          if (p->extractors[i].active) {
+            ErrorEmitter(
+                TaichiRuntimeError(), &dbg_info,
+                "Dynamic SNode must have a standalone dimensionality.");
+          }
           p = p->parent;
         }
       }
     }
-    ErrorEmitter(active_extractor_counder == 1, TaichiRuntimeError(), &dbg_info,
-                 "Dynamic SNode can have only one index extractor.");
+    if (active_extractor_counder != 1) {
+      ErrorEmitter(TaichiRuntimeError(), &dbg_info,
+                   "Dynamic SNode can have only one index extractor.");
+    }
   }
   return new_node;
 }

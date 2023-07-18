@@ -35,8 +35,8 @@ class ScalarPointerLowererTest : public ::testing::Test {
   void SetUp() override {
     root_snode_ = std::make_unique<SNode>(/*depth=*/0, /*t=*/SNodeType::root);
     const std::vector<Axis> axes = {Axis{0}};
-    ptr_snode_ = &(root_snode_->pointer(axes, kPointerSize, ""));
-    dense_snode_ = &(ptr_snode_->dense(axes, kDenseSize, ""));
+    ptr_snode_ = &(root_snode_->pointer(axes, kPointerSize));
+    dense_snode_ = &(ptr_snode_->dense(axes, kDenseSize));
     // Must end with a `place` SNode.
     leaf_snode_ = &(dense_snode_->insert_children(SNodeType::place));
     leaf_snode_->dt = PrimitiveType::f32;
@@ -106,9 +106,9 @@ TEST(ScalarPointerLowerer, EliminateModDiv) {
   VecStatement lowered;
   Stmt *index = builder.get_int32(2);
   auto root = std::make_unique<SNode>(/*depth=*/0, SNodeType::root);
-  SNode *dense_1 = &(root->dense({Axis{2}, Axis{1}}, /*size=*/7, ""));
-  SNode *dense_2 = &(root->dense({Axis{1}}, /*size=*/3, ""));
-  SNode *dense_3 = &(dense_2->dense({Axis{0}, Axis{1}}, /*size=*/{5, 8}, ""));
+  SNode *dense_1 = &(root->dense({Axis{2}, Axis{1}}, /*sizes=*/7));
+  SNode *dense_2 = &(root->dense({Axis{1}}, /*size=*/3));
+  SNode *dense_3 = &(dense_2->dense({Axis{0}, Axis{1}}, /*sizes=*/{5, 8}));
   SNode *leaf_1 = &(dense_1->insert_children(SNodeType::place));
   SNode *leaf_2 = &(dense_3->insert_children(SNodeType::place));
   LowererImpl lowerer_1{leaf_1,

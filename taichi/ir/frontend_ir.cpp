@@ -9,14 +9,15 @@
 
 namespace taichi::lang {
 
-#define TI_ASSERT_TYPE_CHECKED(x)                                        \
-  if (x->ret_type == PrimitiveType::unknown) {                           \
-    ErrorEmitter(                                                        \
-        TaichiTypeError(), x.expr.get(),                                 \
-        fmt::format("[{}] was not type-checked",                         \
-                    ExpressionHumanFriendlyPrinter::expr_to_string(x))); \
-  } else {                                                               \
-  }
+#define TI_ASSERT_TYPE_CHECKED(x)                                          \
+  do {                                                                     \
+    if (x->ret_type == PrimitiveType::unknown) {                           \
+      ErrorEmitter(                                                        \
+          TaichiTypeError(), x.expr.get(),                                 \
+          fmt::format("[{}] was not type-checked",                         \
+                      ExpressionHumanFriendlyPrinter::expr_to_string(x))); \
+    }                                                                      \
+  } while (false)
 
 static bool is_primitive_or_tensor_type(DataType &type) {
   return type->is<PrimitiveType>() || type->is<TensorType>();

@@ -443,7 +443,7 @@ void export_lang(py::module &m) {
           },
           py::arg("dt"), py::arg("shape"),
           py::arg("layout") = ExternalArrayLayout::kNull,
-          py::arg("zero_fill") = false, py::arg("dbg_info") = false,
+          py::arg("zero_fill") = false, py::arg("dbg_info") = DebugInfo(),
           py::return_value_policy::reference)
       .def("delete_ndarray", &Program::delete_ndarray)
       .def(

@@ -376,7 +376,7 @@ Ndarray *Program::create_ndarray(const DataType type,
                                  const std::vector<int> &shape,
                                  ExternalArrayLayout layout,
                                  bool zero_fill,
-                                 DebugInfo dbg_info) {
+                                 const DebugInfo& dbg_info) {
   auto arr = std::make_unique<Ndarray>(this, type, shape, layout, dbg_info);
   if (zero_fill) {
     Arch arch = compile_config().arch;

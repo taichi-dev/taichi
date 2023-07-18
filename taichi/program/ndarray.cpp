@@ -27,7 +27,7 @@ Ndarray::Ndarray(Program *prog,
                  const DataType type,
                  const std::vector<int> &shape_,
                  ExternalArrayLayout layout_,
-                 DebugInfo dbg_info_)
+                 const DebugInfo& dbg_info_)
     : dtype(type),
       shape(shape_),
       layout(layout_),
@@ -66,7 +66,7 @@ Ndarray::Ndarray(DeviceAllocation &devalloc,
                  const DataType type,
                  const std::vector<int> &shape,
                  ExternalArrayLayout layout,
-                 DebugInfo dbg_info)
+                 const DebugInfo& dbg_info)
     : ndarray_alloc_(devalloc),
       dtype(type),
       shape(shape),
@@ -108,7 +108,7 @@ Ndarray::Ndarray(DeviceAllocation &devalloc,
                  const std::vector<int> &shape,
                  const std::vector<int> &element_shape,
                  ExternalArrayLayout layout,
-                 DebugInfo dbg_info)
+                 const DebugInfo& dbg_info)
     : Ndarray(devalloc,
               TypeFactory::create_tensor_type(element_shape, type),
               shape,

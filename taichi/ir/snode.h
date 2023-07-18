@@ -11,7 +11,6 @@
 namespace taichi::lang {
 class Program;
 class SNodeRwAccessorsBank;
-struct DebugInfo;
 
 /**
  * Dimension (or axis) of a tensor.

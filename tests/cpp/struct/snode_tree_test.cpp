@@ -1,6 +1,7 @@
 #include "gtest/gtest.h"
 
 #include "taichi/struct/snode_tree.h"
+#include "taichi/ir/ir.h"
 
 namespace taichi::lang {
 

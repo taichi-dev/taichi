@@ -15,11 +15,13 @@ class Expr(TaichiOperations):
 
     def __init__(self, *args, tb=None, dtype=None):
         self.tb = tb
+        self.ptr_type_checked = False
         if len(args) == 1:
             if isinstance(args[0], _ti_core.Expr):
                 self.ptr = args[0]
             elif isinstance(args[0], Expr):
                 self.ptr = args[0].ptr
+                self.ptr_type_checked = args[0].ptr_type_checked
                 self.tb = args[0].tb
             elif is_matrix_class(args[0]):
                 self.ptr = make_matrix(args[0].to_list()).ptr
@@ -39,7 +41,9 @@ class Expr(TaichiOperations):
             assert False
         if self.tb:
             self.ptr.set_tb(self.tb)
-        self.ptr.type_check(impl.get_runtime().prog.config())
+        if not self.ptr_type_checked:
+            self.ptr.type_check(impl.get_runtime().prog.config())
+            self.ptr_type_checked = True
 
     def is_tensor(self):
         return self.ptr.is_tensor()

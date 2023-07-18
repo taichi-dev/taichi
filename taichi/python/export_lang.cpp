@@ -147,6 +147,13 @@ void export_lang(py::module &m) {
             return dt;
           }));
 
+  py::class_<DebugInfo>(m, "DebugInfo")
+      .def(py::init<>())
+      .def(py::init<std::string>())
+      .def(py::init<>())
+      .def_readwrite("tb", &DebugInfo::tb)
+      .def_readwrite("src_loc", &DebugInfo::src_loc);
+
   py::class_<CompileConfig>(m, "CompileConfig")
       .def(py::init<>())
       .def_readwrite("arch", &CompileConfig::arch)
@@ -430,12 +437,14 @@ void export_lang(py::module &m) {
           "create_ndarray",
           [&](Program *program, const DataType &dt,
               const std::vector<int> &shape, ExternalArrayLayout layout,
-              bool zero_fill) -> Ndarray * {
-            return program->create_ndarray(dt, shape, layout, zero_fill);
+              bool zero_fill, DebugInfo dbg_info) -> Ndarray * {
+            return program->create_ndarray(dt, shape, layout, zero_fill,
+                                           dbg_info);
           },
           py::arg("dt"), py::arg("shape"),
           py::arg("layout") = ExternalArrayLayout::kNull,
-          py::arg("zero_fill") = false, py::return_value_policy::reference)
+          py::arg("zero_fill") = false, py::arg("dbg_info") = false,
+          py::return_value_policy::reference)
       .def("delete_ndarray", &Program::delete_ndarray)
       .def(
           "create_argpack",
@@ -492,23 +501,23 @@ void export_lang(py::module &m) {
       .def("dense",
            (SNode & (SNode::*)(const std::vector<Axis> &,
                                const std::vector<int> &,
-                               const std::string &))(&SNode::dense),
+                               const DebugInfo &))(&SNode::dense),
            py::return_value_policy::reference)
       .def("pointer",
            (SNode & (SNode::*)(const std::vector<Axis> &,
                                const std::vector<int> &,
-                               const std::string &))(&SNode::pointer),
+                               const DebugInfo &))(&SNode::pointer),
            py::return_value_policy::reference)
       .def("hash",
            (SNode & (SNode::*)(const std::vector<Axis> &,
                                const std::vector<int> &,
-                               const std::string &))(&SNode::hash),
+                               const DebugInfo &))(&SNode::hash),
            py::return_value_policy::reference)
       .def("dynamic", &SNode::dynamic, py::return_value_policy::reference)
       .def("bitmasked",
            (SNode & (SNode::*)(const std::vector<Axis> &,
                                const std::vector<int> &,
-                               const std::string &))(&SNode::bitmasked),
+                               const DebugInfo &))(&SNode::bitmasked),
            py::return_value_policy::reference)
       .def("bit_struct", &SNode::bit_struct, py::return_value_policy::reference)
       .def("quant_array", &SNode::quant_array,

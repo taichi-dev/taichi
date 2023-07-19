@@ -62,6 +62,7 @@ class Scalarize : public BasicStmtVisitor {
         auto const_stmt = std::make_unique<ConstStmt>(
             TypedConstant(get_data_type<int32>(), i));
 
+        // Merge with previous MatrixPtrStmt
         auto matrix_ptr_stmt =
             std::make_unique<MatrixPtrStmt>(stmt->dest, const_stmt.get());
         matrix_ptr_stmt->ret_type = primitive_type;
@@ -114,6 +115,7 @@ class Scalarize : public BasicStmtVisitor {
 
         auto matrix_ptr_stmt =
             std::make_unique<MatrixPtrStmt>(stmt->src, const_stmt.get());
+
         matrix_ptr_stmt->ret_type = primitive_type;
         matrix_ptr_stmt->ret_type.set_is_pointer(true);
 
@@ -526,8 +528,34 @@ class Scalarize : public BasicStmtVisitor {
         // scalarize to dest_i
         auto const_stmt = std::make_unique<ConstStmt>(
             TypedConstant(get_data_type<int32>(), i));
-        auto matrix_ptr_stmt =
-            std::make_unique<MatrixPtrStmt>(stmt->dest, const_stmt.get());
+
+        // Merge with previous MatrixPtrStmt
+        std::unique_ptr<MatrixPtrStmt> matrix_ptr_stmt = nullptr;
+        if (stmt->dest->is<MatrixPtrStmt>()) {
+          /*
+            <*[Tensor (16) [Tensor (4) f32]]> $5 = alloca(shared)
+            <*[Tensor (4) f32]> $11 = shift ptr [$5 + $9]
+            <[Tensor (4) f32]> $12 : local store [$11 <- $10]
+          */
+          auto matrix_ptr_stmt_ptr = stmt->dest->as<MatrixPtrStmt>();
+
+          auto base_offset = matrix_ptr_stmt_ptr->offset;
+          auto merged_offset = std::make_unique<BinaryOpStmt>(
+              BinaryOpType::add, base_offset, const_stmt.get());
+          merged_offset->ret_type = base_offset->ret_type;
+          matrix_ptr_stmt = std::make_unique<MatrixPtrStmt>(
+              matrix_ptr_stmt_ptr->origin, merged_offset.get());
+          matrix_ptr_stmt->ret_type = primitive_type;
+          matrix_ptr_stmt->ret_type.set_is_pointer(true);
+
+          delayed_modifier_.insert_before(stmt, std::move(merged_offset));
+        } else {
+          matrix_ptr_stmt =
+              std::make_unique<MatrixPtrStmt>(stmt->dest, const_stmt.get());
+        }
+
+        matrix_ptr_stmt->ret_type = primitive_type;
+        matrix_ptr_stmt->ret_type.set_is_pointer(true);
 
         // scalarize to val_i
         auto val_stmt = val_values[i];
@@ -1315,7 +1343,6 @@ bool scalarize(IRNode *root, bool half2_optimization_enabled) {
   modified |= ScalarizePointers::run(root, scalarizable_allocas);
   modified |= ExtractLocalPointers::run(root);
   modified |= FuseMatrixPtr::run(root);
-
   return modified;
 }
 

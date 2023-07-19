@@ -747,7 +747,11 @@ Stmt *make_tensor_access(Expression::FlattenContext *ctx,
     ctx->push_back<LocalStoreStmt>(alloca_stmt, var_stmt);
     var_stmt = alloca_stmt;
   }
-  if (ret_type.ptr_removed()->is<TensorType>()) {
+
+  bool is_shared_array =
+      (var_stmt->is<AllocaStmt>() && var_stmt->as<AllocaStmt>()->is_shared);
+
+  if (ret_type.ptr_removed()->is<TensorType>() && !is_shared_array) {
     std::vector<Stmt *> stmts;
     for (auto &indices : indices_group) {
       stmts.push_back(

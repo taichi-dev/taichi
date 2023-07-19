@@ -538,22 +538,15 @@ class FixCrossOffloadReferences : public BasicStmtVisitor {
     auto offloaded = stmt_to_offloaded_[stmt];
     stmt_to_offloaded_[ptr] = offloaded;
 
-    TypedConstant zero(alloca_type.get_element_type());
-    auto const_zero_stmt = replacement.push_back<ConstStmt>(zero);
-    if (auto tensor_type = alloca_type->cast<TensorType>()) {
-      std::vector<Stmt *> zero_values(tensor_type->get_num_elements(),
-                                      const_zero_stmt);
-      auto zero_matrix_init_stmt =
-          replacement.push_back<MatrixInitStmt>(zero_values);
-      zero_matrix_init_stmt->ret_type = stmt->ret_type.ptr_removed();
-      auto global_store_stmt =
-          replacement.push_back<GlobalStoreStmt>(ptr, zero_matrix_init_stmt);
-      stmt_to_offloaded_[global_store_stmt] = offloaded;
-    } else {
-      auto global_store_stmt =
-          replacement.push_back<GlobalStoreStmt>(ptr, const_zero_stmt);
-      stmt_to_offloaded_[global_store_stmt] = offloaded;
+    auto stmts = get_const_stmt_with_value(alloca_type, 0);
+    for (auto &stmt : stmts) {
+      replacement.push_back(std::move(stmt));
     }
+    Stmt *const_stmt = replacement.back().get();
+
+    auto global_store_stmt =
+        replacement.push_back<GlobalStoreStmt>(ptr, const_stmt);
+    stmt_to_offloaded_[global_store_stmt] = offloaded;
 
     stmt->parent->replace_with(stmt, std::move(replacement), false);
     // To deal with the same offloaded visit_operand()

@@ -7,6 +7,7 @@
 
 #include "taichi/common/exceptions.h"
 #include "taichi/ir/frontend_ir.h"
+#include "taichi/program/function.h"
 #include "taichi/program/kernel.h"
 #include "taichi/program/launch_context_builder.h"
 
@@ -41,6 +42,11 @@
     return TIE_ERROR_INVALID_HANDLE;                            \
   }
 
+#define TIE_MAKE_CALLBACK(function_argument) \
+  tie_api_make_callback_impl(                \
+      function_argument,                     \
+      TIE_WRAP_ERROR_MSG("Call " #function_argument " failed"))
+
 #define TIE_FUNCTION_BODY_BEGIN() try {
 #define TIE_FUNCTION_BODY_END()                                              \
   }                                                                          \
@@ -64,6 +70,10 @@
     tie_api_set_last_error_impl(TIE_ERROR_TAICHI_ASSERTION_ERROR, e.what()); \
     return TIE_ERROR_TAICHI_ASSERTION_ERROR;                                 \
   }                                                                          \
+  catch (const TieCallbackFailedException &e) {                              \
+    tie_api_set_last_error_impl(TIE_ERROR_CALLBACK_FAILED, e.what());        \
+    return TIE_ERROR_CALLBACK_FAILED;                                        \
+  }                                                                          \
   catch (const std::bad_alloc &e) {                                          \
     tie_api_set_last_error_impl(TIE_ERROR_OUT_OF_MEMORY, e.what());          \
     return TIE_ERROR_OUT_OF_MEMORY;                                          \
@@ -81,6 +91,19 @@
 
 namespace {
 
+class TieCallbackFailedException : public std::exception {
+ public:
+  explicit TieCallbackFailedException(std::string msg) : msg_(std::move(msg)) {
+  }
+
+  const char *what() const noexcept override {
+    return msg_.c_str();
+  }
+
+ private:
+  std::string msg_;
+};
+
 struct TieErrorCache {
   int error{TIE_ERROR_SUCCESS};
   std::string msg;
@@ -93,6 +116,14 @@ void tie_api_set_last_error_impl(int error, std::string msg) {
   tie_last_error.msg = std::move(msg);
 }
 
+std::function<void()> tie_api_make_callback_impl(TieCallback func,
+                                                 std::string msg) {
+  return [func, _msg = std::move(msg)]() {
+    if (func() != 0) {
+      throw TieCallbackFailedException(std::move(_msg));
+    }
+  };
+}
 }  // namespace
 
 // Error proessing
@@ -258,6 +289,155 @@ int tie_Kernel_no_activate(TieKernelHandle self, TieSNodeHandle snode) {
   auto *kernel = reinterpret_cast<taichi::lang::Kernel *>(self);
   auto *t_snode = reinterpret_cast<taichi::lang::SNode *>(snode);
   kernel->no_activate.push_back(t_snode);
+  TIE_FUNCTION_BODY_END();
+}
+
+// class Function
+
+int tie_Function_insert_scalar_param(TieFunctionHandle self,
+                                     TieDataTypeHandle dt,
+                                     const char *name,
+                                     int *ret_param_index) {
+  TIE_FUNCTION_BODY_BEGIN();
+  TIE_CHECK_HANDLE(self);
+  TIE_CHECK_HANDLE(dt);
+  TIE_CHECK_PTR_NOT_NULL(name);
+  TIE_CHECK_RETURN_ARG(ret_param_index);
+  auto *function = reinterpret_cast<taichi::lang::Function *>(self);
+  auto *data_type = reinterpret_cast<taichi::lang::DataType *>(dt);
+  *ret_param_index = function->insert_scalar_param(*data_type, name);
+  TIE_FUNCTION_BODY_END();
+}
+
+int tie_Function_insert_arr_param(TieFunctionHandle self,
+                                  TieDataTypeHandle dt,
+                                  int total_dim,
+                                  int *ap_element_shape,
+                                  size_t element_shape_dim,
+                                  const char *name,
+                                  int *ret_param_index) {
+  TIE_FUNCTION_BODY_BEGIN();
+  TIE_CHECK_HANDLE(self);
+  TIE_CHECK_HANDLE(dt);
+  TIE_CHECK_PTR_NOT_NULL(ap_element_shape);
+  TIE_CHECK_PTR_NOT_NULL(name);
+  TIE_CHECK_RETURN_ARG(ret_param_index);
+  auto *function = reinterpret_cast<taichi::lang::Function *>(self);
+  auto *data_type = reinterpret_cast<taichi::lang::DataType *>(dt);
+  std::vector<int> element_shape(ap_element_shape,
+                                 ap_element_shape + element_shape_dim);
+  *ret_param_index =
+      function->insert_arr_param(*data_type, total_dim, element_shape, name);
+  TIE_FUNCTION_BODY_END();
+}
+
+int tie_Function_insert_ndarray_param(TieFunctionHandle self,
+                                      TieDataTypeHandle dt,
+                                      int ndim,
+                                      const char *name,
+                                      int needs_grad,
+                                      int *ret_param_index) {
+  TIE_FUNCTION_BODY_BEGIN();
+  TIE_CHECK_HANDLE(self);
+  TIE_CHECK_HANDLE(dt);
+  TIE_CHECK_PTR_NOT_NULL(name);
+  TIE_CHECK_RETURN_ARG(ret_param_index);
+  auto *function = reinterpret_cast<taichi::lang::Function *>(self);
+  auto *data_type = reinterpret_cast<taichi::lang::DataType *>(dt);
+  *ret_param_index =
+      function->insert_ndarray_param(*data_type, ndim, name, (bool)needs_grad);
+  TIE_FUNCTION_BODY_END();
+}
+
+int tie_Function_insert_texture_param(TieFunctionHandle self,
+                                      int total_dim,
+                                      const char *name,
+                                      int *ret_param_index) {
+  TIE_FUNCTION_BODY_BEGIN();
+  TIE_CHECK_HANDLE(self);
+  TIE_CHECK_PTR_NOT_NULL(name);
+  TIE_CHECK_RETURN_ARG(ret_param_index);
+  auto *function = reinterpret_cast<taichi::lang::Function *>(self);
+  *ret_param_index = function->insert_texture_param(total_dim, name);
+  TIE_FUNCTION_BODY_END();
+}
+
+int tie_Function_insert_pointer_param(TieFunctionHandle self,
+                                      TieDataTypeHandle dt,
+                                      const char *name,
+                                      int *ret_param_index) {
+  TIE_FUNCTION_BODY_BEGIN();
+  TIE_CHECK_HANDLE(self);
+  TIE_CHECK_HANDLE(dt);
+  TIE_CHECK_PTR_NOT_NULL(name);
+  TIE_CHECK_RETURN_ARG(ret_param_index);
+  auto *function = reinterpret_cast<taichi::lang::Function *>(self);
+  auto *data_type = reinterpret_cast<taichi::lang::DataType *>(dt);
+  *ret_param_index = function->insert_pointer_param(*data_type, name);
+  TIE_FUNCTION_BODY_END();
+}
+
+int tie_Function_insert_rw_texture_param(TieFunctionHandle self,
+                                         int total_dim,
+                                         int format,
+                                         const char *name,
+                                         int *ret_param_index) {
+  TIE_FUNCTION_BODY_BEGIN();
+  TIE_CHECK_HANDLE(self);
+  TIE_CHECK_PTR_NOT_NULL(name);
+  TIE_CHECK_RETURN_ARG(ret_param_index);
+  auto *function = reinterpret_cast<taichi::lang::Function *>(self);
+  *ret_param_index = function->insert_rw_texture_param(
+      total_dim, static_cast<taichi::lang::BufferFormat>(format), name);
+  TIE_FUNCTION_BODY_END();
+}
+
+int tie_Function_set_function_body(TieFunctionHandle self, TieCallback func) {
+  TIE_FUNCTION_BODY_BEGIN();
+  TIE_CHECK_HANDLE(self);
+  TIE_CHECK_PTR_NOT_NULL(func);
+  auto *function = reinterpret_cast<taichi::lang::Function *>(self);
+  function->set_function_body(TIE_MAKE_CALLBACK(func));
+  TIE_FUNCTION_BODY_END();
+}
+
+int tie_Function_insert_ret(TieFunctionHandle self,
+                            TieDataTypeHandle dt,
+                            int *ret_ret_index) {
+  TIE_FUNCTION_BODY_BEGIN();
+  TIE_CHECK_HANDLE(self);
+  TIE_CHECK_HANDLE(dt);
+  TIE_CHECK_RETURN_ARG(ret_ret_index);
+  auto *function = reinterpret_cast<taichi::lang::Function *>(self);
+  auto *data_type = reinterpret_cast<taichi::lang::DataType *>(dt);
+  *ret_ret_index = function->insert_ret(*data_type);
+  TIE_FUNCTION_BODY_END();
+}
+
+int tie_Function_finalize_rets(TieFunctionHandle self) {
+  TIE_FUNCTION_BODY_BEGIN();
+  TIE_CHECK_HANDLE(self);
+  auto *function = reinterpret_cast<taichi::lang::Function *>(self);
+  function->finalize_rets();
+  TIE_FUNCTION_BODY_END();
+}
+
+int tie_Function_finalize_params(TieFunctionHandle self) {
+  TIE_FUNCTION_BODY_BEGIN();
+  TIE_CHECK_HANDLE(self);
+  auto *function = reinterpret_cast<taichi::lang::Function *>(self);
+  function->finalize_params();
+  TIE_FUNCTION_BODY_END();
+}
+
+int tie_Function_ast_builder(TieFunctionHandle self,
+                             TieASTBuilderHandle *ret_ast_builder) {
+  TIE_FUNCTION_BODY_BEGIN();
+  TIE_CHECK_HANDLE(self);
+  TIE_CHECK_RETURN_ARG(ret_ast_builder);
+  auto *function = reinterpret_cast<taichi::lang::Function *>(self);
+  *ret_ast_builder =
+      reinterpret_cast<TieASTBuilderHandle>(&function->context->builder());
   TIE_FUNCTION_BODY_END();
 }
 

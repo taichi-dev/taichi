@@ -333,6 +333,12 @@ void export_lang(py::module &m) {
       .def("mesh_index_conversion", &ASTBuilder::mesh_index_conversion)
       .def("expr_subscript", &ASTBuilder::expr_subscript)
       .def("insert_func_call", &ASTBuilder::insert_func_call)
+      .def("c_insert_func_call",
+           [](ASTBuilder *builder, std::uintptr_t func,
+              const taichi::lang::ExprGroup &args) {
+             return builder->insert_func_call(
+                 reinterpret_cast<taichi::lang::Function *>(func), args);
+           })
       .def("sifakis_svd_f32", sifakis_svd_export<float32, int32>)
       .def("sifakis_svd_f64", sifakis_svd_export<float64, int64>)
       .def("expr_var", &ASTBuilder::make_var)
@@ -421,6 +427,11 @@ void export_lang(py::module &m) {
            })
       .def("create_function", &Program::create_function,
            py::return_value_policy::reference)
+      .def("c_create_function",
+           [](Program *program, const FunctionKey &func_key) -> std::uintptr_t {
+             return reinterpret_cast<std::uintptr_t>(
+                 program->create_function(func_key));
+           })
       .def("create_sparse_matrix",
            [](Program *program, int n, int m, DataType dtype,
               std::string storage_format) {

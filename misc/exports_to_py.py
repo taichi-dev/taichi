@@ -13,6 +13,21 @@ class TieAPIError(Exception):
     pass
 
     
+tie_last_exception = None
+
+
+def set_last_exception(exc):
+    global tie_last_exception
+    tie_last_exception = exc
+
+
+def get_and_clear_last_exception(_):
+    global tie_last_exception
+    exc = tie_last_exception
+    tie_last_exception = None
+    return exc
+
+
 TIE_ERROR_TO_PYTHON_EXCEPTION = {
     TIE_ERROR_INVALID_ARGUMENT: TieAPIError,
     TIE_ERROR_INVALID_RETURN_ARG: TieAPIError,
@@ -22,6 +37,7 @@ TIE_ERROR_TO_PYTHON_EXCEPTION = {
     TIE_ERROR_TAICHI_INDEX_ERROR: TaichiIndexError,
     TIE_ERROR_TAICHI_RUNTIME_ERROR: TaichiRuntimeError,
     TIE_ERROR_TAICHI_ASSERTION_ERROR: TaichiAssertionError,
+    TIE_ERROR_CALLBACK_FAILED: get_and_clear_last_exception,
     TIE_ERROR_OUT_OF_MEMORY: TieAPIError,
     TIE_ERROR_UNKNOWN_CXX_EXCEPTION: TieAPIError,
 }
@@ -53,11 +69,23 @@ def get_object_ref_from_handle(handle_type_name, handle):
         return eval(f"{TIE_TEMP_CCORE_TYPE_TO_CORE_TYPE[typename]}.from_handle_to_ref({handle})")
     return eval(f"taichi._lib.ccore.{typename}(handle={handle}, manage_handle=False)")
 
-    
+
+def wrap_callback_to_c(callback):
+    def wrapped():
+        try:
+            callback()
+        except Exception as e:
+            set_last_exception(e)
+            return -1
+        return 0
+    return wrapped
+
+
 __all__ = [
     "TieAPIError",
     "get_exception_to_throw_if_not_success",
     "get_object_ref_from_handle",
+    "wrap_callback_to_c",
 ]
 """
 
@@ -180,6 +208,9 @@ class CType:
             and self.ptr_levels == 0
         )
 
+    def is_callback(self):
+        return self.base_type_name == "TieCallback" and self.ptr_levels == 0
+
     def __str__(self):
         return f"{self.base_type_name}{'*' * self.ptr_levels}"
 
@@ -217,6 +248,9 @@ class FuncParameter:
 
     def is_handle_param(self):
         return self.type.is_handle()
+
+    def is_callback_param(self):
+        return self.type.is_callback()
 
 
 class FuncDecl:
@@ -370,6 +404,8 @@ def translate_c_type_to_ctypes_type(type: CType, exclude_ptr_levels: int = 0) ->
             return C_BUILTIN_TYPE_TO_CTYPES_TYPE[typename]
         elif type.is_handle():
             return "ctypes.c_void_p"
+        elif type.is_callback():
+            return "ctypes.CFUNCTYPE(ctypes.c_int)"
         else:
             raise ValueError(f"Unknown type: {typename}")
     elif type.is_cstr():
@@ -438,6 +474,8 @@ def translate_arg_from_python_to_c(arg_name: str, param: FuncParameter) -> str:
         return f"{arg_name}, len({arg_name})"
     elif param.is_cstr_param():
         return f'{arg_name}.encode("utf-8")'
+    elif param.is_callback_param():
+        return f"ctypes.CFUNCTYPE(ctypes.c_int)(wrap_callback_to_c({arg_name}))"  # NOTE: Maybe crash
     elif param.is_in_param():
         return arg_name
     elif param.is_out_param():
@@ -547,7 +585,7 @@ def generate_py_module_from_exports_header(
 
     IMPORTS = """import ctypes
 from .ccore import taichi_ccore
-from .utils import get_exception_to_throw_if_not_success, get_object_ref_from_handle
+from .utils import get_exception_to_throw_if_not_success, get_object_ref_from_handle, wrap_callback_to_c
 
 """
 

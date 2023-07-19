@@ -265,7 +265,7 @@ class Func:
         func_call = (
             impl.get_runtime()
             .compiling_callable.ast_builder()
-            .insert_func_call(self.taichi_functions[key.instance_id], non_template_args)
+            .c_insert_func_call(self.taichi_functions[key.instance_id].get_handle(), non_template_args)
         )
         if self.return_type is None:
             return None
@@ -287,7 +287,7 @@ class Func:
         tree, ctx = _get_tree_and_ctx(
             self, is_kernel=False, args=args, arg_features=arg_features, is_real_function=self.is_real_function
         )
-        fn = impl.get_runtime().prog.create_function(key)
+        fn = _ti_ccore.Function(handle=impl.get_runtime().prog.c_create_function(key))
 
         def func_body():
             old_callable = impl.get_runtime().compiling_callable

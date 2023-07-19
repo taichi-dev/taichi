@@ -98,12 +98,18 @@ typedef enum TieError {
   TIE_ERROR_OUT_OF_MEMORY = -298,           // std::bad_alloc
   TIE_ERROR_UNKNOWN_CXX_EXCEPTION = -299,   // std::exception
 
+  // Callback failed
+  TIE_ERROR_CALLBACK_FAILED = -301,
+
   // Unknown error
   TIE_ERROR_UNKNOWN = -0x7FFFFFFF // INT_MIN
 } TieError;
 
+typedef int (*TieCallback)(void);  // Return 0 if success, otherwise -1.
+
 typedef void *TieHandle;
 typedef TieHandle TieKernelHandle;                // class Kernel
+typedef TieHandle TieFunctionHandle;              // class Function
 typedef TieHandle TieNdarrayHandle;               // class NDArray
 typedef TieHandle TieTextureHandle;               // class Texture
 typedef TieHandle TieLaunchContextBuilderHandle;  // class LaunchContextBuilder
@@ -138,6 +144,29 @@ TI_DLL_EXPORT int TI_API_CALL tie_Kernel_finalize_params(TieKernelHandle self);
 TI_DLL_EXPORT int TI_API_CALL tie_Kernel_ast_builder(TieKernelHandle self, TieASTBuilderHandle *ret_ast_builder);
 
 TI_DLL_EXPORT int TI_API_CALL tie_Kernel_no_activate(TieKernelHandle self, TieSNodeHandle snode);
+
+// class Function
+TI_DLL_EXPORT int TI_API_CALL tie_Function_insert_scalar_param(TieFunctionHandle self, TieDataTypeHandle dt, const char *name, int *ret_param_index);
+
+TI_DLL_EXPORT int TI_API_CALL tie_Function_insert_arr_param(TieFunctionHandle self, TieDataTypeHandle dt, int total_dim, int *ap_element_shape, size_t element_shape_dim, const char *name, int *ret_param_index);
+
+TI_DLL_EXPORT int TI_API_CALL tie_Function_insert_ndarray_param(TieFunctionHandle self, TieDataTypeHandle dt, int ndim, const char *name, int needs_grad, int *ret_param_index);
+
+TI_DLL_EXPORT int TI_API_CALL tie_Function_insert_texture_param(TieFunctionHandle self, int total_dim, const char *name, int *ret_param_index);
+
+TI_DLL_EXPORT int TI_API_CALL tie_Function_insert_pointer_param(TieFunctionHandle self, TieDataTypeHandle dt, const char *name, int *ret_param_index);
+
+TI_DLL_EXPORT int TI_API_CALL tie_Function_insert_rw_texture_param(TieFunctionHandle self, int total_dim, int format, const char *name, int *ret_param_index);
+
+TI_DLL_EXPORT int TI_API_CALL tie_Function_set_function_body(TieFunctionHandle self, TieCallback func);
+
+TI_DLL_EXPORT int TI_API_CALL tie_Function_insert_ret(TieFunctionHandle self, TieDataTypeHandle dt, int *ret_ret_index);
+
+TI_DLL_EXPORT int TI_API_CALL tie_Function_finalize_rets(TieFunctionHandle self);
+
+TI_DLL_EXPORT int TI_API_CALL tie_Function_finalize_params(TieFunctionHandle self);
+
+TI_DLL_EXPORT int TI_API_CALL tie_Function_ast_builder(TieFunctionHandle self, TieASTBuilderHandle *ret_ast_builder);
 
 // class LaunchContextBuilder
 TI_DLL_EXPORT int TI_API_CALL tie_LaunchContextBuilder_create(TieKernelHandle kernel_handle, TieLaunchContextBuilderHandle *ret_handle);

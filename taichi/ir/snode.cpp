@@ -37,35 +37,47 @@ SNode &SNode::insert_children(SNodeType t) {
 SNode &SNode::create_node(std::vector<Axis> axes,
                           std::vector<int> sizes,
                           SNodeType type,
-                          const std::string &tb) {
-  TI_ASSERT(axes.size() == sizes.size() || sizes.size() == 1);
+                          const DebugInfo &dbg_info) {
   if (sizes.size() == 1) {
     sizes = std::vector<int>(axes.size(), sizes[0]);
   }
+  if (axes.size() != sizes.size()) {
+    ErrorEmitter(
+        TaichiRuntimeError(), &dbg_info,
+        fmt::format(
+            "axes and sizes must have the same size, but got {} and {}.",
+            axes.size(), sizes.size()));
+  }
 
-  if (type == SNodeType::hash)
-    TI_ASSERT_INFO(depth == 0,
-                   "hashed node must be child of root due to initialization "
-                   "memset limitation.");
+  if (type == SNodeType::hash && depth != 0) {
+    ErrorEmitter(TaichiRuntimeError(), &dbg_info,
+                 "hashed node must be child of root due to initialization "
+                 "memset limitation.");
+  }
 
   auto &new_node = insert_children(type);
   for (int i = 0; i < (int)axes.size(); i++) {
     if (sizes[i] <= 0) {
-      throw TaichiRuntimeError(
-          "Every dimension of a Taichi field should be positive");
+      ErrorEmitter(TaichiRuntimeError(), &dbg_info,
+                   fmt::format("Every dimension of a Taichi field should be "
+                               "positive, got {} in demension {}.",
+                               sizes[i], i));
     }
+
     int ind = axes[i].value;
     auto end = new_node.physical_index_position + new_node.num_active_indices;
     bool is_first_division =
         std::find(new_node.physical_index_position, end, ind) == end;
     if (is_first_division) {
       new_node.physical_index_position[new_node.num_active_indices++] = ind;
-    } else {
-      TI_WARN_IF(
-          !bit::is_power_of_two(sizes[i]),
-          "Shape {} is detected on non-first division of axis {}:\n{} For "
-          "best performance, we recommend that you set it to a power of two.",
-          sizes[i], char('i' + ind), tb);
+    } else if (!bit::is_power_of_two(sizes[i])) {
+      ErrorEmitter(
+          TaichiRuntimeWarning(), &dbg_info,
+          fmt::format(
+              "Shape {} is detected on non-first division of axis {}. For "
+              "best performance, we recommend that you set it to a power of "
+              "two.",
+              sizes[i], char('i' + ind)));
     }
     new_node.extractors[ind].active = true;
     new_node.extractors[ind].num_elements_from_root *= sizes[i];
@@ -81,7 +93,8 @@ SNode &SNode::create_node(std::vector<Axis> axes,
     acc_shape *= new_node.extractors[i].shape;
   }
   if (acc_shape > std::numeric_limits<int>::max()) {
-    TI_WARN(
+    ErrorEmitter(
+        TaichiIndexWarning(), &dbg_info,
         "SNode index might be out of int32 boundary but int64 indexing is not "
         "supported yet. Struct fors might not work either.");
   }
@@ -94,15 +107,19 @@ SNode &SNode::create_node(std::vector<Axis> axes,
         active_extractor_counder += 1;
         SNode *p = new_node.parent;
         while (p) {
-          TI_ASSERT_INFO(
-              !p->extractors[i].active,
-              "Dynamic SNode must have a standalone dimensionality.");
+          if (p->extractors[i].active) {
+            ErrorEmitter(
+                TaichiRuntimeError(), &dbg_info,
+                "Dynamic SNode must have a standalone dimensionality.");
+          }
           p = p->parent;
         }
       }
     }
-    TI_ASSERT_INFO(active_extractor_counder == 1,
+    if (active_extractor_counder != 1) {
+      ErrorEmitter(TaichiRuntimeError(), &dbg_info,
                    "Dynamic SNode can have only one index extractor.");
+    }
   }
   return new_node;
 }
@@ -110,15 +127,15 @@ SNode &SNode::create_node(std::vector<Axis> axes,
 SNode &SNode::dynamic(const Axis &expr,
                       int n,
                       int chunk_size,
-                      const std::string &tb) {
-  auto &snode = create_node({expr}, {n}, SNodeType::dynamic, tb);
+                      const DebugInfo &dbg_info) {
+  auto &snode = create_node({expr}, {n}, SNodeType::dynamic, dbg_info);
   snode.chunk_size = chunk_size;
   return snode;
 }
 
 SNode &SNode::bit_struct(BitStructType *bit_struct_type,
-                         const std::string &tb) {
-  auto &snode = create_node({}, {}, SNodeType::bit_struct, tb);
+                         const DebugInfo &dbg_info) {
+  auto &snode = create_node({}, {}, SNodeType::bit_struct, dbg_info);
   snode.dt = bit_struct_type;
   snode.physical_type = bit_struct_type->get_physical_type();
   return snode;
@@ -127,8 +144,8 @@ SNode &SNode::bit_struct(BitStructType *bit_struct_type,
 SNode &SNode::quant_array(const std::vector<Axis> &axes,
                           const std::vector<int> &sizes,
                           int bits,
-                          const std::string &tb) {
-  auto &snode = create_node(axes, sizes, SNodeType::quant_array, tb);
+                          const DebugInfo &dbg_info) {
+  auto &snode = create_node(axes, sizes, SNodeType::quant_array, dbg_info);
   snode.physical_type =
       TypeFactory::get_instance().get_primitive_int_type(bits, false);
   return snode;

@@ -375,8 +375,9 @@ std::size_t Program::get_snode_num_dynamically_allocated(SNode *snode) {
 Ndarray *Program::create_ndarray(const DataType type,
                                  const std::vector<int> &shape,
                                  ExternalArrayLayout layout,
-                                 bool zero_fill) {
-  auto arr = std::make_unique<Ndarray>(this, type, shape, layout);
+                                 bool zero_fill,
+                                 const DebugInfo &dbg_info) {
+  auto arr = std::make_unique<Ndarray>(this, type, shape, layout, dbg_info);
   if (zero_fill) {
     Arch arch = compile_config().arch;
     if (arch_is_cpu(arch) || arch == Arch::cuda || arch == Arch::amdgpu) {

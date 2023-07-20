@@ -124,6 +124,10 @@ Stmt::Stmt(const Stmt &stmt) : field_manager(this), fields_registered(false) {
   ret_type = stmt.ret_type;
 }
 
+Stmt::Stmt(const DebugInfo &dbg_info) : Stmt() {
+  this->dbg_info = dbg_info;
+}
+
 Callable *Stmt::get_callable() const {
   Block *parent_block = parent;
   if (parent_block->parent_callable()) {

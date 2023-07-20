@@ -1083,7 +1083,7 @@ void export_lang(py::module &m) {
   m.def(
       "subscript_with_multiple_indices",
       Expr::make<IndexExpression, const Expr &, const std::vector<ExprGroup> &,
-                 const std::vector<int> &, std::string>);
+                 const std::vector<int> &, const DebugInfo &>);
 
   m.def("get_external_tensor_element_dim", [](const Expr &expr) {
     TI_ASSERT(expr.is<ExternalTensorExpression>());

@@ -33,7 +33,7 @@ TEST(FrontendTypeInference, Id) {
   auto const_i32 = value<int32>(-(1 << 20));
   const_i32->type_check(nullptr);
   auto id_i32 =
-      kernel->context->builder().make_var(const_i32, const_i32->get_tb());
+      kernel->context->builder().make_var(const_i32, const_i32->dbg_info);
   EXPECT_EQ(id_i32->ret_type,
             DataType(TypeFactory::get_instance().get_pointer_type(
                 PrimitiveType::i32)));

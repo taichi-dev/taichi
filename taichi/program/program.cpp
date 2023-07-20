@@ -314,7 +314,7 @@ Kernel &Program::get_snode_writer(SNode *snode) {
         std::vector<int>{snode->num_active_indices},
         snode->dt->get_compute_type());
     argload_expr->type_check(&this->compile_config());
-    builder.insert_assignment(expr, argload_expr, expr->get_tb());
+    builder.insert_assignment(expr, argload_expr, expr->dbg_info);
   });
   ker.name = kernel_name;
   ker.is_accessor = true;

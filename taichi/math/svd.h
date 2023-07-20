@@ -61,9 +61,8 @@ sifakis_svd_export(ASTBuilder *ast_builder, const Expr &mat, int num_iters) {
   constexpr Tf Sine_Pi_Over_Eight = 0.3826834323650897f;
   constexpr Tf Cosine_Pi_Over_Eight = 0.9238795325112867f;
 
-  std::string tb = "";
-  auto Var = [ast_builder, tb](const taichi::lang::Expr &x) {
-    return ast_builder->make_var(x, tb);
+  auto Var = [ast_builder](const taichi::lang::Expr &x) {
+    return ast_builder->make_var(x);
   };
 
   auto Sfour_gamma_squared = Var(Expr(Tf(0.0)));

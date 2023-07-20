@@ -250,15 +250,16 @@ def subscript(ast_builder, value, *_indices, skip_reordered=False):
                     f"Gradient {_var.get_expr_name()} has not been placed, check whether `needs_grad=True`"
                 )
 
+        dbg_info = _ti_core.DebugInfo(get_runtime().get_current_src_info())
         if isinstance(value, MatrixField):
-            return Expr(ast_builder.expr_subscript(value.ptr, indices_expr_group, get_runtime().get_current_src_info()))
+            return Expr(ast_builder.expr_subscript(value.ptr, indices_expr_group, dbg_info))
         if isinstance(value, StructField):
             entries = {k: subscript(ast_builder, v, *indices) for k, v in value._items}
             entries["__struct_methods"] = value.struct_methods
             return _IntermediateStruct(entries)
-        return Expr(ast_builder.expr_subscript(_var, indices_expr_group, get_runtime().get_current_src_info()))
+        return Expr(ast_builder.expr_subscript(_var, indices_expr_group, dbg_info))
     if isinstance(value, AnyArray):
-        return Expr(ast_builder.expr_subscript(value.ptr, indices_expr_group, get_runtime().get_current_src_info()))
+        return Expr(ast_builder.expr_subscript(value.ptr, indices_expr_group, dbg_info))
     assert isinstance(value, Expr)
     # Index into TensorType
     # value: IndexExpression with ret_type = TensorType

@@ -177,6 +177,7 @@ def validate_subscript_index(value, index):
 
 @taichi_scope
 def subscript(ast_builder, value, *_indices, skip_reordered=False):
+    dbg_info = _ti_core.DebugInfo(get_runtime().get_current_src_info())
     ast_builder = get_runtime().compiling_callable.ast_builder()
     # Directly evaluate in Python for non-Taichi types
     if not isinstance(
@@ -252,7 +253,6 @@ def subscript(ast_builder, value, *_indices, skip_reordered=False):
                     f"Gradient {_var.get_expr_name()} has not been placed, check whether `needs_grad=True`"
                 )
 
-        dbg_info = _ti_core.DebugInfo(get_runtime().get_current_src_info())
         if isinstance(value, MatrixField):
             return Expr(ast_builder.expr_subscript(value.ptr, indices_expr_group, dbg_info))
         if isinstance(value, StructField):
@@ -294,14 +294,10 @@ def subscript(ast_builder, value, *_indices, skip_reordered=False):
                 value.ptr,
                 multiple_indices,
                 return_shape,
-                _ti_core.DebugInfo(get_runtime().get_current_src_info()),
+                dbg_info,
             )
         )
-    return Expr(
-        ast_builder.expr_subscript(
-            value.ptr, indices_expr_group, _ti_core.DebugInfo(get_runtime().get_current_src_info())
-        )
-    )
+    return Expr(ast_builder.expr_subscript(value.ptr, indices_expr_group, dbg_info))
 
 
 class SrcInfoGuard:

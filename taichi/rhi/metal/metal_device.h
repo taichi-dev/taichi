@@ -4,6 +4,7 @@
 #include "taichi/rhi/impl_support.h"
 #include "taichi/rhi/metal/metal_api.h"
 #include <memory>
+#include <regex>
 
 // clang-format off
 #if defined(__APPLE__) && defined(__OBJC__)
@@ -107,6 +108,14 @@ class MetalPipeline final : public Pipeline {
                          MTLFunction_id mtl_function,
                          MTLComputePipelineState_id mtl_compute_pipeline_state,
                          MetalWorkgroupSize workgroup_size);
+
+  explicit MetalPipeline(const MetalDevice &device,
+                         MTLLibrary_id mtl_library,
+                         const std::vector<MTLFunction_id>
+                             &mtl_functions,  // Should be vertex and fragment
+                         const RasterParams &raster_params,
+                         const std::vector<VertexInputBinding> &vertex_inputs,
+                         const std::vector<VertexInputAttribute> &vertex_attrs);
   ~MetalPipeline() final;
 
   static MetalPipeline *create(const MetalDevice &device,
@@ -125,10 +134,17 @@ class MetalPipeline final : public Pipeline {
  private:
   const MetalDevice *device_;
   MTLLibrary_id mtl_library_;
+
+  bool is_destroyed_{false};
+  bool is_raster_pipeline{false};
+
+  // Compute variables
   MTLFunction_id mtl_function_;
   MTLComputePipelineState_id mtl_compute_pipeline_state_;
   MetalWorkgroupSize workgroup_size_;
-  bool is_destroyed_{false};
+
+  // Raster variables
+  std::vector<MTLFunction_id> mtl_functions_;
 };
 
 enum class MetalShaderResourceType {
@@ -180,6 +196,28 @@ class MetalShaderResourceSet final : public ShaderResourceSet {
  private:
   const MetalDevice *device_;
   std::vector<MetalShaderResource> resources_;  // TODO: need raster resources
+};
+
+class MetalRasterResources : public RasterResources {
+ public:
+  explicit MetalRasterResources(MetalDevice *device) : device_(device) {
+  }
+
+  struct BufferBinding {
+    MTLBuffer_id buffer{nullptr};
+    size_t offset{0};
+  };
+  BufferBinding index_binding;
+
+  std::unordered_map<uint32_t, BufferBinding> vertex_buffers;
+
+  ~MetalRasterResources() override = default;
+
+  RasterResources &vertex_buffer(DevicePtr ptr, uint32_t binding = 0) final;
+  RasterResources &index_buffer(DevicePtr ptr, size_t index_width) final;
+
+ private:
+  MetalDevice *device_;
 };
 
 class MetalCommandList final : public CommandList {
@@ -341,12 +379,9 @@ class MetalDevice final : public GraphicsDevice {
       const RasterParams &raster_params,
       const std::vector<VertexInputBinding> &vertex_inputs,
       const std::vector<VertexInputAttribute> &vertex_attrs,
-      std::string name = "Pipeline") override {
-    TI_NOT_IMPLEMENTED;
-  }
-  RasterResources *create_raster_resources() override {
-    TI_NOT_IMPLEMENTED;
-  }
+      std::string name = "Pipeline") override;
+
+  RasterResources *create_raster_resources() override;
 
   Stream *get_compute_stream() override;
   Stream *get_graphics_stream() override;
@@ -358,7 +393,14 @@ class MetalDevice final : public GraphicsDevice {
     return *default_sampler_;
   }
 
+  MTLFunction_id get_mtl_function(MTLLibrary_id mtl_lib,
+                                  const std::string &func_name) const;
+  MTLLibrary_id get_mtl_library(const std::string &source) const;
+
  private:
+  const std::string frag_function_name = "frag_function";
+  const std::string vert_function_name = "vert_function";
+
   MTLDevice_id mtl_device_;
   rhi_impl::SyncedPtrStableObjectList<MetalMemory> memory_allocs_;
   rhi_impl::SyncedPtrStableObjectList<MetalImage> image_allocs_;

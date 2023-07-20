@@ -134,6 +134,13 @@ MetalPipeline::MetalPipeline(
     : device_(&device), mtl_library_(mtl_library), mtl_function_(mtl_function),
       mtl_compute_pipeline_state_(mtl_compute_pipeline_state),
       workgroup_size_(workgroup_size) {}
+MetalPipeline::MetalPipeline(
+    const MetalDevice &device, MTLLibrary_id mtl_library,
+    const std::vector<MTLFunction_id>
+        &mtl_functions, // Should be vertex and fragment
+    const RasterParams &raster_params,
+    const std::vector<VertexInputBinding> &vertex_inputs,
+    const std::vector<VertexInputAttribute> &vertex_attrs) {}
 MetalPipeline::~MetalPipeline() { destroy(); }
 MetalPipeline *MetalPipeline::create(const MetalDevice &device,
                                      const uint32_t *spv_data, size_t spv_size,
@@ -176,38 +183,10 @@ MetalPipeline *MetalPipeline::create(const MetalDevice &device,
     return nullptr;
   }
 
-  MTLLibrary_id mtl_library = nil;
-  {
-    NSError *err = nil;
-    NSString *msl_ns = [[NSString alloc] initWithUTF8String:msl.c_str()];
-    mtl_library = [device.mtl_device() newLibraryWithSource:msl_ns
-                                                    options:nil
-                                                      error:&err];
-    [msl_ns release];
+  MTLLibrary_id mtl_library = device.get_mtl_library(msl);
 
-    if (mtl_library == nil) {
-      if (err != nil) {
-        std::array<char, 4096> msgbuf;
-        snprintf(msgbuf.data(), msgbuf.size(),
-                 "cannot compile metal library from source: %s (code=%d)",
-                 err.localizedDescription.UTF8String, (int)err.code);
-        RHI_LOG_ERROR(msgbuf.data());
-      }
-      return nullptr;
-    }
-  }
-
-  MTLFunction_id mtl_function = nil;
-  {
-    NSString *entry_name_ns = [[NSString alloc] initWithUTF8String:"main0"];
-    mtl_function = [mtl_library newFunctionWithName:entry_name_ns];
-    if (mtl_function == nil) {
-      // FIXME: (penguinliong) Specify the actual entry name after we compile
-      // directly to MSL in codegen.
-      RHI_LOG_ERROR(
-          "cannot extract entry point function 'main' from shader library");
-    }
-  }
+  MTLFunction_id mtl_function =
+      device.get_mtl_function(mtl_library, std::string("main0"));
 
   MTLComputePipelineState_id mtl_compute_pipeline_state = nil;
   {
@@ -239,6 +218,7 @@ MetalPipeline *MetalPipeline::create(const MetalDevice &device,
                            mtl_compute_pipeline_state,
                            std::move(workgroup_size));
 }
+
 void MetalPipeline::destroy() {
   if (!is_destroyed_) {
     [mtl_compute_pipeline_state_ release];
@@ -347,6 +327,31 @@ ShaderResourceSet &MetalShaderResourceSet::rw_image(uint32_t binding,
   return *this;
 }
 
+RasterResources &MetalRasterResources::vertex_buffer(DevicePtr ptr,
+                                                     uint32_t binding) {
+  MTLBuffer_id buffer = (ptr != kDeviceNullPtr)
+                            ? device_->get_memory(ptr.alloc_id).mtl_buffer()
+                            : nullptr;
+  if (buffer == nullptr) {
+    vertex_buffers.erase(binding);
+  } else {
+    vertex_buffers[binding] = {buffer, ptr.offset};
+  }
+  return *this;
+}
+
+RasterResources &MetalRasterResources::index_buffer(DevicePtr ptr,
+                                                    size_t index_width) {
+  MTLBuffer_id buffer = (ptr != kDeviceNullPtr)
+                            ? device_->get_memory(ptr.alloc_id).mtl_buffer()
+                            : nullptr;
+  if (buffer == nullptr) {
+    index_binding = BufferBinding();
+  } else {
+    index_binding = {buffer, ptr.offset};
+  }
+  return *this;
+}
 MetalCommandList::MetalCommandList(const MetalDevice &device,
                                    MTLCommandQueue_id cmd_queue)
     : device_(&device) {
@@ -837,8 +842,122 @@ RhiResult MetalDevice::create_pipeline(Pipeline **out_pipeline,
   }
   return RhiResult::success;
 }
+
+std::unique_ptr<Pipeline> MetalDevice::create_raster_pipeline(
+    const std::vector<PipelineSourceDesc> &src,
+    const RasterParams &raster_params,
+    const std::vector<VertexInputBinding> &vertex_inputs,
+    const std::vector<VertexInputAttribute> &vertex_attrs, std::string name) {
+
+  RHI_ASSERT(src.size() == 2); // One vertex one fragment
+  RHI_ASSERT(src[0].type == PipelineSourceType::spirv_binary);
+  RHI_ASSERT(src[1].type == PipelineSourceType::spirv_binary);
+  RHI_ASSERT((src[0].stage == PipelineStageType::fragment &&
+              src[1].stage == PipelineStageType::vertex) ||
+             (src[0].stage == PipelineStageType::vertex &&
+              src[1].stage == PipelineStageType::fragment));
+
+  spirv_cross::CompilerMSL::Options options{};
+  options.enable_decoration_binding = true;
+
+  // Compile spirv binaries to MSL source
+  std::string msl_source = "";
+  for (int i = 0; i < 2; i++) {
+    const uint32_t *spv_data = (const uint32_t *)src[i].data;
+
+    RHI_ASSERT((size_t)spv_data % sizeof(uint32_t) == 0);
+    RHI_ASSERT(src[i].size % sizeof(uint32_t) == 0);
+
+    spirv_cross::CompilerMSL compiler(spv_data, src[i].size / sizeof(uint32_t));
+    compiler.set_msl_options(options);
+
+    std::string msl = "";
+    try {
+      msl = compiler.compile();
+    } catch (const spirv_cross::CompilerError &e) {
+      std::array<char, 4096> msgbuf;
+      snprintf(msgbuf.data(), msgbuf.size(), "(spirv-cross compiler) %s: %s",
+               name.c_str(), e.what());
+      RHI_LOG_ERROR(msgbuf.data());
+      return nullptr;
+    }
+
+    const std::string new_entry_point_name =
+        src[i].stage == PipelineStageType::fragment ? frag_function_name
+                                                    : vert_function_name;
+
+    // Fragment and vertex function names must be different.
+    // If spirv-cross has a method to let you set the emitted entry point's
+    // name, that would be nice, but I could not find anything in the docs.
+    // So for now just using std's regex_replace().
+    std::regex entry_point_regex("main0");
+    msl_source +=
+        std::regex_replace(msl, entry_point_regex, new_entry_point_name);
+  }
+
+  // Compile MSL source
+  MTLLibrary_id mtl_library = get_mtl_library(msl_source);
+
+  // Get the MTLFunctions
+  std::vector<MTLFunction_id> mtl_functions;
+  for (int i = 0; i < 2; i++) {
+    const std::string new_entry_point_name =
+        src[i].stage == PipelineStageType::fragment ? frag_function_name
+                                                    : vert_function_name;
+
+    MTLFunction_id mtl_function =
+        get_mtl_function(mtl_library, new_entry_point_name);
+    mtl_functions.push_back(mtl_function);
+  }
+
+  return std::make_unique<MetalPipeline>(*this, mtl_library, mtl_functions,
+                                         raster_params, vertex_inputs,
+                                         vertex_attrs);
+}
+
+MTLFunction_id
+MetalDevice::get_mtl_function(MTLLibrary_id mtl_lib,
+                              const std::string &func_name) const {
+
+  MTLFunction_id mtl_function = nil;
+  NSString *entry_name_ns =
+      [[NSString alloc] initWithUTF8String:func_name.c_str()];
+  mtl_function = [mtl_lib newFunctionWithName:entry_name_ns];
+  [entry_name_ns release];
+  if (mtl_function == nil) {
+    RHI_LOG_ERROR("cannot extract entry point function from shader library");
+  }
+  return mtl_function;
+}
+
+MTLLibrary_id MetalDevice::get_mtl_library(const std::string &source) const {
+  MTLLibrary_id mtl_library = nil;
+  NSError *err = nil;
+  NSString *msl_ns = [[NSString alloc] initWithUTF8String:source.c_str()];
+  mtl_library = [mtl_device_ newLibraryWithSource:msl_ns
+                                          options:nil
+                                            error:&err];
+  [msl_ns release];
+
+  if (mtl_library == nil) {
+    if (err != nil) {
+      std::array<char, 4096> msgbuf;
+      snprintf(msgbuf.data(), msgbuf.size(),
+               "cannot compile metal library from source: %s (code=%d)",
+               err.localizedDescription.UTF8String, (int)err.code);
+      RHI_LOG_ERROR(msgbuf.data());
+    }
+    return nil;
+  }
+  return mtl_library;
+}
+
 ShaderResourceSet *MetalDevice::create_resource_set() {
   return new MetalShaderResourceSet(*this);
+}
+
+RasterResources *MetalDevice::create_raster_resources() {
+  return new MetalRasterResources(this);
 }
 
 Stream *MetalDevice::get_compute_stream() { return compute_stream_.get(); }

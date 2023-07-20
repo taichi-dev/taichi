@@ -97,7 +97,9 @@ def expr_init(rhs):
     if hasattr(rhs, "_data_oriented"):
         return rhs
     return Expr(
-        get_runtime().compiling_callable.ast_builder().expr_var(Expr(rhs).ptr, get_runtime().get_current_src_info())
+        get_runtime()
+        .compiling_callable.ast_builder()
+        .expr_var(Expr(rhs).ptr, _ti_core.DebugInfo(get_runtime().get_current_src_info()))
     )
 
 
@@ -292,10 +294,14 @@ def subscript(ast_builder, value, *_indices, skip_reordered=False):
                 value.ptr,
                 multiple_indices,
                 return_shape,
-                get_runtime().get_current_src_info(),
+                _ti_core.DebugInfo(get_runtime().get_current_src_info()),
             )
         )
-    return Expr(ast_builder.expr_subscript(value.ptr, indices_expr_group, get_runtime().get_current_src_info()))
+    return Expr(
+        ast_builder.expr_subscript(
+            value.ptr, indices_expr_group, _ti_core.DebugInfo(get_runtime().get_current_src_info())
+        )
+    )
 
 
 class SrcInfoGuard:

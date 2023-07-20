@@ -92,8 +92,8 @@ class Expr {
 
   SNode *snode() const;
 
-  // traceback for type checking error message
-  void set_tb(const std::string &tb);
+  // debug info, contains traceback for type checking error message
+  void set_dbg_info(const DebugInfo &dbg_info);
 
   const std::string &get_tb() const;
 

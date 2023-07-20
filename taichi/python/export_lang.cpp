@@ -828,7 +828,7 @@ void export_lang(py::module &m) {
                     SNodeGradType::kPrimal;
            })
       .def("is_lvalue", [](Expr *expr) { return expr->expr->is_lvalue(); })
-      .def("set_tb", &Expr::set_tb)
+      .def("set_dbg_info", &Expr::set_dbg_info)
       .def("set_name",
            [&](Expr *expr, std::string na) {
              expr->cast<FieldExpression>()->name = na;

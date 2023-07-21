@@ -59,8 +59,9 @@ FrontendIfStmt::FrontendIfStmt(const FrontendIfStmt &o)
 FrontendForStmt::FrontendForStmt(const ExprGroup &loop_vars,
                                  SNode *snode,
                                  Arch arch,
-                                 const ForLoopConfig &config)
-    : snode(snode) {
+                                 const ForLoopConfig &config,
+                                 const DebugInfo &dbg_info)
+    : Stmt(dbg_info), snode(snode) {
   init_config(arch, config);
   init_loop_vars(loop_vars);
 }
@@ -68,8 +69,9 @@ FrontendForStmt::FrontendForStmt(const ExprGroup &loop_vars,
 FrontendForStmt::FrontendForStmt(const ExprGroup &loop_vars,
                                  const Expr &external_tensor,
                                  Arch arch,
-                                 const ForLoopConfig &config)
-    : external_tensor(external_tensor) {
+                                 const ForLoopConfig &config,
+                                 const DebugInfo &dbg_info)
+    : Stmt(dbg_info), external_tensor(external_tensor) {
   init_config(arch, config);
   init_loop_vars(loop_vars);
 }
@@ -78,8 +80,9 @@ FrontendForStmt::FrontendForStmt(const ExprGroup &loop_vars,
                                  const mesh::MeshPtr &mesh,
                                  const mesh::MeshElementType &element_type,
                                  Arch arch,
-                                 const ForLoopConfig &config)
-    : mesh(mesh.ptr.get()), element_type(element_type) {
+                                 const ForLoopConfig &config,
+                                 const DebugInfo &dbg_info)
+    : Stmt(dbg_info), mesh(mesh.ptr.get()), element_type(element_type) {
   init_config(arch, config);
   init_loop_vars(loop_vars);
 }
@@ -88,14 +91,16 @@ FrontendForStmt::FrontendForStmt(const Expr &loop_var,
                                  const Expr &begin,
                                  const Expr &end,
                                  Arch arch,
-                                 const ForLoopConfig &config)
-    : begin(begin), end(end) {
+                                 const ForLoopConfig &config,
+                                 const DebugInfo &dbg_info)
+    : Stmt(dbg_info), begin(begin), end(end) {
   init_config(arch, config);
   add_loop_var(loop_var);
 }
 
 FrontendForStmt::FrontendForStmt(const FrontendForStmt &o)
-    : snode(o.snode),
+    : Stmt(o.dbg_info),
+      snode(o.snode),
       external_tensor(o.external_tensor),
       mesh(o.mesh),
       element_type(o.element_type),
@@ -1619,9 +1624,10 @@ void ASTBuilder::create_assert_stmt(const Expr &cond,
 
 void ASTBuilder::begin_frontend_range_for(const Expr &i,
                                           const Expr &s,
-                                          const Expr &e) {
-  auto stmt_unique =
-      std::make_unique<FrontendForStmt>(i, s, e, arch_, for_loop_dec_.config);
+                                          const Expr &e,
+                                          const DebugInfo &dbg_info) {
+  auto stmt_unique = std::make_unique<FrontendForStmt>(
+      i, s, e, arch_, for_loop_dec_.config, dbg_info);
   auto stmt = stmt_unique.get();
   this->insert(std::move(stmt_unique));
   this->create_scope(stmt->body,

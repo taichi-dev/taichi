@@ -201,24 +201,28 @@ class FrontendForStmt : public Stmt {
   FrontendForStmt(const ExprGroup &loop_vars,
                   SNode *snode,
                   Arch arch,
-                  const ForLoopConfig &config);
+                  const ForLoopConfig &config,
+                  const DebugInfo &dbg_info = DebugInfo());
 
   FrontendForStmt(const ExprGroup &loop_vars,
                   const Expr &external_tensor,
                   Arch arch,
-                  const ForLoopConfig &config);
+                  const ForLoopConfig &config,
+                  const DebugInfo &dbg_info = DebugInfo());
 
   FrontendForStmt(const ExprGroup &loop_vars,
                   const mesh::MeshPtr &mesh,
                   const mesh::MeshElementType &element_type,
                   Arch arch,
-                  const ForLoopConfig &config);
+                  const ForLoopConfig &config,
+                  const DebugInfo &dbg_info = DebugInfo());
 
   FrontendForStmt(const Expr &loop_var,
                   const Expr &begin,
                   const Expr &end,
                   Arch arch,
-                  const ForLoopConfig &config);
+                  const ForLoopConfig &config,
+                  const DebugInfo &dbg_info = DebugInfo());
 
   bool is_container_statement() const override {
     return true;
@@ -1042,7 +1046,10 @@ class ASTBuilder {
   void create_assert_stmt(const Expr &cond,
                           const std::string &msg,
                           const std::vector<Expr> &args);
-  void begin_frontend_range_for(const Expr &i, const Expr &s, const Expr &e);
+  void begin_frontend_range_for(const Expr &i,
+                                const Expr &s,
+                                const Expr &e,
+                                const DebugInfo &dbg_info = DebugInfo());
   void begin_frontend_struct_for_on_snode(const ExprGroup &loop_vars,
                                           SNode *snode);
   void begin_frontend_struct_for_on_external_tensor(

@@ -155,7 +155,7 @@ FrontendFuncDefStmt::FrontendFuncDefStmt(const FrontendFuncDefStmt &o)
 }
 
 FrontendWhileStmt::FrontendWhileStmt(const FrontendWhileStmt &o)
-    : cond(o.cond), body(o.body->clone()) {
+    : Stmt(o.dbg_info), cond(o.cond), body(o.body->clone()) {
 }
 
 void ArgLoadExpression::type_check(const CompileConfig *) {
@@ -1693,8 +1693,9 @@ void ASTBuilder::begin_frontend_mesh_for(
   this->create_scope(stmt->body, For);
 }
 
-void ASTBuilder::begin_frontend_while(const Expr &cond) {
-  auto stmt_unique = std::make_unique<FrontendWhileStmt>(cond);
+void ASTBuilder::begin_frontend_while(const Expr &cond,
+                                      const DebugInfo &dbg_info) {
+  auto stmt_unique = std::make_unique<FrontendWhileStmt>(cond, dbg_info);
   auto stmt = stmt_unique.get();
   this->insert(std::move(stmt_unique));
   this->create_scope(stmt->body, While);

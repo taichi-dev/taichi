@@ -135,7 +135,7 @@ def begin_frontend_struct_for(ast_builder, group, loop_range):
         ast_builder.begin_frontend_struct_for_on_snode(group, loop_range._loop_range())
 
 
-def begin_frontend_if(ast_builder, cond, stmt_tb):
+def begin_frontend_if(ast_builder, cond, stmt_dbg_info):
     assert ast_builder is not None
     if is_taichi_class(cond):
         raise ValueError(
@@ -145,7 +145,7 @@ def begin_frontend_if(ast_builder, cond, stmt_tb):
             "or\n"
             "    if any(x != y):\n"
         )
-    ast_builder.begin_frontend_if(Expr(cond).ptr, _ti_core.DebugInfo(stmt_tb))
+    ast_builder.begin_frontend_if(Expr(cond).ptr, stmt_dbg_info)
 
 
 @taichi_scope

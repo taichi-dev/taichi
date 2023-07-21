@@ -1497,14 +1497,14 @@ class ASTTransformer(Builder):
             raise TaichiSyntaxError("'else' clause for 'while' not supported in Taichi kernels")
 
         with ctx.loop_scope_guard():
-            ctx.ast_builder.begin_frontend_while(expr.Expr(1, dtype=primitive_types.i32).ptr)
+            stmt_dbg_info = _ti_core.DebugInfo(ctx.get_pos_info(node))
+            ctx.ast_builder.begin_frontend_while(expr.Expr(1, dtype=primitive_types.i32).ptr, stmt_dbg_info)
             while_cond = build_stmt(ctx, node.test)
-            stmt_dbg_info = ctx.get_pos_info(node)
             impl.begin_frontend_if(ctx.ast_builder, while_cond, stmt_dbg_info)
             ctx.ast_builder.begin_frontend_if_true()
             ctx.ast_builder.pop_scope()
             ctx.ast_builder.begin_frontend_if_false()
-            ctx.ast_builder.insert_break_stmt(_ti_core.DebugInfo(ctx.get_pos_info(node)))
+            ctx.ast_builder.insert_break_stmt(stmt_dbg_info)
             ctx.ast_builder.pop_scope()
             build_stmts(ctx, node.body)
             ctx.ast_builder.pop_scope()

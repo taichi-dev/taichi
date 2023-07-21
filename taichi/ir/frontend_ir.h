@@ -303,7 +303,8 @@ class FrontendWhileStmt : public Stmt {
   Expr cond;
   std::unique_ptr<Block> body;
 
-  explicit FrontendWhileStmt(const Expr &cond) : cond(cond) {
+  explicit FrontendWhileStmt(const Expr &cond, const DebugInfo &dbg_info)
+      : Stmt(dbg_info), cond(cond) {
   }
 
   bool is_container_statement() const override {
@@ -1078,7 +1079,8 @@ class ASTBuilder {
   void begin_frontend_mesh_for(const Expr &i,
                                const mesh::MeshPtr &mesh_ptr,
                                const mesh::MeshElementType &element_type);
-  void begin_frontend_while(const Expr &cond);
+  void begin_frontend_while(const Expr &cond,
+                            const DebugInfo &dbg_info = DebugInfo());
   void insert_break_stmt(const DebugInfo &dbg_info = DebugInfo());
   void insert_continue_stmt(const DebugInfo &dbg_info = DebugInfo());
   void insert_expr_stmt(const Expr &val);

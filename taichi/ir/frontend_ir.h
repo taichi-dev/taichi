@@ -48,8 +48,10 @@ class FrontendExternalFuncStmt : public Stmt {
                            const std::string &bc_filename,
                            const std::string &bc_funcname,
                            const std::vector<Expr> &args,
-                           const std::vector<Expr> &outputs)
-      : so_func(so_func),
+                           const std::vector<Expr> &outputs,
+                           const DebugInfo &dbg_info)
+      : Stmt(dbg_info),
+        so_func(so_func),
         asm_source(asm_source),
         bc_filename(bc_filename),
         bc_funcname(bc_funcname),
@@ -1031,7 +1033,8 @@ class ASTBuilder {
                                  std::string filename,
                                  std::string funcname,
                                  const ExprGroup &args,
-                                 const ExprGroup &outputs);
+                                 const ExprGroup &outputs,
+                                 const DebugInfo &dbg_info = DebugInfo());
   Expr expr_alloca();
   Expr expr_alloca_shared_array(const std::vector<int> &shape,
                                 const DataType &element_type);

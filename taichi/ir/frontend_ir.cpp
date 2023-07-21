@@ -1536,9 +1536,11 @@ void ASTBuilder::insert_external_func_call(std::size_t func_addr,
                                            std::string filename,
                                            std::string funcname,
                                            const ExprGroup &args,
-                                           const ExprGroup &outputs) {
+                                           const ExprGroup &outputs,
+                                           const DebugInfo &dbg_info) {
   auto stmt = Stmt::make<FrontendExternalFuncStmt>(
-      (void *)func_addr, source, filename, funcname, args.exprs, outputs.exprs);
+      (void *)func_addr, source, filename, funcname, args.exprs, outputs.exprs,
+      dbg_info);
   this->insert(std::move(stmt));
 }
 

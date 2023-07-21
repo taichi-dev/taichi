@@ -66,7 +66,7 @@ def get_clangpp():
 
     # Taichi itself uses llvm-10.0.0 to compile.
     # There will be some issues compiling CUDA with other clang++ version.
-    _clangpp_candidates = ["clang++-10"]
+    _clangpp_candidates = ["clang++"]
     for c in _clangpp_candidates:
         if find_executable(c) is not None:
             _clangpp_presence = find_executable(c)

@@ -1077,7 +1077,7 @@ class ASTBuilder {
                                const mesh::MeshPtr &mesh_ptr,
                                const mesh::MeshElementType &element_type);
   void begin_frontend_while(const Expr &cond);
-  void insert_break_stmt(const DebugInfo &dbg_info);
+  void insert_break_stmt(const DebugInfo &dbg_info = DebugInfo());
   void insert_continue_stmt();
   void insert_expr_stmt(const Expr &val);
   void insert_snode_activate(SNode *snode,

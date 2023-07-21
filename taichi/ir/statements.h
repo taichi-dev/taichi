@@ -30,8 +30,9 @@ class AllocaStmt : public Stmt, public ir_traits::Store {
 
   AllocaStmt(const std::vector<int> &shape,
              DataType type,
-             bool is_shared = false)
-      : is_shared(is_shared) {
+             bool is_shared = false,
+             const DebugInfo &dbg_info = DebugInfo())
+      : Stmt(dbg_info), is_shared(is_shared) {
     ret_type = TypeFactory::get_instance().get_pointer_type(
         TypeFactory::create_tensor_type(shape, type));
     TI_STMT_REG_FIELDS;

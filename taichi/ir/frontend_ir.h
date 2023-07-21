@@ -78,16 +78,19 @@ class FrontendAllocaStmt : public Stmt {
  public:
   Identifier ident;
 
-  FrontendAllocaStmt(const Identifier &lhs, DataType type)
-      : ident(lhs), is_shared(false) {
+  FrontendAllocaStmt(const Identifier &lhs,
+                     DataType type,
+                     const DebugInfo &dbg_info = DebugInfo())
+      : Stmt(dbg_info), ident(lhs), is_shared(false) {
     ret_type = type;
   }
 
   FrontendAllocaStmt(const Identifier &lhs,
                      std::vector<int> shape,
                      DataType element,
-                     bool is_shared = false)
-      : ident(lhs), is_shared(is_shared) {
+                     bool is_shared = false,
+                     const DebugInfo &dbg_info = DebugInfo())
+      : Stmt(dbg_info), ident(lhs), is_shared(is_shared) {
     ret_type = TypeFactory::get_instance().get_pointer_type(
         DataType(TypeFactory::create_tensor_type(shape, element)));
   }
@@ -1035,9 +1038,10 @@ class ASTBuilder {
                                  const ExprGroup &args,
                                  const ExprGroup &outputs,
                                  const DebugInfo &dbg_info = DebugInfo());
-  Expr expr_alloca();
+  Expr expr_alloca(const DebugInfo &dbg_info = DebugInfo());
   Expr expr_alloca_shared_array(const std::vector<int> &shape,
-                                const DataType &element_type);
+                                const DataType &element_type,
+                                const DebugInfo &dbg_info = DebugInfo());
   Expr expr_subscript(const Expr &expr,
                       const ExprGroup &indices,
                       const DebugInfo &dbg_info = DebugInfo());

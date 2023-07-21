@@ -1434,7 +1434,7 @@ void ASTBuilder::insert_assignment(Expr &lhs,
 }
 
 Expr ASTBuilder::make_var(const Expr &x, const DebugInfo &dbg_info) {
-  auto var = this->expr_alloca();
+  auto var = this->expr_alloca(dbg_info);
   this->insert_assignment(var, x, dbg_info);
   return var;
 }
@@ -1544,11 +1544,11 @@ void ASTBuilder::insert_external_func_call(std::size_t func_addr,
   this->insert(std::move(stmt));
 }
 
-Expr ASTBuilder::expr_alloca() {
+Expr ASTBuilder::expr_alloca(const DebugInfo &dbg_info) {
   auto var = Expr(std::make_shared<IdExpression>(get_next_id()));
   this->insert(std::make_unique<FrontendAllocaStmt>(
       std::static_pointer_cast<IdExpression>(var.expr)->id,
-      PrimitiveType::unknown));
+      PrimitiveType::unknown, dbg_info));
   return var;
 }
 
@@ -1586,11 +1586,12 @@ Expr ASTBuilder::make_matrix_expr(const std::vector<int> &shape,
 }
 
 Expr ASTBuilder::expr_alloca_shared_array(const std::vector<int> &shape,
-                                          const DataType &element_type) {
+                                          const DataType &element_type,
+                                          const DebugInfo &dbg_info) {
   auto var = Expr(std::make_shared<IdExpression>(get_next_id()));
   this->insert(std::make_unique<FrontendAllocaStmt>(
       std::static_pointer_cast<IdExpression>(var.expr)->id, shape, element_type,
-      true));
+      true, dbg_info));
   var->ret_type = this->get_last_stmt()->ret_type;
   return var;
 }

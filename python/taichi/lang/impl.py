@@ -63,13 +63,21 @@ from taichi.types.primitive_types import (
 
 @taichi_scope
 def expr_init_shared_array(shape, element_type):
-    return get_runtime().compiling_callable.ast_builder().expr_alloca_shared_array(shape, element_type)
+    return (
+        get_runtime()
+        .compiling_callable.ast_builder()
+        .expr_alloca_shared_array(shape, element_type, _ti_core.DebugInfo(get_runtime().get_current_src_info()))
+    )
 
 
 @taichi_scope
 def expr_init(rhs):
     if rhs is None:
-        return Expr(get_runtime().compiling_callable.ast_builder().expr_alloca())
+        return Expr(
+            get_runtime()
+            .compiling_callable.ast_builder()
+            .expr_alloca(_ti_core.DebugInfo(get_runtime().get_current_src_info()))
+        )
     if isinstance(rhs, Matrix) and (hasattr(rhs, "_DIM")):
         return Matrix(*rhs.to_list(), ndim=rhs.ndim)
     if isinstance(rhs, Matrix):

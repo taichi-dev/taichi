@@ -248,9 +248,7 @@ class FrontendFuncDefStmt : public Stmt {
   std::string funcid;
   std::unique_ptr<Block> body;
 
-  explicit FrontendFuncDefStmt(const std::string &funcid,
-                               const DebugInfo &dbg_info)
-      : Stmt(dbg_info), funcid(funcid) {
+  explicit FrontendFuncDefStmt(const std::string &funcid) : funcid(funcid) {
   }
 
   bool is_container_statement() const override {
@@ -1022,8 +1020,7 @@ class ASTBuilder {
   void create_kernel_exprgroup_return(const ExprGroup &group);
   void create_print(std::vector<std::variant<Expr, std::string>> contents,
                     std::vector<std::optional<std::string>> formats);
-  void begin_func(const std::string &funcid,
-                  const DebugInfo &dbg_info = DebugInfo());
+  void begin_func(const std::string &funcid);
   void end_func(const std::string &funcid);
   void begin_frontend_if(const Expr &cond,
                          const DebugInfo &stmt_di = DebugInfo());

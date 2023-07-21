@@ -1505,8 +1505,8 @@ void ASTBuilder::create_print(
   this->insert(std::make_unique<FrontendPrintStmt>(contents, formats));
 }
 
-void ASTBuilder::begin_func(const std::string &funcid, const DebugInfo& dbg_info) {
-  auto stmt_unique = std::make_unique<FrontendFuncDefStmt>(funcid, dbg_info);
+void ASTBuilder::begin_func(const std::string &funcid) {
+  auto stmt_unique = std::make_unique<FrontendFuncDefStmt>(funcid);
   auto stmt = stmt_unique.get();
   this->insert(std::move(stmt_unique));
   this->create_scope(stmt->body);

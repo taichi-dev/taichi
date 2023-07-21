@@ -140,7 +140,9 @@ class FrontendAssignStmt : public Stmt {
  public:
   Expr lhs, rhs;
 
-  FrontendAssignStmt(const Expr &lhs, const Expr &rhs);
+  FrontendAssignStmt(const Expr &lhs,
+                     const Expr &rhs,
+                     const DebugInfo &dbg_info = DebugInfo());
 
   TI_DEFINE_ACCEPT
   TI_DEFINE_CLONE_FOR_FRONTEND_IR
@@ -639,12 +641,12 @@ class IndexExpression : public Expression {
 
   IndexExpression(const Expr &var,
                   const ExprGroup &indices,
-                  std::string tb = "");
+                  const DebugInfo &dbg_info = DebugInfo());
 
   IndexExpression(const Expr &var,
                   const std::vector<ExprGroup> &indices_group,
                   const std::vector<int> &ret_shape,
-                  std::string tb = "");
+                  const DebugInfo &dbg_info = DebugInfo());
 
   void type_check(const CompileConfig *config) override;
 
@@ -993,8 +995,8 @@ class ASTBuilder {
   void stop_gradient(SNode *);
   void insert_assignment(Expr &lhs,
                          const Expr &rhs,
-                         const std::string &tb = "");
-  Expr make_var(const Expr &x, std::string tb);
+                         const DebugInfo &dbg_info = DebugInfo());
+  Expr make_var(const Expr &x, const DebugInfo &dbg_info = DebugInfo());
   void insert_for(const Expr &s,
                   const Expr &e,
                   const std::function<void(Expr)> &func);
@@ -1024,14 +1026,16 @@ class ASTBuilder {
                                 const DataType &element_type);
   Expr expr_subscript(const Expr &expr,
                       const ExprGroup &indices,
-                      std::string tb = "");
+                      const DebugInfo &dbg_info = DebugInfo());
 
   Expr mesh_index_conversion(mesh::MeshPtr mesh_ptr,
                              mesh::MeshElementType idx_type,
                              const Expr &idx,
                              mesh::ConvType &conv_type);
 
-  void expr_assign(const Expr &lhs, const Expr &rhs, std::string tb);
+  void expr_assign(const Expr &lhs,
+                   const Expr &rhs,
+                   const DebugInfo &dbg_info = DebugInfo());
   std::optional<Expr> insert_func_call(Function *func, const ExprGroup &args);
   void create_assert_stmt(const Expr &cond,
                           const std::string &msg,

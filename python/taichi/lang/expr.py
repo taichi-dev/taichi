@@ -40,7 +40,7 @@ class Expr(TaichiOperations):
         else:
             assert False
         if self.tb:
-            self.ptr.set_tb(self.tb)
+            self.ptr.set_dbg_info(_ti_core.DebugInfo(self.tb))
         if not self.ptr_type_checked:
             self.ptr.type_check(impl.get_runtime().prog.config())
             self.ptr_type_checked = True

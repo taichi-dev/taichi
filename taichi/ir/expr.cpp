@@ -6,8 +6,8 @@
 
 namespace taichi::lang {
 
-void Expr::set_tb(const std::string &tb) {
-  expr->set_tb(tb);
+void Expr::set_dbg_info(const DebugInfo &dbg_info) {
+  expr->dbg_info = dbg_info;
 }
 
 const std::string &Expr::get_tb() const {

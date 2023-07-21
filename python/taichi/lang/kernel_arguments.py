@@ -56,7 +56,11 @@ def decl_scalar_arg(dtype, name, arg_depth):
         arg_id = impl.get_runtime().compiling_callable.insert_pointer_param(dtype, name)
     else:
         arg_id = impl.get_runtime().compiling_callable.insert_scalar_param(dtype, name)
-    return Expr(_ti_core.make_arg_load_expr(arg_id, dtype, is_ref, True, arg_depth))
+
+    argload_di = _ti_core.DebugInfo(impl.get_runtime().get_current_src_info())
+    return Expr(
+        _ti_core.make_arg_load_expr(arg_id, dtype, is_ref, create_load=True, arg_depth=arg_depth, dbg_info=argload_di)
+    )
 
 
 def get_type_for_kernel_args(dtype, name):
@@ -83,14 +87,20 @@ def get_type_for_kernel_args(dtype, name):
 def decl_matrix_arg(matrixtype, name, arg_depth):
     arg_type = get_type_for_kernel_args(matrixtype, name)
     arg_id = impl.get_runtime().compiling_callable.insert_scalar_param(arg_type, name)
-    arg_load = Expr(_ti_core.make_arg_load_expr(arg_id, arg_type, create_load=False, arg_depth=arg_depth))
+    argload_di = _ti_core.DebugInfo(impl.get_runtime().get_current_src_info())
+    arg_load = Expr(
+        _ti_core.make_arg_load_expr(arg_id, arg_type, create_load=False, arg_depth=arg_depth, dbg_info=argload_di)
+    )
     return matrixtype.from_taichi_object(arg_load)
 
 
 def decl_struct_arg(structtype, name, arg_depth):
     arg_type = get_type_for_kernel_args(structtype, name)
     arg_id = impl.get_runtime().compiling_callable.insert_scalar_param(arg_type, name)
-    arg_load = Expr(_ti_core.make_arg_load_expr(arg_id, arg_type, create_load=False, arg_depth=arg_depth))
+    argload_di = _ti_core.DebugInfo(impl.get_runtime().get_current_src_info())
+    arg_load = Expr(
+        _ti_core.make_arg_load_expr(arg_id, arg_type, create_load=False, arg_depth=arg_depth, dbg_info=argload_di)
+    )
     return structtype.from_taichi_object(arg_load)
 
 
@@ -108,7 +118,10 @@ def decl_sparse_matrix(dtype, name):
     ptr_type = cook_dtype(u64)
     # Treat the sparse matrix argument as a scalar since we only need to pass in the base pointer
     arg_id = impl.get_runtime().compiling_callable.insert_scalar_param(ptr_type, name)
-    return SparseMatrixProxy(_ti_core.make_arg_load_expr(arg_id, ptr_type, False, True, 0), value_type)
+    argload_di = _ti_core.DebugInfo(impl.get_runtime().get_current_src_info())
+    return SparseMatrixProxy(
+        _ti_core.make_arg_load_expr(arg_id, ptr_type, create_load=False, dbg_info=argload_di), value_type
+    )
 
 
 def decl_ndarray_arg(element_type, ndim, name, needs_grad, boundary):

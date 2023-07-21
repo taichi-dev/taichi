@@ -169,8 +169,8 @@ void ArgLoadExpression::type_check(const CompileConfig *) {
 }
 
 void ArgLoadExpression::flatten(FlattenContext *ctx) {
-  auto arg_load =
-      std::make_unique<ArgLoadStmt>(arg_id, dt, is_ptr, create_load, arg_depth);
+  auto arg_load = std::make_unique<ArgLoadStmt>(arg_id, dt, is_ptr, create_load,
+                                                arg_depth, dbg_info);
   arg_load->ret_type = ret_type;
   ctx->push_back(std::move(arg_load));
   stmt = ctx->back_stmt();

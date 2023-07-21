@@ -338,8 +338,10 @@ class ArgLoadExpression : public Expression {
                     DataType dt,
                     bool is_ptr = false,
                     bool create_load = true,
-                    int arg_depth = 0)
-      : arg_id(arg_id),
+                    int arg_depth = 0,
+                    const DebugInfo &dbg_info = DebugInfo())
+      : Expression(dbg_info),
+        arg_id(arg_id),
         dt(dt),
         is_ptr(is_ptr),
         create_load(create_load),

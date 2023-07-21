@@ -197,7 +197,7 @@ void RandExpression::type_check(const CompileConfig *) {
 }
 
 void RandExpression::flatten(FlattenContext *ctx) {
-  auto ran = std::make_unique<RandStmt>(dt);
+  auto ran = std::make_unique<RandStmt>(dt, dbg_info);
   ctx->push_back(std::move(ran));
   stmt = ctx->back_stmt();
 }

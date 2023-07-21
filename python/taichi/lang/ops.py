@@ -587,7 +587,7 @@ def random(dtype=float) -> Union[float, int]:
         >>>     print(j)  # 73412986184350777
     """
     dtype = cook_dtype(dtype)
-    x = expr.Expr(_ti_core.make_rand_expr(dtype))
+    x = expr.Expr(_ti_core.make_rand_expr(dtype, _ti_core.DebugInfo(impl.get_runtime().get_current_src_info())))
     return impl.expr_init(x)
 
 

@@ -1026,7 +1026,8 @@ void export_lang(py::module &m) {
   m.def("make_external_tensor_grad_expr",
         Expr::make<ExternalTensorExpression, Expr *>);
 
-  m.def("make_rand_expr", Expr::make<RandExpression, const DataType &>);
+  m.def("make_rand_expr",
+        Expr::make<RandExpression, const DataType &, const DebugInfo &>);
 
   m.def("make_const_expr_bool",
         Expr::make<ConstExpression, const DataType &, uint1>);

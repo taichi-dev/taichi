@@ -405,7 +405,8 @@ class RandExpression : public Expression {
  public:
   DataType dt;
 
-  explicit RandExpression(DataType dt) : dt(dt) {
+  explicit RandExpression(DataType dt, const DebugInfo &dbg_info = DebugInfo())
+      : Expression(dbg_info), dt(dt) {
   }
 
   void type_check(const CompileConfig *config) override;

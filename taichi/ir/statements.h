@@ -233,7 +233,8 @@ class ArgLoadStmt : public Stmt {
  */
 class RandStmt : public Stmt {
  public:
-  explicit RandStmt(const DataType &dt) {
+  explicit RandStmt(const DataType &dt, const DebugInfo &dbg_info = DebugInfo())
+      : Stmt(dbg_info) {
     ret_type = dt;
     TI_STMT_REG_FIELDS;
   }

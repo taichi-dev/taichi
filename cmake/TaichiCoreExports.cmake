@@ -17,6 +17,7 @@ set(TAICHI_CORE_EXPORTS_NAME taichi_core_exports)
 add_library(${TAICHI_CORE_EXPORTS_NAME} OBJECT)
 target_sources(${TAICHI_CORE_EXPORTS_NAME}
   PRIVATE
+    ${PROJECT_SOURCE_DIR}/taichi/exports/check_enums.cpp
     ${PROJECT_SOURCE_DIR}/taichi/exports/export_lang.cpp
   )
 

@@ -1,6 +1,6 @@
 import os, sys, argparse
 
-from typing import Mapping, List, Union
+from typing import Mapping, List, Union, Optional
 from pycparser import parse_file
 from pycparser.c_ast import NodeVisitor
 
@@ -45,6 +45,7 @@ TIE_ERROR_TO_PYTHON_EXCEPTION = {
 
 TIE_TEMP_CCORE_TYPE_TO_CORE_TYPE = {
     "ASTBuilder": "taichi._lib.core.ASTBuilder",
+    "DataType": "taichi._lib.core.DataType",
 }
 
 
@@ -168,6 +169,19 @@ C_BUILTIN_TYPE_TO_CTYPES_TYPE = {
     "uint64_t": "ctypes.c_uint64",
     "size_t": "ctypes.c_size_t",
     "uintptr_t": "ctypes.c_uint64",
+    "bool": "ctypes.c_int",
+}
+
+
+C_BUILTIN_TYPE_TO_PYTHON_TYPE = {
+    "int": "int",
+    "float": "float",
+    "double": "float",
+    "int64_t": "int",
+    "uint64_t": "int",
+    "size_t": "int",
+    "uintptr_t": "int",
+    "bool": "bool",
 }
 
 
@@ -200,6 +214,9 @@ class CType:
     def is_cstr(self):
         return self.base_type_name == "char" and self.ptr_levels == 1
 
+    def is_bool(self):
+        return self.base_type_name == "bool" and self.ptr_levels == 0
+
     def is_handle(self):
         typename = self.base_type_name
         return (
@@ -210,6 +227,12 @@ class CType:
 
     def is_callback(self):
         return self.base_type_name == "TieCallback" and self.ptr_levels == 0
+
+    def is_basic_type(self):
+        return (
+            self.base_type_name in C_BUILTIN_TYPE_TO_CTYPES_TYPE
+            and self.ptr_levels == 0
+        )
 
     def __str__(self):
         return f"{self.base_type_name}{'*' * self.ptr_levels}"
@@ -245,6 +268,9 @@ class FuncParameter:
 
     def is_cstr_param(self):
         return self.type.is_cstr()
+    
+    def is_basic_type_param(self):
+        return self.type.is_basic_type()
 
     def is_handle_param(self):
         return self.type.is_handle()
@@ -284,6 +310,28 @@ class ClassMethodDecl:
         self.method_name = method_name
         self.original_func_decl = original_func_decl
         self.type = type or ClassMethodDecl.METHOD_TYPE
+
+    @staticmethod
+    def is_getter_method(method: Optional["ClassMethodDecl"]):
+        # Name starts with "get_", has no in_params and has one out_param
+        # e.g. int tie_get_XXX_xx(TieXXXHandle self, int *ret_xx);
+        return (
+            method is not None
+            and method.method_name.startswith("get_")
+            and len(method.original_func_decl.in_params) == 0 + 1  # + 1 for self
+            and len(method.original_func_decl.out_params) == 1
+        )
+
+    @staticmethod
+    def is_setter_method(method: Optional["ClassMethodDecl"]):
+        # Name starts with "set_", has one in_param and has no out_params
+        # e.g. int tie_set_XXX_xx(TieXXXHandle self, int xx);
+        return (
+            method is not None
+            and method.method_name.startswith("set_")
+            and len(method.original_func_decl.in_params) == 1 + 1  # + 1 for self
+            and len(method.original_func_decl.out_params) == 0
+        )
 
 
 class ClassDecl:
@@ -330,14 +378,15 @@ class ExportsHeaderASTVisitor(NodeVisitor):
         args = c_ast_func_decl.args
         ret_type = c_ast_func_decl.type
         in_params, out_params = [], []
-        for p in args.params:
-            param = FuncParameter(name=p.name, type=CType.from_cast_node(p))
-            if param.is_in_param():
-                in_params.append(param)
-            elif param.is_out_param():
-                out_params.append(param)
-            else:
-                raise ValueError(f"Unknown type: {p.name}")
+        if args is not None:
+            for p in args.params:
+                param = FuncParameter(name=p.name, type=CType.from_cast_node(p))
+                if param.is_in_param():
+                    in_params.append(param)
+                elif param.is_out_param():
+                    out_params.append(param)
+                else:
+                    raise ValueError(f"Unknown type: {p.name}")
         func_decl = FuncDecl(
             name=func_name,
             in_params=in_params,
@@ -474,6 +523,8 @@ def translate_arg_from_python_to_c(arg_name: str, param: FuncParameter) -> str:
         return f"{arg_name}, len({arg_name})"
     elif param.is_cstr_param():
         return f'{arg_name}.encode("utf-8")'
+    elif param.is_basic_type_param():
+        return f'{C_BUILTIN_TYPE_TO_PYTHON_TYPE[arg_type.base_type_name]}({arg_name})'
     elif param.is_callback_param():
         return f"ctypes.CFUNCTYPE(ctypes.c_int)(wrap_callback_to_c({arg_name}))"  # NOTE: Maybe crash
     elif param.is_in_param():
@@ -494,6 +545,8 @@ def translate_ret_from_c_to_python(
         return f'ctypes.string_at({ret_var_name}.value).decode("utf-8")'
     elif value_type.is_handle() and trans_handle_to_object_ref:
         return f"get_object_ref_from_handle('{value_type.base_type_name}', {ret_var_name}.value)"
+    elif value_type.is_bool():
+        return f"bool({ret_var_name}.value)"
     else:
         return f"{ret_var_name}.value"
 
@@ -571,7 +624,6 @@ def generate_func_def_code_from_func_decl(
         )
         fp_write("\n")
         fp_write(f"{tab})\n")
-    fp_write("\n")
 
 
 def generate_py_module_from_exports_header(
@@ -645,6 +697,8 @@ from .utils import get_exception_to_throw_if_not_success, get_object_ref_from_ha
             f"Generating class {class_name} ({os.path.join(dirname, f'{class_name}.py')}) ..."
         )
         with open(os.path.join(dirname, f"{class_name}.py"), "w") as f:
+            methods = class_decl.methods
+            attrs = {}  # {attr_name: (getter_name, setter_name), ...}
             f.write(COMMENT_HEADER)
             f.write("\n")
             f.write(IMPORTS)
@@ -673,12 +727,30 @@ from .utils import get_exception_to_throw_if_not_success, get_object_ref_from_ha
             f.write("    def get_handle(self):\n")
             f.write("        return self._handle\n")
             f.write("\n")
-            for method_name, method_decl in class_decl.methods.items():
+            for method_name, method_decl in methods.items():
                 if method_decl.type in (
                     ClassMethodDecl.CONSTRACTOR_TYPE,
                     ClassMethodDecl.STATIC_METHOD_TYPE,
                 ):
                     f.write(f"    @staticmethod\n")
+                elif (
+                    method_decl.type == ClassMethodDecl.METHOD_TYPE
+                    and method_name.startswith(("get_", "set_"))
+                ):
+                    attr_name = method_name[4:]
+                    if attr_name not in attrs:
+                        getter_name = f"get_{attr_name}"
+                        setter_name = f"set_{attr_name}"
+                        if not ClassMethodDecl.is_getter_method(
+                            (methods.get(getter_name, None))
+                        ):
+                            getter_name = None
+                        if not ClassMethodDecl.is_setter_method(
+                            (methods.get(setter_name, None))
+                        ):
+                            setter_name = None
+                        if getter_name is not None or setter_name is not None:
+                            attrs[attr_name] = (getter_name, setter_name)
                 generate_func_def_code_from_func_decl(
                     func_def_name=method_name,
                     original_func=method_decl.original_func_decl,
@@ -687,7 +759,10 @@ from .utils import get_exception_to_throw_if_not_success, get_object_ref_from_ha
                     indent=1,
                     tab=" " * 4,
                 )
-            f.write("\n")
+                f.write("\n")
+            for attr_name, (getter_name, setter_name) in attrs.items():
+                f.write(f"    {attr_name} = property({getter_name}, {setter_name})\n")
+            f.write("\n\n")
             f.write(f"__all__ = ['{class_name}']\n")
 
     # Generate global functions (global_functions.py)

@@ -343,7 +343,7 @@ def test_ref():
 def test_ref_atomic():
     # FIXME: failed test on Pascal (and potentially older) architecture.
     # Please remove this guardiance when you fix this issue
-    cur_arch = ti.lang.impl.get_runtime().prog.config().arch
+    cur_arch = ti.lang.impl.current_cfg().arch
     if cur_arch == ti.cuda and ti.lang.impl.get_cuda_compute_capability() < 70:
         pytest.skip(
             "Skip this test on Pascal (and potentially older) architecture, ask turbo0628/Proton for more information"

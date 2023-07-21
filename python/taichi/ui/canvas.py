@@ -1,5 +1,4 @@
-from taichi._lib import core as _ti_core
-from taichi.lang import impl
+from taichi.lang import impl, misc
 from taichi.lang._texture import Texture
 from .scene import SceneV2
 
@@ -40,7 +39,7 @@ class Canvas:
                 the image to be shown.
         """
         is_texture = isinstance(img, Texture)
-        prog_is_vk = impl.pytaichi.prog.config().arch == _ti_core.Arch.vulkan
+        prog_is_vk = impl.current_cfg().arch == misc.vulkan
         # FIXME: Remove this hack. Maybe add a query function for whether the texture can be presented
         if is_texture and prog_is_vk:
             self.canvas.set_image_texture(img.tex)

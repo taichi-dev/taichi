@@ -146,9 +146,16 @@ void export_lang(py::module &m) {
 
             return dt;
           }))
-      .def("get_handle", [](DataType *self) -> std::uintptr_t {
-        return reinterpret_cast<std::uintptr_t>(self);
-      });
+      .def("get_handle",
+           [](DataType *self) -> std::uintptr_t {
+             return reinterpret_cast<std::uintptr_t>(self);
+           })
+      .def_static(
+          "from_handle_to_ref",
+          [](std::uintptr_t handle) -> DataType * {
+            return reinterpret_cast<DataType *>(handle);
+          },
+          py::return_value_policy::reference);
 
   py::class_<CompileConfig>(m, "CompileConfig")
       .def(py::init<>())
@@ -249,7 +256,13 @@ void export_lang(py::module &m) {
                      &CompileConfig::offline_cache_cleaning_factor)
       .def_readwrite("num_compile_threads", &CompileConfig::num_compile_threads)
       .def_readwrite("vk_api_version", &CompileConfig::vk_api_version)
-      .def_readwrite("cuda_stack_limit", &CompileConfig::cuda_stack_limit);
+      .def_readwrite("cuda_stack_limit", &CompileConfig::cuda_stack_limit)
+      .def_static(
+          "from_handle_to_ref",
+          [](std::uintptr_t handle) -> CompileConfig * {
+            return reinterpret_cast<CompileConfig *>(handle);
+          },
+          py::return_value_policy::reference);
 
   m.def("reset_default_compile_config",
         [&]() { default_compile_config = CompileConfig(); });
@@ -365,6 +378,11 @@ void export_lang(py::module &m) {
       .def(py::init<>())
       .def("config", &Program::compile_config,
            py::return_value_policy::reference)
+      .def(
+          "c_config",
+          [](Program *program) -> std::uintptr_t {
+            return reinterpret_cast<std::uintptr_t>(&program->compile_config());
+          })
       .def("sync_kernel_profiler",
            [](Program *program) { program->profiler->sync(); })
       .def("update_kernel_profiler",
@@ -406,6 +424,11 @@ void export_lang(py::module &m) {
       .def("synchronize", &Program::synchronize)
       .def("materialize_runtime", &Program::materialize_runtime)
       .def("make_aot_module_builder", &Program::make_aot_module_builder)
+      .def("c_make_aot_module_builder",
+           [](Program *self, int arch, const std::vector<std::string> &caps)
+               -> std::unique_ptr<AotModuleBuilder> {
+             return self->make_aot_module_builder((taichi::Arch)arch, caps);
+           })
       .def("get_snode_tree_size", &Program::get_snode_tree_size)
       .def("get_snode_root", &Program::get_snode_root,
            py::return_value_policy::reference)
@@ -925,6 +948,12 @@ void export_lang(py::module &m) {
              return std::nullopt;
            })
       .def("type_check", &Expr::type_check)
+      .def("c_type_check",
+           [](Expr *expr, std::uintptr_t compile_config) {
+             const auto *config =
+                 reinterpret_cast<CompileConfig *>(compile_config);
+             expr->type_check(config);
+           })
       .def("get_expr_name",
            [](Expr *expr) { return expr->cast<FieldExpression>()->name; })
       .def("get_raw_address", [](Expr *expr) { return (uint64)expr; })

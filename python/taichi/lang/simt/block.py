@@ -1,16 +1,16 @@
-from taichi._lib import core as _ti_core
+from taichi._lib import ccore as _ti_ccore
 from taichi.lang import impl
 from taichi.lang.expr import make_expr_group
 from taichi.lang.util import taichi_scope
 
 
 def arch_uses_spv(arch):
-    return arch == _ti_core.vulkan or arch == _ti_core.metal or arch == _ti_core.opengl or arch == _ti_core.dx11
+    return arch == _ti_ccore.TIE_ARCH_VULKAN or arch == _ti_ccore.TIE_ARCH_METAL or arch == _ti_ccore.TIE_ARCH_OPENGL or arch == misc.dx11
 
 
 def sync():
-    arch = impl.get_runtime().prog.config().arch
-    if arch == _ti_core.cuda or arch == _ti_core.amdgpu:
+    arch = impl.current_cfg().arch
+    if arch == _ti_ccore.TIE_ARCH_CUDA or arch == _ti_ccore.TIE_ARCH_AMDGPU:
         return impl.call_internal("block_barrier", with_runtime_context=False)
     if arch_uses_spv(arch):
         return impl.call_internal("workgroupBarrier", with_runtime_context=False)
@@ -18,8 +18,8 @@ def sync():
 
 
 def mem_sync():
-    arch = impl.get_runtime().prog.config().arch
-    if arch == _ti_core.cuda:
+    arch = impl.current_cfg().arch
+    if arch == _ti_ccore.TIE_ARCH_CUDA:
         return impl.call_internal("block_barrier", with_runtime_context=False)
     if arch_uses_spv(arch):
         return impl.call_internal("workgroupMemoryBarrier", with_runtime_context=False)
@@ -27,15 +27,15 @@ def mem_sync():
 
 
 def thread_idx():
-    arch = impl.get_runtime().prog.config().arch
+    arch = impl.current_cfg().arch
     if arch_uses_spv(arch):
         return impl.call_internal("localInvocationId", with_runtime_context=False)
     raise ValueError(f"ti.block.thread_idx is not supported for arch {arch}")
 
 
 def global_thread_idx():
-    arch = impl.get_runtime().prog.config().arch
-    if arch == _ti_core.cuda or _ti_core.amdgpu:
+    arch = impl.current_cfg().arch
+    if arch == _ti_ccore.TIE_ARCH_CUDA or _ti_ccore.TIE_ARCH_AMDGPU:
         return impl.get_runtime().compiling_callable.ast_builder().insert_thread_idx_expr()
     if arch_uses_spv(arch):
         return impl.call_internal("globalInvocationId", with_runtime_context=False)

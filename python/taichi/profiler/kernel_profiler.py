@@ -1,6 +1,7 @@
 from contextlib import contextmanager
 
 from taichi._lib import core as _ti_core
+from taichi._lib import ccore as _ti_ccore
 from taichi.lang import impl
 from taichi.profiler.kernel_metrics import default_cupti_metrics
 
@@ -218,7 +219,7 @@ class KernelProfiler:
 
     def _make_table_header(self, mode):
         header_str = f"Kernel Profiler({mode}, {self._profiling_toolkit})"
-        arch_name = f" @ {_ti_core.arch_name(impl.current_cfg().arch).upper()}"
+        arch_name = f" @ {_ti_ccore.arch_name(impl.current_cfg().arch).upper()}"
         device_name = impl.get_runtime().prog.get_kernel_profiler_device_name()
         if len(device_name) > 1:  # default device_name = ' '
             device_name = " on " + device_name

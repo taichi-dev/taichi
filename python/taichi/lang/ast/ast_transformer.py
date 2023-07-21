@@ -9,6 +9,7 @@ from sys import version_info
 
 import numpy as np
 from taichi._lib import core as _ti_core
+from taichi._lib import ccore as _ti_ccore
 from taichi.lang import _ndarray, any_array, expr, impl, kernel_arguments, matrix, mesh
 from taichi.lang import ops as ti_ops
 from taichi.lang._ndrange import _Ndrange, ndrange
@@ -1356,7 +1357,7 @@ class ASTTransformer(Builder):
                 node.iter.ptr.to_element_type,
                 loop_var.ptr,
             )
-            entry_expr.type_check(impl.get_runtime().prog.config())
+            entry_expr.c_type_check(impl.current_cfg().get_handle())
             mesh_idx = mesh.MeshElementFieldProxy(ctx.mesh, node.iter.ptr.to_element_type, entry_expr)
             ctx.create_variable(target, mesh_idx)
             build_stmts(ctx, node.body)
@@ -1401,7 +1402,7 @@ class ASTTransformer(Builder):
             else:
                 build_stmt(ctx, node.iter)
                 if isinstance(node.iter.ptr, mesh.MeshElementField):
-                    if not _ti_core.is_extension_supported(impl.default_cfg().arch, _ti_core.Extension.mesh):
+                    if not _ti_ccore.is_extension_supported(impl.default_cfg().arch, _ti_ccore.TIE_EXTENSION_MESH):
                         raise Exception(
                             "Backend " + str(impl.default_cfg().arch) + " doesn't support MeshTaichi extension"
                         )

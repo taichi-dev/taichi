@@ -1,6 +1,7 @@
 import numbers
 
 from taichi._lib import core as _ti_core
+from taichi._lib import ccore as _ti_ccore
 from taichi.lang import expr, impl, matrix
 from taichi.lang.exception import TaichiRuntimeError
 from taichi.lang.field import BitpackedFields, Field
@@ -47,7 +48,7 @@ class SNode:
         Returns:
             The added :class:`~taichi.lang.SNode` instance.
         """
-        if not _ti_core.is_extension_supported(impl.current_cfg().arch, _ti_core.Extension.sparse):
+        if not _ti_ccore.is_extension_supported(impl.current_cfg().arch, _ti_ccore.TIE_EXTENSION_SPARSE):
             raise TaichiRuntimeError("Pointer SNode is not supported on this backend.")
         if isinstance(dimensions, numbers.Number):
             dimensions = [dimensions] * len(axes)
@@ -73,7 +74,7 @@ class SNode:
         Returns:
             The added :class:`~taichi.lang.SNode` instance.
         """
-        if not _ti_core.is_extension_supported(impl.current_cfg().arch, _ti_core.Extension.sparse):
+        if not _ti_ccore.is_extension_supported(impl.current_cfg().arch, _ti_ccore.TIE_EXTENSION_SPARSE):
             raise TaichiRuntimeError("Dynamic SNode is not supported on this backend.")
         assert len(axis) == 1
         if chunk_size is None:
@@ -90,7 +91,7 @@ class SNode:
         Returns:
             The added :class:`~taichi.lang.SNode` instance.
         """
-        if not _ti_core.is_extension_supported(impl.current_cfg().arch, _ti_core.Extension.sparse):
+        if not _ti_ccore.is_extension_supported(impl.current_cfg().arch, _ti_ccore.TIE_EXTENSION_SPARSE):
             raise TaichiRuntimeError("Bitmasked SNode is not supported on this backend.")
         if isinstance(dimensions, numbers.Number):
             dimensions = [dimensions] * len(axes)

@@ -5,6 +5,7 @@ from taichi.lang._ndarray import Ndarray, ScalarNdarray
 from taichi.lang.exception import TaichiRuntimeError
 from taichi.lang.field import Field
 from taichi.lang.impl import get_runtime
+from taichi.lang import misc
 from taichi.linalg.sparse_matrix import SparseMatrix
 from taichi.types.primitive_types import f32
 
@@ -25,13 +26,13 @@ class SparseSolver:
         solver_type_list = ["LLT", "LDLT", "LU"]
         solver_ordering = ["AMD", "COLAMD"]
         if solver_type in solver_type_list and ordering in solver_ordering:
-            taichi_arch = taichi.lang.impl.get_runtime().prog.config().arch
+            taichi_arch = taichi.lang.impl.current_cfg().arch
             assert (
-                taichi_arch == _ti_core.Arch.x64
-                or taichi_arch == _ti_core.Arch.arm64
-                or taichi_arch == _ti_core.Arch.cuda
+                taichi_arch == misc.x64
+                or taichi_arch == misc.arm64
+                or taichi_arch == misc.cuda
             ), "SparseSolver only supports CPU and CUDA for now."
-            if taichi_arch == _ti_core.Arch.cuda:
+            if taichi_arch == misc.cuda:
                 self.solver = _ti_core.make_cusparse_solver(dtype, solver_type, ordering)
             else:
                 self.solver = _ti_core.make_sparse_solver(dtype, solver_type, ordering)
@@ -54,10 +55,10 @@ class SparseSolver:
         """
         if isinstance(sparse_matrix, SparseMatrix):
             self.matrix = sparse_matrix
-            taichi_arch = taichi.lang.impl.get_runtime().prog.config().arch
-            if taichi_arch == _ti_core.Arch.x64 or taichi_arch == _ti_core.Arch.arm64:
+            taichi_arch = taichi.lang.impl.current_cfg().arch
+            if taichi_arch == misc.x64 or taichi_arch == misc.arm64:
                 self.solver.compute(sparse_matrix.matrix)
-            elif taichi_arch == _ti_core.Arch.cuda:
+            elif taichi_arch == misc.cuda:
                 self.analyze_pattern(self.matrix)
                 self.factorize(self.matrix)
         else:

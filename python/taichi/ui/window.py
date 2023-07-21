@@ -43,7 +43,7 @@ class Window:
             show_window,
             fps_limit,
             package_path,
-            ti_arch,
+            _ti_core.Arch(ti_arch), # FIXME: Temp solution
         )
 
     @property

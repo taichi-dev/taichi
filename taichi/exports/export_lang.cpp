@@ -7,6 +7,7 @@
 
 #include "taichi/common/exceptions.h"
 #include "taichi/ir/frontend_ir.h"
+#include "taichi/program/extension.h"
 #include "taichi/program/function.h"
 #include "taichi/program/kernel.h"
 #include "taichi/program/launch_context_builder.h"
@@ -18,13 +19,17 @@
       .append(std::to_string(__LINE__))                 \
       .append(")")
 
-#define TIE_CHECK_PTR_NOT_NULL(ptr)                            \
-  if (ptr == nullptr) {                                        \
+#define TIE_INVALID_ARGUMENT(arg)                              \
+  do {                                                         \
     tie_api_set_last_error_impl(                               \
         TIE_ERROR_INVALID_ARGUMENT,                            \
-        TIE_WRAP_ERROR_MSG("Argument '" #ptr "' is nullptr")); \
+        TIE_WRAP_ERROR_MSG("Argument '" #arg "' is nullptr")); \
     return TIE_ERROR_INVALID_ARGUMENT;                         \
-  }
+  } while (0)
+
+#define TIE_CHECK_PTR_NOT_NULL(ptr) \
+  if (ptr == nullptr)               \
+    TIE_INVALID_ARGUMENT(ptr);
 
 #define TIE_CHECK_RETURN_ARG(ret_param)                                     \
   if (ret_param == nullptr) {                                               \
@@ -109,6 +114,43 @@ struct TieErrorCache {
   std::string msg;
 };
 
+template <typename Dest, typename Src>
+struct TieAttrAssign {
+  static void assign(Dest &dest, const Src &src) {
+    dest = static_cast<Dest>(src);
+  }
+};
+
+template <>
+struct TieAttrAssign<std::string, const char *> {
+  static void assign(std::string &dest, const char *src) {
+    dest = src;
+  }
+};
+
+template <>
+struct TieAttrAssign<const char *, std::string> {
+  static void assign(const char *&dest, const std::string &src) {
+    dest = src.c_str();
+  }
+};
+
+template <>
+struct TieAttrAssign<taichi::lang::DataType, TieDataTypeHandle> {
+  static void assign(taichi::lang::DataType &dest, TieDataTypeHandle src) {
+    dest = *reinterpret_cast<taichi::lang::DataType *>(src);
+  }
+};
+
+template <>
+struct TieAttrAssign<TieDataTypeHandle, taichi::lang::DataType> {
+  static void assign(TieDataTypeHandle &dest,
+                     const taichi::lang::DataType &src) {
+    dest = reinterpret_cast<TieDataTypeHandle>(
+        const_cast<taichi::lang::DataType *>(&src));
+  }
+};
+
 static thread_local TieErrorCache tie_last_error;
 
 void tie_api_set_last_error_impl(int error, std::string msg) {
@@ -141,6 +183,108 @@ int tie_G_get_last_error(int *ret_error, const char **ret_msg) {
   *ret_msg = tie_last_error.msg.c_str();
   TIE_FUNCTION_BODY_END();
 }
+
+// Arch handling
+int tie_G_arch_name(int arch, const char **ret_name) {
+  TIE_FUNCTION_BODY_BEGIN();
+  TIE_CHECK_RETURN_ARG(ret_name);
+
+  switch (static_cast<taichi::Arch>(arch)) {
+#define PER_ARCH(x)     \
+  case taichi::Arch::x: \
+    *ret_name = #x;     \
+    break;
+#include "taichi/inc/archs.inc.h"
+#undef PER_ARCH
+    default:
+      TIE_INVALID_ARGUMENT(arch);
+  }
+
+  TIE_FUNCTION_BODY_END();
+}
+
+int tie_G_arch_from_name(const char *name, int *ret_arch) {
+  TIE_FUNCTION_BODY_BEGIN();
+  TIE_CHECK_PTR_NOT_NULL(name);
+  TIE_CHECK_RETURN_ARG(ret_arch);
+  *ret_arch = (TieArch)taichi::arch_from_name(name);
+  TIE_FUNCTION_BODY_END();
+}
+
+int tie_G_host_arch(int *ret_arch) {
+  TIE_FUNCTION_BODY_BEGIN();
+  TIE_CHECK_RETURN_ARG(ret_arch);
+  *ret_arch = static_cast<TieArch>(taichi::host_arch());
+  TIE_FUNCTION_BODY_END();
+}
+
+int tie_G_is_extension_supported(int arch, int extension, bool *ret_supported) {
+  TIE_FUNCTION_BODY_BEGIN();
+  TIE_CHECK_RETURN_ARG(ret_supported);
+  *ret_supported = taichi::lang::is_extension_supported(
+      static_cast<taichi::Arch>(arch),
+      static_cast<taichi::lang::Extension>(extension));
+  TIE_FUNCTION_BODY_END();
+}
+
+// default_compile_config handling
+
+int tie_G_default_compile_config(TieCompileConfigHandle *ret_handle) {
+  TIE_FUNCTION_BODY_BEGIN();
+  TIE_CHECK_RETURN_ARG(ret_handle);
+  *ret_handle = reinterpret_cast<TieCompileConfigHandle>(
+      &taichi::lang::default_compile_config);
+  TIE_FUNCTION_BODY_END();
+}
+
+int tie_G_reset_default_compile_config() {
+  TIE_FUNCTION_BODY_BEGIN();
+  taichi::lang::default_compile_config = taichi::lang::CompileConfig();
+  TIE_FUNCTION_BODY_END();
+}
+
+// class CompileConfig
+int tie_CompileConfig_create(TieCompileConfigHandle *ret_handle) {
+  TIE_FUNCTION_BODY_BEGIN();
+  TIE_CHECK_RETURN_ARG(ret_handle);
+  auto *config = new taichi::lang::CompileConfig();
+  *ret_handle = reinterpret_cast<TieCompileConfigHandle>(config);
+  TIE_FUNCTION_BODY_END();
+}
+
+int tie_CompileConfig_destroy(TieCompileConfigHandle self) {
+  TIE_FUNCTION_BODY_BEGIN();
+  TIE_CHECK_HANDLE(self);
+  auto *config = reinterpret_cast<taichi::lang::CompileConfig *>(self);
+  delete config;
+  TIE_FUNCTION_BODY_END();
+}
+
+#define TIE_IMPL_COMPILE_CONFIG_GET_SET_ATTR(TaichiStruct, attr_name,         \
+                                             attr_type, get_set_type)         \
+  int tie_CompileConfig_get_##attr_name(TieCompileConfigHandle self,          \
+                                        get_set_type *ret_value) {            \
+    TIE_FUNCTION_BODY_BEGIN();                                                \
+    TIE_CHECK_HANDLE(self);                                                   \
+    TIE_CHECK_RETURN_ARG(ret_value);                                          \
+    auto *config = reinterpret_cast<taichi::lang::CompileConfig *>(self);     \
+    TieAttrAssign<get_set_type, attr_type>::assign(*ret_value,                \
+                                                   config->attr_name);        \
+    TIE_FUNCTION_BODY_END();                                                  \
+  }                                                                           \
+  int tie_CompileConfig_set_##attr_name(TieCompileConfigHandle self,          \
+                                        get_set_type value) {                 \
+    TIE_FUNCTION_BODY_BEGIN();                                                \
+    TIE_CHECK_HANDLE(self);                                                   \
+    auto *config = reinterpret_cast<taichi::lang::CompileConfig *>(self);     \
+    TieAttrAssign<attr_type, get_set_type>::assign(config->attr_name, value); \
+    TIE_FUNCTION_BODY_END();                                                  \
+  }
+
+#define TIE_PER_COMPILE_CONFIG_ATTR TIE_IMPL_COMPILE_CONFIG_GET_SET_ATTR
+#include "taichi/exports/inc/compile_config.inc.h"
+#undef TIE_PER_COMPILE_CONFIG_ATTR
+#undef TIE_DECL_COMPILE_CONFIG_GET_SET_ATTR
 
 // class Kernel
 

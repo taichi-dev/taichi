@@ -5,7 +5,8 @@ from taichi._lib import core as _ti_core
 from taichi.lang._ndarray import Ndarray, ScalarNdarray
 from taichi.lang.exception import TaichiRuntimeError
 from taichi.lang.field import Field
-from taichi.lang.impl import get_runtime
+from taichi.lang.impl import current_cfg, get_runtime
+from taichi.lang import misc
 from taichi.types import f32
 
 
@@ -246,11 +247,11 @@ class SparseMatrixBuilder:
         self.num_cols = num_cols if num_cols else num_rows
         self.dtype = dtype
         if num_rows is not None:
-            taichi_arch = get_runtime().prog.config().arch
+            taichi_arch = current_cfg().arch
             if taichi_arch in [
-                _ti_core.Arch.x64,
-                _ti_core.Arch.arm64,
-                _ti_core.Arch.cuda,
+                misc.x64,
+                misc.arm64,
+                misc.cuda,
             ]:
                 self.ptr = _ti_core.SparseMatrixBuilder(
                     num_rows,
@@ -273,19 +274,19 @@ class SparseMatrixBuilder:
 
     def print_triplets(self):
         """Print the triplets stored in the builder"""
-        taichi_arch = get_runtime().prog.config().arch
-        if taichi_arch in [_ti_core.Arch.x64, _ti_core.Arch.arm64]:
+        taichi_arch = current_cfg().arch
+        if taichi_arch in [misc.x64, misc.arm64]:
             self.ptr.print_triplets_eigen()
-        elif taichi_arch == _ti_core.Arch.cuda:
+        elif taichi_arch == misc.cuda:
             self.ptr.print_triplets_cuda()
 
     def build(self, dtype=f32, _format="CSR"):
         """Create a sparse matrix using the triplets"""
-        taichi_arch = get_runtime().prog.config().arch
-        if taichi_arch in [_ti_core.Arch.x64, _ti_core.Arch.arm64]:
+        taichi_arch = current_cfg().arch
+        if taichi_arch in [misc.x64, misc.arm64]:
             sm = self.ptr.build()
             return SparseMatrix(sm=sm, dtype=self.dtype)
-        if taichi_arch == _ti_core.Arch.cuda:
+        if taichi_arch == misc.cuda:
             if self.dtype != f32:
                 raise TaichiRuntimeError("CUDA sparse matrix only supports f32.")
             sm = self.ptr.build_cuda()

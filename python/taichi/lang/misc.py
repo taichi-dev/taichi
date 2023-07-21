@@ -5,12 +5,13 @@ import shutil
 import tempfile
 import warnings
 from copy import deepcopy as _deepcopy
+from enum import IntEnum
 
 from taichi._lib import core as _ti_core
 from taichi._lib import ccore as _ti_ccore
 from taichi.lang import impl
 from taichi.lang.expr import Expr
-from taichi.lang.impl import axes, get_runtime
+from taichi.lang.impl import axes, get_runtime, current_cfg
 from taichi.profiler.kernel_profiler import get_default_kernel_profiler
 from taichi.types.primitive_types import f32, f64, i32, i64
 
@@ -99,57 +100,57 @@ ijkl = axes(0, 1, 2, 3)
 
 # ----------------------
 
-x86_64 = _ti_core.x64
+x86_64 = _ti_ccore.TIE_ARCH_X64
 """The x64 CPU backend.
 """
 # ----------------------
 
-x64 = _ti_core.x64
+x64 = _ti_ccore.TIE_ARCH_X64
 """The X64 CPU backend.
 """
 # ----------------------
 
-arm64 = _ti_core.arm64
+arm64 = _ti_ccore.TIE_ARCH_ARM64
 """The ARM CPU backend.
 """
 # ----------------------
 
-cuda = _ti_core.cuda
+cuda = _ti_ccore.TIE_ARCH_CUDA
 """The CUDA backend.
 """
 # ----------------------
 
-amdgpu = _ti_core.amdgpu
+amdgpu = _ti_ccore.TIE_ARCH_AMDGPU
 """The AMDGPU backend.
 """
 # ----------------------
 
-metal = _ti_core.metal
+metal = _ti_ccore.TIE_ARCH_METAL
 """The Apple Metal backend.
 """
 # ----------------------
 
-opengl = _ti_core.opengl
+opengl = _ti_ccore.TIE_ARCH_OPENGL
 """The OpenGL backend. OpenGL 4.3 required.
 """
 # ----------------------
 
-gles = _ti_core.gles
+gles = _ti_ccore.TIE_ARCH_GLES
 """The OpenGL ES backend. OpenGL ES 3.1 required.
 """
 # ----------------------
 
-vulkan = _ti_core.vulkan
+vulkan = _ti_ccore.TIE_ARCH_VULKAN
 """The Vulkan backend.
 """
 # ----------------------
 
-dx11 = _ti_core.dx11
+dx11 = _ti_ccore.TIE_ARCH_DX11
 """The DX11 backend.
 """
 # ----------------------
 
-dx12 = _ti_core.dx12
+dx12 = _ti_ccore.TIE_ARCH_DX12
 """The DX11 backend.
 """
 # ----------------------
@@ -163,7 +164,7 @@ GPU is detected, Taichi falls back to the CPU backend.
 """
 # ----------------------
 
-cpu = _ti_core.host_arch()
+cpu = _ti_ccore.host_arch()
 """A list of CPU backends supported on the current system.
 Currently contains 'x64', 'x86_64', 'arm64'.
 
@@ -180,7 +181,19 @@ def timeline_save(fn):
     return impl.get_runtime().prog.timeline_save(fn)
 
 
-extension = _ti_core.Extension
+class Extension(IntEnum):
+    sparse = _ti_ccore.TIE_EXTENSION_SPARSE
+    quant = _ti_ccore.TIE_EXTENSION_QUANT
+    mesh = _ti_ccore.TIE_EXTENSION_MESH
+    quant_basic = _ti_ccore.TIE_EXTENSION_QUANT_BASIC
+    data64 = _ti_ccore.TIE_EXTENSION_DATA64
+    adstack = _ti_ccore.TIE_EXTENSION_ADSTACK
+    bls = _ti_ccore.TIE_EXTENSION_BLS
+    assertion = _ti_ccore.TIE_EXTENSION_ASSERTION
+    extfunc = _ti_ccore.TIE_EXTENSION_EXTFUNC
+
+
+extension = Extension
 """An instance of Taichi extension.
 
 The list of currently available extensions is ['sparse', 'quant', \
@@ -199,7 +212,7 @@ def is_extension_supported(arch, ext):
     Returns:
         bool: Whether `ext` is supported on `arch`.
     """
-    return _ti_core.is_extension_supported(arch, ext)
+    return _ti_ccore.is_extension_supported(arch, ext)
 
 
 def reset():
@@ -443,9 +456,9 @@ def init(
     env_arch = os.environ.get("TI_ARCH")
     if env_arch is not None:
         _logging.info(f"Following TI_ARCH setting up for arch={env_arch}")
-        arch = _ti_core.arch_from_name(env_arch)
+        arch = _ti_ccore.arch_from_name(env_arch)
     cfg.arch = adaptive_arch_select(arch, enable_fallback)
-    print(f"[Taichi] Starting on arch={_ti_core.arch_name(cfg.arch)}")
+    print(f"[Taichi] Starting on arch={_ti_ccore.arch_name(cfg.arch)}")
 
     if _test_mode:
         return spec_cfg
@@ -592,10 +605,10 @@ def _block_dim(dim):
 
 def _block_dim_adaptive(block_dim_adaptive):
     """Enable/Disable backends set block_dim adaptively."""
-    if get_runtime().prog.config().arch != cpu:
+    if current_cfg().arch != cpu:
         _logging.warn("Adaptive block_dim is supported on CPU backend only")
     else:
-        get_runtime().prog.config().cpu_block_dim_adaptive = block_dim_adaptive
+        current_cfg().cpu_block_dim_adaptive = block_dim_adaptive
 
 
 def _bit_vectorize():
@@ -726,7 +739,7 @@ def is_arch_supported(arch):
     try:
         return with_arch()
     except Exception as e:
-        arch = _ti_core.arch_name(arch)
+        arch = _ti_ccore.arch_name(arch)
         _ti_core.warn(
             f"{e.__class__.__name__}: '{e}' occurred when detecting "
             f"{arch}, consider adding `TI_ENABLE_{arch.upper()}=0` "

@@ -4,6 +4,7 @@ from typing import Any, Iterable, Sequence
 
 import numpy as np
 from taichi._lib import core as _ti_core
+from taichi._lib import ccore as _ti_ccore
 from taichi._snode.fields_builder import FieldsBuilder
 from taichi.lang._ndarray import ScalarNdarray
 from taichi.lang._ndrange import GroupedNDRange, _Ndrange
@@ -390,7 +391,7 @@ class PyTaichi:
             # https://github.com/taichi-dev/taichi/blob/27bb1dc3227d9273a79fcb318fdb06fd053068f5/tests/python/test_ad_basics.py#L260-L266
             return
 
-        if get_runtime().prog.config().debug:
+        if current_cfg().debug:
             if not root.finalized:
                 root._allocate_adjoint_checkbit()
 
@@ -504,7 +505,7 @@ def reset():
     pytaichi = PyTaichi(old_kernels)
     for k in old_kernels:
         k.reset()
-    _ti_core.reset_default_compile_config()
+    _ti_ccore.reset_default_compile_config()
 
 
 @taichi_scope
@@ -679,7 +680,7 @@ def create_field_member(dtype, name, needs_grad, needs_dual):
             # adjoint checkbit
             x_grad_checkbit = Expr(get_runtime().prog.make_id_expr(""))
             dtype = u8
-            if prog.config().arch in (_ti_core.opengl, _ti_core.vulkan, _ti_core.gles):
+            if prog.config().arch in (_ti_ccore.TIE_ARCH_OPENGL, _ti_ccore.TIE_ARCH_VULKAN, _ti_ccore.TIE_ARCH_GLES):
                 dtype = i32
             x_grad_checkbit.ptr = _ti_core.expr_field(x_grad_checkbit.ptr, cook_dtype(dtype))
             x_grad_checkbit.ptr.set_name(name + ".grad_checkbit")
@@ -1154,11 +1155,11 @@ def stop_grad(x):
 
 
 def current_cfg():
-    return get_runtime().prog.config()
+    return _ti_ccore.CompileConfig(handle=get_runtime().prog.c_config())
 
 
 def default_cfg():
-    return _ti_core.default_compile_config()
+    return _ti_ccore.default_compile_config()
 
 
 def call_internal(name, *args, with_runtime_context=True):

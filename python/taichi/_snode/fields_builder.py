@@ -1,6 +1,7 @@
 from typing import Any, Optional, Sequence, Union
 
 from taichi._lib import core as _ti_core
+from taichi._lib import ccore as _ti_ccore
 from taichi._snode.snode_tree import SNodeTree
 from taichi.lang import impl, snode
 from taichi.lang.exception import TaichiRuntimeError
@@ -80,7 +81,7 @@ class FieldsBuilder:
         dimensions: Union[Sequence[int], int],
     ):
         """Same as :func:`taichi.lang.snode.SNode.pointer`"""
-        if not _ti_core.is_extension_supported(impl.current_cfg().arch, _ti_core.Extension.sparse):
+        if not _ti_ccore.is_extension_supported(impl.current_cfg().arch, _ti_ccore.TIE_EXTENSION_SPARSE):
             raise TaichiRuntimeError("Pointer SNode is not supported on this backend.")
         self._check_not_finalized()
         self.empty = False
@@ -97,7 +98,7 @@ class FieldsBuilder:
         chunk_size: Optional[int] = None,
     ):
         """Same as :func:`taichi.lang.snode.SNode.dynamic`"""
-        if not _ti_core.is_extension_supported(impl.current_cfg().arch, _ti_core.Extension.sparse):
+        if not _ti_ccore.is_extension_supported(impl.current_cfg().arch, _ti_ccore.TIE_EXTENSION_SPARSE):
             raise TaichiRuntimeError("Dynamic SNode is not supported on this backend.")
 
         if dimension >= 2**31:
@@ -119,7 +120,7 @@ class FieldsBuilder:
         dimensions: Union[Sequence[int], int],
     ):
         """Same as :func:`taichi.lang.snode.SNode.bitmasked`"""
-        if not _ti_core.is_extension_supported(impl.current_cfg().arch, _ti_core.Extension.sparse):
+        if not _ti_ccore.is_extension_supported(impl.current_cfg().arch, _ti_ccore.TIE_EXTENSION_SPARSE):
             raise TaichiRuntimeError("Bitmasked SNode is not supported on this backend.")
         self._check_not_finalized()
         self.empty = False

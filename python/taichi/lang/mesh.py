@@ -2,6 +2,7 @@ import json
 
 import numpy as np
 from taichi._lib import core as _ti_core
+from taichi._lib import ccore as _ti_ccore
 from taichi.lang import impl
 from taichi.lang.enums import Layout
 from taichi.lang.exception import TaichiSyntaxError
@@ -429,7 +430,7 @@ class MeshMetadata:
 # Define the Mesh Type, stores the field type info
 class MeshBuilder:
     def __init__(self):
-        if not lang.misc.is_extension_supported(impl.current_cfg().arch, lang.extension.mesh):
+        if not lang.misc.is_extension_supported(impl.current_cfg().arch, _ti_ccore.TIE_EXTENSION_MESH):
             raise Exception("Backend " + str(impl.current_cfg().arch) + " doesn't support MeshTaichi extension")
 
         self.verts = MeshElement(MeshElementType.Vertex, self)
@@ -660,7 +661,7 @@ class MeshRelationAccessProxy:
     def subscript(self, *indices):
         assert len(indices) == 1
         entry_expr = self.mesh.get_relation_access(self.from_index, self.to_element_type, impl.Expr(indices[0]).ptr)
-        entry_expr.type_check(impl.get_runtime().prog.config())
+        entry_expr.c_type_check(impl.current_cfg().get_handle())
         return MeshElementFieldProxy(self.mesh, self.to_element_type, entry_expr)
 
 

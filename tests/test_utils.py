@@ -9,6 +9,7 @@ from tempfile import NamedTemporaryFile, mkstemp
 import numpy as np
 import pytest
 from taichi._lib import core as _ti_core
+from taichi._lib import ccore as _ti_ccore
 from taichi.lang import cpu, cuda, dx11, gles, gpu, metal, opengl, vulkan
 from taichi.lang.misc import is_arch_supported
 
@@ -161,7 +162,7 @@ def expected_archs():
         elif arch == "gpu":
             expanded_wanted_archs.update(gpu)
         else:
-            expanded_wanted_archs.add(_ti_core.arch_from_name(arch))
+            expanded_wanted_archs.add(_ti_ccore.arch_from_name(arch))
     if len(expanded_wanted_archs) == 0:
         return list(get_archs())
     if want_exclude:
@@ -207,12 +208,12 @@ def test(arch=None, exclude=None, require=None, **options):
                 exclude_arch = pair
 
             assert (exclude_arch is not None) or (exclude_sys is not None)
-            if exclude_arch and exclude_sys:
+            if exclude_arch is not None and exclude_sys is not None:
                 if exclude_arch == arch and exclude_sys == system:
                     return True
-            elif exclude_arch and exclude_arch == arch:
+            elif exclude_arch is not None and exclude_arch == arch:
                 return True
-            elif exclude_sys and exclude_sys == system:
+            elif exclude_sys is not None and exclude_sys == system:
                 return True
 
         return False
@@ -246,7 +247,7 @@ def test(arch=None, exclude=None, require=None, **options):
             if exclude_arch_platform(req_arch, curr_system, exclude):
                 continue
 
-            if not all(_ti_core.is_extension_supported(req_arch, e) for e in require):
+            if not all(_ti_ccore.is_extension_supported(req_arch, e) for e in require):
                 continue
 
             current_options = copy.deepcopy(options)
@@ -254,7 +255,7 @@ def test(arch=None, exclude=None, require=None, **options):
                 value = param.value
                 required_extensions = param.required_extensions
                 if current_options.setdefault(feature, value) != value or any(
-                    not _ti_core.is_extension_supported(req_arch, e) for e in required_extensions
+                    not _ti_ccore.is_extension_supported(req_arch, e) for e in required_extensions
                 ):
                     break
             else:  # no break occurs, required extensions are supported
@@ -268,7 +269,7 @@ def test(arch=None, exclude=None, require=None, **options):
                     "req_arch,req_options",
                     parameters,
                     ids=[
-                        f"arch={arch.name}-{i}" if len(parameters) > 1 else f"arch={arch.name}"
+                        f"arch={_ti_ccore.arch_name(arch)}-{i}" if len(parameters) > 1 else f"arch={_ti_ccore.arch_name(arch)}"
                         for i, (arch, _) in enumerate(parameters)
                     ],
                 )

@@ -7,6 +7,7 @@
 
 #include <stddef.h>
 #include <stdint.h>
+#include <stdbool.h>
 
 #ifndef _CRT_SECURE_NO_WARNINGS
 #define _CRT_SECURE_NO_WARNINGS
@@ -105,9 +106,47 @@ typedef enum TieError {
   TIE_ERROR_UNKNOWN = -0x7FFFFFFF // INT_MIN
 } TieError;
 
+typedef enum TieArch {
+  // CPU archs
+  TIE_ARCH_X64 = 0,    // a.k.a. AMD64/x86_64
+  TIE_ARCH_ARM64 = 1,  // a.k.a. Aarch64
+  TIE_ARCH_JS = 2,     // Javascript
+
+  // GPU archs
+  TIE_ARCH_CUDA = 3,     // NVIDIA CUDA
+  TIE_ARCH_METAL = 4,    // Apple Metal
+  TIE_ARCH_OPENGL = 5,   // OpenGL Compute Shaders
+  TIE_ARCH_DX11 = 6,     // Microsoft DirectX 11
+  TIE_ARCH_DX12 = 7,     // Microsoft DirectX 12
+  TIE_ARCH_OPENCL = 8,   // OpenCL, N/A
+  TIE_ARCH_AMDGPU = 9,   // AMD GPU
+  TIE_ARCH_VULKAN = 10,  // Vulkan
+  TIE_ARCH_GLES = 11,    // OpenGL ES
+
+  // Unknown arch
+  TIE_ARCH_UNKNOWN = 0x7FFFFFFF // INT_MAX
+} TieArch;
+
+typedef enum TieExtension {
+  TIE_EXTENSION_SPARSE = 0,       // Sparse data structures
+  TIE_EXTENSION_QUANT = 1,        // Quantization
+  TIE_EXTENSION_MESH = 2,         // MeshTaichi
+  TIE_EXTENSION_QUANT_BASIC = 3,  // Basic operations in quantization
+  TIE_EXTENSION_DATA64 = 4,       // Metal doesn't support 64-bit data buffers yet...
+  TIE_EXTENSION_ADSTACK = 5,      // For keeping the history of mutable local variables
+  TIE_EXTENSION_BLS = 6,          // Block-local storage
+  TIE_EXTENSION_ASSERTION = 7,    // Run-time asserts in Taichi kernels
+  TIE_EXTENSION_EXTFUNC = 8,      // Invoke external functions or backend source
+
+  // Unknown extension
+  TIE_EXTENSION_UNKNOWN = 0x7FFFFFFF  // INT_MAX
+} TieExtension;
+
+
 typedef int (*TieCallback)(void);  // Return 0 if success, otherwise -1.
 
 typedef void *TieHandle;
+typedef TieHandle TieCompileConfigHandle;         // class CompileConfig
 typedef TieHandle TieKernelHandle;                // class Kernel
 typedef TieHandle TieFunctionHandle;              // class Function
 typedef TieHandle TieNdarrayHandle;               // class NDArray
@@ -121,6 +160,33 @@ typedef TieHandle TieSNodeHandle;                 // class SNode
 TI_DLL_EXPORT int TI_API_CALL tie_G_set_last_error(int error, const char *msg);
 
 TI_DLL_EXPORT int TI_API_CALL tie_G_get_last_error(int *ret_error, const char **ret_msg);
+
+// Arch handling
+TI_DLL_EXPORT int TI_API_CALL tie_G_arch_name(int arch, const char **ret_name);
+
+TI_DLL_EXPORT int TI_API_CALL tie_G_arch_from_name(const char *name, int *ret_arch);
+
+TI_DLL_EXPORT int TI_API_CALL tie_G_host_arch(int *ret_arch);
+
+TI_DLL_EXPORT int TI_API_CALL tie_G_is_extension_supported(int arch, int extension, bool *ret_supported);
+
+// default_compile_config handling
+TI_DLL_EXPORT int TI_API_CALL tie_G_default_compile_config(TieCompileConfigHandle *ret_handle);
+
+TI_DLL_EXPORT int TI_API_CALL tie_G_reset_default_compile_config();
+
+// class CompileConfig
+TI_DLL_EXPORT int TI_API_CALL tie_CompileConfig_create(TieCompileConfigHandle *ret_handle);
+
+TI_DLL_EXPORT int TI_API_CALL tie_CompileConfig_destroy(TieCompileConfigHandle self);
+
+#define TIE_DECL_COMPILE_CONFIG_GET_SET_ATTR(TaichiStruct, attr_name, attr_type, get_set_type) \
+  TI_DLL_EXPORT int TI_API_CALL tie_CompileConfig_get_##attr_name(TieCompileConfigHandle self, get_set_type *ret_##attr_name); \
+  TI_DLL_EXPORT int TI_API_CALL tie_CompileConfig_set_##attr_name(TieCompileConfigHandle self, get_set_type attr_name);
+#define TIE_PER_COMPILE_CONFIG_ATTR TIE_DECL_COMPILE_CONFIG_GET_SET_ATTR
+#include "inc/compile_config.inc.h"
+#undef TIE_PER_COMPILE_CONFIG_ATTR
+#undef TIE_DECL_COMPILE_CONFIG_GET_SET_ATTR
 
 // class Kernel
 TI_DLL_EXPORT int TI_API_CALL tie_Kernel_insert_scalar_param(TieKernelHandle self, TieDataTypeHandle dt, const char *name, int *ret_param_index);

@@ -107,7 +107,7 @@ class Module:
         self._fields = {}
         rtm = impl.get_runtime()
         rtm._finalize_root_fb_for_aot()
-        self._aot_builder = rtm.prog.make_aot_module_builder(arch, caps)
+        self._aot_builder = rtm.prog.c_make_aot_module_builder(arch, caps)
         self._content = []
 
     def add_field(self, name, field):

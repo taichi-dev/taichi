@@ -38,6 +38,7 @@ from taichi.lang.matrix import MatrixType
 from taichi.lang.shell import _shell_pop_print
 from taichi.lang.struct import StructType
 from taichi.lang.util import cook_dtype, has_paddle, has_pytorch, to_taichi_type
+from taichi.lang import misc
 from taichi.types import (
     ndarray_type,
     primitive_types,
@@ -783,7 +784,7 @@ class Kernel:
                                 v.grad = torch.zeros_like(v)
 
                             tmp = v
-                            if str(v.device).startswith("cuda") and taichi_arch != _ti_core.Arch.cuda:
+                            if str(v.device).startswith("cuda") and taichi_arch != misc.cuda:
                                 # Getting a torch CUDA tensor on Taichi non-cuda arch:
                                 # We just replace it with a CPU tensor and by the end of kernel execution we'll use the
                                 # callback to copy the values back to the original CUDA tensor.
@@ -814,13 +815,13 @@ class Kernel:
                             tmp = v.value().get_tensor()
                             taichi_arch = self.runtime.prog.config().arch
                             if v.place.is_gpu_place():
-                                if taichi_arch != _ti_core.Arch.cuda:
+                                if taichi_arch != misc.cuda:
                                     # Paddle cuda tensor on Taichi non-cuda arch
                                     host_v = v.cpu()
                                     tmp = host_v.value().get_tensor()
                                     callbacks.append(get_call_back(v, host_v))
                             elif v.place.is_cpu_place():
-                                if taichi_arch == _ti_core.Arch.cuda:
+                                if taichi_arch == misc.cuda:
                                     # Paddle cpu tensor on Taichi cuda arch
                                     gpu_v = v.cuda()
                                     tmp = gpu_v.value().get_tensor()
@@ -876,7 +877,7 @@ class Kernel:
 
         if exceed_max_arg_num:
             raise TaichiRuntimeError(
-                f"The number of elements in kernel arguments is too big! Do not exceed {max_arg_num} on {_ti_core.arch_name(impl.current_cfg().arch)} backend."
+                f"The number of elements in kernel arguments is too big! Do not exceed {max_arg_num} on {_ti_ccore.arch_name(impl.current_cfg().arch)} backend."
             )
 
         try:

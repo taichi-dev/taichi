@@ -39,7 +39,7 @@ class Expr(TaichiOperations):
             assert False
         if self.tb:
             self.ptr.set_tb(self.tb)
-        self.ptr.type_check(impl.get_runtime().prog.config())
+        self.ptr.c_type_check(impl.current_cfg().get_handle())
 
     def is_tensor(self):
         return self.ptr.is_tensor()

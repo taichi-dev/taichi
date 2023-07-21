@@ -1,5 +1,6 @@
 import numpy as np
 from taichi._lib import core as _ti_core
+from taichi._lib import ccore as _ti_ccore
 from taichi.lang import impl
 from taichi.lang.enums import Layout
 from taichi.lang.exception import TaichiIndexError
@@ -67,7 +68,7 @@ class Ndarray:
         Args:
             val (Union[int, float]): Value to fill.
         """
-        if impl.current_cfg().arch != _ti_core.Arch.cuda and impl.current_cfg().arch != _ti_core.Arch.x64:
+        if impl.current_cfg().arch != _ti_ccore.TIE_ARCH_CUDA and impl.current_cfg().arch != _ti_ccore.TIE_ARCH_X64:
             self._fill_by_kernel(val)
         elif _ti_core.is_tensor(self.element_type):
             self._fill_by_kernel(val)

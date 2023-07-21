@@ -87,7 +87,7 @@ class Graph:
                 raise TaichiRuntimeError(
                     f"Only python int, float, ti.Matrix and ti.Ndarray are supported as runtime arguments but got {type(v)}"
                 )
-        self._compiled_graph.jit_run(impl.get_runtime().prog.config(), flattened)
+        self._compiled_graph.jit_run(_ti_core.CompileConfig.from_handle_to_ref(impl.current_cfg().get_handle()), flattened)
 
 
 def _deprecate_arg_args(kwargs: Dict[str, Any]):

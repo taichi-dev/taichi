@@ -518,11 +518,12 @@ void export_lang(py::module &m) {
            py::return_value_policy::reference)
       .def(
           "c_compile_kernel",
-          [](Program *program, const CompileConfig &compile_config,
+          [](Program *program, std::uintptr_t compile_config_h,
              const DeviceCapabilityConfig &caps,
              std::uintptr_t kernel_handle) -> const CompiledKernelData & {
+            auto *config = reinterpret_cast<CompileConfig *>(compile_config_h);
             auto *kernel = reinterpret_cast<Kernel *>(kernel_handle);
-            return program->compile_kernel(compile_config, caps, *kernel);
+            return program->compile_kernel(*config, caps, *kernel);
           },
           py::return_value_policy::reference)
       .def("launch_kernel", &Program::launch_kernel)

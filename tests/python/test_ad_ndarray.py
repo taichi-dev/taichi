@@ -88,6 +88,10 @@ def test_ad_reduce():
 def test_poly(tifunc):
     s = (4,)
 
+    if has_pytorch():
+        import torch
+        torch.autograd.set_detect_anomaly = True
+
     @test_utils.torch_op(output_shapes=[s])
     @ti.kernel
     def test(x: ti.types.ndarray(), y: ti.types.ndarray()):

@@ -676,11 +676,11 @@ def create_field_member(dtype, name, needs_grad, needs_dual):
         if needs_grad:
             pytaichi.grad_vars.append(x_grad)
 
-        if prog.config().debug:
+        if _ti_ccore.CompileConfig(handle=prog.c_config()).debug:
             # adjoint checkbit
             x_grad_checkbit = Expr(get_runtime().prog.make_id_expr(""))
             dtype = u8
-            if prog.config().arch in (_ti_ccore.TIE_ARCH_OPENGL, _ti_ccore.TIE_ARCH_VULKAN, _ti_ccore.TIE_ARCH_GLES):
+            if _ti_ccore.CompileConfig(handle=prog.c_config()).arch in (_ti_ccore.TIE_ARCH_OPENGL, _ti_ccore.TIE_ARCH_VULKAN, _ti_ccore.TIE_ARCH_GLES):
                 dtype = i32
             x_grad_checkbit.ptr = _ti_core.expr_field(x_grad_checkbit.ptr, cook_dtype(dtype))
             x_grad_checkbit.ptr.set_name(name + ".grad_checkbit")

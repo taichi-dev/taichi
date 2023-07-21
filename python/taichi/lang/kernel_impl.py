@@ -771,7 +771,7 @@ class Kernel:
                                     "Non contiguous tensors are not supported, please call tensor.contiguous() before "
                                     "passing it into taichi kernel."
                                 )
-                            taichi_arch = self.runtime.prog.config().arch
+                            taichi_arch = _ti_ccore.CompileConfig(handle=self.runtime.prog.c_config()).arch
 
                             def get_call_back(u, v):
                                 def call_back():
@@ -813,7 +813,7 @@ class Kernel:
                                 return call_back
 
                             tmp = v.value().get_tensor()
-                            taichi_arch = self.runtime.prog.config().arch
+                            taichi_arch = _ti_ccore.CompileConfig(handle=self.runtime.prog.c_config()).arch
                             if v.place.is_gpu_place():
                                 if taichi_arch != misc.cuda:
                                     # Paddle cuda tensor on Taichi non-cuda arch
@@ -883,7 +883,7 @@ class Kernel:
         try:
             prog = impl.get_runtime().prog
             # Compile kernel (& Online Cache & Offline Cache)
-            compiled_kernel_data = prog.c_compile_kernel(prog.config(), prog.get_device_caps(), t_kernel.get_handle())
+            compiled_kernel_data = prog.c_compile_kernel(prog.c_config(), prog.get_device_caps(), t_kernel.get_handle())
             # Launch kernel
             prog.c_launch_kernel(compiled_kernel_data, launch_ctx.get_handle())
         except Exception as e:

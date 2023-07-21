@@ -120,7 +120,7 @@ def decl_sparse_matrix(dtype, name):
     arg_id = impl.get_runtime().compiling_callable.insert_scalar_param(ptr_type, name)
     argload_di = _ti_core.DebugInfo(impl.get_runtime().get_current_src_info())
     return SparseMatrixProxy(
-        _ti_core.make_arg_load_expr(arg_id, ptr_type, create_load=False, dbg_info=argload_di), value_type
+        _ti_core.make_arg_load_expr(arg_id, ptr_type, is_ptr=False, dbg_info=argload_di), value_type
     )
 
 

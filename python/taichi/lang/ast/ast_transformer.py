@@ -1499,7 +1499,8 @@ class ASTTransformer(Builder):
         with ctx.loop_scope_guard():
             ctx.ast_builder.begin_frontend_while(expr.Expr(1, dtype=primitive_types.i32).ptr)
             while_cond = build_stmt(ctx, node.test)
-            impl.begin_frontend_if(ctx.ast_builder, while_cond)
+            stmt_dbg_info = ctx.get_pos_info(node)
+            impl.begin_frontend_if(ctx.ast_builder, while_cond, stmt_dbg_info)
             ctx.ast_builder.begin_frontend_if_true()
             ctx.ast_builder.pop_scope()
             ctx.ast_builder.begin_frontend_if_false()

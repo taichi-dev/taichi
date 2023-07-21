@@ -1671,7 +1671,7 @@ class ASTTransformer(Builder):
                 raise TaichiSyntaxError(msg)
             ctx.set_loop_status(LoopStatus.Continue)
         else:
-            ctx.ast_builder.insert_continue_stmt()
+            ctx.ast_builder.insert_continue_stmt(_ti_core.DebugInfo(ctx.get_pos_info(node)))
         return None
 
     @staticmethod

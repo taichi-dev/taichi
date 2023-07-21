@@ -286,7 +286,9 @@ class FrontendBreakStmt : public Stmt {
 
 class FrontendContinueStmt : public Stmt {
  public:
-  FrontendContinueStmt() = default;
+  explicit FrontendContinueStmt(const DebugInfo &dbg_info = DebugInfo())
+      : Stmt(dbg_info) {
+  }
 
   bool is_container_statement() const override {
     return false;
@@ -1078,7 +1080,7 @@ class ASTBuilder {
                                const mesh::MeshElementType &element_type);
   void begin_frontend_while(const Expr &cond);
   void insert_break_stmt(const DebugInfo &dbg_info = DebugInfo());
-  void insert_continue_stmt();
+  void insert_continue_stmt(const DebugInfo &dbg_info = DebugInfo());
   void insert_expr_stmt(const Expr &val);
   void insert_snode_activate(SNode *snode,
                              const ExprGroup &expr_group,

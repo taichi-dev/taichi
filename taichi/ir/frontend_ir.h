@@ -153,7 +153,8 @@ class FrontendIfStmt : public Stmt {
   Expr condition;
   std::unique_ptr<Block> true_statements, false_statements;
 
-  explicit FrontendIfStmt(const Expr &condition) : condition(condition) {
+  explicit FrontendIfStmt(const Expr &condition, const DebugInfo &stmt_di)
+      : Stmt(stmt_di), condition(condition) {
   }
 
   bool is_container_statement() const override {
@@ -1012,7 +1013,8 @@ class ASTBuilder {
                     std::vector<std::optional<std::string>> formats);
   void begin_func(const std::string &funcid);
   void end_func(const std::string &funcid);
-  void begin_frontend_if(const Expr &cond);
+  void begin_frontend_if(const Expr &cond,
+                         const DebugInfo &stmt_di = DebugInfo());
   void begin_frontend_if_true();
   void begin_frontend_if_false();
   void insert_external_func_call(std::size_t func_addr,

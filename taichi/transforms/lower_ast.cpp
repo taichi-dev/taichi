@@ -495,7 +495,8 @@ class LowerAST : public IRVisitor {
     for (int i = 0; i < (int)fargs.size(); ++i) {
       args_stmts[i] = flatten_rvalue(fargs[i], &fctx);
     }
-    fctx.push_back<AssertStmt>(val_stmt, stmt->text, args_stmts);
+    fctx.push_back<AssertStmt>(val_stmt, stmt->text, args_stmts,
+                               stmt->dbg_info);
     stmt->parent->replace_with(stmt, std::move(fctx.stmts));
   }
 

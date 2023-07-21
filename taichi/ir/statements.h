@@ -634,8 +634,9 @@ class AssertStmt : public Stmt {
 
   AssertStmt(Stmt *cond,
              const std::string &text,
-             const std::vector<Stmt *> &args)
-      : cond(cond), text(text), args(args) {
+             const std::vector<Stmt *> &args,
+             const DebugInfo &dbg_info = DebugInfo())
+      : Stmt(dbg_info), cond(cond), text(text), args(args) {
     TI_ASSERT(cond);
     TI_STMT_REG_FIELDS;
   }

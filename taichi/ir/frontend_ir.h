@@ -126,8 +126,9 @@ class FrontendAssertStmt : public Stmt {
 
   FrontendAssertStmt(const Expr &cond,
                      const std::string &text,
-                     const std::vector<Expr> &args_)
-      : text(text), cond(cond) {
+                     const std::vector<Expr> &args_,
+                     const DebugInfo &dbg_info)
+      : Stmt(dbg_info), text(text), cond(cond) {
     for (auto &a : args_) {
       args.push_back(a);
     }
@@ -1049,7 +1050,8 @@ class ASTBuilder {
   std::optional<Expr> insert_func_call(Function *func, const ExprGroup &args);
   void create_assert_stmt(const Expr &cond,
                           const std::string &msg,
-                          const std::vector<Expr> &args);
+                          const std::vector<Expr> &args,
+                          const DebugInfo &dbg_info = DebugInfo());
   void begin_frontend_range_for(const Expr &i,
                                 const Expr &s,
                                 const Expr &e,

@@ -956,10 +956,10 @@ def ti_format(*args):
 
 
 @taichi_scope
-def ti_assert(cond, msg, extra_args):
+def ti_assert(cond, msg, extra_args, dbg_info):
     # Mostly a wrapper to help us convert from Expr (defined in Python) to
     # _ti_core.Expr (defined in C++)
-    get_runtime().compiling_callable.ast_builder().create_assert_stmt(Expr(cond).ptr, msg, extra_args)
+    get_runtime().compiling_callable.ast_builder().create_assert_stmt(Expr(cond).ptr, msg, extra_args, dbg_info)
 
 
 @taichi_scope

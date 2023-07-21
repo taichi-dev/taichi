@@ -1622,8 +1622,10 @@ Expr ASTBuilder::expr_subscript(const Expr &expr,
 
 void ASTBuilder::create_assert_stmt(const Expr &cond,
                                     const std::string &msg,
-                                    const std::vector<Expr> &args) {
-  auto stmt_unique = std::make_unique<FrontendAssertStmt>(cond, msg, args);
+                                    const std::vector<Expr> &args,
+                                    const DebugInfo &dbg_info) {
+  auto stmt_unique =
+      std::make_unique<FrontendAssertStmt>(cond, msg, args, dbg_info);
   this->insert(std::move(stmt_unique));
 }
 

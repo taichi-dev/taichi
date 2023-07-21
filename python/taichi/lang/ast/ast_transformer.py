@@ -1638,7 +1638,7 @@ class ASTTransformer(Builder):
         else:
             msg = unparse(node.test)
         test = build_stmt(ctx, node.test)
-        impl.ti_assert(test, msg.strip(), extra_args)
+        impl.ti_assert(test, msg.strip(), extra_args, _ti_core.DebugInfo(ctx.get_pos_info(node)))
         return None
 
     @staticmethod

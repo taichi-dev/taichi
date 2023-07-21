@@ -253,7 +253,6 @@ def subscript(ast_builder, value, *_indices, skip_reordered=False):
                     f"Gradient {_var.get_expr_name()} has not been placed, check whether `needs_grad=True`"
                 )
 
-        dbg_info = _ti_core.DebugInfo(get_runtime().get_current_src_info())
         if isinstance(value, MatrixField):
             return Expr(ast_builder.expr_subscript(value.ptr, indices_expr_group, dbg_info))
         if isinstance(value, StructField):

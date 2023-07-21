@@ -1525,7 +1525,7 @@ class ASTTransformer(Builder):
             return node
 
         with ctx.non_static_if_guard(node):
-            stmt_dbg_info = ctx.get_pos_info(node)
+            stmt_dbg_info = _ti_core.DebugInfo(ctx.get_pos_info(node))
             impl.begin_frontend_if(ctx.ast_builder, node.test.ptr, stmt_dbg_info)
             ctx.ast_builder.begin_frontend_if_true()
             build_stmts(ctx, node.body)

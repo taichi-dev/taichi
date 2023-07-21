@@ -107,7 +107,8 @@ class FrontendSNodeOpStmt : public Stmt {
       SNodeOpType op_type,
       SNode *snode,
       const ExprGroup &indices,
-      const Expr &val = Expr(std::shared_ptr<Expression>(nullptr)));
+      const Expr &val = Expr(std::shared_ptr<Expression>(nullptr)),
+      const DebugInfo &dbg_info = DebugInfo());
 
   TI_DEFINE_ACCEPT
   TI_DEFINE_CLONE_FOR_FRONTEND_IR
@@ -1062,8 +1063,12 @@ class ASTBuilder {
   void insert_break_stmt();
   void insert_continue_stmt();
   void insert_expr_stmt(const Expr &val);
-  void insert_snode_activate(SNode *snode, const ExprGroup &expr_group);
-  void insert_snode_deactivate(SNode *snode, const ExprGroup &expr_group);
+  void insert_snode_activate(SNode *snode,
+                             const ExprGroup &expr_group,
+                             const DebugInfo &dbg_info = DebugInfo());
+  void insert_snode_deactivate(SNode *snode,
+                               const ExprGroup &expr_group,
+                               const DebugInfo &dbg_info = DebugInfo());
   Expr make_texture_op_expr(const TextureOpType &op,
                             const Expr &texture_ptr,
                             const ExprGroup &args);

@@ -26,8 +26,13 @@ static bool is_primitive_or_tensor_type(DataType &type) {
 FrontendSNodeOpStmt::FrontendSNodeOpStmt(SNodeOpType op_type,
                                          SNode *snode,
                                          const ExprGroup &indices,
-                                         const Expr &val)
-    : op_type(op_type), snode(snode), indices(indices), val(val) {
+                                         const Expr &val,
+                                         const DebugInfo &dbg_info)
+    : Stmt(dbg_info),
+      op_type(op_type),
+      snode(snode),
+      indices(indices),
+      val(val) {
   if (val.expr != nullptr) {
     TI_ASSERT(op_type == SNodeOpType::append);
   } else {
@@ -1703,19 +1708,23 @@ void ASTBuilder::insert_expr_stmt(const Expr &val) {
 }
 
 void ASTBuilder::insert_snode_activate(SNode *snode,
-                                       const ExprGroup &expr_group) {
+                                       const ExprGroup &expr_group,
+                                       const DebugInfo &dbg_info) {
   ExprGroup expanded_group;
   expanded_group.exprs = this->expand_exprs(expr_group.exprs);
-  this->insert(Stmt::make<FrontendSNodeOpStmt>(SNodeOpType::activate, snode,
-                                               expanded_group));
+  this->insert(Stmt::make<FrontendSNodeOpStmt>(
+      SNodeOpType::activate, snode, expanded_group,
+      /*val = */ Expr(std::shared_ptr<Expression>(nullptr)), dbg_info));
 }
 
 void ASTBuilder::insert_snode_deactivate(SNode *snode,
-                                         const ExprGroup &expr_group) {
+                                         const ExprGroup &expr_group,
+                                         const DebugInfo &dbg_info) {
   ExprGroup expanded_group;
   expanded_group.exprs = this->expand_exprs(expr_group.exprs);
-  this->insert(Stmt::make<FrontendSNodeOpStmt>(SNodeOpType::deactivate, snode,
-                                               expanded_group));
+  this->insert(Stmt::make<FrontendSNodeOpStmt>(
+      SNodeOpType::deactivate, snode, expanded_group,
+      /*val = */ Expr(std::shared_ptr<Expression>(nullptr)), dbg_info));
 }
 
 Expr ASTBuilder::snode_append(SNode *snode,

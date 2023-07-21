@@ -125,14 +125,16 @@ class FrontendAssertStmt : public Stmt {
   Expr cond;
   std::vector<Expr> args;
 
-  FrontendAssertStmt(const Expr &cond, const std::string &text)
-      : text(text), cond(cond) {
+  FrontendAssertStmt(const Expr &cond,
+                     const std::string &text,
+                     const DebugInfo &dbg_info = DebugInfo())
+      : Stmt(dbg_info), text(text), cond(cond) {
   }
 
   FrontendAssertStmt(const Expr &cond,
                      const std::string &text,
                      const std::vector<Expr> &args_,
-                     const DebugInfo &dbg_info)
+                     const DebugInfo &dbg_info = DebugInfo())
       : Stmt(dbg_info), text(text), cond(cond) {
     for (auto &a : args_) {
       args.push_back(a);

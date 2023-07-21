@@ -937,7 +937,9 @@ def ti_print(*_vars, sep=" ", end="\n"):
 
     _vars = add_separators(_vars)
     contents, formats = ti_format_list_to_content_entries(_vars)
-    get_runtime().compiling_callable.ast_builder().create_print(contents, formats)
+    get_runtime().compiling_callable.ast_builder().create_print(
+        contents, formats, _ti_core.DebugInfo(get_runtime().get_current_src_info())
+    )
 
 
 @taichi_scope

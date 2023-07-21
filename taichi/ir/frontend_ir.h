@@ -184,8 +184,9 @@ class FrontendPrintStmt : public Stmt {
   const std::vector<FormatType> formats;
 
   FrontendPrintStmt(const std::vector<EntryType> &contents_,
-                    const std::vector<FormatType> &formats_)
-      : contents(contents_), formats(formats_) {
+                    const std::vector<FormatType> &formats_,
+                    const DebugInfo &dbg_info = DebugInfo())
+      : Stmt(dbg_info), contents(contents_), formats(formats_) {
   }
 
   TI_DEFINE_ACCEPT
@@ -1026,7 +1027,8 @@ class ASTBuilder {
   Expr insert_patch_idx_expr();
   void create_kernel_exprgroup_return(const ExprGroup &group);
   void create_print(std::vector<std::variant<Expr, std::string>> contents,
-                    std::vector<std::optional<std::string>> formats);
+                    std::vector<std::optional<std::string>> formats,
+                    const DebugInfo &dbg_info = DebugInfo());
   void begin_func(const std::string &funcid);
   void end_func(const std::string &funcid);
   void begin_frontend_if(const Expr &cond,

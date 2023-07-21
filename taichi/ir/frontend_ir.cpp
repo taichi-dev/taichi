@@ -1501,8 +1501,10 @@ void ASTBuilder::create_kernel_exprgroup_return(const ExprGroup &group) {
 
 void ASTBuilder::create_print(
     std::vector<std::variant<Expr, std::string>> contents,
-    std::vector<std::optional<std::string>> formats) {
-  this->insert(std::make_unique<FrontendPrintStmt>(contents, formats));
+    std::vector<std::optional<std::string>> formats,
+    const DebugInfo &dbg_info) {
+  this->insert(
+      std::make_unique<FrontendPrintStmt>(contents, formats, dbg_info));
 }
 
 void ASTBuilder::begin_func(const std::string &funcid) {
@@ -1516,7 +1518,8 @@ void ASTBuilder::end_func(const std::string &funcid) {
   this->pop_scope();
 }
 
-void ASTBuilder::begin_frontend_if(const Expr &cond, const DebugInfo &dbg_info) {
+void ASTBuilder::begin_frontend_if(const Expr &cond,
+                                   const DebugInfo &dbg_info) {
   auto stmt_tmp = std::make_unique<FrontendIfStmt>(cond, dbg_info);
   this->insert(std::move(stmt_tmp));
 }

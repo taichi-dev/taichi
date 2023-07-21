@@ -1009,7 +1009,7 @@ void export_lang(py::module &m) {
   m.def("make_global_load_stmt", Stmt::make<GlobalLoadStmt, Stmt *>);
   m.def("make_global_store_stmt", Stmt::make<GlobalStoreStmt, Stmt *, Stmt *>);
   m.def("make_frontend_assign_stmt",
-        Stmt::make<FrontendAssignStmt, const Expr &, const Expr &>);
+        Stmt::make<FrontendAssignStmt, const Expr &, const Expr &, const DebugInfo&>);
 
   m.def("make_arg_load_expr",
         Expr::make<ArgLoadExpression, const std::vector<int> &,

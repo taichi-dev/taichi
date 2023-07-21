@@ -1504,7 +1504,7 @@ class ASTTransformer(Builder):
             ctx.ast_builder.begin_frontend_if_true()
             ctx.ast_builder.pop_scope()
             ctx.ast_builder.begin_frontend_if_false()
-            ctx.ast_builder.insert_break_stmt()
+            ctx.ast_builder.insert_break_stmt(_ti_core.DebugInfo(ctx.get_pos_info(node)))
             ctx.ast_builder.pop_scope()
             build_stmts(ctx, node.body)
             ctx.ast_builder.pop_scope()
@@ -1655,7 +1655,7 @@ class ASTTransformer(Builder):
                 raise TaichiSyntaxError(msg)
             ctx.set_loop_status(LoopStatus.Break)
         else:
-            ctx.ast_builder.insert_break_stmt()
+            ctx.ast_builder.insert_break_stmt(_ti_core.DebugInfo(ctx.get_pos_info(node)))
         return None
 
     @staticmethod

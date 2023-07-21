@@ -1700,11 +1700,11 @@ void ASTBuilder::begin_frontend_while(const Expr &cond) {
   this->create_scope(stmt->body, While);
 }
 
-void ASTBuilder::insert_break_stmt() {
+void ASTBuilder::insert_break_stmt(const DebugInfo &dbg_info) {
   if (loop_state_stack_.back() == Outermost) {
     throw TaichiSyntaxError("Cannot break in the outermost loop");
   }
-  this->insert(Stmt::make<FrontendBreakStmt>());
+  this->insert(Stmt::make<FrontendBreakStmt>(dbg_info));
 }
 
 void ASTBuilder::insert_continue_stmt() {

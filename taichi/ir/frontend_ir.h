@@ -321,7 +321,8 @@ class FrontendReturnStmt : public Stmt {
  public:
   ExprGroup values;
 
-  explicit FrontendReturnStmt(const ExprGroup &group);
+  explicit FrontendReturnStmt(const ExprGroup &group,
+                              const DebugInfo &dbg_info = DebugInfo());
 
   bool is_container_statement() const override {
     return false;
@@ -1029,7 +1030,8 @@ class ASTBuilder {
                         const std::vector<Expr> &elements);
   Expr insert_thread_idx_expr();
   Expr insert_patch_idx_expr();
-  void create_kernel_exprgroup_return(const ExprGroup &group);
+  void create_kernel_exprgroup_return(const ExprGroup &group,
+                                      const DebugInfo &dbg_info = DebugInfo());
   void create_print(std::vector<std::variant<Expr, std::string>> contents,
                     std::vector<std::optional<std::string>> formats,
                     const DebugInfo &dbg_info = DebugInfo());

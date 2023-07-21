@@ -891,7 +891,9 @@ class ASTTransformer(Builder):
                     return_exprs += expr._get_flattened_ptrs(values)
                 else:
                     raise TaichiSyntaxError("The return type is not supported now!")
-            ctx.ast_builder.create_kernel_exprgroup_return(expr.make_expr_group(return_exprs))
+            ctx.ast_builder.create_kernel_exprgroup_return(
+                expr.make_expr_group(return_exprs), _ti_core.DebugInfo(ctx.get_pos_info(node))
+            )
         else:
             ctx.return_data = node.value.ptr
             if ctx.func.return_type is not None:

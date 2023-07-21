@@ -40,7 +40,9 @@ FrontendSNodeOpStmt::FrontendSNodeOpStmt(SNodeOpType op_type,
   }
 }
 
-FrontendReturnStmt::FrontendReturnStmt(const ExprGroup &group) : values(group) {
+FrontendReturnStmt::FrontendReturnStmt(const ExprGroup &group,
+                                       const DebugInfo &dbg_info)
+    : Stmt(dbg_info), values(group) {
 }
 
 FrontendAssignStmt::FrontendAssignStmt(const Expr &lhs,
@@ -1492,11 +1494,12 @@ Expr ASTBuilder::insert_patch_idx_expr() {
   return Expr::make<MeshPatchIndexExpression>();
 }
 
-void ASTBuilder::create_kernel_exprgroup_return(const ExprGroup &group) {
+void ASTBuilder::create_kernel_exprgroup_return(const ExprGroup &group,
+                                                const DebugInfo &dbg_info) {
   auto expanded_exprs = this->expand_exprs(group.exprs);
   ExprGroup expanded_expr_group;
   expanded_expr_group.exprs = std::move(expanded_exprs);
-  this->insert(Stmt::make<FrontendReturnStmt>(expanded_expr_group));
+  this->insert(Stmt::make<FrontendReturnStmt>(expanded_expr_group, dbg_info));
 }
 
 void ASTBuilder::create_print(

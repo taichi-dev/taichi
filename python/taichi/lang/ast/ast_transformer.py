@@ -68,6 +68,9 @@ class ASTTransformer(Builder):
     @staticmethod
     def build_Name(ctx, node):
         node.ptr = ctx.get_var_by_name(node.id)
+        if isinstance(node, (ast.stmt, ast.expr)) and isinstance(node.ptr, Expr):
+            info = ctx.get_pos_info(node)
+            node.ptr.tb = info
         return node.ptr
 
     @staticmethod

@@ -34,6 +34,7 @@ def test_all_nonzero():
     for i in range(32):
         assert a[i] == 0
 
+
 @test_utils.test(arch=ti.cuda)
 def test_sync_all_nonzero():
     a = ti.field(dtype=ti.i32, shape=256)
@@ -60,7 +61,6 @@ def test_sync_all_nonzero():
 
     for i in range(256):
         assert a[i] == 0
-
 
 
 @test_utils.test(arch=ti.cuda)
@@ -90,6 +90,7 @@ def test_any_nonzero():
     for i in range(32):
         assert a[i] == 1
 
+
 @test_utils.test(arch=ti.cuda)
 def test_sync_any_nonzero():
     a = ti.field(dtype=ti.i32, shape=256)
@@ -116,6 +117,7 @@ def test_sync_any_nonzero():
 
     for i in range(256):
         assert a[i] == 1
+
 
 @test_utils.test(arch=ti.cuda)
 def test_sync_count_nonzero():

@@ -49,10 +49,10 @@ TIE_TEMP_CCORE_TYPE_TO_CORE_TYPE = {
 }
 
 
-def get_exception_to_throw_if_not_success(ret, last_err, last_err_msg):
-    assert ret == 0 or ret == last_err
+def get_exception_to_throw_if_not_success(ret, get_last_error):
     if ret != 0:
-        assert ret in TIE_ERROR_TO_PYTHON_EXCEPTION
+        last_err, last_err_msg = get_last_error()
+        assert ret == last_err and ret in TIE_ERROR_TO_PYTHON_EXCEPTION
         return TIE_ERROR_TO_PYTHON_EXCEPTION[ret](last_err_msg)
     return None
 
@@ -606,7 +606,7 @@ def generate_func_def_code_from_func_decl(
         )
     else:
         fp_write(
-            f"{tab}ex = get_exception_to_throw_if_not_success(ret, *get_last_error())\n"
+            f"{tab}ex = get_exception_to_throw_if_not_success(ret, get_last_error)\n"
         )
         fp_write(f"{tab}if ex is not None:\n")
         fp_write(f"{tab*2}raise ex\n")

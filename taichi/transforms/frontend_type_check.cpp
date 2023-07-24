@@ -108,8 +108,6 @@ class FrontendTypeCheck : public IRVisitor {
 
   void visit(FrontendIfStmt *stmt) override {
     // TODO: use PrimitiveType::u1 when it's supported
-    std::cerr << fmt::format("[debug] stmt->dbg_info.tb {}\n",
-                             stmt->dbg_info.tb);
     check_cond_type(stmt->condition, "if");
     if (stmt->true_statements)
       stmt->true_statements->accept(this);

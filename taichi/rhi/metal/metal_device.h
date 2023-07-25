@@ -100,6 +100,10 @@ struct MetalWorkgroupSize {
   uint32_t y{0};
   uint32_t z{0};
 };
+struct MetalRasterFunctions {
+  MTLFunction_id vertex;
+  MTLFunction_id fragment;
+};
 class MetalPipeline final : public Pipeline {
  public:
   // `mtl_library`, `mtl_function`, `mtl_compute_pipeline_state` should be
@@ -112,8 +116,7 @@ class MetalPipeline final : public Pipeline {
 
   explicit MetalPipeline(const MetalDevice &device,
                          MTLLibrary_id mtl_library,
-                         const std::vector<MTLFunction_id>
-                             &mtl_functions,  // Should be vertex and fragment
+                         const MetalRasterFunctions &mtl_functions,
                          MTLRenderPipelineState_id mtl_render_pipeline_state,
                          const RasterParams raster_params);
   ~MetalPipeline() final;
@@ -153,7 +156,7 @@ class MetalPipeline final : public Pipeline {
   MetalWorkgroupSize workgroup_size_;
 
   // Raster variables
-  std::vector<MTLFunction_id> mtl_functions_;
+  MetalRasterFunctions mtl_functions_;
   MTLRenderPipelineState_id mtl_render_pipeline_state_;
   const RasterParams raster_params_;
 };
@@ -341,6 +344,11 @@ class MetalSurface final : public Surface {
   CAMetalLayer *layer_;
 };
 
+constexpr BufferFormat kSwapChainImageFormat{BufferFormat::bgra8};
+
+constexpr auto kMetalFragFunctionName = "frag_function";
+constexpr auto kMetalVertFunctionName = "vert_function";
+
 class MetalDevice final : public GraphicsDevice {
  public:
   // `mtl_device` should be already retained.
@@ -404,20 +412,11 @@ class MetalDevice final : public GraphicsDevice {
     return *default_sampler_;
   }
 
-  const BufferFormat get_swap_image_format() {
-    return swap_chain_image_format_;
-  }
-
   MTLFunction_id get_mtl_function(MTLLibrary_id mtl_lib,
                                   const std::string &func_name) const;
   MTLLibrary_id get_mtl_library(const std::string &source) const;
 
  private:
-  const BufferFormat swap_chain_image_format_{BufferFormat::bgra8};
-
-  const std::string frag_function_name = "frag_function";
-  const std::string vert_function_name = "vert_function";
-
   MTLDevice_id mtl_device_;
   rhi_impl::SyncedPtrStableObjectList<MetalMemory> memory_allocs_;
   rhi_impl::SyncedPtrStableObjectList<MetalImage> image_allocs_;

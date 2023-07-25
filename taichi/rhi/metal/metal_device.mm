@@ -187,8 +187,7 @@ MetalPipeline::MetalPipeline(
       workgroup_size_(workgroup_size) {}
 MetalPipeline::MetalPipeline(
     const MetalDevice &device, MTLLibrary_id mtl_library,
-    const std::vector<MTLFunction_id>
-        &mtl_functions, // Should be vertex and fragment
+    const MetalRasterFunctions &mtl_functions,
     MTLRenderPipelineState_id mtl_render_pipeline_state,
     const RasterParams raster_params)
     : device_(&device), mtl_library_(mtl_library),
@@ -671,7 +670,7 @@ MetalSurface::MetalSurface(MetalDevice *device, const SurfaceConfig &config)
   width_ = config.width;
   height_ = config.height;
 
-  image_format_ = device->get_swap_image_format();
+  image_format_ = kSwapChainImageFormat;
 
   layer_ = [CAMetalLayer layer];
   layer_.device = device->mtl_device();
@@ -904,14 +903,18 @@ std::unique_ptr<Pipeline> MetalDevice::create_raster_pipeline(
     const std::vector<VertexInputBinding> &vertex_inputs,
     const std::vector<VertexInputAttribute> &vertex_attrs, std::string name) {
 
-  // Geometry shaders aren't supported in Vulkan backend
-  RHI_ASSERT(src.size() == 2); // One vertex one fragment
-  RHI_ASSERT(src[0].type == PipelineSourceType::spirv_binary);
-  RHI_ASSERT(src[1].type == PipelineSourceType::spirv_binary);
-  RHI_ASSERT((src[0].stage == PipelineStageType::fragment &&
-              src[1].stage == PipelineStageType::vertex) ||
-             (src[0].stage == PipelineStageType::vertex &&
-              src[1].stage == PipelineStageType::fragment));
+  // (geometry shaders aren't supported in Vulkan backend either)
+  RHI_ASSERT(src.size() == 2);
+  bool has_fragment = false;
+  bool has_vertex = false;
+  for (auto &pipe_source_desc : src) {
+    RHI_ASSERT(pipe_source_desc.type == PipelineSourceType::spirv_binary);
+    if (pipe_source_desc.stage == PipelineStageType::fragment)
+      has_fragment = true;
+    if (pipe_source_desc.stage == PipelineStageType::vertex)
+      has_vertex = true;
+  }
+  RHI_ASSERT(has_fragment && has_vertex);
 
   spirv_cross::CompilerMSL::Options options{};
   options.enable_decoration_binding = true;
@@ -939,8 +942,9 @@ std::unique_ptr<Pipeline> MetalDevice::create_raster_pipeline(
     }
 
     const std::string new_entry_point_name =
-        src[i].stage == PipelineStageType::fragment ? frag_function_name
-                                                    : vert_function_name;
+        src[i].stage == PipelineStageType::fragment
+            ? std::string(kMetalFragFunctionName)
+            : std::string(kMetalVertFunctionName);
 
     // Fragment and vertex function names must be different.
     // If spirv-cross has a method to let you set the emitted entry point's
@@ -962,10 +966,10 @@ std::unique_ptr<Pipeline> MetalDevice::create_raster_pipeline(
     std::string new_entry_point_name;
     if (src[i].stage == PipelineStageType::fragment) {
       frag_func_index = i;
-      new_entry_point_name = frag_function_name;
+      new_entry_point_name = std::string(kMetalFragFunctionName);
     } else {
       vert_func_index = i;
-      new_entry_point_name = vert_function_name;
+      new_entry_point_name = std::string(kMetalVertFunctionName);
     }
 
     MTLFunction_id mtl_function =
@@ -987,7 +991,12 @@ std::unique_ptr<Pipeline> MetalDevice::create_raster_pipeline(
   MTLRenderPipelineDescriptor *rpd = [MTLRenderPipelineDescriptor new];
   rpd.vertexFunction = mtl_functions[vert_func_index];
   rpd.fragmentFunction = mtl_functions[frag_func_index];
-  rpd.colorAttachments[0].pixelFormat = format2mtl(swap_chain_image_format_);
+  // FIXME: IMPORTANT! "Forcing the format to swap chain image format might bite
+  // us in the bum later. Usually what I do here is to leave this pipeline
+  // partially constructed, and use a map between renderpass and actual pipeline
+  // states, and build / cache pipeline states in the bind_pipeline command.
+  // Because the color attachment format is not known until begin_renderpass"
+  rpd.colorAttachments[0].pixelFormat = format2mtl(kSwapChainImageFormat);
   if (raster_params.depth_write) {
     rpd.depthAttachmentPixelFormat = format2mtl(BufferFormat::depth32f);
   }
@@ -1032,8 +1041,11 @@ std::unique_ptr<Pipeline> MetalDevice::create_raster_pipeline(
   }
 
   // Create the pipeline object
-  return std::make_unique<MetalPipeline>(*this, mtl_library, mtl_functions, rps,
-                                         raster_params);
+  return std::make_unique<MetalPipeline>(
+      *this, mtl_library,
+      MetalRasterFunctions{mtl_functions[vert_func_index],
+                           mtl_functions[frag_func_index]},
+      rps, raster_params);
 }
 
 MTLFunction_id

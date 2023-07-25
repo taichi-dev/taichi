@@ -97,7 +97,9 @@ def expr_init(rhs):
     if hasattr(rhs, "_data_oriented"):
         return rhs
     return Expr(
-        get_runtime().compiling_callable.ast_builder().expr_var(Expr(rhs).ptr, get_runtime().get_current_src_info())
+        get_runtime()
+        .compiling_callable.ast_builder()
+        .expr_var(Expr(rhs).ptr, _ti_core.DebugInfo(get_runtime().get_current_src_info()))
     )
 
 
@@ -175,6 +177,7 @@ def validate_subscript_index(value, index):
 
 @taichi_scope
 def subscript(ast_builder, value, *_indices, skip_reordered=False):
+    dbg_info = _ti_core.DebugInfo(get_runtime().get_current_src_info())
     ast_builder = get_runtime().compiling_callable.ast_builder()
     # Directly evaluate in Python for non-Taichi types
     if not isinstance(
@@ -251,14 +254,14 @@ def subscript(ast_builder, value, *_indices, skip_reordered=False):
                 )
 
         if isinstance(value, MatrixField):
-            return Expr(ast_builder.expr_subscript(value.ptr, indices_expr_group, get_runtime().get_current_src_info()))
+            return Expr(ast_builder.expr_subscript(value.ptr, indices_expr_group, dbg_info))
         if isinstance(value, StructField):
             entries = {k: subscript(ast_builder, v, *indices) for k, v in value._items}
             entries["__struct_methods"] = value.struct_methods
             return _IntermediateStruct(entries)
-        return Expr(ast_builder.expr_subscript(_var, indices_expr_group, get_runtime().get_current_src_info()))
+        return Expr(ast_builder.expr_subscript(_var, indices_expr_group, dbg_info))
     if isinstance(value, AnyArray):
-        return Expr(ast_builder.expr_subscript(value.ptr, indices_expr_group, get_runtime().get_current_src_info()))
+        return Expr(ast_builder.expr_subscript(value.ptr, indices_expr_group, dbg_info))
     assert isinstance(value, Expr)
     # Index into TensorType
     # value: IndexExpression with ret_type = TensorType
@@ -291,10 +294,10 @@ def subscript(ast_builder, value, *_indices, skip_reordered=False):
                 value.ptr,
                 multiple_indices,
                 return_shape,
-                get_runtime().get_current_src_info(),
+                dbg_info,
             )
         )
-    return Expr(ast_builder.expr_subscript(value.ptr, indices_expr_group, get_runtime().get_current_src_info()))
+    return Expr(ast_builder.expr_subscript(value.ptr, indices_expr_group, dbg_info))
 
 
 class SrcInfoGuard:

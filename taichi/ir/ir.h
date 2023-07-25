@@ -390,6 +390,7 @@ class StmtFieldManager {
 class Stmt : public IRNode {
  protected:
   std::vector<Stmt **> operands;
+  explicit Stmt(const DebugInfo &dbg_info);
 
  public:
   StmtFieldManager field_manager;

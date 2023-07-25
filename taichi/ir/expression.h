@@ -41,6 +41,10 @@ class Expression {
     stmt = nullptr;
   }
 
+  explicit Expression(const DebugInfo &dbg_info) : Expression() {
+    this->dbg_info = dbg_info;
+  }
+
   virtual void type_check(const CompileConfig *config) = 0;
 
   virtual void accept(ExpressionVisitor *visitor) = 0;

@@ -38,8 +38,10 @@ FrontendSNodeOpStmt::FrontendSNodeOpStmt(SNodeOpType op_type,
 FrontendReturnStmt::FrontendReturnStmt(const ExprGroup &group) : values(group) {
 }
 
-FrontendAssignStmt::FrontendAssignStmt(const Expr &lhs, const Expr &rhs)
-    : lhs(lhs), rhs(rhs) {
+FrontendAssignStmt::FrontendAssignStmt(const Expr &lhs,
+                                       const Expr &rhs,
+                                       const DebugInfo &dbg_info)
+    : Stmt(dbg_info), lhs(lhs), rhs(rhs) {
   TI_ASSERT(lhs->is_lvalue());
   if (lhs.is<IdExpression>() && lhs->ret_type == PrimitiveType::unknown) {
     lhs.expr->ret_type =
@@ -278,12 +280,11 @@ bool UnaryOpExpression::is_cast() const {
 
 void UnaryOpExpression::flatten(FlattenContext *ctx) {
   auto operand_stmt = flatten_rvalue(operand, ctx);
-  auto unary = std::make_unique<UnaryOpStmt>(type, operand_stmt);
+  auto unary = std::make_unique<UnaryOpStmt>(type, operand_stmt, dbg_info);
   if (is_cast()) {
     unary->cast_type = cast_type;
   }
   stmt = unary.get();
-  stmt->set_tb(get_tb());
   stmt->ret_type = ret_type;
   ctx->push_back(std::move(unary));
 }
@@ -455,15 +456,14 @@ void BinaryOpExpression::flatten(FlattenContext *ctx) {
     }
     if_stmt->set_false_statements(std::move(false_block));
 
-    auto ret = ctx->push_back<LocalLoadStmt>(result);
-    ret->set_tb(get_tb());
+    auto ret = ctx->push_back<LocalLoadStmt>(result, dbg_info);
     stmt = ret;
     stmt->ret_type = ret_type;
     return;
   }
   auto rhs_stmt = flatten_rvalue(rhs, ctx);
-  ctx->push_back(std::make_unique<BinaryOpStmt>(type, lhs_stmt, rhs_stmt));
-  ctx->stmts.back()->set_tb(get_tb());
+  ctx->push_back(
+      std::make_unique<BinaryOpStmt>(type, lhs_stmt, rhs_stmt, dbg_info));
   stmt = ctx->back_stmt();
   stmt->ret_type = ret_type;
 }
@@ -601,13 +601,12 @@ void TernaryOpExpression::flatten(FlattenContext *ctx) {
     auto op1_stmt = flatten_rvalue(op1, ctx);
     auto op2_stmt = flatten_rvalue(op2, ctx);
     auto op3_stmt = flatten_rvalue(op3, ctx);
-    ctx->push_back(
-        std::make_unique<TernaryOpStmt>(type, op1_stmt, op2_stmt, op3_stmt));
+    ctx->push_back(std::make_unique<TernaryOpStmt>(type, op1_stmt, op2_stmt,
+                                                   op3_stmt, dbg_info));
   } else if (type == TernaryOpType::ifte) {
     make_ifte(ctx, ret_type, op1, op2, op3);
   }
   stmt = ctx->back_stmt();
-  stmt->set_tb(get_tb());
   stmt->ret_type = ret_type;
 }
 
@@ -622,7 +621,7 @@ void InternalFuncCallExpression::type_check(const CompileConfig *) {
 
 void InternalFuncCallExpression::flatten(FlattenContext *ctx) {
   stmt = op->flatten(ctx, args, ret_type);
-  stmt->set_tb(get_tb());
+  stmt->dbg_info = dbg_info;
 }
 
 void ExternalTensorExpression::flatten(FlattenContext *ctx) {
@@ -630,11 +629,10 @@ void ExternalTensorExpression::flatten(FlattenContext *ctx) {
       TypeFactory::get_instance().get_ndarray_struct_type(dt, ndim, needs_grad);
   type = TypeFactory::get_instance().get_pointer_type((Type *)type);
 
-  auto ptr =
-      Stmt::make<ArgLoadStmt>(arg_id, type, /*is_ptr=*/true,
-                              /*create_load=*/false, /*arg_depth=*/arg_depth);
+  auto ptr = Stmt::make<ArgLoadStmt>(
+      arg_id, type, /*is_ptr=*/true,
+      /*create_load=*/false, /*arg_depth=*/arg_depth, /*dbg_info=*/dbg_info);
 
-  ptr->set_tb(get_tb());
   ctx->push_back(std::move(ptr));
   stmt = ctx->back_stmt();
 }
@@ -706,7 +704,7 @@ Stmt *make_tensor_access_single_element(Expression::FlattenContext *ctx,
                                         Stmt *var_stmt,
                                         const ExprGroup &indices,
                                         const std::vector<int> &shape,
-                                        const std::string &tb) {
+                                        const DebugInfo &dbg_info) {
   bool needs_dynamic_index = false;
   for (int i = 0; i < (int)indices.size(); ++i) {
     if (!indices[i].is<ConstExpression>()) {
@@ -732,7 +730,7 @@ Stmt *make_tensor_access_single_element(Expression::FlattenContext *ctx,
     }
     offset_stmt = ctx->push_back<ConstStmt>(TypedConstant(offset));
   }
-  return ctx->push_back<MatrixPtrStmt>(var_stmt, offset_stmt, tb);
+  return ctx->push_back<MatrixPtrStmt>(var_stmt, offset_stmt, dbg_info);
 }
 
 Stmt *make_tensor_access(Expression::FlattenContext *ctx,
@@ -740,7 +738,7 @@ Stmt *make_tensor_access(Expression::FlattenContext *ctx,
                          const std::vector<ExprGroup> &indices_group,
                          DataType ret_type,
                          std::vector<int> shape,
-                         const std::string &tb) {
+                         const DebugInfo &dbg_info) {
   auto var_stmt = flatten_lvalue(var, ctx);
   if (!var->is_lvalue()) {
     auto alloca_stmt = ctx->push_back<AllocaStmt>(var.get_rvalue_type());
@@ -754,13 +752,13 @@ Stmt *make_tensor_access(Expression::FlattenContext *ctx,
   if (ret_type.ptr_removed()->is<TensorType>() && !is_shared_array) {
     std::vector<Stmt *> stmts;
     for (auto &indices : indices_group) {
-      stmts.push_back(
-          make_tensor_access_single_element(ctx, var_stmt, indices, shape, tb));
+      stmts.push_back(make_tensor_access_single_element(ctx, var_stmt, indices,
+                                                        shape, dbg_info));
     }
     return ctx->push_back<MatrixOfMatrixPtrStmt>(stmts, ret_type);
   }
   return make_tensor_access_single_element(ctx, var_stmt, indices_group[0],
-                                           shape, tb);
+                                           shape, dbg_info);
 }
 
 void MatrixExpression::type_check(const CompileConfig *config) {
@@ -789,22 +787,23 @@ void MatrixExpression::flatten(FlattenContext *ctx) {
 
 IndexExpression::IndexExpression(const Expr &var,
                                  const ExprGroup &indices,
-                                 std::string tb)
-    : var(var), indices_group({indices}) {
-  this->set_tb(tb);
+                                 const DebugInfo &dbg_info)
+    : Expression(dbg_info), var(var), indices_group({indices}) {
 }
 
 IndexExpression::IndexExpression(const Expr &var,
                                  const std::vector<ExprGroup> &indices_group,
                                  const std::vector<int> &ret_shape,
-                                 std::string tb)
-    : var(var), indices_group(indices_group), ret_shape(ret_shape) {
+                                 const DebugInfo &dbg_info)
+    : Expression(dbg_info),
+      var(var),
+      indices_group(indices_group),
+      ret_shape(ret_shape) {
   // IndexExpression with ret_shape is used for matrix slicing, where each entry
   // of ExprGroup is interpreted as a group of indices to return within each
   // axis. For example, mat[0, 3:5] has indices_group={0, [3, 4]}, where [3, 4]
   // means "m"-axis will return a TensorType with size of 2. In this case, we
   // should not expand indices_group due to its special semantics.
-  this->set_tb(tb);
 }
 
 bool IndexExpression::is_field() const {
@@ -945,14 +944,14 @@ void IndexExpression::flatten(FlattenContext *ctx) {
   } else if (is_tensor()) {
     stmt = make_tensor_access(
         ctx, var, indices_group, ret_type,
-        var->ret_type.ptr_removed()->as<TensorType>()->get_shape(), get_tb());
+        var->ret_type.ptr_removed()->as<TensorType>()->get_shape(), dbg_info);
   } else {
     ErrorEmitter(
         TaichiIndexError(), this,
         "Invalid IndexExpression: the source is not among field, ndarray or "
         "local tensor");
   }
-  stmt->set_tb(get_tb());
+  stmt->dbg_info = dbg_info;
 }
 
 void RangeAssumptionExpression::type_check(const CompileConfig *) {
@@ -1072,9 +1071,8 @@ void AtomicOpExpression::flatten(FlattenContext *ctx) {
   // expand rhs
   auto val_stmt = flatten_rvalue(val, ctx);
   auto dest_stmt = flatten_lvalue(dest, ctx);
-  stmt = ctx->push_back<AtomicOpStmt>(op_type, dest_stmt, val_stmt);
+  stmt = ctx->push_back<AtomicOpStmt>(op_type, dest_stmt, val_stmt, dbg_info);
   stmt->ret_type = stmt->as<AtomicOpStmt>()->dest->ret_type;
-  stmt->set_tb(get_tb());
 }
 
 SNodeOpExpression::SNodeOpExpression(SNode *snode,
@@ -1107,10 +1105,10 @@ void SNodeOpExpression::type_check(const CompileConfig *config) {
       auto value_type = values[i].get_rvalue_type();
       auto promoted = promoted_type(dst_type, value_type);
       if (dst_type != promoted) {
-        ErrorEmitter(TaichiCastWarning(), this,
-                     fmt::format("Append may lose precision: {} <- {}\n{}",
-                                 dst_type->to_string(), value_type->to_string(),
-                                 get_tb()));
+        ErrorEmitter(
+            TaichiCastWarning(), this,
+            fmt::format("Append may lose precision: {} <- {}",
+                        dst_type->to_string(), value_type->to_string()));
       }
       values[i] = cast(values[i], dst_type);
       values[i]->type_check(config);
@@ -1125,9 +1123,8 @@ void SNodeOpExpression::flatten(FlattenContext *ctx) {
   }
   auto is_cell_access = SNodeOpStmt::activation_related(op_type) &&
                         snode->type != SNodeType::dynamic;
-  auto ptr =
-      ctx->push_back<GlobalPtrStmt>(snode, indices_stmt, true, is_cell_access);
-  ptr->set_tb(get_tb());
+  auto ptr = ctx->push_back<GlobalPtrStmt>(snode, indices_stmt, true,
+                                           is_cell_access, dbg_info);
   if (op_type == SNodeOpType::is_active) {
     if (!(snode->type == SNodeType::pointer || snode->type == SNodeType::hash ||
           snode->type == SNodeType::bitmasked)) {
@@ -1141,18 +1138,16 @@ void SNodeOpExpression::flatten(FlattenContext *ctx) {
   } else if (op_type == SNodeOpType::get_addr) {
     ctx->push_back<SNodeOpStmt>(SNodeOpType::get_addr, snode, ptr, nullptr);
   } else if (op_type == SNodeOpType::append) {
-    auto alloca = ctx->push_back<AllocaStmt>(PrimitiveType::i32);
-    alloca->set_tb(get_tb());
-    auto addr =
-        ctx->push_back<SNodeOpStmt>(SNodeOpType::allocate, snode, ptr, alloca);
-    addr->set_tb(get_tb());
+    auto alloca = ctx->push_back<AllocaStmt>(PrimitiveType::i32, dbg_info);
+    auto addr = ctx->push_back<SNodeOpStmt>(SNodeOpType::allocate, snode, ptr,
+                                            alloca, dbg_info);
     for (int i = 0; i < values.size(); i++) {
       auto value_stmt = flatten_rvalue(values[i], ctx);
-      auto ch_addr = ctx->push_back<GetChStmt>(addr, snode, i);
-      ch_addr->set_tb(get_tb());
-      ctx->push_back<GlobalStoreStmt>(ch_addr, value_stmt)->set_tb(get_tb());
+      auto ch_addr = ctx->push_back<GetChStmt>(
+          addr, snode, i, /*is_bit_vectorized = */ false, dbg_info);
+      ctx->push_back<GlobalStoreStmt>(ch_addr, value_stmt, dbg_info);
     }
-    ctx->push_back<LocalLoadStmt>(alloca)->set_tb(get_tb());
+    ctx->push_back<LocalLoadStmt>(alloca, dbg_info);
     if (snode->type != SNodeType::dynamic) {
       ErrorEmitter(TaichiTypeError(), this,
                    "ti.append only works on dynamic nodes.");
@@ -1410,14 +1405,13 @@ void ASTBuilder::stop_gradient(SNode *snode) {
 
 void ASTBuilder::insert_assignment(Expr &lhs,
                                    const Expr &rhs,
-                                   const std::string &tb) {
+                                   const DebugInfo &dbg_info) {
   // Inside a kernel or a function
   // Create an assignment in the IR
   if (lhs.expr == nullptr) {
     lhs.set(rhs);
   } else if (lhs.expr->is_lvalue()) {
-    auto stmt = std::make_unique<FrontendAssignStmt>(lhs, rhs);
-    stmt->set_tb(tb);
+    auto stmt = std::make_unique<FrontendAssignStmt>(lhs, rhs, dbg_info);
     this->insert(std::move(stmt));
 
   } else {
@@ -1428,9 +1422,9 @@ void ASTBuilder::insert_assignment(Expr &lhs,
   }
 }
 
-Expr ASTBuilder::make_var(const Expr &x, std::string tb) {
+Expr ASTBuilder::make_var(const Expr &x, const DebugInfo &dbg_info) {
   auto var = this->expr_alloca();
-  this->insert_assignment(var, x, tb);
+  this->insert_assignment(var, x, dbg_info);
   return var;
 }
 
@@ -1588,16 +1582,17 @@ Expr ASTBuilder::expr_alloca_shared_array(const std::vector<int> &shape,
   return var;
 }
 
-void ASTBuilder::expr_assign(const Expr &lhs, const Expr &rhs, std::string tb) {
+void ASTBuilder::expr_assign(const Expr &lhs,
+                             const Expr &rhs,
+                             const DebugInfo &dbg_info) {
   TI_ASSERT(lhs->is_lvalue());
-  auto stmt = std::make_unique<FrontendAssignStmt>(lhs, rhs);
-  stmt->set_tb(tb);
+  auto stmt = std::make_unique<FrontendAssignStmt>(lhs, rhs, dbg_info);
   this->insert(std::move(stmt));
 }
 
 Expr ASTBuilder::expr_subscript(const Expr &expr,
                                 const ExprGroup &indices,
-                                std::string tb) {
+                                const DebugInfo &dbg_info) {
   TI_ASSERT(expr.is<FieldExpression>() || expr.is<MatrixFieldExpression>() ||
             expr.is<ExternalTensorExpression>() ||
             is_tensor(expr.expr->ret_type.ptr_removed()));
@@ -1611,7 +1606,7 @@ Expr ASTBuilder::expr_subscript(const Expr &expr,
   auto expanded_expr_group = ExprGroup();
   expanded_expr_group.exprs = expanded_indices;
 
-  return Expr::make<IndexExpression>(expr, expanded_expr_group, tb);
+  return Expr::make<IndexExpression>(expr, expanded_expr_group, dbg_info);
 }
 
 void ASTBuilder::create_assert_stmt(const Expr &cond,
@@ -1783,13 +1778,13 @@ std::vector<Expr> ASTBuilder::expand_exprs(const std::vector<Expr> &exprs) {
         if (expr.is<IdExpression>()) {
           id_expr = expr;
         } else {
-          id_expr = make_var(expr, expr.get_tb());
+          id_expr = make_var(expr, expr->dbg_info);
         }
         auto shape = tensor_type->get_shape();
         if (shape.size() == 1) {
           for (int i = 0; i < shape[0]; i++) {
             auto ind = Expr(std::make_shared<IndexExpression>(
-                id_expr, ExprGroup(Expr(i)), expr.get_tb()));
+                id_expr, ExprGroup(Expr(i)), expr->dbg_info));
             ind->type_check(nullptr);
             expanded_exprs.push_back(ind);
           }
@@ -1798,7 +1793,7 @@ std::vector<Expr> ASTBuilder::expand_exprs(const std::vector<Expr> &exprs) {
           for (int i = 0; i < shape[0]; i++) {
             for (int j = 0; j < shape[1]; j++) {
               auto ind = Expr(std::make_shared<IndexExpression>(
-                  id_expr, ExprGroup(Expr(i), Expr(j)), expr.get_tb()));
+                  id_expr, ExprGroup(Expr(i), Expr(j)), expr->dbg_info));
               ind->type_check(nullptr);
               expanded_exprs.push_back(ind);
             }

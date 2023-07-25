@@ -18,7 +18,8 @@ class Function;
  */
 class AllocaStmt : public Stmt, public ir_traits::Store {
  public:
-  explicit AllocaStmt(DataType type) : is_shared(false) {
+  explicit AllocaStmt(DataType type, const DebugInfo &dbg_info = DebugInfo())
+      : Stmt(dbg_info), is_shared(false) {
     if (type->is_primitive(PrimitiveTypeID::unknown)) {
       ret_type = type;
     } else {
@@ -156,7 +157,9 @@ class UnaryOpStmt : public Stmt {
   Stmt *operand;
   DataType cast_type;
 
-  UnaryOpStmt(UnaryOpType op_type, Stmt *operand);
+  UnaryOpStmt(UnaryOpType op_type,
+              Stmt *operand,
+              const DebugInfo &dbg_info = DebugInfo());
 
   bool same_operation(UnaryOpStmt *o) const;
   bool is_cast() const;
@@ -200,8 +203,10 @@ class ArgLoadStmt : public Stmt {
               const DataType &dt,
               bool is_ptr,
               bool create_load,
-              int arg_depth)
-      : arg_id(arg_id),
+              int arg_depth,
+              const DebugInfo &dbg_info = DebugInfo())
+      : Stmt(dbg_info),
+        arg_id(arg_id),
         is_ptr(is_ptr),
         create_load(create_load),
         arg_depth(arg_depth) {
@@ -257,8 +262,10 @@ class BinaryOpStmt : public Stmt {
   BinaryOpStmt(BinaryOpType op_type,
                Stmt *lhs,
                Stmt *rhs,
+               const DebugInfo &dbg_info = DebugInfo(),
                bool is_bit_vectorized = false)
-      : op_type(op_type),
+      : Stmt(dbg_info),
+        op_type(op_type),
         lhs(lhs),
         rhs(rhs),
         is_bit_vectorized(is_bit_vectorized) {
@@ -284,8 +291,12 @@ class TernaryOpStmt : public Stmt {
   TernaryOpType op_type;
   Stmt *op1, *op2, *op3;
 
-  TernaryOpStmt(TernaryOpType op_type, Stmt *op1, Stmt *op2, Stmt *op3)
-      : op_type(op_type), op1(op1), op2(op2), op3(op3) {
+  TernaryOpStmt(TernaryOpType op_type,
+                Stmt *op1,
+                Stmt *op2,
+                Stmt *op3,
+                const DebugInfo &dbg_info = DebugInfo())
+      : Stmt(dbg_info), op_type(op_type), op1(op1), op2(op2), op3(op3) {
     TI_ASSERT(!op1->is<AllocaStmt>());
     TI_ASSERT(!op2->is<AllocaStmt>());
     TI_ASSERT(!op3->is<AllocaStmt>());
@@ -311,8 +322,15 @@ class AtomicOpStmt : public Stmt,
   Stmt *dest, *val;
   bool is_reduction;
 
-  AtomicOpStmt(AtomicOpType op_type, Stmt *dest, Stmt *val)
-      : op_type(op_type), dest(dest), val(val), is_reduction(false) {
+  AtomicOpStmt(AtomicOpType op_type,
+               Stmt *dest,
+               Stmt *val,
+               const DebugInfo &dbg_info = DebugInfo())
+      : Stmt(dbg_info),
+        op_type(op_type),
+        dest(dest),
+        val(val),
+        is_reduction(false) {
     TI_STMT_REG_FIELDS;
   }
 
@@ -405,7 +423,8 @@ class GlobalPtrStmt : public Stmt {
   GlobalPtrStmt(SNode *snode,
                 const std::vector<Stmt *> &indices,
                 bool activate = true,
-                bool is_cell_access = false);
+                bool is_cell_access = false,
+                const DebugInfo &dbg_info = DebugInfo());
 
   bool has_global_side_effect() const override {
     return activate;
@@ -486,7 +505,7 @@ class MatrixPtrStmt : public Stmt {
   Stmt *origin{nullptr};
   Stmt *offset{nullptr};
 
-  MatrixPtrStmt(Stmt *, Stmt *, const std::string & = "");
+  MatrixPtrStmt(Stmt *, Stmt *, const DebugInfo & = DebugInfo());
 
   /* TODO(zhanlue/yi): Unify semantics of offset in MatrixPtrStmt
 
@@ -544,7 +563,8 @@ class SNodeOpStmt : public Stmt, public ir_traits::Store {
   SNodeOpStmt(SNodeOpType op_type,
               SNode *snode,
               Stmt *ptr,
-              Stmt *val = nullptr);
+              Stmt *val = nullptr,
+              const DebugInfo &dbg_info = DebugInfo());
 
   static bool activation_related(SNodeOpType op);
 
@@ -775,7 +795,10 @@ class GlobalStoreStmt : public Stmt, public ir_traits::Store {
   Stmt *dest;
   Stmt *val;
 
-  GlobalStoreStmt(Stmt *dest, Stmt *val) : dest(dest), val(val) {
+  GlobalStoreStmt(Stmt *dest,
+                  Stmt *val,
+                  const DebugInfo &dbg_info = DebugInfo())
+      : Stmt(dbg_info), dest(dest), val(val) {
     TI_STMT_REG_FIELDS;
   }
 
@@ -803,7 +826,8 @@ class LocalLoadStmt : public Stmt, public ir_traits::Load {
  public:
   Stmt *src;
 
-  explicit LocalLoadStmt(Stmt *src) : src(src) {
+  explicit LocalLoadStmt(Stmt *src, const DebugInfo &dbg_info = DebugInfo())
+      : Stmt(dbg_info), src(src) {
     TI_STMT_REG_FIELDS;
   }
 
@@ -1330,11 +1354,15 @@ class GetChStmt : public Stmt {
   // irpass::type_check()
   bool overrided_dtype = false;
 
-  GetChStmt(Stmt *input_ptr, int chid, bool is_bit_vectorized = false);
+  GetChStmt(Stmt *input_ptr,
+            int chid,
+            bool is_bit_vectorized = false,
+            const DebugInfo &dbg_info = DebugInfo());
   GetChStmt(Stmt *input_ptr,
             SNode *snode,
             int chid,
-            bool is_bit_vectorized = false);
+            bool is_bit_vectorized = false,
+            const DebugInfo &dbg_info = DebugInfo());
 
   bool has_global_side_effect() const override {
     return false;

@@ -382,7 +382,7 @@ class AlgSimp : public BasicStmtVisitor {
           Stmt::make<BinaryOpStmt>(BinaryOpType::bit_shl, stmt->lhs, new_rhs);
       result->ret_type = stmt->ret_type;
 
-      result->set_tb(stmt->get_tb());
+      result->dbg_info = stmt->dbg_info;
       stmt->replace_usages_with(result.get());
       modifier.insert_before(stmt, std::move(result));
       modifier.erase(stmt);

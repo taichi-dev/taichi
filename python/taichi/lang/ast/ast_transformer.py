@@ -988,7 +988,7 @@ class ASTTransformer(Builder):
                         .expr_subscript(
                             node.value.ptr.ptr,
                             make_expr_group(keygroup.index(node.attr)),
-                            impl.get_runtime().get_current_src_info(),
+                            _ti_core.DebugInfo(impl.get_runtime().get_current_src_info()),
                         )
                     )
                 else:
@@ -997,7 +997,7 @@ class ASTTransformer(Builder):
                             node.value.ptr.ptr,
                             [make_expr_group(keygroup.index(ch)) for ch in node.attr],
                             (attr_len,),
-                            impl.get_runtime().get_current_src_info(),
+                            _ti_core.DebugInfo(impl.get_runtime().get_current_src_info()),
                         )
                     )
             else:

@@ -28,6 +28,7 @@ DEFINE_METAL_ID_TYPE(MTLSamplerState);
 DEFINE_METAL_ID_TYPE(MTLLibrary);
 DEFINE_METAL_ID_TYPE(MTLFunction);
 DEFINE_METAL_ID_TYPE(MTLComputePipelineState);
+DEFINE_METAL_ID_TYPE(MTLRenderPipelineState);
 DEFINE_METAL_ID_TYPE(MTLCommandQueue);
 DEFINE_METAL_ID_TYPE(MTLCommandBuffer);
 DEFINE_METAL_ID_TYPE(MTLBlitCommandEncoder);
@@ -113,15 +114,15 @@ class MetalPipeline final : public Pipeline {
                          MTLLibrary_id mtl_library,
                          const std::vector<MTLFunction_id>
                              &mtl_functions,  // Should be vertex and fragment
-                         const RasterParams &raster_params,
-                         const std::vector<VertexInputBinding> &vertex_inputs,
-                         const std::vector<VertexInputAttribute> &vertex_attrs);
+                         MTLRenderPipelineState_id mtl_render_pipeline_state,
+                         const RasterParams raster_params);
   ~MetalPipeline() final;
 
-  static MetalPipeline *create(const MetalDevice &device,
-                               const uint32_t *spv_data,
-                               size_t spv_size,
-                               const std::string &name);
+  static MetalPipeline *create_compute_pipeline(const MetalDevice &device,
+                                                const uint32_t *spv_data,
+                                                size_t spv_size,
+                                                const std::string &name);
+
   void destroy();
 
   inline MTLComputePipelineState_id mtl_compute_pipeline_state() const {
@@ -129,6 +130,14 @@ class MetalPipeline final : public Pipeline {
   }
   inline const MetalWorkgroupSize &workgroup_size() const {
     return workgroup_size_;
+  }
+
+  inline MTLRenderPipelineState_id mtl_render_pipeline_state() const {
+    return mtl_render_pipeline_state_;
+  }
+
+  inline const RasterParams raster_params() const {
+    return raster_params_;
   }
 
  private:
@@ -145,6 +154,8 @@ class MetalPipeline final : public Pipeline {
 
   // Raster variables
   std::vector<MTLFunction_id> mtl_functions_;
+  MTLRenderPipelineState_id mtl_render_pipeline_state_;
+  const RasterParams raster_params_;
 };
 
 enum class MetalShaderResourceType {
@@ -393,11 +404,17 @@ class MetalDevice final : public GraphicsDevice {
     return *default_sampler_;
   }
 
+  const BufferFormat get_swap_image_format() {
+    return swap_chain_image_format_;
+  }
+
   MTLFunction_id get_mtl_function(MTLLibrary_id mtl_lib,
                                   const std::string &func_name) const;
   MTLLibrary_id get_mtl_library(const std::string &source) const;
 
  private:
+  const BufferFormat swap_chain_image_format_{BufferFormat::bgra8};
+
   const std::string frag_function_name = "frag_function";
   const std::string vert_function_name = "vert_function";
 

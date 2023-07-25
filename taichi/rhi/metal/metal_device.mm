@@ -7,6 +7,57 @@
 namespace taichi::lang {
 namespace metal {
 
+MTLVertexFormat vertexformat2mtl(BufferFormat format) {
+  static const std::map<BufferFormat, MTLVertexFormat> map{
+      {BufferFormat::unknown, MTLVertexFormatInvalid},
+      {BufferFormat::r8, MTLVertexFormatUCharNormalized},
+      {BufferFormat::rg8, MTLVertexFormatUChar2Normalized},
+      {BufferFormat::rgba8, MTLVertexFormatUChar4Normalized},
+      {BufferFormat::rgba8srgb, MTLVertexFormatInvalid},
+      {BufferFormat::bgra8, MTLVertexFormatUChar4Normalized_BGRA},
+      {BufferFormat::bgra8srgb, MTLVertexFormatInvalid},
+      {BufferFormat::r8u, MTLVertexFormatInvalid},
+      {BufferFormat::rg8u, MTLVertexFormatInvalid},
+      {BufferFormat::rgba8u, MTLVertexFormatInvalid},
+      {BufferFormat::r8i, MTLVertexFormatInvalid},
+      {BufferFormat::rg8i, MTLVertexFormatInvalid},
+      {BufferFormat::rgba8i, MTLVertexFormatInvalid},
+      {BufferFormat::r16, MTLVertexFormatUShortNormalized},
+      {BufferFormat::rg16, MTLVertexFormatUShort2Normalized},
+      {BufferFormat::rgb16, MTLVertexFormatUShort3Normalized},
+      {BufferFormat::rgba16, MTLVertexFormatUShort4Normalized},
+      {BufferFormat::r16u, MTLVertexFormatInvalid},
+      {BufferFormat::rg16u, MTLVertexFormatInvalid},
+      {BufferFormat::rgb16u, MTLVertexFormatInvalid},
+      {BufferFormat::rgba16u, MTLVertexFormatInvalid},
+      {BufferFormat::r16i, MTLVertexFormatInvalid},
+      {BufferFormat::rg16i, MTLVertexFormatInvalid},
+      {BufferFormat::rgb16i, MTLVertexFormatInvalid},
+      {BufferFormat::rgba16i, MTLVertexFormatInvalid},
+      {BufferFormat::r16f, MTLVertexFormatHalf},
+      {BufferFormat::rg16f, MTLVertexFormatHalf2},
+      {BufferFormat::rgb16f, MTLVertexFormatHalf3},
+      {BufferFormat::rgba16f, MTLVertexFormatHalf4},
+      {BufferFormat::r32u, MTLVertexFormatUInt},
+      {BufferFormat::rg32u, MTLVertexFormatUInt2},
+      {BufferFormat::rgb32u, MTLVertexFormatUInt3},
+      {BufferFormat::rgba32u, MTLVertexFormatUInt4},
+      {BufferFormat::r32i, MTLVertexFormatInt},
+      {BufferFormat::rg32i, MTLVertexFormatInt2},
+      {BufferFormat::rgb32i, MTLVertexFormatInt3},
+      {BufferFormat::rgba32i, MTLVertexFormatInt4},
+      {BufferFormat::r32f, MTLVertexFormatFloat},
+      {BufferFormat::rg32f, MTLVertexFormatFloat2},
+      {BufferFormat::rgb32f, MTLVertexFormatFloat3},
+      {BufferFormat::rgba32f, MTLVertexFormatFloat4},
+      {BufferFormat::depth16, MTLVertexFormatInvalid},
+      {BufferFormat::depth24stencil8, MTLVertexFormatInvalid},
+      {BufferFormat::depth32f, MTLVertexFormatInvalid},
+  };
+  auto it = map.find(format);
+  RHI_ASSERT(it != map.end());
+  return it->second;
+}
 MTLPixelFormat format2mtl(BufferFormat format) {
   static const std::map<BufferFormat, MTLPixelFormat> map{
       {BufferFormat::unknown, MTLPixelFormatInvalid},
@@ -51,7 +102,7 @@ MTLPixelFormat format2mtl(BufferFormat format) {
       {BufferFormat::rgb32f, MTLPixelFormatInvalid},
       {BufferFormat::rgba32f, MTLPixelFormatRGBA32Float},
       {BufferFormat::depth16, MTLPixelFormatDepth16Unorm},
-      {BufferFormat::depth24stencil8, MTLPixelFormatInvalid},
+      {BufferFormat::depth24stencil8, MTLPixelFormatX24_Stencil8},
       {BufferFormat::depth32f, MTLPixelFormatDepth32Float},
   };
   auto it = map.find(format);
@@ -138,13 +189,17 @@ MetalPipeline::MetalPipeline(
     const MetalDevice &device, MTLLibrary_id mtl_library,
     const std::vector<MTLFunction_id>
         &mtl_functions, // Should be vertex and fragment
-    const RasterParams &raster_params,
-    const std::vector<VertexInputBinding> &vertex_inputs,
-    const std::vector<VertexInputAttribute> &vertex_attrs) {}
+    MTLRenderPipelineState_id mtl_render_pipeline_state,
+    const RasterParams raster_params)
+    : device_(&device), mtl_library_(mtl_library),
+      mtl_functions_(mtl_functions),
+      mtl_render_pipeline_state_(mtl_render_pipeline_state),
+      raster_params_(raster_params) {}
 MetalPipeline::~MetalPipeline() { destroy(); }
-MetalPipeline *MetalPipeline::create(const MetalDevice &device,
-                                     const uint32_t *spv_data, size_t spv_size,
-                                     const std::string &name) {
+MetalPipeline *MetalPipeline::create_compute_pipeline(const MetalDevice &device,
+                                                      const uint32_t *spv_data,
+                                                      size_t spv_size,
+                                                      const std::string &name) {
   RHI_ASSERT((size_t)spv_data % sizeof(uint32_t) == 0);
   RHI_ASSERT(spv_size % sizeof(uint32_t) == 0);
   spirv_cross::CompilerMSL compiler(spv_data, spv_size / sizeof(uint32_t));
@@ -616,7 +671,7 @@ MetalSurface::MetalSurface(MetalDevice *device, const SurfaceConfig &config)
   width_ = config.width;
   height_ = config.height;
 
-  image_format_ = BufferFormat::bgra8;
+  image_format_ = device->get_swap_image_format();
 
   layer_ = [CAMetalLayer layer];
   layer_.device = device->mtl_device();
@@ -835,8 +890,8 @@ RhiResult MetalDevice::create_pipeline(Pipeline **out_pipeline,
                                        PipelineCache *cache) noexcept {
   RHI_ASSERT(src.type == PipelineSourceType::spirv_binary);
   try {
-    *out_pipeline = MetalPipeline::create(*this, (const uint32_t *)src.data,
-                                          src.size, name);
+    *out_pipeline = MetalPipeline::create_compute_pipeline(
+        *this, (const uint32_t *)src.data, src.size, name);
   } catch (const std::exception &e) {
     return RhiResult::error;
   }
@@ -849,6 +904,7 @@ std::unique_ptr<Pipeline> MetalDevice::create_raster_pipeline(
     const std::vector<VertexInputBinding> &vertex_inputs,
     const std::vector<VertexInputAttribute> &vertex_attrs, std::string name) {
 
+  // Geometry shaders aren't supported in Vulkan backend
   RHI_ASSERT(src.size() == 2); // One vertex one fragment
   RHI_ASSERT(src[0].type == PipelineSourceType::spirv_binary);
   RHI_ASSERT(src[1].type == PipelineSourceType::spirv_binary);
@@ -899,20 +955,85 @@ std::unique_ptr<Pipeline> MetalDevice::create_raster_pipeline(
   MTLLibrary_id mtl_library = get_mtl_library(msl_source);
 
   // Get the MTLFunctions
+  int frag_func_index = 0;
+  int vert_func_index = 0;
   std::vector<MTLFunction_id> mtl_functions;
   for (int i = 0; i < 2; i++) {
-    const std::string new_entry_point_name =
-        src[i].stage == PipelineStageType::fragment ? frag_function_name
-                                                    : vert_function_name;
+    std::string new_entry_point_name;
+    if (src[i].stage == PipelineStageType::fragment) {
+      frag_func_index = i;
+      new_entry_point_name = frag_function_name;
+    } else {
+      vert_func_index = i;
+      new_entry_point_name = vert_function_name;
+    }
 
     MTLFunction_id mtl_function =
         get_mtl_function(mtl_library, new_entry_point_name);
     mtl_functions.push_back(mtl_function);
   }
 
-  return std::make_unique<MetalPipeline>(*this, mtl_library, mtl_functions,
-                                         raster_params, vertex_inputs,
-                                         vertex_attrs);
+  // Create render pipeline
+  static const std::unordered_map<TopologyType, MTLPrimitiveTopologyClass>
+      topo_types = {
+          {TopologyType::Triangles,
+           MTLPrimitiveTopologyClass::MTLPrimitiveTopologyClassTriangle},
+          {TopologyType::Lines,
+           MTLPrimitiveTopologyClass::MTLPrimitiveTopologyClassLine},
+          {TopologyType::Points,
+           MTLPrimitiveTopologyClass::MTLPrimitiveTopologyClassPoint},
+      };
+
+  MTLRenderPipelineDescriptor *rpd = [MTLRenderPipelineDescriptor new];
+  rpd.vertexFunction = mtl_functions[vert_func_index];
+  rpd.fragmentFunction = mtl_functions[frag_func_index];
+  rpd.colorAttachments[0].pixelFormat = format2mtl(swap_chain_image_format_);
+  if (raster_params.depth_write) {
+    rpd.depthAttachmentPixelFormat = format2mtl(BufferFormat::depth32f);
+  }
+  rpd.inputPrimitiveTopology = topo_types.at(raster_params.prim_topology);
+
+  // Set vertex description
+  MTLVertexDescriptor *vd = [MTLVertexDescriptor new];
+
+  for (auto &vert_attr : vertex_attrs) {
+    int location = vert_attr.location;
+    vd.attributes[location].format = vertexformat2mtl(vert_attr.format);
+    vd.attributes[location].offset = vert_attr.offset;
+    vd.attributes[location].bufferIndex = vert_attr.binding;
+  }
+  for (auto &vert_input : vertex_inputs) {
+    int buffer_index = vert_input.binding;
+    vd.layouts[buffer_index].stride = vert_input.stride;
+    vd.layouts[buffer_index].stepFunction =
+        vert_input.instance ? MTLVertexStepFunctionPerInstance
+                            : MTLVertexStepFunctionPerVertex;
+    vd.layouts[buffer_index].stepRate = 1;
+  }
+
+  rpd.vertexDescriptor = vd;
+
+  // Create pipeline state
+  MTLRenderPipelineState_id rps = nil;
+  {
+    NSError *err = nil;
+    rps = [mtl_device_ newRenderPipelineStateWithDescriptor:rpd error:&err];
+
+    if (rps == nil) {
+      if (err != nil) {
+        std::array<char, 4096> msgbuf;
+        snprintf(msgbuf.data(), msgbuf.size(),
+                 "cannot create render pipeline state: %s (code=%d)",
+                 err.localizedDescription.UTF8String, (int)err.code);
+        RHI_LOG_ERROR(msgbuf.data());
+      }
+      return nullptr;
+    }
+  }
+
+  // Create the pipeline object
+  return std::make_unique<MetalPipeline>(*this, mtl_library, mtl_functions, rps,
+                                         raster_params);
 }
 
 MTLFunction_id

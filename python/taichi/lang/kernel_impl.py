@@ -750,7 +750,7 @@ class Kernel:
 
                     tmp = v
                     if (str(v.device) != "cpu") and not (
-                        str(v.device).startswith("cuda") and taichi_arch != _ti_core.Arch.cuda
+                        str(v.device).startswith("cuda") and taichi_arch == _ti_core.Arch.cuda
                     ):
                         # Getting a torch CUDA tensor on Taichi non-cuda arch:
                         # We just replace it with a CPU tensor and by the end of kernel execution we'll use the

@@ -146,15 +146,34 @@ typedef enum TieExtension {
 typedef int (*TieCallback)(void);  // Return 0 if success, otherwise -1.
 
 typedef void *TieHandle;
-typedef TieHandle TieCompileConfigHandle;         // class CompileConfig
-typedef TieHandle TieKernelHandle;                // class Kernel
-typedef TieHandle TieFunctionHandle;              // class Function
-typedef TieHandle TieNdarrayHandle;               // class NDArray
-typedef TieHandle TieTextureHandle;               // class Texture
-typedef TieHandle TieLaunchContextBuilderHandle;  // class LaunchContextBuilder
-typedef TieHandle TieDataTypeHandle;              // class DataType
-typedef TieHandle TieASTBuilderHandle;            // class ASTBuilder
-typedef TieHandle TieSNodeHandle;                 // class SNode
+typedef TieHandle TieCompileConfigHandle;           // class CompileConfig
+typedef TieHandle TieKernelHandle;                  // class Kernel
+typedef TieHandle TieFunctionHandle;                // class Function
+typedef TieHandle TieNdarrayHandle;                 // class NDArray
+typedef TieHandle TieTextureHandle;                 // class Texture
+typedef TieHandle TieLaunchContextBuilderHandle;    // class LaunchContextBuilder
+typedef TieHandle TieDataTypeHandle;                // class DataType
+typedef TieHandle TieASTBuilderHandle;              // class ASTBuilder
+typedef TieHandle TieSNodeHandle;                   // class SNode
+typedef TieHandle TieProgramHandle;                 // class Program
+typedef TieHandle TieAotModuleBuilderHandle;        // class AotModuleBuilder
+typedef TieHandle TieSparseMatrixHandle;            // class SparseMatrix
+typedef TieHandle TieCompiledKernelDataHandle;      // class CompiledKernelData
+
+typedef void *TieRef;
+typedef TieRef TieCompileConfigRef;           // class CompileConfig
+typedef TieRef TieKernelRef;                  // class Kernel
+typedef TieRef TieFunctionRef;                // class Function
+typedef TieRef TieNdarrayRef;                 // class NDArray
+typedef TieRef TieTextureRef;                 // class Texture
+typedef TieRef TieLaunchContextBuilderRef;    // class LaunchContextBuilder
+typedef TieRef TieDataTypeRef;                // class DataType
+typedef TieRef TieASTBuilderRef;              // class ASTBuilder
+typedef TieRef TieSNodeRef;                   // class SNode
+typedef TieRef TieProgramRef;                 // class Program
+typedef TieRef TieAotModuleBuilderRef;        // class AotModuleBuilder
+typedef TieRef TieSparseMatrixRef;            // class SparseMatrix
+typedef TieRef TieCompiledKernelDataRef;      // class CompiledKernelData
 
 // Error processing
 TI_DLL_EXPORT int TI_API_CALL tie_G_set_last_error(int error, const char *msg);
@@ -171,101 +190,101 @@ TI_DLL_EXPORT int TI_API_CALL tie_G_host_arch(int *ret_arch);
 TI_DLL_EXPORT int TI_API_CALL tie_G_is_extension_supported(int arch, int extension, bool *ret_supported);
 
 // default_compile_config handling
-TI_DLL_EXPORT int TI_API_CALL tie_G_default_compile_config(TieCompileConfigHandle *ret_handle);
+TI_DLL_EXPORT int TI_API_CALL tie_G_default_compile_config(TieCompileConfigRef *ret_handle);
 
 TI_DLL_EXPORT int TI_API_CALL tie_G_reset_default_compile_config();
 
 // class CompileConfig
 TI_DLL_EXPORT int TI_API_CALL tie_CompileConfig_create(TieCompileConfigHandle *ret_handle);
 
-TI_DLL_EXPORT int TI_API_CALL tie_CompileConfig_destroy(TieCompileConfigHandle self);
+TI_DLL_EXPORT int TI_API_CALL tie_CompileConfig_destroy(TieCompileConfigRef self);
 
 #define TIE_DECL_COMPILE_CONFIG_GET_SET_ATTR(TaichiStruct, attr_name, attr_type, get_set_type) \
-  TI_DLL_EXPORT int TI_API_CALL tie_CompileConfig_get_##attr_name(TieCompileConfigHandle self, get_set_type *ret_##attr_name); \
-  TI_DLL_EXPORT int TI_API_CALL tie_CompileConfig_set_##attr_name(TieCompileConfigHandle self, get_set_type attr_name);
+  TI_DLL_EXPORT int TI_API_CALL tie_CompileConfig_get_##attr_name(TieCompileConfigRef self, get_set_type *ret_##attr_name); \
+  TI_DLL_EXPORT int TI_API_CALL tie_CompileConfig_set_##attr_name(TieCompileConfigRef self, get_set_type attr_name);
 #define TIE_PER_COMPILE_CONFIG_ATTR TIE_DECL_COMPILE_CONFIG_GET_SET_ATTR
 #include "inc/compile_config.inc.h"
 #undef TIE_PER_COMPILE_CONFIG_ATTR
 #undef TIE_DECL_COMPILE_CONFIG_GET_SET_ATTR
 
 // class Kernel
-TI_DLL_EXPORT int TI_API_CALL tie_Kernel_insert_scalar_param(TieKernelHandle self, TieDataTypeHandle dt, const char *name, int *ret_param_index);
+TI_DLL_EXPORT int TI_API_CALL tie_Kernel_insert_scalar_param(TieKernelRef self, TieDataTypeRef dt, const char *name, int *ret_param_index);
 
-TI_DLL_EXPORT int TI_API_CALL tie_Kernel_insert_arr_param(TieKernelHandle self, TieDataTypeHandle dt, int total_dim, int *ap_element_shape, size_t element_shape_dim, const char *name, int *ret_param_index);
+TI_DLL_EXPORT int TI_API_CALL tie_Kernel_insert_arr_param(TieKernelRef self, TieDataTypeRef dt, int total_dim, int *ap_element_shape, size_t element_shape_dim, const char *name, int *ret_param_index);
 
-TI_DLL_EXPORT int TI_API_CALL tie_Kernel_insert_ndarray_param(TieKernelHandle self, TieDataTypeHandle dt, int ndim, const char *name, int needs_grad, int *ret_param_index);
+TI_DLL_EXPORT int TI_API_CALL tie_Kernel_insert_ndarray_param(TieKernelRef self, TieDataTypeRef dt, int ndim, const char *name, int needs_grad, int *ret_param_index);
 
-TI_DLL_EXPORT int TI_API_CALL tie_Kernel_insert_texture_param(TieKernelHandle self, int total_dim, const char *name, int *ret_param_index);
+TI_DLL_EXPORT int TI_API_CALL tie_Kernel_insert_texture_param(TieKernelRef self, int total_dim, const char *name, int *ret_param_index);
 
-TI_DLL_EXPORT int TI_API_CALL tie_Kernel_insert_pointer_param(TieKernelHandle self, TieDataTypeHandle dt, const char *name, int *ret_param_index);
+TI_DLL_EXPORT int TI_API_CALL tie_Kernel_insert_pointer_param(TieKernelRef self, TieDataTypeRef dt, const char *name, int *ret_param_index);
 
-TI_DLL_EXPORT int TI_API_CALL tie_Kernel_insert_rw_texture_param(TieKernelHandle self, int total_dim, int format, const char *name, int *ret_param_index);
+TI_DLL_EXPORT int TI_API_CALL tie_Kernel_insert_rw_texture_param(TieKernelRef self, int total_dim, int format, const char *name, int *ret_param_index);
 
-TI_DLL_EXPORT int TI_API_CALL tie_Kernel_insert_ret(TieKernelHandle self, TieDataTypeHandle dt, int *ret_ret_index);
+TI_DLL_EXPORT int TI_API_CALL tie_Kernel_insert_ret(TieKernelRef self, TieDataTypeRef dt, int *ret_ret_index);
 
-TI_DLL_EXPORT int TI_API_CALL tie_Kernel_finalize_rets(TieKernelHandle self);
+TI_DLL_EXPORT int TI_API_CALL tie_Kernel_finalize_rets(TieKernelRef self);
 
-TI_DLL_EXPORT int TI_API_CALL tie_Kernel_finalize_params(TieKernelHandle self);
+TI_DLL_EXPORT int TI_API_CALL tie_Kernel_finalize_params(TieKernelRef self);
 
-TI_DLL_EXPORT int TI_API_CALL tie_Kernel_ast_builder(TieKernelHandle self, TieASTBuilderHandle *ret_ast_builder);
+TI_DLL_EXPORT int TI_API_CALL tie_Kernel_ast_builder(TieKernelRef self, TieASTBuilderRef *ret_ast_builder);
 
-TI_DLL_EXPORT int TI_API_CALL tie_Kernel_no_activate(TieKernelHandle self, TieSNodeHandle snode);
+TI_DLL_EXPORT int TI_API_CALL tie_Kernel_no_activate(TieKernelRef self, TieSNodeRef snode);
 
 // class Function
-TI_DLL_EXPORT int TI_API_CALL tie_Function_insert_scalar_param(TieFunctionHandle self, TieDataTypeHandle dt, const char *name, int *ret_param_index);
+TI_DLL_EXPORT int TI_API_CALL tie_Function_insert_scalar_param(TieFunctionRef self, TieDataTypeRef dt, const char *name, int *ret_param_index);
 
-TI_DLL_EXPORT int TI_API_CALL tie_Function_insert_arr_param(TieFunctionHandle self, TieDataTypeHandle dt, int total_dim, int *ap_element_shape, size_t element_shape_dim, const char *name, int *ret_param_index);
+TI_DLL_EXPORT int TI_API_CALL tie_Function_insert_arr_param(TieFunctionRef self, TieDataTypeRef dt, int total_dim, int *ap_element_shape, size_t element_shape_dim, const char *name, int *ret_param_index);
 
-TI_DLL_EXPORT int TI_API_CALL tie_Function_insert_ndarray_param(TieFunctionHandle self, TieDataTypeHandle dt, int ndim, const char *name, int needs_grad, int *ret_param_index);
+TI_DLL_EXPORT int TI_API_CALL tie_Function_insert_ndarray_param(TieFunctionRef self, TieDataTypeRef dt, int ndim, const char *name, int needs_grad, int *ret_param_index);
 
-TI_DLL_EXPORT int TI_API_CALL tie_Function_insert_texture_param(TieFunctionHandle self, int total_dim, const char *name, int *ret_param_index);
+TI_DLL_EXPORT int TI_API_CALL tie_Function_insert_texture_param(TieFunctionRef self, int total_dim, const char *name, int *ret_param_index);
 
-TI_DLL_EXPORT int TI_API_CALL tie_Function_insert_pointer_param(TieFunctionHandle self, TieDataTypeHandle dt, const char *name, int *ret_param_index);
+TI_DLL_EXPORT int TI_API_CALL tie_Function_insert_pointer_param(TieFunctionRef self, TieDataTypeRef dt, const char *name, int *ret_param_index);
 
-TI_DLL_EXPORT int TI_API_CALL tie_Function_insert_rw_texture_param(TieFunctionHandle self, int total_dim, int format, const char *name, int *ret_param_index);
+TI_DLL_EXPORT int TI_API_CALL tie_Function_insert_rw_texture_param(TieFunctionRef self, int total_dim, int format, const char *name, int *ret_param_index);
 
-TI_DLL_EXPORT int TI_API_CALL tie_Function_set_function_body(TieFunctionHandle self, TieCallback func);
+TI_DLL_EXPORT int TI_API_CALL tie_Function_set_function_body(TieFunctionRef self, TieCallback func);
 
-TI_DLL_EXPORT int TI_API_CALL tie_Function_insert_ret(TieFunctionHandle self, TieDataTypeHandle dt, int *ret_ret_index);
+TI_DLL_EXPORT int TI_API_CALL tie_Function_insert_ret(TieFunctionRef self, TieDataTypeRef dt, int *ret_ret_index);
 
-TI_DLL_EXPORT int TI_API_CALL tie_Function_finalize_rets(TieFunctionHandle self);
+TI_DLL_EXPORT int TI_API_CALL tie_Function_finalize_rets(TieFunctionRef self);
 
-TI_DLL_EXPORT int TI_API_CALL tie_Function_finalize_params(TieFunctionHandle self);
+TI_DLL_EXPORT int TI_API_CALL tie_Function_finalize_params(TieFunctionRef self);
 
-TI_DLL_EXPORT int TI_API_CALL tie_Function_ast_builder(TieFunctionHandle self, TieASTBuilderHandle *ret_ast_builder);
+TI_DLL_EXPORT int TI_API_CALL tie_Function_ast_builder(TieFunctionRef self, TieASTBuilderRef *ret_ast_builder);
 
 // class LaunchContextBuilder
-TI_DLL_EXPORT int TI_API_CALL tie_LaunchContextBuilder_create(TieKernelHandle kernel_handle, TieLaunchContextBuilderHandle *ret_handle);
+TI_DLL_EXPORT int TI_API_CALL tie_LaunchContextBuilder_create(TieKernelRef kernel_handle, TieLaunchContextBuilderHandle *ret_handle);
 
-TI_DLL_EXPORT int TI_API_CALL tie_LaunchContextBuilder_destroy(TieLaunchContextBuilderHandle self);
+TI_DLL_EXPORT int TI_API_CALL tie_LaunchContextBuilder_destroy(TieLaunchContextBuilderRef self);
 
-TI_DLL_EXPORT int TI_API_CALL tie_LaunchContextBuilder_set_arg_int(TieLaunchContextBuilderHandle self, int arg_id, int64_t i64);
+TI_DLL_EXPORT int TI_API_CALL tie_LaunchContextBuilder_set_arg_int(TieLaunchContextBuilderRef self, int arg_id, int64_t i64);
 
-TI_DLL_EXPORT int TI_API_CALL tie_LaunchContextBuilder_set_arg_uint(TieLaunchContextBuilderHandle self, int arg_id, uint64_t u64);
+TI_DLL_EXPORT int TI_API_CALL tie_LaunchContextBuilder_set_arg_uint(TieLaunchContextBuilderRef self, int arg_id, uint64_t u64);
 
-TI_DLL_EXPORT int TI_API_CALL tie_LaunchContextBuilder_set_arg_float(TieLaunchContextBuilderHandle self, int arg_id, double d);
+TI_DLL_EXPORT int TI_API_CALL tie_LaunchContextBuilder_set_arg_float(TieLaunchContextBuilderRef self, int arg_id, double d);
 
-TI_DLL_EXPORT int TI_API_CALL tie_LaunchContextBuilder_set_struct_arg_int(TieLaunchContextBuilderHandle self, int *ap_arg_indices, size_t arg_indices_dim, int64_t i64);
+TI_DLL_EXPORT int TI_API_CALL tie_LaunchContextBuilder_set_struct_arg_int(TieLaunchContextBuilderRef self, int *ap_arg_indices, size_t arg_indices_dim, int64_t i64);
 
-TI_DLL_EXPORT int TI_API_CALL tie_LaunchContextBuilder_set_struct_arg_uint(TieLaunchContextBuilderHandle self, int *ap_arg_indices, size_t arg_indices_dim, uint64_t u64);
+TI_DLL_EXPORT int TI_API_CALL tie_LaunchContextBuilder_set_struct_arg_uint(TieLaunchContextBuilderRef self, int *ap_arg_indices, size_t arg_indices_dim, uint64_t u64);
 
-TI_DLL_EXPORT int TI_API_CALL tie_LaunchContextBuilder_set_struct_arg_float(TieLaunchContextBuilderHandle self, int *ap_arg_indices, size_t arg_indices_dim, double d);
+TI_DLL_EXPORT int TI_API_CALL tie_LaunchContextBuilder_set_struct_arg_float(TieLaunchContextBuilderRef self, int *ap_arg_indices, size_t arg_indices_dim, double d);
 
-TI_DLL_EXPORT int TI_API_CALL tie_LaunchContextBuilder_set_arg_external_array_with_shape(TieLaunchContextBuilderHandle self, int arg_id, uintptr_t ptr, uint64_t size, int64_t *ap_shape, size_t shape_dim, uintptr_t grad_ptr);
+TI_DLL_EXPORT int TI_API_CALL tie_LaunchContextBuilder_set_arg_external_array_with_shape(TieLaunchContextBuilderRef self, int arg_id, uintptr_t ptr, uint64_t size, int64_t *ap_shape, size_t shape_dim, uintptr_t grad_ptr);
 
-TI_DLL_EXPORT int TI_API_CALL tie_LaunchContextBuilder_set_arg_ndarray(TieLaunchContextBuilderHandle self, int arg_id, TieNdarrayHandle arr);
+TI_DLL_EXPORT int TI_API_CALL tie_LaunchContextBuilder_set_arg_ndarray(TieLaunchContextBuilderRef self, int arg_id, TieNdarrayRef arr);
 
-TI_DLL_EXPORT int TI_API_CALL tie_LaunchContextBuilder_set_arg_ndarray_with_grad(TieLaunchContextBuilderHandle self, int arg_id, TieNdarrayHandle arr, TieNdarrayHandle arr_grad);
+TI_DLL_EXPORT int TI_API_CALL tie_LaunchContextBuilder_set_arg_ndarray_with_grad(TieLaunchContextBuilderRef self, int arg_id, TieNdarrayRef arr, TieNdarrayRef arr_grad);
 
-TI_DLL_EXPORT int TI_API_CALL tie_LaunchContextBuilder_set_arg_texture(TieLaunchContextBuilderHandle self, int arg_id, TieTextureHandle tex);
+TI_DLL_EXPORT int TI_API_CALL tie_LaunchContextBuilder_set_arg_texture(TieLaunchContextBuilderRef self, int arg_id, TieTextureRef tex);
 
-TI_DLL_EXPORT int TI_API_CALL tie_LaunchContextBuilder_set_arg_rw_texture(TieLaunchContextBuilderHandle self, int arg_id, TieTextureHandle tex);
+TI_DLL_EXPORT int TI_API_CALL tie_LaunchContextBuilder_set_arg_rw_texture(TieLaunchContextBuilderRef self, int arg_id, TieTextureRef tex);
 
-TI_DLL_EXPORT int TI_API_CALL tie_LaunchContextBuilder_get_struct_ret_int(TieLaunchContextBuilderHandle self, int *ap_index, size_t index_dim, int64_t *ret_i64);
+TI_DLL_EXPORT int TI_API_CALL tie_LaunchContextBuilder_get_struct_ret_int(TieLaunchContextBuilderRef self, int *ap_index, size_t index_dim, int64_t *ret_i64);
 
-TI_DLL_EXPORT int TI_API_CALL tie_LaunchContextBuilder_get_struct_ret_uint(TieLaunchContextBuilderHandle self, int *ap_index, size_t index_dim, uint64_t *ret_u64);
+TI_DLL_EXPORT int TI_API_CALL tie_LaunchContextBuilder_get_struct_ret_uint(TieLaunchContextBuilderRef self, int *ap_index, size_t index_dim, uint64_t *ret_u64);
 
-TI_DLL_EXPORT int TI_API_CALL tie_LaunchContextBuilder_get_struct_ret_float(TieLaunchContextBuilderHandle self, int *ap_index, size_t index_dim, double *ret_d);
+TI_DLL_EXPORT int TI_API_CALL tie_LaunchContextBuilder_get_struct_ret_float(TieLaunchContextBuilderRef self, int *ap_index, size_t index_dim, double *ret_d);
 
 #ifdef __cplusplus
 }  // extern "C"

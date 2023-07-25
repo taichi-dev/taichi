@@ -57,18 +57,24 @@ def get_exception_to_throw_if_not_success(ret, get_last_error):
     return None
 
 
-def get_object_ref_from_handle(handle_type_name, handle):
-    if handle is None or handle == 0:
+def get_python_object_from_handle(tie_type_name, handle_value, manage_handle):
+    if handle_value is None or handle_value == 0:
         return None
 
     taichi = __import__("taichi")
-    assert isinstance(handle, int)
-    assert handle_type_name.startswith("Tie")
-    assert handle_type_name.endswith("Handle")
-    typename = handle_type_name[3:-6]
-    if typename in TIE_TEMP_CCORE_TYPE_TO_CORE_TYPE:
-        return eval(f"{TIE_TEMP_CCORE_TYPE_TO_CORE_TYPE[typename]}.from_handle_to_ref({handle})")
-    return eval(f"taichi._lib.ccore.{typename}(handle={handle}, manage_handle=False)")
+    assert isinstance(handle_value, int)
+    if manage_handle:  # TieXXXHandle
+        assert tie_type_name.startswith("Tie")
+        assert tie_type_name.endswith("Handle")
+        typename = tie_type_name[3:-6]
+        return eval(f"taichi._lib.ccore.{typename}(handle={handle_value}, manage_handle=True)")
+    else:  # TieXXXRef
+        assert tie_type_name.startswith("Tie")
+        assert tie_type_name.endswith("Ref")
+        typename = tie_type_name[3:-3]
+        if typename in TIE_TEMP_CCORE_TYPE_TO_CORE_TYPE:
+            return eval(f"{TIE_TEMP_CCORE_TYPE_TO_CORE_TYPE[typename]}.from_handle_to_ref({handle_value})")
+        return eval(f"taichi._lib.ccore.{typename}(handle={handle_value}, manage_handle=False)")
 
 
 def wrap_callback_to_c(callback):
@@ -85,7 +91,7 @@ def wrap_callback_to_c(callback):
 __all__ = [
     "TieAPIError",
     "get_exception_to_throw_if_not_success",
-    "get_object_ref_from_handle",
+    "get_python_object_from_handle",
     "wrap_callback_to_c",
 ]
 """
@@ -224,6 +230,14 @@ class CType:
             and typename.endswith("Handle")
             and self.ptr_levels == 0
         )
+    
+    def is_ref(self):
+        typename = self.base_type_name
+        return (
+            typename.startswith("Tie")
+            and typename.endswith("Ref")
+            and self.ptr_levels == 0
+        )
 
     def is_callback(self):
         return self.base_type_name == "TieCallback" and self.ptr_levels == 0
@@ -274,6 +288,9 @@ class FuncParameter:
 
     def is_handle_param(self):
         return self.type.is_handle()
+
+    def is_ref_param(self):
+        return self.type.is_ref()
 
     def is_callback_param(self):
         return self.type.is_callback()
@@ -451,7 +468,7 @@ def translate_c_type_to_ctypes_type(type: CType, exclude_ptr_levels: int = 0) ->
     if ptr_levels == 0:
         if typename in C_BUILTIN_TYPE_TO_CTYPES_TYPE:
             return C_BUILTIN_TYPE_TO_CTYPES_TYPE[typename]
-        elif type.is_handle():
+        elif type.is_handle() or type.is_ref():
             return "ctypes.c_void_p"
         elif type.is_callback():
             return "ctypes.CFUNCTYPE(ctypes.c_int)"
@@ -517,7 +534,7 @@ def translate_func_decl(
 
 def translate_arg_from_python_to_c(arg_name: str, param: FuncParameter) -> str:
     arg_type = param.type
-    if param.is_handle_param():
+    if param.is_handle_param() or param.is_ref_param():
         return f"{arg_name}.get_handle()"
     elif param.is_arr_param():
         return f"{arg_name}, len({arg_name})"
@@ -536,15 +553,17 @@ def translate_arg_from_python_to_c(arg_name: str, param: FuncParameter) -> str:
 
 
 def translate_ret_from_c_to_python(
-    ret_var_name: str, out_param: FuncParameter, trans_handle_to_object_ref: bool = True
+    ret_var_name: str, out_param: FuncParameter, trans_handle_to_object: bool = True
 ) -> str:
     assert out_param.is_out_param()
 
     value_type = out_param.type.exclude_ptr(1)
     if value_type.is_cstr():
         return f'ctypes.string_at({ret_var_name}.value).decode("utf-8")'
-    elif value_type.is_handle() and trans_handle_to_object_ref:
-        return f"get_object_ref_from_handle('{value_type.base_type_name}', {ret_var_name}.value)"
+    elif value_type.is_handle() and trans_handle_to_object:
+        return f"get_python_object_from_handle('{value_type.base_type_name}', {ret_var_name}.value, manage_handle=True)"
+    elif value_type.is_ref() and trans_handle_to_object:
+        return f"get_python_object_from_handle('{value_type.base_type_name}', {ret_var_name}.value, manage_handle=False)"
     elif value_type.is_bool():
         return f"bool({ret_var_name}.value)"
     else:
@@ -637,7 +656,7 @@ def generate_py_module_from_exports_header(
 
     IMPORTS = """import ctypes
 from .ccore import taichi_ccore
-from .utils import get_exception_to_throw_if_not_success, get_object_ref_from_handle, wrap_callback_to_c
+from .utils import get_exception_to_throw_if_not_success, get_python_object_from_handle, wrap_callback_to_c
 
 """
 

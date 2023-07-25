@@ -136,17 +136,17 @@ struct TieAttrAssign<const char *, std::string> {
 };
 
 template <>
-struct TieAttrAssign<taichi::lang::DataType, TieDataTypeHandle> {
-  static void assign(taichi::lang::DataType &dest, TieDataTypeHandle src) {
+struct TieAttrAssign<taichi::lang::DataType, TieDataTypeRef> {
+  static void assign(taichi::lang::DataType &dest, TieDataTypeRef src) {
     dest = *reinterpret_cast<taichi::lang::DataType *>(src);
   }
 };
 
 template <>
-struct TieAttrAssign<TieDataTypeHandle, taichi::lang::DataType> {
-  static void assign(TieDataTypeHandle &dest,
+struct TieAttrAssign<TieDataTypeRef, taichi::lang::DataType> {
+  static void assign(TieDataTypeRef &dest,
                      const taichi::lang::DataType &src) {
-    dest = reinterpret_cast<TieDataTypeHandle>(
+    dest = reinterpret_cast<TieDataTypeRef>(
         const_cast<taichi::lang::DataType *>(&src));
   }
 };
@@ -229,10 +229,10 @@ int tie_G_is_extension_supported(int arch, int extension, bool *ret_supported) {
 
 // default_compile_config handling
 
-int tie_G_default_compile_config(TieCompileConfigHandle *ret_handle) {
+int tie_G_default_compile_config(TieCompileConfigRef *ret_handle) {
   TIE_FUNCTION_BODY_BEGIN();
   TIE_CHECK_RETURN_ARG(ret_handle);
-  *ret_handle = reinterpret_cast<TieCompileConfigHandle>(
+  *ret_handle = reinterpret_cast<TieCompileConfigRef>(
       &taichi::lang::default_compile_config);
   TIE_FUNCTION_BODY_END();
 }
@@ -252,7 +252,7 @@ int tie_CompileConfig_create(TieCompileConfigHandle *ret_handle) {
   TIE_FUNCTION_BODY_END();
 }
 
-int tie_CompileConfig_destroy(TieCompileConfigHandle self) {
+int tie_CompileConfig_destroy(TieCompileConfigRef self) {
   TIE_FUNCTION_BODY_BEGIN();
   TIE_CHECK_HANDLE(self);
   auto *config = reinterpret_cast<taichi::lang::CompileConfig *>(self);
@@ -262,7 +262,7 @@ int tie_CompileConfig_destroy(TieCompileConfigHandle self) {
 
 #define TIE_IMPL_COMPILE_CONFIG_GET_SET_ATTR(TaichiStruct, attr_name,         \
                                              attr_type, get_set_type)         \
-  int tie_CompileConfig_get_##attr_name(TieCompileConfigHandle self,          \
+  int tie_CompileConfig_get_##attr_name(TieCompileConfigRef self,          \
                                         get_set_type *ret_value) {            \
     TIE_FUNCTION_BODY_BEGIN();                                                \
     TIE_CHECK_HANDLE(self);                                                   \
@@ -272,7 +272,7 @@ int tie_CompileConfig_destroy(TieCompileConfigHandle self) {
                                                    config->attr_name);        \
     TIE_FUNCTION_BODY_END();                                                  \
   }                                                                           \
-  int tie_CompileConfig_set_##attr_name(TieCompileConfigHandle self,          \
+  int tie_CompileConfig_set_##attr_name(TieCompileConfigRef self,          \
                                         get_set_type value) {                 \
     TIE_FUNCTION_BODY_BEGIN();                                                \
     TIE_CHECK_HANDLE(self);                                                   \
@@ -288,8 +288,8 @@ int tie_CompileConfig_destroy(TieCompileConfigHandle self) {
 
 // class Kernel
 
-int tie_Kernel_insert_scalar_param(TieKernelHandle self,
-                                   TieDataTypeHandle dt,
+int tie_Kernel_insert_scalar_param(TieKernelRef self,
+                                   TieDataTypeRef dt,
                                    const char *name,
                                    int *ret_param_index) {
   TIE_FUNCTION_BODY_BEGIN();
@@ -303,8 +303,8 @@ int tie_Kernel_insert_scalar_param(TieKernelHandle self,
   TIE_FUNCTION_BODY_END();
 }
 
-int tie_Kernel_insert_arr_param(TieKernelHandle self,
-                                TieDataTypeHandle dt,
+int tie_Kernel_insert_arr_param(TieKernelRef self,
+                                TieDataTypeRef dt,
                                 int total_dim,
                                 int *ap_element_shape,
                                 size_t element_shape_dim,
@@ -325,8 +325,8 @@ int tie_Kernel_insert_arr_param(TieKernelHandle self,
   TIE_FUNCTION_BODY_END();
 }
 
-int tie_Kernel_insert_ndarray_param(TieKernelHandle self,
-                                    TieDataTypeHandle dt,
+int tie_Kernel_insert_ndarray_param(TieKernelRef self,
+                                    TieDataTypeRef dt,
                                     int ndim,
                                     const char *name,
                                     int needs_grad,
@@ -343,7 +343,7 @@ int tie_Kernel_insert_ndarray_param(TieKernelHandle self,
   TIE_FUNCTION_BODY_END();
 }
 
-int tie_Kernel_insert_texture_param(TieKernelHandle self,
+int tie_Kernel_insert_texture_param(TieKernelRef self,
                                     int total_dim,
                                     const char *name,
                                     int *ret_param_index) {
@@ -356,8 +356,8 @@ int tie_Kernel_insert_texture_param(TieKernelHandle self,
   TIE_FUNCTION_BODY_END();
 }
 
-int tie_Kernel_insert_pointer_param(TieKernelHandle self,
-                                    TieDataTypeHandle dt,
+int tie_Kernel_insert_pointer_param(TieKernelRef self,
+                                    TieDataTypeRef dt,
                                     const char *name,
                                     int *ret_param_index) {
   TIE_FUNCTION_BODY_BEGIN();
@@ -371,7 +371,7 @@ int tie_Kernel_insert_pointer_param(TieKernelHandle self,
   TIE_FUNCTION_BODY_END();
 }
 
-int tie_Kernel_insert_rw_texture_param(TieKernelHandle self,
+int tie_Kernel_insert_rw_texture_param(TieKernelRef self,
                                        int total_dim,
                                        int format,
                                        const char *name,
@@ -386,8 +386,8 @@ int tie_Kernel_insert_rw_texture_param(TieKernelHandle self,
   TIE_FUNCTION_BODY_END();
 }
 
-int tie_Kernel_insert_ret(TieKernelHandle self,
-                          TieDataTypeHandle dt,
+int tie_Kernel_insert_ret(TieKernelRef self,
+                          TieDataTypeRef dt,
                           int *ret_ret_index) {
   TIE_FUNCTION_BODY_BEGIN();
   TIE_CHECK_HANDLE(self);
@@ -399,7 +399,7 @@ int tie_Kernel_insert_ret(TieKernelHandle self,
   TIE_FUNCTION_BODY_END();
 }
 
-int tie_Kernel_finalize_rets(TieKernelHandle self) {
+int tie_Kernel_finalize_rets(TieKernelRef self) {
   TIE_FUNCTION_BODY_BEGIN();
   TIE_CHECK_HANDLE(self);
   auto *kernel = reinterpret_cast<taichi::lang::Kernel *>(self);
@@ -407,7 +407,7 @@ int tie_Kernel_finalize_rets(TieKernelHandle self) {
   TIE_FUNCTION_BODY_END();
 }
 
-int tie_Kernel_finalize_params(TieKernelHandle self) {
+int tie_Kernel_finalize_params(TieKernelRef self) {
   TIE_FUNCTION_BODY_BEGIN();
   TIE_CHECK_HANDLE(self);
   auto *kernel = reinterpret_cast<taichi::lang::Kernel *>(self);
@@ -415,18 +415,18 @@ int tie_Kernel_finalize_params(TieKernelHandle self) {
   TIE_FUNCTION_BODY_END();
 }
 
-int tie_Kernel_ast_builder(TieKernelHandle self,
-                           TieASTBuilderHandle *ret_ast_builder) {
+int tie_Kernel_ast_builder(TieKernelRef self,
+                           TieASTBuilderRef *ret_ast_builder) {
   TIE_FUNCTION_BODY_BEGIN();
   TIE_CHECK_HANDLE(self);
   TIE_CHECK_RETURN_ARG(ret_ast_builder);
   auto *kernel = reinterpret_cast<taichi::lang::Kernel *>(self);
   *ret_ast_builder =
-      reinterpret_cast<TieASTBuilderHandle>(&kernel->context->builder());
+      reinterpret_cast<TieASTBuilderRef>(&kernel->context->builder());
   TIE_FUNCTION_BODY_END();
 }
 
-int tie_Kernel_no_activate(TieKernelHandle self, TieSNodeHandle snode) {
+int tie_Kernel_no_activate(TieKernelRef self, TieSNodeRef snode) {
   TIE_FUNCTION_BODY_BEGIN();
   TIE_CHECK_HANDLE(self);
   TIE_CHECK_HANDLE(snode);
@@ -438,8 +438,8 @@ int tie_Kernel_no_activate(TieKernelHandle self, TieSNodeHandle snode) {
 
 // class Function
 
-int tie_Function_insert_scalar_param(TieFunctionHandle self,
-                                     TieDataTypeHandle dt,
+int tie_Function_insert_scalar_param(TieFunctionRef self,
+                                     TieDataTypeRef dt,
                                      const char *name,
                                      int *ret_param_index) {
   TIE_FUNCTION_BODY_BEGIN();
@@ -453,8 +453,8 @@ int tie_Function_insert_scalar_param(TieFunctionHandle self,
   TIE_FUNCTION_BODY_END();
 }
 
-int tie_Function_insert_arr_param(TieFunctionHandle self,
-                                  TieDataTypeHandle dt,
+int tie_Function_insert_arr_param(TieFunctionRef self,
+                                  TieDataTypeRef dt,
                                   int total_dim,
                                   int *ap_element_shape,
                                   size_t element_shape_dim,
@@ -475,8 +475,8 @@ int tie_Function_insert_arr_param(TieFunctionHandle self,
   TIE_FUNCTION_BODY_END();
 }
 
-int tie_Function_insert_ndarray_param(TieFunctionHandle self,
-                                      TieDataTypeHandle dt,
+int tie_Function_insert_ndarray_param(TieFunctionRef self,
+                                      TieDataTypeRef dt,
                                       int ndim,
                                       const char *name,
                                       int needs_grad,
@@ -493,7 +493,7 @@ int tie_Function_insert_ndarray_param(TieFunctionHandle self,
   TIE_FUNCTION_BODY_END();
 }
 
-int tie_Function_insert_texture_param(TieFunctionHandle self,
+int tie_Function_insert_texture_param(TieFunctionRef self,
                                       int total_dim,
                                       const char *name,
                                       int *ret_param_index) {
@@ -506,8 +506,8 @@ int tie_Function_insert_texture_param(TieFunctionHandle self,
   TIE_FUNCTION_BODY_END();
 }
 
-int tie_Function_insert_pointer_param(TieFunctionHandle self,
-                                      TieDataTypeHandle dt,
+int tie_Function_insert_pointer_param(TieFunctionRef self,
+                                      TieDataTypeRef dt,
                                       const char *name,
                                       int *ret_param_index) {
   TIE_FUNCTION_BODY_BEGIN();
@@ -521,7 +521,7 @@ int tie_Function_insert_pointer_param(TieFunctionHandle self,
   TIE_FUNCTION_BODY_END();
 }
 
-int tie_Function_insert_rw_texture_param(TieFunctionHandle self,
+int tie_Function_insert_rw_texture_param(TieFunctionRef self,
                                          int total_dim,
                                          int format,
                                          const char *name,
@@ -536,7 +536,7 @@ int tie_Function_insert_rw_texture_param(TieFunctionHandle self,
   TIE_FUNCTION_BODY_END();
 }
 
-int tie_Function_set_function_body(TieFunctionHandle self, TieCallback func) {
+int tie_Function_set_function_body(TieFunctionRef self, TieCallback func) {
   TIE_FUNCTION_BODY_BEGIN();
   TIE_CHECK_HANDLE(self);
   TIE_CHECK_PTR_NOT_NULL(func);
@@ -545,8 +545,8 @@ int tie_Function_set_function_body(TieFunctionHandle self, TieCallback func) {
   TIE_FUNCTION_BODY_END();
 }
 
-int tie_Function_insert_ret(TieFunctionHandle self,
-                            TieDataTypeHandle dt,
+int tie_Function_insert_ret(TieFunctionRef self,
+                            TieDataTypeRef dt,
                             int *ret_ret_index) {
   TIE_FUNCTION_BODY_BEGIN();
   TIE_CHECK_HANDLE(self);
@@ -558,7 +558,7 @@ int tie_Function_insert_ret(TieFunctionHandle self,
   TIE_FUNCTION_BODY_END();
 }
 
-int tie_Function_finalize_rets(TieFunctionHandle self) {
+int tie_Function_finalize_rets(TieFunctionRef self) {
   TIE_FUNCTION_BODY_BEGIN();
   TIE_CHECK_HANDLE(self);
   auto *function = reinterpret_cast<taichi::lang::Function *>(self);
@@ -566,7 +566,7 @@ int tie_Function_finalize_rets(TieFunctionHandle self) {
   TIE_FUNCTION_BODY_END();
 }
 
-int tie_Function_finalize_params(TieFunctionHandle self) {
+int tie_Function_finalize_params(TieFunctionRef self) {
   TIE_FUNCTION_BODY_BEGIN();
   TIE_CHECK_HANDLE(self);
   auto *function = reinterpret_cast<taichi::lang::Function *>(self);
@@ -574,20 +574,20 @@ int tie_Function_finalize_params(TieFunctionHandle self) {
   TIE_FUNCTION_BODY_END();
 }
 
-int tie_Function_ast_builder(TieFunctionHandle self,
-                             TieASTBuilderHandle *ret_ast_builder) {
+int tie_Function_ast_builder(TieFunctionRef self,
+                             TieASTBuilderRef *ret_ast_builder) {
   TIE_FUNCTION_BODY_BEGIN();
   TIE_CHECK_HANDLE(self);
   TIE_CHECK_RETURN_ARG(ret_ast_builder);
   auto *function = reinterpret_cast<taichi::lang::Function *>(self);
   *ret_ast_builder =
-      reinterpret_cast<TieASTBuilderHandle>(&function->context->builder());
+      reinterpret_cast<TieASTBuilderRef>(&function->context->builder());
   TIE_FUNCTION_BODY_END();
 }
 
 // class LaunchContextBuilder
 
-int tie_LaunchContextBuilder_create(TieKernelHandle kernel_handle,
+int tie_LaunchContextBuilder_create(TieKernelRef kernel_handle,
                                     TieLaunchContextBuilderHandle *ret_handle) {
   TIE_FUNCTION_BODY_BEGIN();
   TIE_CHECK_RETURN_ARG(ret_handle);
@@ -598,7 +598,7 @@ int tie_LaunchContextBuilder_create(TieKernelHandle kernel_handle,
   TIE_FUNCTION_BODY_END();
 }
 
-int tie_LaunchContextBuilder_destroy(TieLaunchContextBuilderHandle handle) {
+int tie_LaunchContextBuilder_destroy(TieLaunchContextBuilderRef handle) {
   TIE_FUNCTION_BODY_BEGIN();
   TIE_CHECK_HANDLE(handle);
   auto *builder =
@@ -607,7 +607,7 @@ int tie_LaunchContextBuilder_destroy(TieLaunchContextBuilderHandle handle) {
   TIE_FUNCTION_BODY_END();
 }
 
-int tie_LaunchContextBuilder_set_arg_int(TieLaunchContextBuilderHandle handle,
+int tie_LaunchContextBuilder_set_arg_int(TieLaunchContextBuilderRef handle,
                                          int arg_id,
                                          int64_t i64) {
   TIE_FUNCTION_BODY_BEGIN();
@@ -618,7 +618,7 @@ int tie_LaunchContextBuilder_set_arg_int(TieLaunchContextBuilderHandle handle,
   TIE_FUNCTION_BODY_END();
 }
 
-int tie_LaunchContextBuilder_set_arg_uint(TieLaunchContextBuilderHandle handle,
+int tie_LaunchContextBuilder_set_arg_uint(TieLaunchContextBuilderRef handle,
                                           int arg_id,
                                           uint64_t u64) {
   TIE_FUNCTION_BODY_BEGIN();
@@ -629,7 +629,7 @@ int tie_LaunchContextBuilder_set_arg_uint(TieLaunchContextBuilderHandle handle,
   TIE_FUNCTION_BODY_END();
 }
 
-int tie_LaunchContextBuilder_set_arg_float(TieLaunchContextBuilderHandle handle,
+int tie_LaunchContextBuilder_set_arg_float(TieLaunchContextBuilderRef handle,
                                            int arg_id,
                                            double d) {
   TIE_FUNCTION_BODY_BEGIN();
@@ -641,7 +641,7 @@ int tie_LaunchContextBuilder_set_arg_float(TieLaunchContextBuilderHandle handle,
 }
 
 int tie_LaunchContextBuilder_set_struct_arg_int(
-    TieLaunchContextBuilderHandle handle,
+    TieLaunchContextBuilderRef handle,
     int *arg_indices,
     size_t arg_indices_dim,
     int64_t i64) {
@@ -656,7 +656,7 @@ int tie_LaunchContextBuilder_set_struct_arg_int(
 }
 
 int tie_LaunchContextBuilder_set_struct_arg_uint(
-    TieLaunchContextBuilderHandle handle,
+    TieLaunchContextBuilderRef handle,
     int *arg_indices,
     size_t arg_indices_dim,
     uint64_t u64) {
@@ -671,7 +671,7 @@ int tie_LaunchContextBuilder_set_struct_arg_uint(
 }
 
 int tie_LaunchContextBuilder_set_struct_arg_float(
-    TieLaunchContextBuilderHandle handle,
+    TieLaunchContextBuilderRef handle,
     int *arg_indices,
     size_t arg_indices_dim,
     double d) {
@@ -686,7 +686,7 @@ int tie_LaunchContextBuilder_set_struct_arg_float(
 }
 
 int tie_LaunchContextBuilder_set_arg_external_array_with_shape(
-    TieLaunchContextBuilderHandle handle,
+    TieLaunchContextBuilderRef handle,
     int arg_id,
     uintptr_t ptr,
     uint64_t size,
@@ -705,9 +705,9 @@ int tie_LaunchContextBuilder_set_arg_external_array_with_shape(
 }
 
 int tie_LaunchContextBuilder_set_arg_ndarray(
-    TieLaunchContextBuilderHandle handle,
+    TieLaunchContextBuilderRef handle,
     int arg_id,
-    TieNdarrayHandle arr) {
+    TieNdarrayRef arr) {
   TIE_FUNCTION_BODY_BEGIN();
   TIE_CHECK_HANDLE(handle);
   TIE_CHECK_HANDLE(arr);
@@ -719,10 +719,10 @@ int tie_LaunchContextBuilder_set_arg_ndarray(
 }
 
 int tie_LaunchContextBuilder_set_arg_ndarray_with_grad(
-    TieLaunchContextBuilderHandle handle,
+    TieLaunchContextBuilderRef handle,
     int arg_id,
-    TieNdarrayHandle arr,
-    TieNdarrayHandle arr_grad) {
+    TieNdarrayRef arr,
+    TieNdarrayRef arr_grad) {
   TIE_FUNCTION_BODY_BEGIN();
   TIE_CHECK_HANDLE(handle);
   TIE_CHECK_HANDLE(arr);
@@ -737,9 +737,9 @@ int tie_LaunchContextBuilder_set_arg_ndarray_with_grad(
 }
 
 int tie_LaunchContextBuilder_set_arg_texture(
-    TieLaunchContextBuilderHandle handle,
+    TieLaunchContextBuilderRef handle,
     int arg_id,
-    TieTextureHandle tex) {
+    TieTextureRef tex) {
   TIE_FUNCTION_BODY_BEGIN();
   TIE_CHECK_HANDLE(handle);
   TIE_CHECK_HANDLE(tex);
@@ -751,9 +751,9 @@ int tie_LaunchContextBuilder_set_arg_texture(
 }
 
 int tie_LaunchContextBuilder_set_arg_rw_texture(
-    TieLaunchContextBuilderHandle handle,
+    TieLaunchContextBuilderRef handle,
     int arg_id,
-    TieTextureHandle tex) {
+    TieTextureRef tex) {
   TIE_FUNCTION_BODY_BEGIN();
   TIE_CHECK_HANDLE(handle);
   TIE_CHECK_HANDLE(tex);
@@ -765,7 +765,7 @@ int tie_LaunchContextBuilder_set_arg_rw_texture(
 }
 
 int tie_LaunchContextBuilder_get_struct_ret_int(
-    TieLaunchContextBuilderHandle handle,
+    TieLaunchContextBuilderRef handle,
     int *index,
     size_t index_dim,
     int64_t *ret_i64) {
@@ -781,7 +781,7 @@ int tie_LaunchContextBuilder_get_struct_ret_int(
 }
 
 int tie_LaunchContextBuilder_get_struct_ret_uint(
-    TieLaunchContextBuilderHandle handle,
+    TieLaunchContextBuilderRef handle,
     int *index,
     size_t index_dim,
     uint64_t *ret_u64) {
@@ -797,7 +797,7 @@ int tie_LaunchContextBuilder_get_struct_ret_uint(
 }
 
 int tie_LaunchContextBuilder_get_struct_ret_float(
-    TieLaunchContextBuilderHandle handle,
+    TieLaunchContextBuilderRef handle,
     int *index,
     size_t index_dim,
     double *ret_d) {

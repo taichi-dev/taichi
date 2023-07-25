@@ -102,7 +102,7 @@ MTLPixelFormat format2mtl(BufferFormat format) {
       {BufferFormat::rgb32f, MTLPixelFormatInvalid},
       {BufferFormat::rgba32f, MTLPixelFormatRGBA32Float},
       {BufferFormat::depth16, MTLPixelFormatDepth16Unorm},
-      {BufferFormat::depth24stencil8, MTLPixelFormatX24_Stencil8},
+      {BufferFormat::depth24stencil8, MTLPixelFormatInvalid},
       {BufferFormat::depth32f, MTLPixelFormatDepth32Float},
   };
   auto it = map.find(format);

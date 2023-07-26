@@ -39,6 +39,9 @@ def substep():
         if material[p] == 0:  # liquid
             mu = 0.0
         U, sig, V = ti.svd(F[p])
+        # Avoid zero eigenvalues because of numerical errors
+        for d in ti.static(range(2)):
+            sig[d, d] = ti.max(sig[d, d], 1e-6)
         J = 1.0
         for d in ti.static(range(2)):
             new_sig = sig[d, d]

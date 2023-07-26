@@ -66,7 +66,7 @@ _
 
         for k, v in self.__entries.items():
             if isinstance(v, (list, tuple)):
-                v = Matrix(v, ndim=matrix_ndim.get(k))
+                v = Matrix(v)
             if isinstance(v, dict):
                 v = Struct(v)
             self.__entries[k] = v if in_python_scope() else impl.expr_init(v)

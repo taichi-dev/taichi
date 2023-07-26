@@ -1009,13 +1009,14 @@ void export_lang(py::module &m) {
   m.def("make_global_load_stmt", Stmt::make<GlobalLoadStmt, Stmt *>);
   m.def("make_global_store_stmt", Stmt::make<GlobalStoreStmt, Stmt *, Stmt *>);
   m.def("make_frontend_assign_stmt",
-        Stmt::make<FrontendAssignStmt, const Expr &, const Expr &>);
+        Stmt::make<FrontendAssignStmt, const Expr &, const Expr &,
+                   const DebugInfo &>);
 
   m.def("make_arg_load_expr",
         Expr::make<ArgLoadExpression, const std::vector<int> &,
-                   const DataType &, bool, bool, int>,
+                   const DataType &, bool, bool, int, const DebugInfo &>,
         "arg_id"_a, "dt"_a, "is_ptr"_a = false, "create_load"_a = true,
-        "arg_depth"_a = 0);
+        "arg_depth"_a = 0, "dbg_info"_a = DebugInfo());
 
   m.def("make_reference", Expr::make<ReferenceExpression, const Expr &>);
 
@@ -1026,7 +1027,8 @@ void export_lang(py::module &m) {
   m.def("make_external_tensor_grad_expr",
         Expr::make<ExternalTensorExpression, Expr *>);
 
-  m.def("make_rand_expr", Expr::make<RandExpression, const DataType &>);
+  m.def("make_rand_expr",
+        Expr::make<RandExpression, const DataType &, const DebugInfo &>);
 
   m.def("make_const_expr_bool",
         Expr::make<ConstExpression, const DataType &, uint1>);

@@ -115,7 +115,13 @@ class SourceBuilder:
     def __getattr__(self, item):
         def bitcode_func_call_wrapper(*args):
             impl.get_runtime().compiling_callable.ast_builder().insert_external_func_call(
-                0, "", self.bc, item, make_expr_group(args), make_expr_group([])
+                0,
+                "",
+                self.bc,
+                item,
+                make_expr_group(args),
+                make_expr_group([]),
+                _ti_core.DebugInfo(impl.get_runtime().get_current_src_info()),
             )
 
         if self.mode == "bc":
@@ -124,7 +130,13 @@ class SourceBuilder:
         def external_func_call_wrapper(args=[], outputs=[]):
             func_addr = ctypes.cast(self.so.__getattr__(item), ctypes.c_void_p).value
             impl.get_runtime().compiling_callable.ast_builder().insert_external_func_call(
-                func_addr, "", "", "", make_expr_group(args), make_expr_group(outputs)
+                func_addr,
+                "",
+                "",
+                "",
+                make_expr_group(args),
+                make_expr_group(outputs),
+                _ti_core.DebugInfo(impl.get_runtime().get_current_src_info()),
             )
 
         if self.mode == "so":

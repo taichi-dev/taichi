@@ -26,8 +26,13 @@ static bool is_primitive_or_tensor_type(DataType &type) {
 FrontendSNodeOpStmt::FrontendSNodeOpStmt(SNodeOpType op_type,
                                          SNode *snode,
                                          const ExprGroup &indices,
-                                         const Expr &val)
-    : op_type(op_type), snode(snode), indices(indices), val(val) {
+                                         const Expr &val,
+                                         const DebugInfo &dbg_info)
+    : Stmt(dbg_info),
+      op_type(op_type),
+      snode(snode),
+      indices(indices),
+      val(val) {
   if (val.expr != nullptr) {
     TI_ASSERT(op_type == SNodeOpType::append);
   } else {
@@ -35,7 +40,9 @@ FrontendSNodeOpStmt::FrontendSNodeOpStmt(SNodeOpType op_type,
   }
 }
 
-FrontendReturnStmt::FrontendReturnStmt(const ExprGroup &group) : values(group) {
+FrontendReturnStmt::FrontendReturnStmt(const ExprGroup &group,
+                                       const DebugInfo &dbg_info)
+    : Stmt(dbg_info), values(group) {
 }
 
 FrontendAssignStmt::FrontendAssignStmt(const Expr &lhs,
@@ -50,7 +57,8 @@ FrontendAssignStmt::FrontendAssignStmt(const Expr &lhs,
 }
 
 FrontendIfStmt::FrontendIfStmt(const FrontendIfStmt &o)
-    : condition(o.condition),
+    : Stmt(o.dbg_info),
+      condition(o.condition),
       true_statements(o.true_statements->clone()),
       false_statements(o.false_statements->clone()) {
 }
@@ -58,8 +66,9 @@ FrontendIfStmt::FrontendIfStmt(const FrontendIfStmt &o)
 FrontendForStmt::FrontendForStmt(const ExprGroup &loop_vars,
                                  SNode *snode,
                                  Arch arch,
-                                 const ForLoopConfig &config)
-    : snode(snode) {
+                                 const ForLoopConfig &config,
+                                 const DebugInfo &dbg_info)
+    : Stmt(dbg_info), snode(snode) {
   init_config(arch, config);
   init_loop_vars(loop_vars);
 }
@@ -67,8 +76,9 @@ FrontendForStmt::FrontendForStmt(const ExprGroup &loop_vars,
 FrontendForStmt::FrontendForStmt(const ExprGroup &loop_vars,
                                  const Expr &external_tensor,
                                  Arch arch,
-                                 const ForLoopConfig &config)
-    : external_tensor(external_tensor) {
+                                 const ForLoopConfig &config,
+                                 const DebugInfo &dbg_info)
+    : Stmt(dbg_info), external_tensor(external_tensor) {
   init_config(arch, config);
   init_loop_vars(loop_vars);
 }
@@ -77,8 +87,9 @@ FrontendForStmt::FrontendForStmt(const ExprGroup &loop_vars,
                                  const mesh::MeshPtr &mesh,
                                  const mesh::MeshElementType &element_type,
                                  Arch arch,
-                                 const ForLoopConfig &config)
-    : mesh(mesh.ptr.get()), element_type(element_type) {
+                                 const ForLoopConfig &config,
+                                 const DebugInfo &dbg_info)
+    : Stmt(dbg_info), mesh(mesh.ptr.get()), element_type(element_type) {
   init_config(arch, config);
   init_loop_vars(loop_vars);
 }
@@ -87,14 +98,16 @@ FrontendForStmt::FrontendForStmt(const Expr &loop_var,
                                  const Expr &begin,
                                  const Expr &end,
                                  Arch arch,
-                                 const ForLoopConfig &config)
-    : begin(begin), end(end) {
+                                 const ForLoopConfig &config,
+                                 const DebugInfo &dbg_info)
+    : Stmt(dbg_info), begin(begin), end(end) {
   init_config(arch, config);
   add_loop_var(loop_var);
 }
 
 FrontendForStmt::FrontendForStmt(const FrontendForStmt &o)
-    : snode(o.snode),
+    : Stmt(o.dbg_info),
+      snode(o.snode),
       external_tensor(o.external_tensor),
       mesh(o.mesh),
       element_type(o.element_type),
@@ -144,7 +157,7 @@ FrontendFuncDefStmt::FrontendFuncDefStmt(const FrontendFuncDefStmt &o)
 }
 
 FrontendWhileStmt::FrontendWhileStmt(const FrontendWhileStmt &o)
-    : cond(o.cond), body(o.body->clone()) {
+    : Stmt(o.dbg_info), cond(o.cond), body(o.body->clone()) {
 }
 
 void ArgLoadExpression::type_check(const CompileConfig *) {
@@ -158,8 +171,8 @@ void ArgLoadExpression::type_check(const CompileConfig *) {
 }
 
 void ArgLoadExpression::flatten(FlattenContext *ctx) {
-  auto arg_load =
-      std::make_unique<ArgLoadStmt>(arg_id, dt, is_ptr, create_load, arg_depth);
+  auto arg_load = std::make_unique<ArgLoadStmt>(arg_id, dt, is_ptr, create_load,
+                                                arg_depth, dbg_info);
   arg_load->ret_type = ret_type;
   ctx->push_back(std::move(arg_load));
   stmt = ctx->back_stmt();
@@ -186,7 +199,7 @@ void RandExpression::type_check(const CompileConfig *) {
 }
 
 void RandExpression::flatten(FlattenContext *ctx) {
-  auto ran = std::make_unique<RandStmt>(dt);
+  auto ran = std::make_unique<RandStmt>(dt, dbg_info);
   ctx->push_back(std::move(ran));
   stmt = ctx->back_stmt();
 }
@@ -1423,7 +1436,7 @@ void ASTBuilder::insert_assignment(Expr &lhs,
 }
 
 Expr ASTBuilder::make_var(const Expr &x, const DebugInfo &dbg_info) {
-  auto var = this->expr_alloca();
+  auto var = this->expr_alloca(dbg_info);
   this->insert_assignment(var, x, dbg_info);
   return var;
 }
@@ -1481,17 +1494,20 @@ Expr ASTBuilder::insert_patch_idx_expr() {
   return Expr::make<MeshPatchIndexExpression>();
 }
 
-void ASTBuilder::create_kernel_exprgroup_return(const ExprGroup &group) {
+void ASTBuilder::create_kernel_exprgroup_return(const ExprGroup &group,
+                                                const DebugInfo &dbg_info) {
   auto expanded_exprs = this->expand_exprs(group.exprs);
   ExprGroup expanded_expr_group;
   expanded_expr_group.exprs = std::move(expanded_exprs);
-  this->insert(Stmt::make<FrontendReturnStmt>(expanded_expr_group));
+  this->insert(Stmt::make<FrontendReturnStmt>(expanded_expr_group, dbg_info));
 }
 
 void ASTBuilder::create_print(
     std::vector<std::variant<Expr, std::string>> contents,
-    std::vector<std::optional<std::string>> formats) {
-  this->insert(std::make_unique<FrontendPrintStmt>(contents, formats));
+    std::vector<std::optional<std::string>> formats,
+    const DebugInfo &dbg_info) {
+  this->insert(
+      std::make_unique<FrontendPrintStmt>(contents, formats, dbg_info));
 }
 
 void ASTBuilder::begin_func(const std::string &funcid) {
@@ -1505,8 +1521,9 @@ void ASTBuilder::end_func(const std::string &funcid) {
   this->pop_scope();
 }
 
-void ASTBuilder::begin_frontend_if(const Expr &cond) {
-  auto stmt_tmp = std::make_unique<FrontendIfStmt>(cond);
+void ASTBuilder::begin_frontend_if(const Expr &cond,
+                                   const DebugInfo &dbg_info) {
+  auto stmt_tmp = std::make_unique<FrontendIfStmt>(cond, dbg_info);
   this->insert(std::move(stmt_tmp));
 }
 
@@ -1525,17 +1542,19 @@ void ASTBuilder::insert_external_func_call(std::size_t func_addr,
                                            std::string filename,
                                            std::string funcname,
                                            const ExprGroup &args,
-                                           const ExprGroup &outputs) {
+                                           const ExprGroup &outputs,
+                                           const DebugInfo &dbg_info) {
   auto stmt = Stmt::make<FrontendExternalFuncStmt>(
-      (void *)func_addr, source, filename, funcname, args.exprs, outputs.exprs);
+      (void *)func_addr, source, filename, funcname, args.exprs, outputs.exprs,
+      dbg_info);
   this->insert(std::move(stmt));
 }
 
-Expr ASTBuilder::expr_alloca() {
+Expr ASTBuilder::expr_alloca(const DebugInfo &dbg_info) {
   auto var = Expr(std::make_shared<IdExpression>(get_next_id()));
   this->insert(std::make_unique<FrontendAllocaStmt>(
       std::static_pointer_cast<IdExpression>(var.expr)->id,
-      PrimitiveType::unknown));
+      PrimitiveType::unknown, dbg_info));
   return var;
 }
 
@@ -1573,11 +1592,12 @@ Expr ASTBuilder::make_matrix_expr(const std::vector<int> &shape,
 }
 
 Expr ASTBuilder::expr_alloca_shared_array(const std::vector<int> &shape,
-                                          const DataType &element_type) {
+                                          const DataType &element_type,
+                                          const DebugInfo &dbg_info) {
   auto var = Expr(std::make_shared<IdExpression>(get_next_id()));
   this->insert(std::make_unique<FrontendAllocaStmt>(
       std::static_pointer_cast<IdExpression>(var.expr)->id, shape, element_type,
-      true));
+      true, dbg_info));
   var->ret_type = this->get_last_stmt()->ret_type;
   return var;
 }
@@ -1611,16 +1631,19 @@ Expr ASTBuilder::expr_subscript(const Expr &expr,
 
 void ASTBuilder::create_assert_stmt(const Expr &cond,
                                     const std::string &msg,
-                                    const std::vector<Expr> &args) {
-  auto stmt_unique = std::make_unique<FrontendAssertStmt>(cond, msg, args);
+                                    const std::vector<Expr> &args,
+                                    const DebugInfo &dbg_info) {
+  auto stmt_unique =
+      std::make_unique<FrontendAssertStmt>(cond, msg, args, dbg_info);
   this->insert(std::move(stmt_unique));
 }
 
 void ASTBuilder::begin_frontend_range_for(const Expr &i,
                                           const Expr &s,
-                                          const Expr &e) {
-  auto stmt_unique =
-      std::make_unique<FrontendForStmt>(i, s, e, arch_, for_loop_dec_.config);
+                                          const Expr &e,
+                                          const DebugInfo &dbg_info) {
+  auto stmt_unique = std::make_unique<FrontendForStmt>(
+      i, s, e, arch_, for_loop_dec_.config, dbg_info);
   auto stmt = stmt_unique.get();
   this->insert(std::move(stmt_unique));
   this->create_scope(stmt->body,
@@ -1673,22 +1696,23 @@ void ASTBuilder::begin_frontend_mesh_for(
   this->create_scope(stmt->body, For);
 }
 
-void ASTBuilder::begin_frontend_while(const Expr &cond) {
-  auto stmt_unique = std::make_unique<FrontendWhileStmt>(cond);
+void ASTBuilder::begin_frontend_while(const Expr &cond,
+                                      const DebugInfo &dbg_info) {
+  auto stmt_unique = std::make_unique<FrontendWhileStmt>(cond, dbg_info);
   auto stmt = stmt_unique.get();
   this->insert(std::move(stmt_unique));
   this->create_scope(stmt->body, While);
 }
 
-void ASTBuilder::insert_break_stmt() {
+void ASTBuilder::insert_break_stmt(const DebugInfo &dbg_info) {
   if (loop_state_stack_.back() == Outermost) {
     throw TaichiSyntaxError("Cannot break in the outermost loop");
   }
-  this->insert(Stmt::make<FrontendBreakStmt>());
+  this->insert(Stmt::make<FrontendBreakStmt>(dbg_info));
 }
 
-void ASTBuilder::insert_continue_stmt() {
-  this->insert(Stmt::make<FrontendContinueStmt>());
+void ASTBuilder::insert_continue_stmt(const DebugInfo &dbg_info) {
+  this->insert(Stmt::make<FrontendContinueStmt>(dbg_info));
 }
 
 void ASTBuilder::insert_expr_stmt(const Expr &val) {
@@ -1696,19 +1720,23 @@ void ASTBuilder::insert_expr_stmt(const Expr &val) {
 }
 
 void ASTBuilder::insert_snode_activate(SNode *snode,
-                                       const ExprGroup &expr_group) {
+                                       const ExprGroup &expr_group,
+                                       const DebugInfo &dbg_info) {
   ExprGroup expanded_group;
   expanded_group.exprs = this->expand_exprs(expr_group.exprs);
-  this->insert(Stmt::make<FrontendSNodeOpStmt>(SNodeOpType::activate, snode,
-                                               expanded_group));
+  this->insert(Stmt::make<FrontendSNodeOpStmt>(
+      SNodeOpType::activate, snode, expanded_group,
+      /*val = */ Expr(std::shared_ptr<Expression>(nullptr)), dbg_info));
 }
 
 void ASTBuilder::insert_snode_deactivate(SNode *snode,
-                                         const ExprGroup &expr_group) {
+                                         const ExprGroup &expr_group,
+                                         const DebugInfo &dbg_info) {
   ExprGroup expanded_group;
   expanded_group.exprs = this->expand_exprs(expr_group.exprs);
-  this->insert(Stmt::make<FrontendSNodeOpStmt>(SNodeOpType::deactivate, snode,
-                                               expanded_group));
+  this->insert(Stmt::make<FrontendSNodeOpStmt>(
+      SNodeOpType::deactivate, snode, expanded_group,
+      /*val = */ Expr(std::shared_ptr<Expression>(nullptr)), dbg_info));
 }
 
 Expr ASTBuilder::snode_append(SNode *snode,

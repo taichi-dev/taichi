@@ -287,7 +287,7 @@ class TaskCodeGenCUDA : public TaskCodeGenLLVM {
         TI_NOT_IMPLEMENTED
       }
     } else if (op == UnaryOpType::clz) {
-      if (input_taichi_type->is_primitive(PrimitiveType::i32)) {
+      if (input_taichi_type->is_primitive(PrimitiveTypeID::i32)) {
         stmt->ret_type = PrimitiveType::i32;
         llvm_val[stmt] = call("__clz", input);
       } else {

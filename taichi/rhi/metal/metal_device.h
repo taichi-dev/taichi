@@ -4,6 +4,7 @@
 #include "taichi/rhi/impl_support.h"
 #include "taichi/rhi/metal/metal_api.h"
 #include <memory>
+#include <regex>
 
 // clang-format off
 #if defined(__APPLE__) && defined(__OBJC__)
@@ -27,6 +28,7 @@ DEFINE_METAL_ID_TYPE(MTLSamplerState);
 DEFINE_METAL_ID_TYPE(MTLLibrary);
 DEFINE_METAL_ID_TYPE(MTLFunction);
 DEFINE_METAL_ID_TYPE(MTLComputePipelineState);
+DEFINE_METAL_ID_TYPE(MTLRenderPipelineState);
 DEFINE_METAL_ID_TYPE(MTLCommandQueue);
 DEFINE_METAL_ID_TYPE(MTLCommandBuffer);
 DEFINE_METAL_ID_TYPE(MTLBlitCommandEncoder);
@@ -98,6 +100,10 @@ struct MetalWorkgroupSize {
   uint32_t y{0};
   uint32_t z{0};
 };
+struct MetalRasterFunctions {
+  MTLFunction_id vertex;
+  MTLFunction_id fragment;
+};
 class MetalPipeline final : public Pipeline {
  public:
   // `mtl_library`, `mtl_function`, `mtl_compute_pipeline_state` should be
@@ -107,12 +113,19 @@ class MetalPipeline final : public Pipeline {
                          MTLFunction_id mtl_function,
                          MTLComputePipelineState_id mtl_compute_pipeline_state,
                          MetalWorkgroupSize workgroup_size);
+
+  explicit MetalPipeline(const MetalDevice &device,
+                         MTLLibrary_id mtl_library,
+                         const MetalRasterFunctions &mtl_functions,
+                         MTLRenderPipelineState_id mtl_render_pipeline_state,
+                         const RasterParams raster_params);
   ~MetalPipeline() final;
 
-  static MetalPipeline *create(const MetalDevice &device,
-                               const uint32_t *spv_data,
-                               size_t spv_size,
-                               const std::string &name);
+  static MetalPipeline *create_compute_pipeline(const MetalDevice &device,
+                                                const uint32_t *spv_data,
+                                                size_t spv_size,
+                                                const std::string &name);
+
   void destroy();
 
   inline MTLComputePipelineState_id mtl_compute_pipeline_state() const {
@@ -122,13 +135,30 @@ class MetalPipeline final : public Pipeline {
     return workgroup_size_;
   }
 
+  inline MTLRenderPipelineState_id mtl_render_pipeline_state() const {
+    return mtl_render_pipeline_state_;
+  }
+
+  inline const RasterParams raster_params() const {
+    return raster_params_;
+  }
+
  private:
   const MetalDevice *device_;
   MTLLibrary_id mtl_library_;
+
+  bool is_destroyed_{false};
+  bool is_raster_pipeline{false};
+
+  // Compute variables
   MTLFunction_id mtl_function_;
   MTLComputePipelineState_id mtl_compute_pipeline_state_;
   MetalWorkgroupSize workgroup_size_;
-  bool is_destroyed_{false};
+
+  // Raster variables
+  MetalRasterFunctions mtl_functions_;
+  MTLRenderPipelineState_id mtl_render_pipeline_state_;
+  const RasterParams raster_params_;
 };
 
 enum class MetalShaderResourceType {
@@ -180,6 +210,28 @@ class MetalShaderResourceSet final : public ShaderResourceSet {
  private:
   const MetalDevice *device_;
   std::vector<MetalShaderResource> resources_;  // TODO: need raster resources
+};
+
+class MetalRasterResources : public RasterResources {
+ public:
+  explicit MetalRasterResources(MetalDevice *device) : device_(device) {
+  }
+
+  struct BufferBinding {
+    MTLBuffer_id buffer{nullptr};
+    size_t offset{0};
+  };
+  BufferBinding index_binding;
+
+  std::unordered_map<uint32_t, BufferBinding> vertex_buffers;
+
+  ~MetalRasterResources() override = default;
+
+  RasterResources &vertex_buffer(DevicePtr ptr, uint32_t binding = 0) final;
+  RasterResources &index_buffer(DevicePtr ptr, size_t index_width) final;
+
+ private:
+  MetalDevice *device_;
 };
 
 class MetalCommandList final : public CommandList {
@@ -292,6 +344,11 @@ class MetalSurface final : public Surface {
   CAMetalLayer *layer_;
 };
 
+constexpr BufferFormat kSwapChainImageFormat{BufferFormat::bgra8};
+
+constexpr auto kMetalFragFunctionName = "frag_function";
+constexpr auto kMetalVertFunctionName = "vert_function";
+
 class MetalDevice final : public GraphicsDevice {
  public:
   // `mtl_device` should be already retained.
@@ -341,12 +398,9 @@ class MetalDevice final : public GraphicsDevice {
       const RasterParams &raster_params,
       const std::vector<VertexInputBinding> &vertex_inputs,
       const std::vector<VertexInputAttribute> &vertex_attrs,
-      std::string name = "Pipeline") override {
-    TI_NOT_IMPLEMENTED;
-  }
-  RasterResources *create_raster_resources() override {
-    TI_NOT_IMPLEMENTED;
-  }
+      std::string name = "Pipeline") override;
+
+  RasterResources *create_raster_resources() override;
 
   Stream *get_compute_stream() override;
   Stream *get_graphics_stream() override;
@@ -357,6 +411,10 @@ class MetalDevice final : public GraphicsDevice {
   const MetalSampler &get_default_sampler() const {
     return *default_sampler_;
   }
+
+  MTLFunction_id get_mtl_function(MTLLibrary_id mtl_lib,
+                                  const std::string &func_name) const;
+  MTLLibrary_id get_mtl_library(const std::string &source) const;
 
  private:
   MTLDevice_id mtl_device_;

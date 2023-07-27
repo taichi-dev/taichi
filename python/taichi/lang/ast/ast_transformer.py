@@ -69,8 +69,8 @@ class ASTTransformer(Builder):
     def build_Name(ctx, node):
         node.ptr = ctx.get_var_by_name(node.id)
         if isinstance(node, (ast.stmt, ast.expr)) and isinstance(node.ptr, Expr):
-            info = ctx.get_pos_info(node)
-            node.ptr.tb = info
+            node.ptr.dbg_info = _ti_core.DebugInfo(ctx.get_pos_info(node))
+            node.ptr.ptr.set_dbg_info(node.ptr.dbg_info)
         return node.ptr
 
     @staticmethod

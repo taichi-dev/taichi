@@ -6,20 +6,6 @@
 
 namespace taichi::lang {
 
-std::function<void(const std::string &)>
-make_pass_printer(bool verbose, const std::string &kernel_name, IRNode *ir) {
-  if (!verbose) {
-    return [](const std::string &) {};
-  }
-  return [ir, kernel_name](const std::string &pass) {
-    TI_INFO("[{}] {}:", kernel_name, pass);
-    std::cout << std::flush;
-    irpass::re_id(ir);
-    irpass::print(ir);
-    std::cout << std::flush;
-  };
-}
-
 TEST(Half2Vectorization, Ndarray) {
   // Basic tests within a basic block
   TestProgram test_prog;

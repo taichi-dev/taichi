@@ -161,6 +161,7 @@ void export_lang(py::module &m) {
       .def_readwrite("print_ir", &CompileConfig::print_ir)
       .def_readwrite("print_preprocessed_ir",
                      &CompileConfig::print_preprocessed_ir)
+      .def_readwrite("print_ir_dbg_info", &CompileConfig::print_ir_dbg_info)
       .def_readwrite("debug", &CompileConfig::debug)
       .def_readwrite("cfg_optimization", &CompileConfig::cfg_optimization)
       .def_readwrite("check_out_of_bound", &CompileConfig::check_out_of_bound)
@@ -829,6 +830,7 @@ void export_lang(py::module &m) {
            })
       .def("is_lvalue", [](Expr *expr) { return expr->expr->is_lvalue(); })
       .def("set_dbg_info", &Expr::set_dbg_info)
+      .def("get_dbg_info", [](Expr *expr) { return expr->expr->dbg_info; })
       .def("set_name",
            [&](Expr *expr, std::string na) {
              expr->cast<FieldExpression>()->name = na;

@@ -486,20 +486,21 @@ void make_ifte(Expression::FlattenContext *ctx,
                DataType ret_type,
                Expr cond,
                Expr true_val,
-               Expr false_val) {
-  auto result = ctx->push_back<AllocaStmt>(ret_type);
+               Expr false_val,
+               const DebugInfo &dbg_info) {
+  auto result = ctx->push_back<AllocaStmt>(ret_type, dbg_info);
   auto cond_stmt = flatten_rvalue(cond, ctx);
-  auto if_stmt = ctx->push_back<IfStmt>(cond_stmt);
+  auto if_stmt = ctx->push_back<IfStmt>(cond_stmt, cond->dbg_info);
 
   Expression::FlattenContext lctx;
   lctx.current_block = ctx->current_block;
   auto true_val_stmt = flatten_rvalue(true_val, &lctx);
-  lctx.push_back<LocalStoreStmt>(result, true_val_stmt);
+  lctx.push_back<LocalStoreStmt>(result, true_val_stmt, true_val->dbg_info);
 
   Expression::FlattenContext rctx;
   rctx.current_block = ctx->current_block;
   auto false_val_stmt = flatten_rvalue(false_val, &rctx);
-  rctx.push_back<LocalStoreStmt>(result, false_val_stmt);
+  rctx.push_back<LocalStoreStmt>(result, false_val_stmt, false_val->dbg_info);
 
   auto true_block = std::make_unique<Block>();
   true_block->set_statements(std::move(lctx.stmts));
@@ -509,7 +510,7 @@ void make_ifte(Expression::FlattenContext *ctx,
   false_block->set_statements(std::move(rctx.stmts));
   if_stmt->set_false_statements(std::move(false_block));
 
-  ctx->push_back<LocalLoadStmt>(result);
+  ctx->push_back<LocalLoadStmt>(result, dbg_info);
   return;
 }
 
@@ -618,7 +619,7 @@ void TernaryOpExpression::flatten(FlattenContext *ctx) {
     ctx->push_back(std::make_unique<TernaryOpStmt>(type, op1_stmt, op2_stmt,
                                                    op3_stmt, dbg_info));
   } else if (type == TernaryOpType::ifte) {
-    make_ifte(ctx, ret_type, op1, op2, op3);
+    make_ifte(ctx, ret_type, op1, op2, op3, dbg_info);
   }
   stmt = ctx->back_stmt();
   stmt->ret_type = ret_type;

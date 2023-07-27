@@ -95,8 +95,8 @@ class ProgramImpl {
     return kDeviceNullPtr;
   }
 
-  virtual DeviceAllocation allocate_memory_ndarray(std::size_t alloc_size,
-                                                   uint64 *result_buffer) {
+  virtual DeviceAllocation allocate_memory_on_device(std::size_t alloc_size,
+                                                     uint64 *result_buffer) {
     return kDeviceNullAllocation;
   }
 
@@ -112,9 +112,9 @@ class ProgramImpl {
   }
 
   // TODO: Move to Runtime Object
-  virtual uint64_t *get_ndarray_alloc_info_ptr(const DeviceAllocation &alloc) {
+  virtual uint64_t *get_device_alloc_info_ptr(const DeviceAllocation &alloc) {
     TI_ERROR(
-        "get_ndarray_alloc_info_ptr() not implemented on the current backend");
+        "get_device_alloc_info_ptr() not implemented on the current backend");
     return nullptr;
   }
 

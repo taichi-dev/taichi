@@ -249,7 +249,7 @@ class LowerAST : public IRVisitor {
       new_for->mem_access_opt = stmt->mem_access_opt;
       fctx.push_back(std::move(new_for));
     } else if (stmt->external_tensor) {
-      int arg_id = -1;
+      std::vector<int> arg_id;
       std::vector<Stmt *> shape;
       if (stmt->external_tensor.is<ExternalTensorExpression>()) {
         auto tensor = stmt->external_tensor.cast<ExternalTensorExpression>();
@@ -276,7 +276,7 @@ class LowerAST : public IRVisitor {
       auto &&new_for = std::make_unique<RangeForStmt>(
           begin, end, std::move(stmt->body), stmt->is_bit_vectorized,
           stmt->num_cpu_threads, stmt->block_dim, stmt->strictly_serialized,
-          /*range_hint=*/fmt::format("arg {}", arg_id));
+          /*range_hint=*/fmt::format("arg ({})", fmt::join(arg_id, ", ")));
       VecStatement new_statements;
       Stmt *loop_index =
           new_statements.push_back<LoopIndexStmt>(new_for.get(), 0);
@@ -440,7 +440,7 @@ class LowerAST : public IRVisitor {
                 dest.cast<ArgLoadExpression>()->is_ptr);
       fctx.push_back<GlobalStoreStmt>(dest_stmt, expr_stmt);
     }
-    fctx.stmts.back()->set_tb(assign->tb);
+    fctx.stmts.back()->dbg_info = assign->dbg_info;
     assign->parent->replace_with(assign, std::move(fctx.stmts));
   }
 
@@ -459,6 +459,8 @@ class LowerAST : public IRVisitor {
 
     if (stmt->snode->type == SNodeType::dynamic) {
       auto ptr = fctx.push_back<GlobalPtrStmt>(stmt->snode, indices_stmt);
+      ptr->ret_type = stmt->snode->dt;
+      ptr->ret_type.set_is_pointer(true);
       fctx.push_back<SNodeOpStmt>(stmt->op_type, stmt->snode, ptr, val_stmt);
     } else if (stmt->snode->type == SNodeType::pointer ||
                stmt->snode->type == SNodeType::hash ||
@@ -467,6 +469,8 @@ class LowerAST : public IRVisitor {
       TI_ASSERT(SNodeOpStmt::activation_related(stmt->op_type));
       auto ptr =
           fctx.push_back<GlobalPtrStmt>(stmt->snode, indices_stmt, true, true);
+      ptr->ret_type = stmt->snode->dt;
+      ptr->ret_type.set_is_pointer(true);
       fctx.push_back<SNodeOpStmt>(stmt->op_type, stmt->snode, ptr, val_stmt);
     } else {
       TI_ERROR("The {} operation is not supported on {} SNode",
@@ -491,7 +495,8 @@ class LowerAST : public IRVisitor {
     for (int i = 0; i < (int)fargs.size(); ++i) {
       args_stmts[i] = flatten_rvalue(fargs[i], &fctx);
     }
-    fctx.push_back<AssertStmt>(val_stmt, stmt->text, args_stmts);
+    fctx.push_back<AssertStmt>(val_stmt, stmt->text, args_stmts,
+                               stmt->dbg_info);
     stmt->parent->replace_with(stmt, std::move(fctx.stmts));
   }
 
@@ -522,9 +527,11 @@ class LowerAST : public IRVisitor {
           output_statements));
     } else {
       for (auto &s : stmt->args) {
-        TI_ASSERT_INFO(
-            s.is<IdExpression>(),
-            "external func call via bitcode must pass in local variables.")
+        if (!s.is<IdExpression>()) {
+          ErrorEmitter(
+              TaichiSyntaxError(), stmt,
+              "external func call via bitcode must pass in local variables.");
+        }
         arg_statements.push_back(flatten_lvalue(s, &ctx));
       }
       ctx.push_back(std::make_unique<ExternalFuncCallStmt>(

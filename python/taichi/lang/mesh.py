@@ -597,7 +597,7 @@ class MeshElementFieldProxy:
                         ast_builder.expr_subscript(
                             attr.ptr,
                             global_entry_expr_group,
-                            impl.get_runtime().get_current_src_info(),
+                            _ti_core.DebugInfo(impl.get_runtime().get_current_src_info()),
                         )
                     ),
                 )
@@ -612,7 +612,7 @@ class MeshElementFieldProxy:
                         ast_builder.expr_subscript(
                             var,
                             global_entry_expr_group,
-                            impl.get_runtime().get_current_src_info(),
+                            _ti_core.DebugInfo(impl.get_runtime().get_current_src_info()),
                         )
                     ),
                 )

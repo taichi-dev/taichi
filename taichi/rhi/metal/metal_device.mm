@@ -7,6 +7,132 @@
 namespace taichi::lang {
 namespace metal {
 
+MTLVertexFormat vertexformat2mtl(BufferFormat format) {
+  static const std::map<BufferFormat, MTLVertexFormat> map{
+      {BufferFormat::unknown, MTLVertexFormatInvalid},
+      {BufferFormat::r8, MTLVertexFormatUCharNormalized},
+      {BufferFormat::rg8, MTLVertexFormatUChar2Normalized},
+      {BufferFormat::rgba8, MTLVertexFormatUChar4Normalized},
+      {BufferFormat::rgba8srgb, MTLVertexFormatInvalid},
+      {BufferFormat::bgra8, MTLVertexFormatUChar4Normalized_BGRA},
+      {BufferFormat::bgra8srgb, MTLVertexFormatInvalid},
+      {BufferFormat::r8u, MTLVertexFormatInvalid},
+      {BufferFormat::rg8u, MTLVertexFormatInvalid},
+      {BufferFormat::rgba8u, MTLVertexFormatInvalid},
+      {BufferFormat::r8i, MTLVertexFormatInvalid},
+      {BufferFormat::rg8i, MTLVertexFormatInvalid},
+      {BufferFormat::rgba8i, MTLVertexFormatInvalid},
+      {BufferFormat::r16, MTLVertexFormatUShortNormalized},
+      {BufferFormat::rg16, MTLVertexFormatUShort2Normalized},
+      {BufferFormat::rgb16, MTLVertexFormatUShort3Normalized},
+      {BufferFormat::rgba16, MTLVertexFormatUShort4Normalized},
+      {BufferFormat::r16u, MTLVertexFormatInvalid},
+      {BufferFormat::rg16u, MTLVertexFormatInvalid},
+      {BufferFormat::rgb16u, MTLVertexFormatInvalid},
+      {BufferFormat::rgba16u, MTLVertexFormatInvalid},
+      {BufferFormat::r16i, MTLVertexFormatInvalid},
+      {BufferFormat::rg16i, MTLVertexFormatInvalid},
+      {BufferFormat::rgb16i, MTLVertexFormatInvalid},
+      {BufferFormat::rgba16i, MTLVertexFormatInvalid},
+      {BufferFormat::r16f, MTLVertexFormatHalf},
+      {BufferFormat::rg16f, MTLVertexFormatHalf2},
+      {BufferFormat::rgb16f, MTLVertexFormatHalf3},
+      {BufferFormat::rgba16f, MTLVertexFormatHalf4},
+      {BufferFormat::r32u, MTLVertexFormatUInt},
+      {BufferFormat::rg32u, MTLVertexFormatUInt2},
+      {BufferFormat::rgb32u, MTLVertexFormatUInt3},
+      {BufferFormat::rgba32u, MTLVertexFormatUInt4},
+      {BufferFormat::r32i, MTLVertexFormatInt},
+      {BufferFormat::rg32i, MTLVertexFormatInt2},
+      {BufferFormat::rgb32i, MTLVertexFormatInt3},
+      {BufferFormat::rgba32i, MTLVertexFormatInt4},
+      {BufferFormat::r32f, MTLVertexFormatFloat},
+      {BufferFormat::rg32f, MTLVertexFormatFloat2},
+      {BufferFormat::rgb32f, MTLVertexFormatFloat3},
+      {BufferFormat::rgba32f, MTLVertexFormatFloat4},
+      {BufferFormat::depth16, MTLVertexFormatInvalid},
+      {BufferFormat::depth24stencil8, MTLVertexFormatInvalid},
+      {BufferFormat::depth32f, MTLVertexFormatInvalid},
+  };
+  auto it = map.find(format);
+  RHI_ASSERT(it != map.end());
+  return it->second;
+}
+MTLPixelFormat format2mtl(BufferFormat format) {
+  static const std::map<BufferFormat, MTLPixelFormat> map{
+      {BufferFormat::unknown, MTLPixelFormatInvalid},
+      {BufferFormat::r8, MTLPixelFormatR8Unorm},
+      {BufferFormat::rg8, MTLPixelFormatRG8Unorm},
+      {BufferFormat::rgba8, MTLPixelFormatRGBA8Unorm},
+      {BufferFormat::rgba8srgb, MTLPixelFormatRGBA8Unorm_sRGB},
+      {BufferFormat::bgra8, MTLPixelFormatBGRA8Unorm},
+      {BufferFormat::bgra8srgb, MTLPixelFormatBGRA8Unorm_sRGB},
+      {BufferFormat::r8u, MTLPixelFormatR8Uint},
+      {BufferFormat::rg8u, MTLPixelFormatRG8Uint},
+      {BufferFormat::rgba8u, MTLPixelFormatRGBA8Uint},
+      {BufferFormat::r8i, MTLPixelFormatR8Sint},
+      {BufferFormat::rg8i, MTLPixelFormatRG8Sint},
+      {BufferFormat::rgba8i, MTLPixelFormatRGBA8Sint},
+      {BufferFormat::r16, MTLPixelFormatR16Unorm},
+      {BufferFormat::rg16, MTLPixelFormatRG16Unorm},
+      {BufferFormat::rgb16, MTLPixelFormatInvalid},
+      {BufferFormat::rgba16, MTLPixelFormatRGBA16Unorm},
+      {BufferFormat::r16u, MTLPixelFormatR16Uint},
+      {BufferFormat::rg16u, MTLPixelFormatRG16Uint},
+      {BufferFormat::rgb16u, MTLPixelFormatInvalid},
+      {BufferFormat::rgba16u, MTLPixelFormatRGBA16Uint},
+      {BufferFormat::r16i, MTLPixelFormatR16Sint},
+      {BufferFormat::rg16i, MTLPixelFormatRG16Sint},
+      {BufferFormat::rgb16i, MTLPixelFormatInvalid},
+      {BufferFormat::rgba16i, MTLPixelFormatRGBA16Sint},
+      {BufferFormat::r16f, MTLPixelFormatR16Float},
+      {BufferFormat::rg16f, MTLPixelFormatRG16Float},
+      {BufferFormat::rgb16f, MTLPixelFormatInvalid},
+      {BufferFormat::rgba16f, MTLPixelFormatRGBA16Float},
+      {BufferFormat::r32u, MTLPixelFormatR32Uint},
+      {BufferFormat::rg32u, MTLPixelFormatRG32Uint},
+      {BufferFormat::rgb32u, MTLPixelFormatInvalid},
+      {BufferFormat::rgba32u, MTLPixelFormatRGBA32Uint},
+      {BufferFormat::r32i, MTLPixelFormatR32Sint},
+      {BufferFormat::rg32i, MTLPixelFormatRG32Sint},
+      {BufferFormat::rgb32i, MTLPixelFormatInvalid},
+      {BufferFormat::rgba32i, MTLPixelFormatRGBA32Sint},
+      {BufferFormat::r32f, MTLPixelFormatR32Float},
+      {BufferFormat::rg32f, MTLPixelFormatRG32Float},
+      {BufferFormat::rgb32f, MTLPixelFormatInvalid},
+      {BufferFormat::rgba32f, MTLPixelFormatRGBA32Float},
+      {BufferFormat::depth16, MTLPixelFormatDepth16Unorm},
+      {BufferFormat::depth24stencil8, MTLPixelFormatInvalid},
+      {BufferFormat::depth32f, MTLPixelFormatDepth32Float},
+  };
+  auto it = map.find(format);
+  RHI_ASSERT(it != map.end());
+  return it->second;
+}
+MTLTextureType dimension2mtl(ImageDimension dimension) {
+  static const std::map<ImageDimension, MTLTextureType> map = {
+      {ImageDimension::d1D, MTLTextureType1D},
+      {ImageDimension::d2D, MTLTextureType2D},
+      {ImageDimension::d3D, MTLTextureType3D},
+  };
+  auto it = map.find(dimension);
+  RHI_ASSERT(it != map.end());
+  return it->second;
+}
+MTLTextureUsage usage2mtl(ImageAllocUsage usage) {
+  MTLTextureUsage out = 0;
+  if (usage & ImageAllocUsage::Sampled) {
+    out |= MTLTextureUsageShaderRead;
+  }
+  if (usage & ImageAllocUsage::Storage) {
+    out |= MTLTextureUsageShaderWrite;
+  }
+  if (usage & ImageAllocUsage::Attachment) {
+    out |= MTLTextureUsageRenderTarget;
+  }
+  return out;
+}
+
 MetalMemory::MetalMemory(MTLBuffer_id mtl_buffer, bool can_map)
     : mtl_buffer_(mtl_buffer), can_map_(can_map) {}
 MetalMemory::~MetalMemory() {
@@ -59,10 +185,20 @@ MetalPipeline::MetalPipeline(
     : device_(&device), mtl_library_(mtl_library), mtl_function_(mtl_function),
       mtl_compute_pipeline_state_(mtl_compute_pipeline_state),
       workgroup_size_(workgroup_size) {}
+MetalPipeline::MetalPipeline(
+    const MetalDevice &device, MTLLibrary_id mtl_library,
+    const MetalRasterFunctions &mtl_functions,
+    MTLRenderPipelineState_id mtl_render_pipeline_state,
+    const RasterParams raster_params)
+    : device_(&device), mtl_library_(mtl_library),
+      mtl_functions_(mtl_functions),
+      mtl_render_pipeline_state_(mtl_render_pipeline_state),
+      raster_params_(raster_params) {}
 MetalPipeline::~MetalPipeline() { destroy(); }
-MetalPipeline *MetalPipeline::create(const MetalDevice &device,
-                                     const uint32_t *spv_data, size_t spv_size,
-                                     const std::string &name) {
+MetalPipeline *MetalPipeline::create_compute_pipeline(const MetalDevice &device,
+                                                      const uint32_t *spv_data,
+                                                      size_t spv_size,
+                                                      const std::string &name) {
   RHI_ASSERT((size_t)spv_data % sizeof(uint32_t) == 0);
   RHI_ASSERT(spv_size % sizeof(uint32_t) == 0);
   spirv_cross::CompilerMSL compiler(spv_data, spv_size / sizeof(uint32_t));
@@ -101,38 +237,10 @@ MetalPipeline *MetalPipeline::create(const MetalDevice &device,
     return nullptr;
   }
 
-  MTLLibrary_id mtl_library = nil;
-  {
-    NSError *err = nil;
-    NSString *msl_ns = [[NSString alloc] initWithUTF8String:msl.c_str()];
-    mtl_library = [device.mtl_device() newLibraryWithSource:msl_ns
-                                                    options:nil
-                                                      error:&err];
-    [msl_ns release];
+  MTLLibrary_id mtl_library = device.get_mtl_library(msl);
 
-    if (mtl_library == nil) {
-      if (err != nil) {
-        std::array<char, 4096> msgbuf;
-        snprintf(msgbuf.data(), msgbuf.size(),
-                 "cannot compile metal library from source: %s (code=%d)",
-                 err.localizedDescription.UTF8String, (int)err.code);
-        RHI_LOG_ERROR(msgbuf.data());
-      }
-      return nullptr;
-    }
-  }
-
-  MTLFunction_id mtl_function = nil;
-  {
-    NSString *entry_name_ns = [[NSString alloc] initWithUTF8String:"main0"];
-    mtl_function = [mtl_library newFunctionWithName:entry_name_ns];
-    if (mtl_function == nil) {
-      // FIXME: (penguinliong) Specify the actual entry name after we compile
-      // directly to MSL in codegen.
-      RHI_LOG_ERROR(
-          "cannot extract entry point function 'main' from shader library");
-    }
-  }
+  MTLFunction_id mtl_function =
+      device.get_mtl_function(mtl_library, std::string("main0"));
 
   MTLComputePipelineState_id mtl_compute_pipeline_state = nil;
   {
@@ -164,6 +272,7 @@ MetalPipeline *MetalPipeline::create(const MetalDevice &device,
                            mtl_compute_pipeline_state,
                            std::move(workgroup_size));
 }
+
 void MetalPipeline::destroy() {
   if (!is_destroyed_) {
     [mtl_compute_pipeline_state_ release];
@@ -272,6 +381,31 @@ ShaderResourceSet &MetalShaderResourceSet::rw_image(uint32_t binding,
   return *this;
 }
 
+RasterResources &MetalRasterResources::vertex_buffer(DevicePtr ptr,
+                                                     uint32_t binding) {
+  MTLBuffer_id buffer = (ptr != kDeviceNullPtr)
+                            ? device_->get_memory(ptr.alloc_id).mtl_buffer()
+                            : nullptr;
+  if (buffer == nullptr) {
+    vertex_buffers.erase(binding);
+  } else {
+    vertex_buffers[binding] = {buffer, ptr.offset};
+  }
+  return *this;
+}
+
+RasterResources &MetalRasterResources::index_buffer(DevicePtr ptr,
+                                                    size_t index_width) {
+  MTLBuffer_id buffer = (ptr != kDeviceNullPtr)
+                            ? device_->get_memory(ptr.alloc_id).mtl_buffer()
+                            : nullptr;
+  if (buffer == nullptr) {
+    index_binding = BufferBinding();
+  } else {
+    index_binding = {buffer, ptr.offset};
+  }
+  return *this;
+}
 MetalCommandList::MetalCommandList(const MetalDevice &device,
                                    MTLCommandQueue_id cmd_queue)
     : device_(&device) {
@@ -530,6 +664,78 @@ std::unique_ptr<MetalSampler> create_sampler(id<MTLDevice> mtl_device) {
   return std::make_unique<MetalSampler>(mtl_sampler_state);
 }
 
+MetalSurface::MetalSurface(MetalDevice *device, const SurfaceConfig &config)
+    : config_(config), device_(device) {
+
+  width_ = config.width;
+  height_ = config.height;
+
+  image_format_ = kSwapChainImageFormat;
+
+  layer_ = [CAMetalLayer layer];
+  layer_.device = device->mtl_device();
+  layer_.pixelFormat = format2mtl(image_format_);
+  layer_.drawableSize = CGSizeMake(width_, height_);
+  layer_.allowsNextDrawableTimeout = NO;
+#if TARGET_OS_OSX
+  // Older versions may not have this property so check if it exists first.
+  layer_.displaySyncEnabled = config.vsync;
+#endif
+}
+
+MetalSurface::~MetalSurface() {
+  destroy_swap_chain();
+  [layer_ release];
+}
+
+void MetalSurface::destroy_swap_chain() {
+  for (auto &alloc : swapchain_images_) {
+    device_->destroy_image(alloc.second);
+  }
+  swapchain_images_.clear();
+}
+
+StreamSemaphore MetalSurface::acquire_next_image() {
+  current_drawable_ = [layer_ nextDrawable];
+  current_swap_chain_texture_ = current_drawable_.texture;
+
+  if (swapchain_images_.count(current_swap_chain_texture_) == 0) {
+    swapchain_images_[current_swap_chain_texture_] =
+        device_->import_mtl_texture(current_drawable_.texture);
+    RHI_ASSERT(swapchain_images_.size() <=
+               50); // In case something goes wrong on Metal side, prevent this
+                    // map of images from growing each frame unbounded.
+  }
+  return nullptr;
+}
+
+DeviceAllocation MetalSurface::get_target_image() {
+  return swapchain_images_.at(current_swap_chain_texture_);
+}
+
+void MetalSurface::present_image(
+    const std::vector<StreamSemaphore> &wait_semaphores) {
+
+  [current_drawable_ present];
+
+  device_->wait_idle();
+}
+
+std::pair<uint32_t, uint32_t> MetalSurface::get_size() {
+  return std::make_pair(width_, height_);
+}
+
+int MetalSurface::get_image_count() { return (int)layer_.maximumDrawableCount; }
+
+BufferFormat MetalSurface::image_format() { return image_format_; }
+
+void MetalSurface::resize(uint32_t width, uint32_t height) {
+  destroy_swap_chain();
+  width_ = width;
+  height_ = height;
+  layer_.drawableSize = CGSizeMake(width_, height_);
+}
+
 MetalDevice::MetalDevice(MTLDevice_id mtl_device) : mtl_device_(mtl_device) {
   compute_stream_ = std::unique_ptr<MetalStream>(MetalStream::create(*this));
 
@@ -552,6 +758,11 @@ void MetalDevice::destroy() {
     [mtl_device_ release];
     is_destroyed_ = true;
   }
+}
+
+std::unique_ptr<Surface>
+MetalDevice::create_surface(const SurfaceConfig &config) {
+  return std::make_unique<MetalSurface>(this, config);
 }
 
 RhiResult MetalDevice::allocate_memory(const AllocParams &params,
@@ -597,81 +808,6 @@ DeviceAllocation MetalDevice::import_mtl_buffer(MTLBuffer_id buffer) {
 void MetalDevice::dealloc_memory(DeviceAllocation handle) {
   RHI_ASSERT(handle.device == this);
   memory_allocs_.release(&get_memory(handle.alloc_id));
-}
-
-MTLPixelFormat format2mtl(BufferFormat format) {
-  static const std::map<BufferFormat, MTLPixelFormat> map{
-      {BufferFormat::unknown, MTLPixelFormatInvalid},
-      {BufferFormat::r8, MTLPixelFormatR8Unorm},
-      {BufferFormat::rg8, MTLPixelFormatRG8Unorm},
-      {BufferFormat::rgba8, MTLPixelFormatRGBA8Unorm},
-      {BufferFormat::rgba8srgb, MTLPixelFormatRGBA8Unorm_sRGB},
-      {BufferFormat::bgra8, MTLPixelFormatBGRA8Unorm},
-      {BufferFormat::bgra8srgb, MTLPixelFormatBGRA8Unorm_sRGB},
-      {BufferFormat::r8u, MTLPixelFormatR8Uint},
-      {BufferFormat::rg8u, MTLPixelFormatRG8Uint},
-      {BufferFormat::rgba8u, MTLPixelFormatRGBA8Uint},
-      {BufferFormat::r8i, MTLPixelFormatR8Sint},
-      {BufferFormat::rg8i, MTLPixelFormatRG8Sint},
-      {BufferFormat::rgba8i, MTLPixelFormatRGBA8Sint},
-      {BufferFormat::r16, MTLPixelFormatR16Unorm},
-      {BufferFormat::rg16, MTLPixelFormatRG16Unorm},
-      {BufferFormat::rgb16, MTLPixelFormatInvalid},
-      {BufferFormat::rgba16, MTLPixelFormatRGBA16Unorm},
-      {BufferFormat::r16u, MTLPixelFormatR16Uint},
-      {BufferFormat::rg16u, MTLPixelFormatRG16Uint},
-      {BufferFormat::rgb16u, MTLPixelFormatInvalid},
-      {BufferFormat::rgba16u, MTLPixelFormatRGBA16Uint},
-      {BufferFormat::r16i, MTLPixelFormatR16Sint},
-      {BufferFormat::rg16i, MTLPixelFormatRG16Sint},
-      {BufferFormat::rgb16i, MTLPixelFormatInvalid},
-      {BufferFormat::rgba16i, MTLPixelFormatRGBA16Sint},
-      {BufferFormat::r16f, MTLPixelFormatR16Float},
-      {BufferFormat::rg16f, MTLPixelFormatRG16Float},
-      {BufferFormat::rgb16f, MTLPixelFormatInvalid},
-      {BufferFormat::rgba16f, MTLPixelFormatRGBA16Float},
-      {BufferFormat::r32u, MTLPixelFormatR32Uint},
-      {BufferFormat::rg32u, MTLPixelFormatRG32Uint},
-      {BufferFormat::rgb32u, MTLPixelFormatInvalid},
-      {BufferFormat::rgba32u, MTLPixelFormatRGBA32Uint},
-      {BufferFormat::r32i, MTLPixelFormatR32Sint},
-      {BufferFormat::rg32i, MTLPixelFormatRG32Sint},
-      {BufferFormat::rgb32i, MTLPixelFormatInvalid},
-      {BufferFormat::rgba32i, MTLPixelFormatRGBA32Sint},
-      {BufferFormat::r32f, MTLPixelFormatR32Float},
-      {BufferFormat::rg32f, MTLPixelFormatRG32Float},
-      {BufferFormat::rgb32f, MTLPixelFormatInvalid},
-      {BufferFormat::rgba32f, MTLPixelFormatRGBA32Float},
-      {BufferFormat::depth16, MTLPixelFormatDepth16Unorm},
-      {BufferFormat::depth24stencil8, MTLPixelFormatInvalid},
-      {BufferFormat::depth32f, MTLPixelFormatDepth32Float},
-  };
-  auto it = map.find(format);
-  RHI_ASSERT(it != map.end());
-  return it->second;
-}
-MTLTextureType dimension2mtl(ImageDimension dimension) {
-  static const std::map<ImageDimension, MTLTextureType> map = {
-      {ImageDimension::d1D, MTLTextureType1D},
-      {ImageDimension::d2D, MTLTextureType2D},
-      {ImageDimension::d3D, MTLTextureType3D},
-  };
-  auto it = map.find(dimension);
-  RHI_ASSERT(it != map.end());
-  return it->second;
-}
-MTLTextureUsage usage2mtl(ImageAllocUsage usage) {
-  MTLTextureUsage out = 0;
-  if (usage & ImageAllocUsage::Sampled) {
-    out |= MTLTextureUsageShaderRead;
-  }
-  if (usage & ImageAllocUsage::Storage) {
-    out |= MTLTextureUsageShaderWrite;
-  }
-  if (usage & ImageAllocUsage::Attachment) {
-    out |= MTLTextureUsageRenderTarget;
-  }
-  return out;
 }
 
 DeviceAllocation MetalDevice::create_image(const ImageParams &params) {
@@ -753,15 +889,208 @@ RhiResult MetalDevice::create_pipeline(Pipeline **out_pipeline,
                                        PipelineCache *cache) noexcept {
   RHI_ASSERT(src.type == PipelineSourceType::spirv_binary);
   try {
-    *out_pipeline = MetalPipeline::create(*this, (const uint32_t *)src.data,
-                                          src.size, name);
+    *out_pipeline = MetalPipeline::create_compute_pipeline(
+        *this, (const uint32_t *)src.data, src.size, name);
   } catch (const std::exception &e) {
     return RhiResult::error;
   }
   return RhiResult::success;
 }
+
+std::unique_ptr<Pipeline> MetalDevice::create_raster_pipeline(
+    const std::vector<PipelineSourceDesc> &src,
+    const RasterParams &raster_params,
+    const std::vector<VertexInputBinding> &vertex_inputs,
+    const std::vector<VertexInputAttribute> &vertex_attrs, std::string name) {
+
+  // (geometry shaders aren't supported in Vulkan backend either)
+  RHI_ASSERT(src.size() == 2);
+  bool has_fragment = false;
+  bool has_vertex = false;
+  for (auto &pipe_source_desc : src) {
+    RHI_ASSERT(pipe_source_desc.type == PipelineSourceType::spirv_binary);
+    if (pipe_source_desc.stage == PipelineStageType::fragment)
+      has_fragment = true;
+    if (pipe_source_desc.stage == PipelineStageType::vertex)
+      has_vertex = true;
+  }
+  RHI_ASSERT(has_fragment && has_vertex);
+
+  spirv_cross::CompilerMSL::Options options{};
+  options.enable_decoration_binding = true;
+
+  // Compile spirv binaries to MSL source
+  std::string msl_source = "";
+  for (int i = 0; i < 2; i++) {
+    const uint32_t *spv_data = (const uint32_t *)src[i].data;
+
+    RHI_ASSERT((size_t)spv_data % sizeof(uint32_t) == 0);
+    RHI_ASSERT(src[i].size % sizeof(uint32_t) == 0);
+
+    spirv_cross::CompilerMSL compiler(spv_data, src[i].size / sizeof(uint32_t));
+    compiler.set_msl_options(options);
+
+    std::string msl = "";
+    try {
+      msl = compiler.compile();
+    } catch (const spirv_cross::CompilerError &e) {
+      std::array<char, 4096> msgbuf;
+      snprintf(msgbuf.data(), msgbuf.size(), "(spirv-cross compiler) %s: %s",
+               name.c_str(), e.what());
+      RHI_LOG_ERROR(msgbuf.data());
+      return nullptr;
+    }
+
+    const std::string new_entry_point_name =
+        src[i].stage == PipelineStageType::fragment
+            ? std::string(kMetalFragFunctionName)
+            : std::string(kMetalVertFunctionName);
+
+    // Fragment and vertex function names must be different.
+    // If spirv-cross has a method to let you set the emitted entry point's
+    // name, that would be nice, but I could not find anything in the docs.
+    // So for now just using std's regex_replace().
+    std::regex entry_point_regex("main0");
+    msl_source +=
+        std::regex_replace(msl, entry_point_regex, new_entry_point_name);
+  }
+
+  // Compile MSL source
+  MTLLibrary_id mtl_library = get_mtl_library(msl_source);
+
+  // Get the MTLFunctions
+  int frag_func_index = 0;
+  int vert_func_index = 0;
+  std::vector<MTLFunction_id> mtl_functions;
+  for (int i = 0; i < 2; i++) {
+    std::string new_entry_point_name;
+    if (src[i].stage == PipelineStageType::fragment) {
+      frag_func_index = i;
+      new_entry_point_name = std::string(kMetalFragFunctionName);
+    } else {
+      vert_func_index = i;
+      new_entry_point_name = std::string(kMetalVertFunctionName);
+    }
+
+    MTLFunction_id mtl_function =
+        get_mtl_function(mtl_library, new_entry_point_name);
+    mtl_functions.push_back(mtl_function);
+  }
+
+  // Create render pipeline
+  static const std::unordered_map<TopologyType, MTLPrimitiveTopologyClass>
+      topo_types = {
+          {TopologyType::Triangles,
+           MTLPrimitiveTopologyClass::MTLPrimitiveTopologyClassTriangle},
+          {TopologyType::Lines,
+           MTLPrimitiveTopologyClass::MTLPrimitiveTopologyClassLine},
+          {TopologyType::Points,
+           MTLPrimitiveTopologyClass::MTLPrimitiveTopologyClassPoint},
+      };
+
+  MTLRenderPipelineDescriptor *rpd = [MTLRenderPipelineDescriptor new];
+  rpd.vertexFunction = mtl_functions[vert_func_index];
+  rpd.fragmentFunction = mtl_functions[frag_func_index];
+  // FIXME: IMPORTANT! "Forcing the format to swap chain image format might bite
+  // us in the bum later. Usually what I do here is to leave this pipeline
+  // partially constructed, and use a map between renderpass and actual pipeline
+  // states, and build / cache pipeline states in the bind_pipeline command.
+  // Because the color attachment format is not known until begin_renderpass"
+  rpd.colorAttachments[0].pixelFormat = format2mtl(kSwapChainImageFormat);
+  if (raster_params.depth_write) {
+    rpd.depthAttachmentPixelFormat = format2mtl(BufferFormat::depth32f);
+  }
+  rpd.inputPrimitiveTopology = topo_types.at(raster_params.prim_topology);
+
+  // Set vertex description
+  MTLVertexDescriptor *vd = [MTLVertexDescriptor new];
+
+  for (auto &vert_attr : vertex_attrs) {
+    int location = vert_attr.location;
+    vd.attributes[location].format = vertexformat2mtl(vert_attr.format);
+    vd.attributes[location].offset = vert_attr.offset;
+    vd.attributes[location].bufferIndex = vert_attr.binding;
+  }
+  for (auto &vert_input : vertex_inputs) {
+    int buffer_index = vert_input.binding;
+    vd.layouts[buffer_index].stride = vert_input.stride;
+    vd.layouts[buffer_index].stepFunction =
+        vert_input.instance ? MTLVertexStepFunctionPerInstance
+                            : MTLVertexStepFunctionPerVertex;
+    vd.layouts[buffer_index].stepRate = 1;
+  }
+
+  rpd.vertexDescriptor = vd;
+
+  // Create pipeline state
+  MTLRenderPipelineState_id rps = nil;
+  {
+    NSError *err = nil;
+    rps = [mtl_device_ newRenderPipelineStateWithDescriptor:rpd error:&err];
+
+    if (rps == nil) {
+      if (err != nil) {
+        std::array<char, 4096> msgbuf;
+        snprintf(msgbuf.data(), msgbuf.size(),
+                 "cannot create render pipeline state: %s (code=%d)",
+                 err.localizedDescription.UTF8String, (int)err.code);
+        RHI_LOG_ERROR(msgbuf.data());
+      }
+      return nullptr;
+    }
+  }
+
+  // Create the pipeline object
+  return std::make_unique<MetalPipeline>(
+      *this, mtl_library,
+      MetalRasterFunctions{mtl_functions[vert_func_index],
+                           mtl_functions[frag_func_index]},
+      rps, raster_params);
+}
+
+MTLFunction_id
+MetalDevice::get_mtl_function(MTLLibrary_id mtl_lib,
+                              const std::string &func_name) const {
+
+  MTLFunction_id mtl_function = nil;
+  NSString *entry_name_ns =
+      [[NSString alloc] initWithUTF8String:func_name.c_str()];
+  mtl_function = [mtl_lib newFunctionWithName:entry_name_ns];
+  [entry_name_ns release];
+  if (mtl_function == nil) {
+    RHI_LOG_ERROR("cannot extract entry point function from shader library");
+  }
+  return mtl_function;
+}
+
+MTLLibrary_id MetalDevice::get_mtl_library(const std::string &source) const {
+  MTLLibrary_id mtl_library = nil;
+  NSError *err = nil;
+  NSString *msl_ns = [[NSString alloc] initWithUTF8String:source.c_str()];
+  mtl_library = [mtl_device_ newLibraryWithSource:msl_ns
+                                          options:nil
+                                            error:&err];
+  [msl_ns release];
+
+  if (mtl_library == nil) {
+    if (err != nil) {
+      std::array<char, 4096> msgbuf;
+      snprintf(msgbuf.data(), msgbuf.size(),
+               "cannot compile metal library from source: %s (code=%d)",
+               err.localizedDescription.UTF8String, (int)err.code);
+      RHI_LOG_ERROR(msgbuf.data());
+    }
+    return nil;
+  }
+  return mtl_library;
+}
+
 ShaderResourceSet *MetalDevice::create_resource_set() {
   return new MetalShaderResourceSet(*this);
+}
+
+RasterResources *MetalDevice::create_raster_resources() {
+  return new MetalRasterResources(this);
 }
 
 Stream *MetalDevice::get_compute_stream() { return compute_stream_.get(); }

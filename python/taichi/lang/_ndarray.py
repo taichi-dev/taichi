@@ -3,7 +3,7 @@ from taichi._lib import core as _ti_core
 from taichi.lang import impl
 from taichi.lang.enums import Layout
 from taichi.lang.exception import TaichiIndexError
-from taichi.lang.util import cook_dtype, python_scope, to_numpy_type
+from taichi.lang.util import cook_dtype, get_traceback, python_scope, to_numpy_type
 from taichi.types import primitive_types
 from taichi.types.ndarray_type import NdarrayTypeMetadata
 from taichi.types.utils import is_real, is_signed
@@ -237,7 +237,9 @@ class ScalarNdarray(Ndarray):
     def __init__(self, dtype, arr_shape):
         super().__init__()
         self.dtype = cook_dtype(dtype)
-        self.arr = impl.get_runtime().prog.create_ndarray(self.dtype, arr_shape, layout=Layout.NULL, zero_fill=True)
+        self.arr = impl.get_runtime().prog.create_ndarray(
+            self.dtype, arr_shape, layout=Layout.NULL, zero_fill=True, dbg_info=_ti_core.DebugInfo(get_traceback())
+        )
         self.shape = tuple(self.arr.shape)
         self.element_type = dtype
 

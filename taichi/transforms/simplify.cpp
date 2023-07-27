@@ -184,7 +184,8 @@ class BasicBlockSimplify : public IRVisitor {
       auto check_sum =
           Stmt::make<BinaryOpStmt>(BinaryOpType::cmp_ge, sum.get(), zero.get());
       auto assert = Stmt::make<AssertStmt>(
-          check_sum.get(), "The indices provided are too big!\n" + stmt->tb,
+          check_sum.get(),
+          "The indices provided are too big!\n" + stmt->get_tb(),
           std::vector<Stmt *>());
       // Because Taichi's assertion is checked only after the execution of the
       // kernel, when the linear index overflows and goes negative, we have to
@@ -511,8 +512,8 @@ bool simplify(IRNode *root, const CompileConfig &config) {
 void full_simplify(IRNode *root,
                    const CompileConfig &config,
                    const FullSimplifyPass::Args &args) {
-  auto print =
-      make_pass_printer(args.verbose, args.kernel_name + ".simplify", root);
+  auto print = make_pass_printer(args.verbose, config.print_ir_dbg_info,
+                                 args.kernel_name + ".simplify", root);
   TI_AUTO_PROF;
   if (config.advanced_optimization) {
     bool first_iteration = true;

@@ -26,10 +26,12 @@ size_t flatten_index(const std::vector<int> &shapes,
 Ndarray::Ndarray(Program *prog,
                  const DataType type,
                  const std::vector<int> &shape_,
-                 ExternalArrayLayout layout_)
+                 ExternalArrayLayout layout_,
+                 const DebugInfo &dbg_info_)
     : dtype(type),
       shape(shape_),
       layout(layout_),
+      dbg_info(dbg_info_),
       nelement_(std::accumulate(std::begin(shape_),
                                 std::end(shape_),
                                 1,
@@ -51,22 +53,25 @@ Ndarray::Ndarray(Program *prog,
       std::accumulate(std::begin(total_shape_), std::end(total_shape_), 1LL,
                       std::multiplies<>());
   if (total_num_scalar > std::numeric_limits<int>::max()) {
-    TI_WARN(
+    ErrorEmitter(
+        TaichiIndexWarning(), &dbg_info,
         "Ndarray index might be out of int32 boundary but int64 indexing is "
         "not supported yet.");
   }
-  ndarray_alloc_ = prog->allocate_memory_ndarray(nelement_ * element_size_,
-                                                 prog->result_buffer);
+  ndarray_alloc_ = prog->allocate_memory_on_device(nelement_ * element_size_,
+                                                   prog->result_buffer);
 }
 
 Ndarray::Ndarray(DeviceAllocation &devalloc,
                  const DataType type,
                  const std::vector<int> &shape,
-                 ExternalArrayLayout layout)
+                 ExternalArrayLayout layout,
+                 const DebugInfo &dbg_info)
     : ndarray_alloc_(devalloc),
       dtype(type),
       shape(shape),
       layout(layout),
+      dbg_info(dbg_info),
       nelement_(std::accumulate(std::begin(shape),
                                 std::end(shape),
                                 1,
@@ -91,7 +96,8 @@ Ndarray::Ndarray(DeviceAllocation &devalloc,
       std::accumulate(std::begin(total_shape_), std::end(total_shape_), 1LL,
                       std::multiplies<>());
   if (total_num_scalar > std::numeric_limits<int>::max()) {
-    TI_WARN(
+    ErrorEmitter(
+        TaichiIndexWarning(), &dbg_info,
         "Ndarray index might be out of int32 boundary but int64 indexing is "
         "not supported yet.");
   }
@@ -101,11 +107,13 @@ Ndarray::Ndarray(DeviceAllocation &devalloc,
                  const DataType type,
                  const std::vector<int> &shape,
                  const std::vector<int> &element_shape,
-                 ExternalArrayLayout layout)
+                 ExternalArrayLayout layout,
+                 const DebugInfo &dbg_info)
     : Ndarray(devalloc,
               TypeFactory::create_tensor_type(element_shape, type),
               shape,
-              layout) {
+              layout,
+              dbg_info) {
   TI_ASSERT(type->is<PrimitiveType>());
 }
 

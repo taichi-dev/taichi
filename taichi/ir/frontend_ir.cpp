@@ -9,10 +9,15 @@
 
 namespace taichi::lang {
 
-#define TI_ASSERT_TYPE_CHECKED(x)                       \
-  TI_ASSERT_INFO(x->ret_type != PrimitiveType::unknown, \
-                 "[{}] was not type-checked",           \
-                 ExpressionHumanFriendlyPrinter::expr_to_string(x))
+#define TI_ASSERT_TYPE_CHECKED(x)                                          \
+  do {                                                                     \
+    if (x->ret_type == PrimitiveType::unknown) {                           \
+      ErrorEmitter(                                                        \
+          TaichiTypeError(), x.expr.get(),                                 \
+          fmt::format("[{}] was not type-checked",                         \
+                      ExpressionHumanFriendlyPrinter::expr_to_string(x))); \
+    }                                                                      \
+  } while (false)
 
 static bool is_primitive_or_tensor_type(DataType &type) {
   return type->is<PrimitiveType>() || type->is<TensorType>();
@@ -21,8 +26,13 @@ static bool is_primitive_or_tensor_type(DataType &type) {
 FrontendSNodeOpStmt::FrontendSNodeOpStmt(SNodeOpType op_type,
                                          SNode *snode,
                                          const ExprGroup &indices,
-                                         const Expr &val)
-    : op_type(op_type), snode(snode), indices(indices), val(val) {
+                                         const Expr &val,
+                                         const DebugInfo &dbg_info)
+    : Stmt(dbg_info),
+      op_type(op_type),
+      snode(snode),
+      indices(indices),
+      val(val) {
   if (val.expr != nullptr) {
     TI_ASSERT(op_type == SNodeOpType::append);
   } else {
@@ -30,11 +40,15 @@ FrontendSNodeOpStmt::FrontendSNodeOpStmt(SNodeOpType op_type,
   }
 }
 
-FrontendReturnStmt::FrontendReturnStmt(const ExprGroup &group) : values(group) {
+FrontendReturnStmt::FrontendReturnStmt(const ExprGroup &group,
+                                       const DebugInfo &dbg_info)
+    : Stmt(dbg_info), values(group) {
 }
 
-FrontendAssignStmt::FrontendAssignStmt(const Expr &lhs, const Expr &rhs)
-    : lhs(lhs), rhs(rhs) {
+FrontendAssignStmt::FrontendAssignStmt(const Expr &lhs,
+                                       const Expr &rhs,
+                                       const DebugInfo &dbg_info)
+    : Stmt(dbg_info), lhs(lhs), rhs(rhs) {
   TI_ASSERT(lhs->is_lvalue());
   if (lhs.is<IdExpression>() && lhs->ret_type == PrimitiveType::unknown) {
     lhs.expr->ret_type =
@@ -43,7 +57,8 @@ FrontendAssignStmt::FrontendAssignStmt(const Expr &lhs, const Expr &rhs)
 }
 
 FrontendIfStmt::FrontendIfStmt(const FrontendIfStmt &o)
-    : condition(o.condition),
+    : Stmt(o.dbg_info),
+      condition(o.condition),
       true_statements(o.true_statements->clone()),
       false_statements(o.false_statements->clone()) {
 }
@@ -51,8 +66,9 @@ FrontendIfStmt::FrontendIfStmt(const FrontendIfStmt &o)
 FrontendForStmt::FrontendForStmt(const ExprGroup &loop_vars,
                                  SNode *snode,
                                  Arch arch,
-                                 const ForLoopConfig &config)
-    : snode(snode) {
+                                 const ForLoopConfig &config,
+                                 const DebugInfo &dbg_info)
+    : Stmt(dbg_info), snode(snode) {
   init_config(arch, config);
   init_loop_vars(loop_vars);
 }
@@ -60,8 +76,9 @@ FrontendForStmt::FrontendForStmt(const ExprGroup &loop_vars,
 FrontendForStmt::FrontendForStmt(const ExprGroup &loop_vars,
                                  const Expr &external_tensor,
                                  Arch arch,
-                                 const ForLoopConfig &config)
-    : external_tensor(external_tensor) {
+                                 const ForLoopConfig &config,
+                                 const DebugInfo &dbg_info)
+    : Stmt(dbg_info), external_tensor(external_tensor) {
   init_config(arch, config);
   init_loop_vars(loop_vars);
 }
@@ -70,8 +87,9 @@ FrontendForStmt::FrontendForStmt(const ExprGroup &loop_vars,
                                  const mesh::MeshPtr &mesh,
                                  const mesh::MeshElementType &element_type,
                                  Arch arch,
-                                 const ForLoopConfig &config)
-    : mesh(mesh.ptr.get()), element_type(element_type) {
+                                 const ForLoopConfig &config,
+                                 const DebugInfo &dbg_info)
+    : Stmt(dbg_info), mesh(mesh.ptr.get()), element_type(element_type) {
   init_config(arch, config);
   init_loop_vars(loop_vars);
 }
@@ -80,14 +98,16 @@ FrontendForStmt::FrontendForStmt(const Expr &loop_var,
                                  const Expr &begin,
                                  const Expr &end,
                                  Arch arch,
-                                 const ForLoopConfig &config)
-    : begin(begin), end(end) {
+                                 const ForLoopConfig &config,
+                                 const DebugInfo &dbg_info)
+    : Stmt(dbg_info), begin(begin), end(end) {
   init_config(arch, config);
   add_loop_var(loop_var);
 }
 
 FrontendForStmt::FrontendForStmt(const FrontendForStmt &o)
-    : snode(o.snode),
+    : Stmt(o.dbg_info),
+      snode(o.snode),
       external_tensor(o.external_tensor),
       mesh(o.mesh),
       element_type(o.element_type),
@@ -137,7 +157,7 @@ FrontendFuncDefStmt::FrontendFuncDefStmt(const FrontendFuncDefStmt &o)
 }
 
 FrontendWhileStmt::FrontendWhileStmt(const FrontendWhileStmt &o)
-    : cond(o.cond), body(o.body->clone()) {
+    : Stmt(o.dbg_info), cond(o.cond), body(o.body->clone()) {
 }
 
 void ArgLoadExpression::type_check(const CompileConfig *) {
@@ -151,8 +171,8 @@ void ArgLoadExpression::type_check(const CompileConfig *) {
 }
 
 void ArgLoadExpression::flatten(FlattenContext *ctx) {
-  auto arg_load =
-      std::make_unique<ArgLoadStmt>(arg_id, dt, is_ptr, create_load);
+  auto arg_load = std::make_unique<ArgLoadStmt>(arg_id, dt, is_ptr, create_load,
+                                                arg_depth, dbg_info);
   arg_load->ret_type = ret_type;
   ctx->push_back(std::move(arg_load));
   stmt = ctx->back_stmt();
@@ -163,20 +183,23 @@ void TexturePtrExpression::type_check(const CompileConfig *config) {
 
 void TexturePtrExpression::flatten(FlattenContext *ctx) {
   ctx->push_back<ArgLoadStmt>(arg_id, PrimitiveType::f32, /*is_ptr=*/true,
-                              /*create_load*/ true);
+                              /*create_load=*/true, /*arg_depth=*/arg_depth);
   ctx->push_back<TexturePtrStmt>(ctx->back_stmt(), num_dims, is_storage, format,
                                  lod);
   stmt = ctx->back_stmt();
 }
 
 void RandExpression::type_check(const CompileConfig *) {
-  TI_ASSERT_INFO(dt->is<PrimitiveType>() && dt != PrimitiveType::unknown,
-                 "Invalid dt [{}] for RandExpression", dt->to_string());
+  if (!(dt->is<PrimitiveType>() && dt != PrimitiveType::unknown)) {
+    ErrorEmitter(
+        TaichiTypeError(), this,
+        fmt::format("Invalid dt [{}] for RandExpression", dt->to_string()));
+  }
   ret_type = dt;
 }
 
 void RandExpression::flatten(FlattenContext *ctx) {
-  auto ran = std::make_unique<RandStmt>(dt);
+  auto ran = std::make_unique<RandStmt>(dt, dbg_info);
   ctx->push_back(std::move(ran));
   stmt = ctx->back_stmt();
 }
@@ -196,17 +219,20 @@ void UnaryOpExpression::type_check(const CompileConfig *config) {
   auto ret_primitive_type = ret_type;
 
   if (!operand_primitive_type->is<PrimitiveType>()) {
-    throw TaichiTypeError(fmt::format(
-        "unsupported operand type(s) for '{}': '{}'", unary_op_type_name(type),
-        operand_primitive_type->to_string()));
+    ErrorEmitter(TaichiTypeError(), this,
+                 fmt::format("unsupported operand type(s) for '{}': '{}'",
+                             unary_op_type_name(type),
+                             operand_primitive_type->to_string()));
   }
 
   if ((type == UnaryOpType::round || type == UnaryOpType::floor ||
        type == UnaryOpType::ceil || is_trigonometric(type)) &&
       !is_real(operand_primitive_type))
-    throw TaichiTypeError(fmt::format(
-        "'{}' takes real inputs only, however '{}' is provided",
-        unary_op_type_name(type), operand_primitive_type->to_string()));
+    ErrorEmitter(
+        TaichiTypeError(), this,
+        fmt::format("'{}' takes real inputs only, however '{}' is provided",
+                    unary_op_type_name(type),
+                    operand_primitive_type->to_string()));
 
   if ((type == UnaryOpType::sqrt || type == UnaryOpType::exp ||
        type == UnaryOpType::log) &&
@@ -218,9 +244,11 @@ void UnaryOpExpression::type_check(const CompileConfig *config) {
 
   if ((type == UnaryOpType::bit_not || type == UnaryOpType::logic_not) &&
       is_real(operand_primitive_type)) {
-    throw TaichiTypeError(fmt::format(
-        "'{}' takes integral inputs only, however '{}' is provided",
-        unary_op_type_name(type), operand_primitive_type->to_string()));
+    ErrorEmitter(
+        TaichiTypeError(), this,
+        fmt::format("'{}' takes integral inputs only, however '{}' is provided",
+                    unary_op_type_name(type),
+                    operand_primitive_type->to_string()));
   }
 
   if (type == UnaryOpType::logic_not) {
@@ -228,7 +256,7 @@ void UnaryOpExpression::type_check(const CompileConfig *config) {
   }
 
   if (type == UnaryOpType::frexp) {
-    std::vector<StructMember> elements;
+    std::vector<AbstractDictionaryMember> elements;
     TI_ASSERT(operand_primitive_type->is_primitive(PrimitiveTypeID::f32) ||
               operand_primitive_type->is_primitive(PrimitiveTypeID::f64));
     elements.push_back({operand_primitive_type, "mantissa", 0});
@@ -243,9 +271,11 @@ void UnaryOpExpression::type_check(const CompileConfig *config) {
   }
 
   if (type == UnaryOpType::popcnt && is_real(operand_primitive_type)) {
-    throw TaichiTypeError(fmt::format(
-        "'{}' takes integral inputs only, however '{}' is provided",
-        unary_op_type_name(type), operand_primitive_type->to_string()));
+    ErrorEmitter(
+        TaichiTypeError(), this,
+        fmt::format("'{}' takes integral inputs only, however '{}' is provided",
+                    unary_op_type_name(type),
+                    operand_primitive_type->to_string()));
   }
 
   if (operand_type->is<TensorType>()) {
@@ -263,12 +293,11 @@ bool UnaryOpExpression::is_cast() const {
 
 void UnaryOpExpression::flatten(FlattenContext *ctx) {
   auto operand_stmt = flatten_rvalue(operand, ctx);
-  auto unary = std::make_unique<UnaryOpStmt>(type, operand_stmt);
+  auto unary = std::make_unique<UnaryOpStmt>(type, operand_stmt, dbg_info);
   if (is_cast()) {
     unary->cast_type = cast_type;
   }
   stmt = unary.get();
-  stmt->tb = tb;
   stmt->ret_type = ret_type;
   ctx->push_back(std::move(unary));
 }
@@ -282,7 +311,8 @@ Expr to_broadcast_tensor(const Expr &elt, const DataType &dt) {
     // Only tensor shape will be checked here, since the dtype will
     // be promoted later at irpass::type_check()
     if (elt_type.get_shape() != dt.get_shape()) {
-      TI_ERROR("Cannot broadcast tensor to tensor");
+      ErrorEmitter(TaichiTypeError(), elt.expr.get(),
+                   "Cannot broadcast tensor to tensor");
     } else {
       return elt;
     }
@@ -290,9 +320,12 @@ Expr to_broadcast_tensor(const Expr &elt, const DataType &dt) {
 
   auto tensor_type = dt->as<TensorType>();
   auto tensor_elt_type = tensor_type->get_element_type();
-  TI_ASSERT_INFO(tensor_elt_type->is<PrimitiveType>(),
-                 "Only primitive types are supported in Tensors, got {}",
-                 tensor_elt_type->to_string());
+  if (!tensor_elt_type->is<PrimitiveType>()) {
+    ErrorEmitter(
+        TaichiTypeError(), elt.expr.get(),
+        fmt::format("Only primitive types are supported in Tensors, got {}",
+                    tensor_elt_type->to_string()));
+  }
   std::vector<Expr> broadcast_values(tensor_type->get_num_elements(), elt);
   auto matrix_expr = Expr::make<MatrixExpression>(
       broadcast_values, tensor_type->get_shape(), elt_type);
@@ -436,15 +469,14 @@ void BinaryOpExpression::flatten(FlattenContext *ctx) {
     }
     if_stmt->set_false_statements(std::move(false_block));
 
-    auto ret = ctx->push_back<LocalLoadStmt>(result);
-    ret->tb = tb;
+    auto ret = ctx->push_back<LocalLoadStmt>(result, dbg_info);
     stmt = ret;
     stmt->ret_type = ret_type;
     return;
   }
   auto rhs_stmt = flatten_rvalue(rhs, ctx);
-  ctx->push_back(std::make_unique<BinaryOpStmt>(type, lhs_stmt, rhs_stmt));
-  ctx->stmts.back()->tb = tb;
+  ctx->push_back(
+      std::make_unique<BinaryOpStmt>(type, lhs_stmt, rhs_stmt, dbg_info));
   stmt = ctx->back_stmt();
   stmt->ret_type = ret_type;
 }
@@ -523,7 +555,8 @@ void TernaryOpExpression::type_check(const CompileConfig *config) {
   auto op3_type = op3.get_rvalue_type();
 
   auto error = [&]() {
-    throw TaichiTypeError(
+    ErrorEmitter(
+        TaichiTypeError(), this,
         fmt::format("unsupported operand type(s) for '{}': '{}', '{}' and '{}'",
                     ternary_type_name(type), op1_type->to_string(),
                     op2_type->to_string(), op3_type->to_string()));
@@ -581,13 +614,12 @@ void TernaryOpExpression::flatten(FlattenContext *ctx) {
     auto op1_stmt = flatten_rvalue(op1, ctx);
     auto op2_stmt = flatten_rvalue(op2, ctx);
     auto op3_stmt = flatten_rvalue(op3, ctx);
-    ctx->push_back(
-        std::make_unique<TernaryOpStmt>(type, op1_stmt, op2_stmt, op3_stmt));
+    ctx->push_back(std::make_unique<TernaryOpStmt>(type, op1_stmt, op2_stmt,
+                                                   op3_stmt, dbg_info));
   } else if (type == TernaryOpType::ifte) {
     make_ifte(ctx, ret_type, op1, op2, op3);
   }
   stmt = ctx->back_stmt();
-  stmt->tb = tb;
   stmt->ret_type = ret_type;
 }
 
@@ -602,17 +634,18 @@ void InternalFuncCallExpression::type_check(const CompileConfig *) {
 
 void InternalFuncCallExpression::flatten(FlattenContext *ctx) {
   stmt = op->flatten(ctx, args, ret_type);
-  stmt->tb = tb;
+  stmt->dbg_info = dbg_info;
 }
 
 void ExternalTensorExpression::flatten(FlattenContext *ctx) {
   auto type =
       TypeFactory::get_instance().get_ndarray_struct_type(dt, ndim, needs_grad);
+  type = TypeFactory::get_instance().get_pointer_type((Type *)type);
 
-  auto ptr = Stmt::make<ArgLoadStmt>(arg_id, type, /*is_ptr=*/true,
-                                     /*create_load=*/false);
+  auto ptr = Stmt::make<ArgLoadStmt>(
+      arg_id, type, /*is_ptr=*/true,
+      /*create_load=*/false, /*arg_depth=*/arg_depth, /*dbg_info=*/dbg_info);
 
-  ptr->tb = tb;
   ctx->push_back(std::move(ptr));
   stmt = ctx->back_stmt();
 }
@@ -684,7 +717,7 @@ Stmt *make_tensor_access_single_element(Expression::FlattenContext *ctx,
                                         Stmt *var_stmt,
                                         const ExprGroup &indices,
                                         const std::vector<int> &shape,
-                                        const std::string &tb) {
+                                        const DebugInfo &dbg_info) {
   bool needs_dynamic_index = false;
   for (int i = 0; i < (int)indices.size(); ++i) {
     if (!indices[i].is<ConstExpression>()) {
@@ -710,7 +743,7 @@ Stmt *make_tensor_access_single_element(Expression::FlattenContext *ctx,
     }
     offset_stmt = ctx->push_back<ConstStmt>(TypedConstant(offset));
   }
-  return ctx->push_back<MatrixPtrStmt>(var_stmt, offset_stmt, tb);
+  return ctx->push_back<MatrixPtrStmt>(var_stmt, offset_stmt, dbg_info);
 }
 
 Stmt *make_tensor_access(Expression::FlattenContext *ctx,
@@ -718,23 +751,27 @@ Stmt *make_tensor_access(Expression::FlattenContext *ctx,
                          const std::vector<ExprGroup> &indices_group,
                          DataType ret_type,
                          std::vector<int> shape,
-                         const std::string &tb) {
+                         const DebugInfo &dbg_info) {
   auto var_stmt = flatten_lvalue(var, ctx);
   if (!var->is_lvalue()) {
     auto alloca_stmt = ctx->push_back<AllocaStmt>(var.get_rvalue_type());
     ctx->push_back<LocalStoreStmt>(alloca_stmt, var_stmt);
     var_stmt = alloca_stmt;
   }
-  if (ret_type.ptr_removed()->is<TensorType>()) {
+
+  bool is_shared_array =
+      (var_stmt->is<AllocaStmt>() && var_stmt->as<AllocaStmt>()->is_shared);
+
+  if (ret_type.ptr_removed()->is<TensorType>() && !is_shared_array) {
     std::vector<Stmt *> stmts;
     for (auto &indices : indices_group) {
-      stmts.push_back(
-          make_tensor_access_single_element(ctx, var_stmt, indices, shape, tb));
+      stmts.push_back(make_tensor_access_single_element(ctx, var_stmt, indices,
+                                                        shape, dbg_info));
     }
     return ctx->push_back<MatrixOfMatrixPtrStmt>(stmts, ret_type);
   }
   return make_tensor_access_single_element(ctx, var_stmt, indices_group[0],
-                                           shape, tb);
+                                           shape, dbg_info);
 }
 
 void MatrixExpression::type_check(const CompileConfig *config) {
@@ -763,22 +800,23 @@ void MatrixExpression::flatten(FlattenContext *ctx) {
 
 IndexExpression::IndexExpression(const Expr &var,
                                  const ExprGroup &indices,
-                                 std::string tb)
-    : var(var), indices_group({indices}) {
-  this->tb = tb;
+                                 const DebugInfo &dbg_info)
+    : Expression(dbg_info), var(var), indices_group({indices}) {
 }
 
 IndexExpression::IndexExpression(const Expr &var,
                                  const std::vector<ExprGroup> &indices_group,
                                  const std::vector<int> &ret_shape,
-                                 std::string tb)
-    : var(var), indices_group(indices_group), ret_shape(ret_shape) {
+                                 const DebugInfo &dbg_info)
+    : Expression(dbg_info),
+      var(var),
+      indices_group(indices_group),
+      ret_shape(ret_shape) {
   // IndexExpression with ret_shape is used for matrix slicing, where each entry
   // of ExprGroup is interpreted as a group of indices to return within each
   // axis. For example, mat[0, 3:5] has indices_group={0, [3, 4]}, where [3, 4]
   // means "m"-axis will return a TensorType with size of 2. In this case, we
   // should not expand indices_group due to its special semantics.
-  this->tb = tb;
 }
 
 bool IndexExpression::is_field() const {
@@ -820,7 +858,8 @@ static void field_validation(FieldExpression *field_expr, int index_dim) {
   int field_dim = field_expr->snode->num_active_indices;
 
   if (field_dim != index_dim) {
-    throw TaichiIndexError(
+    ErrorEmitter(
+        TaichiIndexError(), field_expr,
         fmt::format("Field with dim {} accessed with indices of dim {}",
                     field_dim, index_dim));
   }
@@ -836,7 +875,10 @@ void IndexExpression::type_check(const CompileConfig *) {
   bool has_slice = !ret_shape.empty();
   auto var_type = var.get_rvalue_type();
   if (has_slice) {
-    TI_ASSERT_INFO(is_tensor(), "Slice or swizzle can only apply on matrices");
+    if (!is_tensor()) {
+      ErrorEmitter(TaichiTypeError(), this,
+                   "Slice or swizzle can only apply on matrices");
+    }
     auto element_type = var_type->as<TensorType>()->get_element_type();
     ret_type = TypeFactory::create_tensor_type(ret_shape, element_type);
   } else if (is_field()) {  // field
@@ -860,7 +902,8 @@ void IndexExpression::type_check(const CompileConfig *) {
     int element_dim = external_tensor_expr->dt.get_shape().size();
     int total_dim = ndim + element_dim;
     if (total_dim != index_dim + element_dim) {
-      throw TaichiTypeError(
+      ErrorEmitter(
+          TaichiIndexError(), this,
           fmt::format("Array with dim {} accessed with indices of dim {}",
                       total_dim - element_dim, index_dim));
     }
@@ -876,12 +919,14 @@ void IndexExpression::type_check(const CompileConfig *) {
     auto tensor_type = var_type->as<TensorType>();
     auto shape = tensor_type->get_shape();
     if (indices_group[0].size() != shape.size()) {
-      TI_ERROR("Expected {} indices, got {}.", shape.size(),
-               indices_group[0].size());
+      ErrorEmitter(TaichiIndexError(), this,
+                   fmt::format("Expected {} indices, got {}.", shape.size(),
+                               indices_group[0].size()));
     }
     ret_type = tensor_type->get_element_type();
   } else {
-    throw TaichiTypeError(
+    ErrorEmitter(
+        TaichiIndexError(), this,
         "Invalid IndexExpression: the source is not among field, ndarray or "
         "local tensor");
   }
@@ -892,10 +937,10 @@ void IndexExpression::type_check(const CompileConfig *) {
       TI_ASSERT_TYPE_CHECKED(expr);
       auto expr_type = expr.get_rvalue_type();
       if (!is_integral(expr_type))
-        throw TaichiTypeError(
-            fmt::format("indices must be integers, however '{}' is "
-                        "provided as index {}",
-                        expr_type->to_string(), i));
+        ErrorEmitter(TaichiTypeError(), this,
+                     fmt::format("indices must be integers, however '{}' is "
+                                 "provided as index {}",
+                                 expr_type->to_string(), i));
     }
   }
 }
@@ -912,13 +957,14 @@ void IndexExpression::flatten(FlattenContext *ctx) {
   } else if (is_tensor()) {
     stmt = make_tensor_access(
         ctx, var, indices_group, ret_type,
-        var->ret_type.ptr_removed()->as<TensorType>()->get_shape(), tb);
+        var->ret_type.ptr_removed()->as<TensorType>()->get_shape(), dbg_info);
   } else {
-    throw TaichiTypeError(
+    ErrorEmitter(
+        TaichiIndexError(), this,
         "Invalid IndexExpression: the source is not among field, ndarray or "
         "local tensor");
   }
-  stmt->tb = tb;
+  stmt->dbg_info = dbg_info;
 }
 
 void RangeAssumptionExpression::type_check(const CompileConfig *) {
@@ -928,10 +974,10 @@ void RangeAssumptionExpression::type_check(const CompileConfig *) {
   auto base_type = base.get_rvalue_type();
   if (!input_type->is<PrimitiveType>() || !base_type->is<PrimitiveType>() ||
       input_type != base_type)
-    throw TaichiTypeError(
-        fmt::format("unsupported operand type(s) for "
-                    "'range_assumption': '{}' and '{}'",
-                    input_type->to_string(), base_type->to_string()));
+    ErrorEmitter(TaichiTypeError(), this,
+                 fmt::format("unsupported operand type(s) for "
+                             "'range_assumption': '{}' and '{}'",
+                             input_type->to_string(), base_type->to_string()));
   ret_type = input_type;
 }
 
@@ -948,7 +994,8 @@ void LoopUniqueExpression::type_check(const CompileConfig *) {
   auto input_type = input.get_rvalue_type();
 
   if (!input_type->is<PrimitiveType>())
-    throw TaichiTypeError(
+    ErrorEmitter(
+        TaichiTypeError(), this,
         fmt::format("unsupported operand type(s) for 'loop_unique': '{}'",
                     input_type->to_string()));
   ret_type = input_type;
@@ -971,10 +1018,12 @@ void AtomicOpExpression::type_check(const CompileConfig *config) {
   TI_ASSERT_TYPE_CHECKED(dest);
   TI_ASSERT_TYPE_CHECKED(val);
   auto error = [&]() {
-    throw TaichiTypeError(fmt::format(
-        "unsupported operand type(s) for 'atomic_{}': '{}' and '{}'",
-        atomic_op_type_name(op_type), dest->ret_type->to_string(),
-        val->ret_type->to_string()));
+    ErrorEmitter(
+        TaichiTypeError(), this,
+        fmt::format(
+            "unsupported operand type(s) for 'atomic_{}': '{}' and '{}'",
+            atomic_op_type_name(op_type), dest->ret_type->to_string(),
+            val->ret_type->to_string()));
   };
 
   // Broadcast val to dest if neccessary
@@ -1006,6 +1055,18 @@ void AtomicOpExpression::type_check(const CompileConfig *config) {
   } else {
     error();
   }
+
+  auto const &ret_element_type = ret_type.get_element_type();
+  if (ret_element_type != val_dtype) {
+    auto promoted = promoted_type(ret_element_type, val_dtype);
+    if (ret_element_type != promoted) {
+      ErrorEmitter(
+          TaichiCastWarning(), this,
+          fmt::format("Atomic {} may lose precision: {} <- {}",
+                      atomic_op_type_name(op_type),
+                      ret_element_type->to_string(), val_dtype->to_string()));
+    }
+  }
 }
 
 void AtomicOpExpression::flatten(FlattenContext *ctx) {
@@ -1023,9 +1084,8 @@ void AtomicOpExpression::flatten(FlattenContext *ctx) {
   // expand rhs
   auto val_stmt = flatten_rvalue(val, ctx);
   auto dest_stmt = flatten_lvalue(dest, ctx);
-  stmt = ctx->push_back<AtomicOpStmt>(op_type, dest_stmt, val_stmt);
+  stmt = ctx->push_back<AtomicOpStmt>(op_type, dest_stmt, val_stmt, dbg_info);
   stmt->ret_type = stmt->as<AtomicOpStmt>()->dest->ret_type;
-  stmt->tb = tb;
 }
 
 SNodeOpExpression::SNodeOpExpression(SNode *snode,
@@ -1058,8 +1118,10 @@ void SNodeOpExpression::type_check(const CompileConfig *config) {
       auto value_type = values[i].get_rvalue_type();
       auto promoted = promoted_type(dst_type, value_type);
       if (dst_type != promoted) {
-        TI_WARN("Append may lose precision: {} <- {}\n{}",
-                dst_type->to_string(), value_type->to_string(), tb);
+        ErrorEmitter(
+            TaichiCastWarning(), this,
+            fmt::format("Append may lose precision: {} <- {}",
+                        dst_type->to_string(), value_type->to_string()));
       }
       values[i] = cast(values[i], dst_type);
       values[i]->type_check(config);
@@ -1074,34 +1136,35 @@ void SNodeOpExpression::flatten(FlattenContext *ctx) {
   }
   auto is_cell_access = SNodeOpStmt::activation_related(op_type) &&
                         snode->type != SNodeType::dynamic;
-  auto ptr =
-      ctx->push_back<GlobalPtrStmt>(snode, indices_stmt, true, is_cell_access);
-  ptr->tb = tb;
+  auto ptr = ctx->push_back<GlobalPtrStmt>(snode, indices_stmt, true,
+                                           is_cell_access, dbg_info);
   if (op_type == SNodeOpType::is_active) {
-    TI_ERROR_IF(snode->type != SNodeType::pointer &&
-                    snode->type != SNodeType::hash &&
-                    snode->type != SNodeType::bitmasked,
-                "ti.is_active only works on pointer, hash or bitmasked nodes.");
+    if (!(snode->type == SNodeType::pointer || snode->type == SNodeType::hash ||
+          snode->type == SNodeType::bitmasked)) {
+      ErrorEmitter(
+          TaichiTypeError(), this,
+          "ti.is_active only works on pointer, hash or bitmasked nodes.");
+    }
     ctx->push_back<SNodeOpStmt>(SNodeOpType::is_active, snode, ptr, nullptr);
   } else if (op_type == SNodeOpType::length) {
     ctx->push_back<SNodeOpStmt>(SNodeOpType::length, snode, ptr, nullptr);
   } else if (op_type == SNodeOpType::get_addr) {
     ctx->push_back<SNodeOpStmt>(SNodeOpType::get_addr, snode, ptr, nullptr);
   } else if (op_type == SNodeOpType::append) {
-    auto alloca = ctx->push_back<AllocaStmt>(PrimitiveType::i32);
-    alloca->set_tb(tb);
-    auto addr =
-        ctx->push_back<SNodeOpStmt>(SNodeOpType::allocate, snode, ptr, alloca);
-    addr->set_tb(tb);
+    auto alloca = ctx->push_back<AllocaStmt>(PrimitiveType::i32, dbg_info);
+    auto addr = ctx->push_back<SNodeOpStmt>(SNodeOpType::allocate, snode, ptr,
+                                            alloca, dbg_info);
     for (int i = 0; i < values.size(); i++) {
       auto value_stmt = flatten_rvalue(values[i], ctx);
-      auto ch_addr = ctx->push_back<GetChStmt>(addr, snode, i);
-      ch_addr->set_tb(tb);
-      ctx->push_back<GlobalStoreStmt>(ch_addr, value_stmt)->set_tb(tb);
+      auto ch_addr = ctx->push_back<GetChStmt>(
+          addr, snode, i, /*is_bit_vectorized = */ false, dbg_info);
+      ctx->push_back<GlobalStoreStmt>(ch_addr, value_stmt, dbg_info);
     }
-    ctx->push_back<LocalLoadStmt>(alloca)->set_tb(tb);
-    TI_ERROR_IF(snode->type != SNodeType::dynamic,
-                "ti.append only works on dynamic nodes.");
+    ctx->push_back<LocalLoadStmt>(alloca, dbg_info);
+    if (snode->type != SNodeType::dynamic) {
+      ErrorEmitter(TaichiTypeError(), this,
+                   "ti.append only works on dynamic nodes.");
+    }
   }
   stmt = ctx->back_stmt();
 }
@@ -1117,15 +1180,18 @@ void TextureOpExpression::type_check(const CompileConfig *config) {
   auto ptr = texture_ptr.cast<TexturePtrExpression>();
   if (op == TextureOpType::kSampleLod) {
     // UV, Lod
-    TI_ASSERT_INFO(args.size() == ptr->num_dims + 1,
-                   "Invalid number of args for sample_lod Texture op with a "
-                   "{}-dimension texture",
-                   ptr->num_dims);
+    if (args.size() != ptr->num_dims + 1) {
+      ErrorEmitter(TaichiTypeError(), this,
+                   fmt::format("Invalid number of args for sample_lod Texture "
+                               "op with a {}-dimension texture",
+                               ptr->num_dims));
+    }
     for (int i = 0; i < ptr->num_dims; i++) {
       TI_ASSERT_TYPE_CHECKED(args[i]);
       auto arg_type = args[i].get_rvalue_type();
       if (arg_type != PrimitiveType::f32) {
-        throw TaichiTypeError(
+        ErrorEmitter(
+            TaichiTypeError(), this,
             fmt::format("Invalid type for texture sample_lod: '{}', all "
                         "arguments must be f32",
                         arg_type->to_string()));
@@ -1141,7 +1207,8 @@ void TextureOpExpression::type_check(const CompileConfig *config) {
       TI_ASSERT_TYPE_CHECKED(args[i]);
       auto arg_type = args[i].get_rvalue_type();
       if (arg_type != PrimitiveType::i32) {
-        throw TaichiTypeError(
+        ErrorEmitter(
+            TaichiTypeError(), this,
             fmt::format("Invalid type for texture fetch_texel: '{}', all "
                         "arguments must be i32",
                         arg_type->to_string()));
@@ -1157,10 +1224,10 @@ void TextureOpExpression::type_check(const CompileConfig *config) {
       TI_ASSERT_TYPE_CHECKED(args[i]);
       auto arg_type = args[i].get_rvalue_type();
       if (arg_type != PrimitiveType::i32) {
-        throw TaichiTypeError(
-            fmt::format("Invalid type for texture load: '{}', all "
-                        "arguments must be i32",
-                        arg_type->to_string()));
+        ErrorEmitter(TaichiTypeError(), this,
+                     fmt::format("Invalid type for texture load: '{}', all "
+                                 "arguments must be i32",
+                                 arg_type->to_string()));
       }
     }
   } else if (op == TextureOpType::kStore) {
@@ -1173,20 +1240,20 @@ void TextureOpExpression::type_check(const CompileConfig *config) {
       TI_ASSERT_TYPE_CHECKED(args[i]);
       auto arg_type = args[i].get_rvalue_type();
       if (arg_type != PrimitiveType::i32) {
-        throw TaichiTypeError(
-            fmt::format("Invalid type for texture load: '{}', index "
-                        "arguments must be i32",
-                        arg_type->to_string()));
+        ErrorEmitter(TaichiTypeError(), this,
+                     fmt::format("Invalid type for texture load: '{}', index "
+                                 "arguments must be i32",
+                                 arg_type->to_string()));
       }
     }
     for (int i = ptr->num_dims; i < ptr->num_dims + 4; i++) {
       TI_ASSERT_TYPE_CHECKED(args[i]);
       auto arg_type = args[i].get_rvalue_type();
       if (arg_type != PrimitiveType::f32) {
-        throw TaichiTypeError(
-            fmt::format("Invalid type for texture load: '{}', value "
-                        "arguments must be f32",
-                        arg_type->to_string()));
+        ErrorEmitter(TaichiTypeError(), this,
+                     fmt::format("Invalid type for texture load: '{}', value "
+                                 "arguments must be f32",
+                                 arg_type->to_string()));
       }
     }
   } else {
@@ -1208,9 +1275,11 @@ void TextureOpExpression::flatten(FlattenContext *ctx) {
 }
 
 void ConstExpression::type_check(const CompileConfig *) {
-  TI_ASSERT_INFO(
-      val.dt->is<PrimitiveType>() && val.dt != PrimitiveType::unknown,
-      "Invalid dt [{}] for ConstExpression", val.dt->to_string());
+  if (!(val.dt->is<PrimitiveType>() && val.dt != PrimitiveType::unknown)) {
+    ErrorEmitter(TaichiTypeError(), this,
+                 fmt::format("Invalid dt [{}] for ConstExpression",
+                             val.dt->to_string()));
+  }
   ret_type = val.dt;
 }
 
@@ -1220,10 +1289,13 @@ void ConstExpression::flatten(FlattenContext *ctx) {
 }
 
 void ExternalTensorShapeAlongAxisExpression::type_check(const CompileConfig *) {
-  TI_ASSERT_INFO(
-      ptr.is<ExternalTensorExpression>() || ptr.is<TexturePtrExpression>(),
-      "Invalid ptr [{}] for ExternalTensorShapeAlongAxisExpression",
-      ExpressionHumanFriendlyPrinter::expr_to_string(ptr));
+  if (!(ptr.is<ExternalTensorExpression>() || ptr.is<TexturePtrExpression>())) {
+    ErrorEmitter(
+        TaichiTypeError(), this,
+        fmt::format(
+            "Invalid ptr [{}] for ExternalTensorShapeAlongAxisExpression",
+            ExpressionHumanFriendlyPrinter::expr_to_string(ptr)));
+  }
   ret_type = PrimitiveType::i32;
 }
 
@@ -1234,12 +1306,30 @@ void ExternalTensorShapeAlongAxisExpression::flatten(FlattenContext *ctx) {
   stmt = ctx->back_stmt();
 }
 
+void ExternalTensorBasePtrExpression::type_check(const CompileConfig *) {
+  TI_ASSERT_INFO(ptr.is<ExternalTensorExpression>(),
+                 "Invalid ptr [{}] for ExternalTensorBasePtrExpression",
+                 ExpressionHumanFriendlyPrinter::expr_to_string(ptr));
+  ret_type = ptr.cast<ExternalTensorExpression>()->dt.get_element_type();
+  ret_type.set_is_pointer(true);
+}
+
+void ExternalTensorBasePtrExpression::flatten(FlattenContext *ctx) {
+  auto tensor = ptr.cast<ExternalTensorExpression>();
+  ctx->push_back<ExternalTensorBasePtrStmt>(tensor->arg_id, is_grad);
+  stmt = ctx->back_stmt();
+  stmt->ret_type = ret_type;
+}
+
 void GetElementExpression::type_check(const CompileConfig *config) {
   TI_ASSERT_TYPE_CHECKED(src);
   auto src_type = src->ret_type;
-  TI_ASSERT_INFO(src_type->is<PointerType>(),
-                 "Invalid src [{}] for GetElementExpression",
-                 ExpressionHumanFriendlyPrinter::expr_to_string(src));
+  if (!src_type->is<PointerType>()) {
+    ErrorEmitter(
+        TaichiTypeError(), this,
+        fmt::format("Invalid src [{}] for GetElementExpression",
+                    ExpressionHumanFriendlyPrinter::expr_to_string(src)));
+  }
 
   ret_type = src_type.ptr_removed()->as<StructType>()->get_element_type(index);
 }
@@ -1328,25 +1418,26 @@ void ASTBuilder::stop_gradient(SNode *snode) {
 
 void ASTBuilder::insert_assignment(Expr &lhs,
                                    const Expr &rhs,
-                                   const std::string &tb) {
+                                   const DebugInfo &dbg_info) {
   // Inside a kernel or a function
   // Create an assignment in the IR
   if (lhs.expr == nullptr) {
     lhs.set(rhs);
   } else if (lhs.expr->is_lvalue()) {
-    auto stmt = std::make_unique<FrontendAssignStmt>(lhs, rhs);
-    stmt->tb = tb;
+    auto stmt = std::make_unique<FrontendAssignStmt>(lhs, rhs, dbg_info);
     this->insert(std::move(stmt));
 
   } else {
-    TI_ERROR("Cannot assign to non-lvalue: {}",
-             ExpressionHumanFriendlyPrinter::expr_to_string(lhs));
+    ErrorEmitter(
+        TaichiRuntimeError(), lhs.expr.get(),
+        fmt::format("Cannot assign to non-lvalue: {}",
+                    ExpressionHumanFriendlyPrinter::expr_to_string(lhs)));
   }
 }
 
-Expr ASTBuilder::make_var(const Expr &x, std::string tb) {
-  auto var = this->expr_alloca();
-  this->insert_assignment(var, x, tb);
+Expr ASTBuilder::make_var(const Expr &x, const DebugInfo &dbg_info) {
+  auto var = this->expr_alloca(dbg_info);
+  this->insert_assignment(var, x, dbg_info);
   return var;
 }
 
@@ -1403,17 +1494,20 @@ Expr ASTBuilder::insert_patch_idx_expr() {
   return Expr::make<MeshPatchIndexExpression>();
 }
 
-void ASTBuilder::create_kernel_exprgroup_return(const ExprGroup &group) {
+void ASTBuilder::create_kernel_exprgroup_return(const ExprGroup &group,
+                                                const DebugInfo &dbg_info) {
   auto expanded_exprs = this->expand_exprs(group.exprs);
   ExprGroup expanded_expr_group;
   expanded_expr_group.exprs = std::move(expanded_exprs);
-  this->insert(Stmt::make<FrontendReturnStmt>(expanded_expr_group));
+  this->insert(Stmt::make<FrontendReturnStmt>(expanded_expr_group, dbg_info));
 }
 
 void ASTBuilder::create_print(
     std::vector<std::variant<Expr, std::string>> contents,
-    std::vector<std::optional<std::string>> formats) {
-  this->insert(std::make_unique<FrontendPrintStmt>(contents, formats));
+    std::vector<std::optional<std::string>> formats,
+    const DebugInfo &dbg_info) {
+  this->insert(
+      std::make_unique<FrontendPrintStmt>(contents, formats, dbg_info));
 }
 
 void ASTBuilder::begin_func(const std::string &funcid) {
@@ -1427,8 +1521,9 @@ void ASTBuilder::end_func(const std::string &funcid) {
   this->pop_scope();
 }
 
-void ASTBuilder::begin_frontend_if(const Expr &cond) {
-  auto stmt_tmp = std::make_unique<FrontendIfStmt>(cond);
+void ASTBuilder::begin_frontend_if(const Expr &cond,
+                                   const DebugInfo &dbg_info) {
+  auto stmt_tmp = std::make_unique<FrontendIfStmt>(cond, dbg_info);
   this->insert(std::move(stmt_tmp));
 }
 
@@ -1447,17 +1542,19 @@ void ASTBuilder::insert_external_func_call(std::size_t func_addr,
                                            std::string filename,
                                            std::string funcname,
                                            const ExprGroup &args,
-                                           const ExprGroup &outputs) {
+                                           const ExprGroup &outputs,
+                                           const DebugInfo &dbg_info) {
   auto stmt = Stmt::make<FrontendExternalFuncStmt>(
-      (void *)func_addr, source, filename, funcname, args.exprs, outputs.exprs);
+      (void *)func_addr, source, filename, funcname, args.exprs, outputs.exprs,
+      dbg_info);
   this->insert(std::move(stmt));
 }
 
-Expr ASTBuilder::expr_alloca() {
+Expr ASTBuilder::expr_alloca(const DebugInfo &dbg_info) {
   auto var = Expr(std::make_shared<IdExpression>(get_next_id()));
   this->insert(std::make_unique<FrontendAllocaStmt>(
       std::static_pointer_cast<IdExpression>(var.expr)->id,
-      PrimitiveType::unknown));
+      PrimitiveType::unknown, dbg_info));
   return var;
 }
 
@@ -1495,25 +1592,27 @@ Expr ASTBuilder::make_matrix_expr(const std::vector<int> &shape,
 }
 
 Expr ASTBuilder::expr_alloca_shared_array(const std::vector<int> &shape,
-                                          const DataType &element_type) {
+                                          const DataType &element_type,
+                                          const DebugInfo &dbg_info) {
   auto var = Expr(std::make_shared<IdExpression>(get_next_id()));
   this->insert(std::make_unique<FrontendAllocaStmt>(
       std::static_pointer_cast<IdExpression>(var.expr)->id, shape, element_type,
-      true));
+      true, dbg_info));
   var->ret_type = this->get_last_stmt()->ret_type;
   return var;
 }
 
-void ASTBuilder::expr_assign(const Expr &lhs, const Expr &rhs, std::string tb) {
+void ASTBuilder::expr_assign(const Expr &lhs,
+                             const Expr &rhs,
+                             const DebugInfo &dbg_info) {
   TI_ASSERT(lhs->is_lvalue());
-  auto stmt = std::make_unique<FrontendAssignStmt>(lhs, rhs);
-  stmt->set_tb(tb);
+  auto stmt = std::make_unique<FrontendAssignStmt>(lhs, rhs, dbg_info);
   this->insert(std::move(stmt));
 }
 
 Expr ASTBuilder::expr_subscript(const Expr &expr,
                                 const ExprGroup &indices,
-                                std::string tb) {
+                                const DebugInfo &dbg_info) {
   TI_ASSERT(expr.is<FieldExpression>() || expr.is<MatrixFieldExpression>() ||
             expr.is<ExternalTensorExpression>() ||
             is_tensor(expr.expr->ret_type.ptr_removed()));
@@ -1527,21 +1626,24 @@ Expr ASTBuilder::expr_subscript(const Expr &expr,
   auto expanded_expr_group = ExprGroup();
   expanded_expr_group.exprs = expanded_indices;
 
-  return Expr::make<IndexExpression>(expr, expanded_expr_group, tb);
+  return Expr::make<IndexExpression>(expr, expanded_expr_group, dbg_info);
 }
 
 void ASTBuilder::create_assert_stmt(const Expr &cond,
                                     const std::string &msg,
-                                    const std::vector<Expr> &args) {
-  auto stmt_unique = std::make_unique<FrontendAssertStmt>(cond, msg, args);
+                                    const std::vector<Expr> &args,
+                                    const DebugInfo &dbg_info) {
+  auto stmt_unique =
+      std::make_unique<FrontendAssertStmt>(cond, msg, args, dbg_info);
   this->insert(std::move(stmt_unique));
 }
 
 void ASTBuilder::begin_frontend_range_for(const Expr &i,
                                           const Expr &s,
-                                          const Expr &e) {
-  auto stmt_unique =
-      std::make_unique<FrontendForStmt>(i, s, e, arch_, for_loop_dec_.config);
+                                          const Expr &e,
+                                          const DebugInfo &dbg_info) {
+  auto stmt_unique = std::make_unique<FrontendForStmt>(
+      i, s, e, arch_, for_loop_dec_.config, dbg_info);
   auto stmt = stmt_unique.get();
   this->insert(std::move(stmt_unique));
   this->create_scope(stmt->body,
@@ -1594,22 +1696,23 @@ void ASTBuilder::begin_frontend_mesh_for(
   this->create_scope(stmt->body, For);
 }
 
-void ASTBuilder::begin_frontend_while(const Expr &cond) {
-  auto stmt_unique = std::make_unique<FrontendWhileStmt>(cond);
+void ASTBuilder::begin_frontend_while(const Expr &cond,
+                                      const DebugInfo &dbg_info) {
+  auto stmt_unique = std::make_unique<FrontendWhileStmt>(cond, dbg_info);
   auto stmt = stmt_unique.get();
   this->insert(std::move(stmt_unique));
   this->create_scope(stmt->body, While);
 }
 
-void ASTBuilder::insert_break_stmt() {
+void ASTBuilder::insert_break_stmt(const DebugInfo &dbg_info) {
   if (loop_state_stack_.back() == Outermost) {
     throw TaichiSyntaxError("Cannot break in the outermost loop");
   }
-  this->insert(Stmt::make<FrontendBreakStmt>());
+  this->insert(Stmt::make<FrontendBreakStmt>(dbg_info));
 }
 
-void ASTBuilder::insert_continue_stmt() {
-  this->insert(Stmt::make<FrontendContinueStmt>());
+void ASTBuilder::insert_continue_stmt(const DebugInfo &dbg_info) {
+  this->insert(Stmt::make<FrontendContinueStmt>(dbg_info));
 }
 
 void ASTBuilder::insert_expr_stmt(const Expr &val) {
@@ -1617,19 +1720,23 @@ void ASTBuilder::insert_expr_stmt(const Expr &val) {
 }
 
 void ASTBuilder::insert_snode_activate(SNode *snode,
-                                       const ExprGroup &expr_group) {
+                                       const ExprGroup &expr_group,
+                                       const DebugInfo &dbg_info) {
   ExprGroup expanded_group;
   expanded_group.exprs = this->expand_exprs(expr_group.exprs);
-  this->insert(Stmt::make<FrontendSNodeOpStmt>(SNodeOpType::activate, snode,
-                                               expanded_group));
+  this->insert(Stmt::make<FrontendSNodeOpStmt>(
+      SNodeOpType::activate, snode, expanded_group,
+      /*val = */ Expr(std::shared_ptr<Expression>(nullptr)), dbg_info));
 }
 
 void ASTBuilder::insert_snode_deactivate(SNode *snode,
-                                         const ExprGroup &expr_group) {
+                                         const ExprGroup &expr_group,
+                                         const DebugInfo &dbg_info) {
   ExprGroup expanded_group;
   expanded_group.exprs = this->expand_exprs(expr_group.exprs);
-  this->insert(Stmt::make<FrontendSNodeOpStmt>(SNodeOpType::deactivate, snode,
-                                               expanded_group));
+  this->insert(Stmt::make<FrontendSNodeOpStmt>(
+      SNodeOpType::deactivate, snode, expanded_group,
+      /*val = */ Expr(std::shared_ptr<Expression>(nullptr)), dbg_info));
 }
 
 Expr ASTBuilder::snode_append(SNode *snode,
@@ -1671,62 +1778,84 @@ std::vector<Expr> ASTBuilder::expand_exprs(const std::vector<Expr> &exprs) {
   std::vector<Expr> expanded_exprs;
   for (auto expr : exprs) {
     TI_ASSERT_TYPE_CHECKED(expr);
-    if (auto struct_type = expr->ret_type.ptr_removed()->cast<StructType>()) {
-      auto num_elem = struct_type->elements().size();
-      for (int i = 0; i < num_elem; i++) {
-        std::vector<int> indices = {i};
-        auto elem = Expr(std::make_shared<GetElementExpression>(expr, indices));
-        elem.expr->ret_type = struct_type->get_element_type(indices);
-        expanded_exprs.push_back(elem);
-      }
-    } else if (!expr->ret_type.ptr_removed()->is<TensorType>()) {
-      expanded_exprs.push_back(expr);
-    } else {
-      // Expand TensorType expr
-      /*
-        Before:
-          TensorType<4 x i32> index = Expr;
 
-        After:
-          TensorType<4 x i32>* id_expr = FrontendAllocaStmt(TensorType<4 x i32>)
-          i32 ind0 = IndexExpression(id_expr, 0)
-          i32 ind1 = IndexExpression(id_expr, 1)
-          i32 ind2 = IndexExpression(id_expr, 2)
-          i32 ind3 = IndexExpression(id_expr, 3)
-
-          return {ind0, ind1, ind2, ind3}
-
-      */
-      auto tensor_type = expr->ret_type.ptr_removed()->cast<TensorType>();
-
-      Expr id_expr;
-      if (expr.is<IdExpression>()) {
-        id_expr = expr;
+    auto expand_tensor_or_scalar = [&](const Expr &expr) {
+      if (!expr->ret_type.ptr_removed()->is<TensorType>()) {
+        expanded_exprs.push_back(expr);
       } else {
-        id_expr = make_var(expr, expr->tb);
-      }
-      auto shape = tensor_type->get_shape();
-      if (shape.size() == 1) {
-        for (int i = 0; i < shape[0]; i++) {
-          auto ind = Expr(std::make_shared<IndexExpression>(
-              id_expr, ExprGroup(Expr(i)), expr->tb));
-          ind->type_check(nullptr);
-          expanded_exprs.push_back(ind);
+        // Expand TensorType expr
+        // clang-format off
+        /*
+          Before:
+            TensorType<4 x i32> index = Expr;
+
+          After:
+            TensorType<4 x i32>* id_expr = FrontendAllocaStmt(TensorType<4 x i32>)
+            i32 ind0 = IndexExpression(id_expr, 0)
+            i32 ind1 = IndexExpression(id_expr, 1)
+            i32 ind2 = IndexExpression(id_expr, 2)
+            i32 ind3 = IndexExpression(id_expr, 3)
+
+            return {ind0, ind1, ind2, ind3}
+
+         */
+        // clang-format on
+        auto tensor_type = expr->ret_type.ptr_removed()->cast<TensorType>();
+
+        Expr id_expr;
+        if (expr.is<IdExpression>()) {
+          id_expr = expr;
+        } else {
+          id_expr = make_var(expr, expr->dbg_info);
         }
-      } else {
-        TI_ASSERT(shape.size() == 2);
-        for (int i = 0; i < shape[0]; i++) {
-          for (int j = 0; j < shape[1]; j++) {
+        auto shape = tensor_type->get_shape();
+        if (shape.size() == 1) {
+          for (int i = 0; i < shape[0]; i++) {
             auto ind = Expr(std::make_shared<IndexExpression>(
-                id_expr, ExprGroup(Expr(i), Expr(j)), expr->tb));
+                id_expr, ExprGroup(Expr(i)), expr->dbg_info));
             ind->type_check(nullptr);
             expanded_exprs.push_back(ind);
           }
+        } else {
+          TI_ASSERT(shape.size() == 2);
+          for (int i = 0; i < shape[0]; i++) {
+            for (int j = 0; j < shape[1]; j++) {
+              auto ind = Expr(std::make_shared<IndexExpression>(
+                  id_expr, ExprGroup(Expr(i), Expr(j)), expr->dbg_info));
+              ind->type_check(nullptr);
+              expanded_exprs.push_back(ind);
+            }
+          }
         }
       }
+    };
+
+    std::function<void(const Expr &, const StructType *, std::vector<int> &)>
+        expand_struct = [&](const Expr &expr, const StructType *struct_type,
+                            std::vector<int> &indices) {
+          auto num_elem = struct_type->elements().size();
+          for (int i = 0; i < num_elem; i++) {
+            indices.push_back(i);
+            auto element_type = struct_type->get_element_type({i});
+            if (auto element_struct_type = element_type->cast<StructType>()) {
+              expand_struct(expr, element_struct_type, indices);
+            } else {
+              auto elem =
+                  Expr(std::make_shared<GetElementExpression>(expr, indices));
+              elem.expr->ret_type = element_type;
+              expand_tensor_or_scalar(elem);
+            }
+            indices.pop_back();
+          }
+        };
+    auto type = expr->ret_type.ptr_removed();
+    if (auto struct_type = type->cast<StructType>()) {
+      std::vector<int> indices;
+      expand_struct(expr, struct_type, indices);
+    } else {
+      expand_tensor_or_scalar(expr);
     }
   }
-
   return expanded_exprs;
 }
 
@@ -1754,7 +1883,7 @@ void ASTBuilder::create_scope(std::unique_ptr<Block> &list, LoopType tp) {
   LoopState prev = loop_state_stack_.back();
   if (tp == NotLoop) {
     loop_state_stack_.push_back(prev);
-  } else if (tp == For && stack_.size() == 1) {
+  } else if (tp == For && stack_.size() == 1 && is_kernel_) {
     loop_state_stack_.push_back(Outermost);
   } else {
     loop_state_stack_.push_back(Inner);

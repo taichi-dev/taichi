@@ -15,7 +15,7 @@ class Expression {
   Stmt *stmt;
 
  public:
-  std::string tb;
+  DebugInfo dbg_info;
   std::map<std::string, std::string> attributes;
   DataType ret_type;
 
@@ -41,6 +41,10 @@ class Expression {
     stmt = nullptr;
   }
 
+  explicit Expression(const DebugInfo &dbg_info) : Expression() {
+    this->dbg_info = dbg_info;
+  }
+
   virtual void type_check(const CompileConfig *config) = 0;
 
   virtual void accept(ExpressionVisitor *visitor) = 0;
@@ -58,6 +62,14 @@ class Expression {
 
   Stmt *get_flattened_stmt() const {
     return stmt;
+  }
+
+  std::string const &get_tb() const {
+    return dbg_info.tb;
+  }
+
+  void set_tb(std::string const &tb) {
+    dbg_info.tb = tb;
   }
 };
 

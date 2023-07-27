@@ -33,7 +33,7 @@ class AnyArray:
 
     def get_type(self):
         return NdarrayTypeMetadata(
-            self.ptr.get_ret_type().ptr_removed(), None, _ti_core.get_external_tensor_needs_grad(self.ptr)
+            _ti_core.get_external_tensor_element_type(self.ptr), None, _ti_core.get_external_tensor_needs_grad(self.ptr)
         )  # AnyArray can take any shape
 
     @property
@@ -88,7 +88,7 @@ class AnyArrayAccess:
             ast_builder.expr_subscript(
                 self.arr.ptr,
                 make_expr_group(*indices),
-                impl.get_runtime().get_current_src_info(),
+                _ti_core.DebugInfo(impl.get_runtime().get_current_src_info()),
             )
         )
 

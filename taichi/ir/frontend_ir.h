@@ -48,8 +48,10 @@ class FrontendExternalFuncStmt : public Stmt {
                            const std::string &bc_filename,
                            const std::string &bc_funcname,
                            const std::vector<Expr> &args,
-                           const std::vector<Expr> &outputs)
-      : so_func(so_func),
+                           const std::vector<Expr> &outputs,
+                           const DebugInfo &dbg_info)
+      : Stmt(dbg_info),
+        so_func(so_func),
         asm_source(asm_source),
         bc_filename(bc_filename),
         bc_funcname(bc_funcname),
@@ -76,16 +78,19 @@ class FrontendAllocaStmt : public Stmt {
  public:
   Identifier ident;
 
-  FrontendAllocaStmt(const Identifier &lhs, DataType type)
-      : ident(lhs), is_shared(false) {
+  FrontendAllocaStmt(const Identifier &lhs,
+                     DataType type,
+                     const DebugInfo &dbg_info = DebugInfo())
+      : Stmt(dbg_info), ident(lhs), is_shared(false) {
     ret_type = type;
   }
 
   FrontendAllocaStmt(const Identifier &lhs,
                      std::vector<int> shape,
                      DataType element,
-                     bool is_shared = false)
-      : ident(lhs), is_shared(is_shared) {
+                     bool is_shared = false,
+                     const DebugInfo &dbg_info = DebugInfo())
+      : Stmt(dbg_info), ident(lhs), is_shared(is_shared) {
     ret_type = TypeFactory::get_instance().get_pointer_type(
         DataType(TypeFactory::create_tensor_type(shape, element)));
   }
@@ -107,7 +112,8 @@ class FrontendSNodeOpStmt : public Stmt {
       SNodeOpType op_type,
       SNode *snode,
       const ExprGroup &indices,
-      const Expr &val = Expr(std::shared_ptr<Expression>(nullptr)));
+      const Expr &val = Expr(std::shared_ptr<Expression>(nullptr)),
+      const DebugInfo &dbg_info = DebugInfo());
 
   TI_DEFINE_ACCEPT
   TI_DEFINE_CLONE_FOR_FRONTEND_IR
@@ -119,14 +125,17 @@ class FrontendAssertStmt : public Stmt {
   Expr cond;
   std::vector<Expr> args;
 
-  FrontendAssertStmt(const Expr &cond, const std::string &text)
-      : text(text), cond(cond) {
+  FrontendAssertStmt(const Expr &cond,
+                     const std::string &text,
+                     const DebugInfo &dbg_info = DebugInfo())
+      : Stmt(dbg_info), text(text), cond(cond) {
   }
 
   FrontendAssertStmt(const Expr &cond,
                      const std::string &text,
-                     const std::vector<Expr> &args_)
-      : text(text), cond(cond) {
+                     const std::vector<Expr> &args_,
+                     const DebugInfo &dbg_info = DebugInfo())
+      : Stmt(dbg_info), text(text), cond(cond) {
     for (auto &a : args_) {
       args.push_back(a);
     }
@@ -140,7 +149,9 @@ class FrontendAssignStmt : public Stmt {
  public:
   Expr lhs, rhs;
 
-  FrontendAssignStmt(const Expr &lhs, const Expr &rhs);
+  FrontendAssignStmt(const Expr &lhs,
+                     const Expr &rhs,
+                     const DebugInfo &dbg_info = DebugInfo());
 
   TI_DEFINE_ACCEPT
   TI_DEFINE_CLONE_FOR_FRONTEND_IR
@@ -151,7 +162,8 @@ class FrontendIfStmt : public Stmt {
   Expr condition;
   std::unique_ptr<Block> true_statements, false_statements;
 
-  explicit FrontendIfStmt(const Expr &condition) : condition(condition) {
+  explicit FrontendIfStmt(const Expr &condition, const DebugInfo &dbg_info)
+      : Stmt(dbg_info), condition(condition) {
   }
 
   bool is_container_statement() const override {
@@ -172,8 +184,9 @@ class FrontendPrintStmt : public Stmt {
   const std::vector<FormatType> formats;
 
   FrontendPrintStmt(const std::vector<EntryType> &contents_,
-                    const std::vector<FormatType> &formats_)
-      : contents(contents_), formats(formats_) {
+                    const std::vector<FormatType> &formats_,
+                    const DebugInfo &dbg_info = DebugInfo())
+      : Stmt(dbg_info), contents(contents_), formats(formats_) {
   }
 
   TI_DEFINE_ACCEPT
@@ -198,24 +211,28 @@ class FrontendForStmt : public Stmt {
   FrontendForStmt(const ExprGroup &loop_vars,
                   SNode *snode,
                   Arch arch,
-                  const ForLoopConfig &config);
+                  const ForLoopConfig &config,
+                  const DebugInfo &dbg_info = DebugInfo());
 
   FrontendForStmt(const ExprGroup &loop_vars,
                   const Expr &external_tensor,
                   Arch arch,
-                  const ForLoopConfig &config);
+                  const ForLoopConfig &config,
+                  const DebugInfo &dbg_info = DebugInfo());
 
   FrontendForStmt(const ExprGroup &loop_vars,
                   const mesh::MeshPtr &mesh,
                   const mesh::MeshElementType &element_type,
                   Arch arch,
-                  const ForLoopConfig &config);
+                  const ForLoopConfig &config,
+                  const DebugInfo &dbg_info = DebugInfo());
 
   FrontendForStmt(const Expr &loop_var,
                   const Expr &begin,
                   const Expr &end,
                   Arch arch,
-                  const ForLoopConfig &config);
+                  const ForLoopConfig &config,
+                  const DebugInfo &dbg_info = DebugInfo());
 
   bool is_container_statement() const override {
     return true;
@@ -255,7 +272,8 @@ class FrontendFuncDefStmt : public Stmt {
 
 class FrontendBreakStmt : public Stmt {
  public:
-  FrontendBreakStmt() {
+  explicit FrontendBreakStmt(const DebugInfo &dbg_info = DebugInfo())
+      : Stmt(dbg_info) {
   }
 
   bool is_container_statement() const override {
@@ -268,7 +286,9 @@ class FrontendBreakStmt : public Stmt {
 
 class FrontendContinueStmt : public Stmt {
  public:
-  FrontendContinueStmt() = default;
+  explicit FrontendContinueStmt(const DebugInfo &dbg_info = DebugInfo())
+      : Stmt(dbg_info) {
+  }
 
   bool is_container_statement() const override {
     return false;
@@ -283,7 +303,8 @@ class FrontendWhileStmt : public Stmt {
   Expr cond;
   std::unique_ptr<Block> body;
 
-  explicit FrontendWhileStmt(const Expr &cond) : cond(cond) {
+  explicit FrontendWhileStmt(const Expr &cond, const DebugInfo &dbg_info)
+      : Stmt(dbg_info), cond(cond) {
   }
 
   bool is_container_statement() const override {
@@ -300,7 +321,8 @@ class FrontendReturnStmt : public Stmt {
  public:
   ExprGroup values;
 
-  explicit FrontendReturnStmt(const ExprGroup &group);
+  explicit FrontendReturnStmt(const ExprGroup &group,
+                              const DebugInfo &dbg_info = DebugInfo());
 
   bool is_container_statement() const override {
     return false;
@@ -314,7 +336,7 @@ class FrontendReturnStmt : public Stmt {
 
 class ArgLoadExpression : public Expression {
  public:
-  int arg_id;
+  const std::vector<int> arg_id;
   DataType dt;
   bool is_ptr;
 
@@ -324,11 +346,20 @@ class ArgLoadExpression : public Expression {
    */
   bool create_load;
 
-  ArgLoadExpression(int arg_id,
+  int arg_depth;
+
+  ArgLoadExpression(const std::vector<int> &arg_id,
                     DataType dt,
                     bool is_ptr = false,
-                    bool create_load = true)
-      : arg_id(arg_id), dt(dt), is_ptr(is_ptr), create_load(create_load) {
+                    bool create_load = true,
+                    int arg_depth = 0,
+                    const DebugInfo &dbg_info = DebugInfo())
+      : Expression(dbg_info),
+        arg_id(arg_id),
+        dt(dt),
+        is_ptr(is_ptr),
+        create_load(create_load),
+        arg_depth(arg_depth) {
   }
 
   void type_check(const CompileConfig *config) override;
@@ -346,26 +377,35 @@ class Texture;
 
 class TexturePtrExpression : public Expression {
  public:
-  int arg_id;
+  const std::vector<int> arg_id;
   int num_dims;
   bool is_storage{false};
+  int arg_depth;
 
   // Optional, for storage textures
   BufferFormat format{BufferFormat::unknown};
   int lod{0};
 
-  explicit TexturePtrExpression(int arg_id, int num_dims)
+  explicit TexturePtrExpression(const std::vector<int> &arg_id,
+                                int num_dims,
+                                int arg_depth)
       : arg_id(arg_id),
         num_dims(num_dims),
         is_storage(false),
+        arg_depth(arg_depth),
         format(BufferFormat::rgba8),
         lod(0) {
   }
 
-  TexturePtrExpression(int arg_id, int num_dims, BufferFormat format, int lod)
+  TexturePtrExpression(const std::vector<int> &arg_id,
+                       int num_dims,
+                       int arg_depth,
+                       BufferFormat format,
+                       int lod)
       : arg_id(arg_id),
         num_dims(num_dims),
         is_storage(true),
+        arg_depth(arg_depth),
         format(format),
         lod(lod) {
   }
@@ -381,7 +421,8 @@ class RandExpression : public Expression {
  public:
   DataType dt;
 
-  explicit RandExpression(DataType dt) : dt(dt) {
+  explicit RandExpression(DataType dt, const DebugInfo &dbg_info = DebugInfo())
+      : Expression(dbg_info), dt(dt) {
   }
 
   void type_check(const CompileConfig *config) override;
@@ -474,22 +515,25 @@ class ExternalTensorExpression : public Expression {
  public:
   DataType dt;
   int ndim;
-  int arg_id;
+  std::vector<int> arg_id;
   bool needs_grad{false};
   bool is_grad{false};
+  int arg_depth{0};
   BoundaryMode boundary{BoundaryMode::kUnsafe};
 
   ExternalTensorExpression(const DataType &dt,
                            int ndim,
-                           int arg_id,
+                           const std::vector<int> &arg_id,
                            bool needs_grad = false,
+                           int arg_depth = false,
                            BoundaryMode boundary = BoundaryMode::kUnsafe) {
-    init(dt, ndim, arg_id, needs_grad, boundary);
+    init(dt, ndim, arg_id, needs_grad, arg_depth, boundary);
   }
 
   explicit ExternalTensorExpression(Expr *expr) : is_grad(true) {
     auto ptr = expr->cast<ExternalTensorExpression>();
-    init(ptr->dt, ptr->ndim, ptr->arg_id, ptr->needs_grad, ptr->boundary);
+    init(ptr->dt, ptr->ndim, ptr->arg_id, ptr->needs_grad, ptr->arg_depth,
+         ptr->boundary);
   }
 
   void flatten(FlattenContext *ctx) override;
@@ -502,7 +546,8 @@ class ExternalTensorExpression : public Expression {
   }
 
   void type_check(const CompileConfig *config) override {
-    ret_type = dt;
+    ret_type = TypeFactory::get_instance().get_ndarray_struct_type(dt, ndim,
+                                                                   needs_grad);
     ret_type.set_is_pointer(true);
     config_ = config;
   }
@@ -512,13 +557,15 @@ class ExternalTensorExpression : public Expression {
 
   void init(const DataType &dt,
             int ndim,
-            int arg_id,
+            const std::vector<int> &arg_id,
             bool needs_grad,
+            int arg_depth,
             BoundaryMode boundary) {
     this->dt = dt;
     this->ndim = ndim;
     this->arg_id = arg_id;
     this->needs_grad = needs_grad;
+    this->arg_depth = arg_depth;
     this->boundary = boundary;
   }
 };
@@ -617,12 +664,12 @@ class IndexExpression : public Expression {
 
   IndexExpression(const Expr &var,
                   const ExprGroup &indices,
-                  std::string tb = "");
+                  const DebugInfo &dbg_info = DebugInfo());
 
   IndexExpression(const Expr &var,
                   const std::vector<ExprGroup> &indices_group,
                   const std::vector<int> &ret_shape,
-                  std::string tb = "");
+                  const DebugInfo &dbg_info = DebugInfo());
 
   void type_check(const CompileConfig *config) override;
 
@@ -797,6 +844,22 @@ class ExternalTensorShapeAlongAxisExpression : public Expression {
   TI_DEFINE_ACCEPT_FOR_EXPRESSION
 };
 
+class ExternalTensorBasePtrExpression : public Expression {
+ public:
+  Expr ptr;
+  bool is_grad;
+
+  explicit ExternalTensorBasePtrExpression(const Expr &ptr, bool is_grad)
+      : ptr(ptr), is_grad(is_grad) {
+  }
+
+  void type_check(const CompileConfig *config) override;
+
+  void flatten(FlattenContext *ctx) override;
+
+  TI_DEFINE_ACCEPT_FOR_EXPRESSION
+};
+
 class FrontendFuncCallStmt : public Stmt {
  public:
   std::optional<Identifier> ident;
@@ -936,12 +999,14 @@ class ASTBuilder {
 
   std::vector<Block *> stack_;
   std::vector<LoopState> loop_state_stack_;
+  bool is_kernel_{false};
   Arch arch_;
   ForLoopDecoratorRecorder for_loop_dec_;
   int id_counter_{0};
 
  public:
-  ASTBuilder(Block *initial, Arch arch) : arch_(arch) {
+  ASTBuilder(Block *initial, Arch arch, bool is_kernel)
+      : is_kernel_(is_kernel), arch_(arch) {
     stack_.push_back(initial);
     loop_state_stack_.push_back(None);
   }
@@ -953,8 +1018,8 @@ class ASTBuilder {
   void stop_gradient(SNode *);
   void insert_assignment(Expr &lhs,
                          const Expr &rhs,
-                         const std::string &tb = "");
-  Expr make_var(const Expr &x, std::string tb);
+                         const DebugInfo &dbg_info = DebugInfo());
+  Expr make_var(const Expr &x, const DebugInfo &dbg_info = DebugInfo());
   void insert_for(const Expr &s,
                   const Expr &e,
                   const std::function<void(Expr)> &func);
@@ -965,12 +1030,15 @@ class ASTBuilder {
                         const std::vector<Expr> &elements);
   Expr insert_thread_idx_expr();
   Expr insert_patch_idx_expr();
-  void create_kernel_exprgroup_return(const ExprGroup &group);
+  void create_kernel_exprgroup_return(const ExprGroup &group,
+                                      const DebugInfo &dbg_info = DebugInfo());
   void create_print(std::vector<std::variant<Expr, std::string>> contents,
-                    std::vector<std::optional<std::string>> formats);
+                    std::vector<std::optional<std::string>> formats,
+                    const DebugInfo &dbg_info = DebugInfo());
   void begin_func(const std::string &funcid);
   void end_func(const std::string &funcid);
-  void begin_frontend_if(const Expr &cond);
+  void begin_frontend_if(const Expr &cond,
+                         const DebugInfo &dbg_info = DebugInfo());
   void begin_frontend_if_true();
   void begin_frontend_if_false();
   void insert_external_func_call(std::size_t func_addr,
@@ -978,25 +1046,33 @@ class ASTBuilder {
                                  std::string filename,
                                  std::string funcname,
                                  const ExprGroup &args,
-                                 const ExprGroup &outputs);
-  Expr expr_alloca();
+                                 const ExprGroup &outputs,
+                                 const DebugInfo &dbg_info = DebugInfo());
+  Expr expr_alloca(const DebugInfo &dbg_info = DebugInfo());
   Expr expr_alloca_shared_array(const std::vector<int> &shape,
-                                const DataType &element_type);
+                                const DataType &element_type,
+                                const DebugInfo &dbg_info = DebugInfo());
   Expr expr_subscript(const Expr &expr,
                       const ExprGroup &indices,
-                      std::string tb = "");
+                      const DebugInfo &dbg_info = DebugInfo());
 
   Expr mesh_index_conversion(mesh::MeshPtr mesh_ptr,
                              mesh::MeshElementType idx_type,
                              const Expr &idx,
                              mesh::ConvType &conv_type);
 
-  void expr_assign(const Expr &lhs, const Expr &rhs, std::string tb);
+  void expr_assign(const Expr &lhs,
+                   const Expr &rhs,
+                   const DebugInfo &dbg_info = DebugInfo());
   std::optional<Expr> insert_func_call(Function *func, const ExprGroup &args);
   void create_assert_stmt(const Expr &cond,
                           const std::string &msg,
-                          const std::vector<Expr> &args);
-  void begin_frontend_range_for(const Expr &i, const Expr &s, const Expr &e);
+                          const std::vector<Expr> &args,
+                          const DebugInfo &dbg_info = DebugInfo());
+  void begin_frontend_range_for(const Expr &i,
+                                const Expr &s,
+                                const Expr &e,
+                                const DebugInfo &dbg_info = DebugInfo());
   void begin_frontend_struct_for_on_snode(const ExprGroup &loop_vars,
                                           SNode *snode);
   void begin_frontend_struct_for_on_external_tensor(
@@ -1005,12 +1081,17 @@ class ASTBuilder {
   void begin_frontend_mesh_for(const Expr &i,
                                const mesh::MeshPtr &mesh_ptr,
                                const mesh::MeshElementType &element_type);
-  void begin_frontend_while(const Expr &cond);
-  void insert_break_stmt();
-  void insert_continue_stmt();
+  void begin_frontend_while(const Expr &cond,
+                            const DebugInfo &dbg_info = DebugInfo());
+  void insert_break_stmt(const DebugInfo &dbg_info = DebugInfo());
+  void insert_continue_stmt(const DebugInfo &dbg_info = DebugInfo());
   void insert_expr_stmt(const Expr &val);
-  void insert_snode_activate(SNode *snode, const ExprGroup &expr_group);
-  void insert_snode_deactivate(SNode *snode, const ExprGroup &expr_group);
+  void insert_snode_activate(SNode *snode,
+                             const ExprGroup &expr_group,
+                             const DebugInfo &dbg_info = DebugInfo());
+  void insert_snode_deactivate(SNode *snode,
+                               const ExprGroup &expr_group,
+                               const DebugInfo &dbg_info = DebugInfo());
   Expr make_texture_op_expr(const TextureOpType &op,
                             const Expr &texture_ptr,
                             const ExprGroup &args);
@@ -1074,9 +1155,10 @@ class FrontendContext {
   std::unique_ptr<Block> root_node_;
 
  public:
-  explicit FrontendContext(Arch arch) {
+  explicit FrontendContext(Arch arch, bool is_kernel) {
     root_node_ = std::make_unique<Block>();
-    current_builder_ = std::make_unique<ASTBuilder>(root_node_.get(), arch);
+    current_builder_ =
+        std::make_unique<ASTBuilder>(root_node_.get(), arch, is_kernel);
   }
 
   ASTBuilder &builder() {

@@ -390,6 +390,7 @@ class StmtFieldManager {
 class Stmt : public IRNode {
  protected:
   std::vector<Stmt **> operands;
+  explicit Stmt(const DebugInfo &dbg_info);
 
  public:
   StmtFieldManager field_manager;
@@ -399,8 +400,8 @@ class Stmt : public IRNode {
   Block *parent;
   bool erased;
   bool fields_registered;
-  std::string tb;
   DataType ret_type;
+  DebugInfo dbg_info;
 
   Stmt();
   Stmt(const Stmt &stmt);
@@ -438,6 +439,14 @@ class Stmt : public IRNode {
   TI_FORCE_INLINE Stmt *operand(int i) const {
     // TI_ASSERT(0 <= i && i < (int)operands.size());
     return *operands[i];
+  }
+
+  TI_FORCE_INLINE std::string const &get_tb() const {
+    return dbg_info.tb;
+  }
+
+  TI_FORCE_INLINE void set_tb(const std::string &tb) {
+    dbg_info.tb = tb;
   }
 
   std::vector<Stmt *> get_operands() const;
@@ -482,10 +491,6 @@ class Stmt : public IRNode {
   template <typename T, typename... Args>
   static pStmt make(Args &&...args) {
     return make_typed<T>(std::forward<Args>(args)...);
-  }
-
-  void set_tb(const std::string &tb) {
-    this->tb = tb;
   }
 
   std::string type();

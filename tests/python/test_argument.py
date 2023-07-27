@@ -261,3 +261,16 @@ def test_struct_arg_with_matrix_real_func():
 
     ret = bar(arg)
     assert ret == ret_std
+
+
+@test_utils.test()
+def test_func_scalar_arg_cast():
+    @ti.func
+    def bar(a: ti.i32) -> ti.f32:
+        return a
+
+    @ti.kernel
+    def foo(a: ti.f32) -> ti.f32:
+        return bar(a)
+
+    assert foo(1.5) == 1.0

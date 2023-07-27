@@ -22,8 +22,17 @@ class TypeFactory {
 
   Type *get_tensor_type(std::vector<int> shape, Type *element);
 
-  const Type *get_struct_type(const std::vector<StructMember> &elements,
-                              const std::string &layout = "none");
+  const Type *get_struct_type(
+      const std::vector<AbstractDictionaryMember> &elements,
+      const std::string &layout = "none");
+
+  const Type *get_argpack_type(
+      const std::vector<AbstractDictionaryMember> &elements,
+      const std::string &layout = "none");
+
+  const Type *get_struct_type_for_argpack_ptr(
+      DataType dt,
+      const std::string &layout = "none");
 
   const Type *get_ndarray_struct_type(DataType dt,
                                       int ndim,
@@ -59,6 +68,7 @@ class TypeFactory {
   constexpr static int SHAPE_POS_IN_NDARRAY = 0;
   constexpr static int DATA_PTR_POS_IN_NDARRAY = 1;
   constexpr static int GRAD_PTR_POS_IN_NDARRAY = 2;
+  constexpr static int DATA_PTR_POS_IN_ARGPACK = 0;
 
  private:
   TypeFactory();
@@ -73,16 +83,22 @@ class TypeFactory {
   std::mutex tensor_mut_;
 
   std::unordered_map<
-      std::pair<std::vector<StructMember>, std::string>,
+      std::pair<std::vector<AbstractDictionaryMember>, std::string>,
       std::unique_ptr<Type>,
-      hashing::Hasher<std::pair<std::vector<StructMember>, std::string>>>
+      hashing::Hasher<
+          std::pair<std::vector<AbstractDictionaryMember>, std::string>>>
       struct_types_;
   std::mutex struct_mut_;
+  std::unordered_map<std::vector<AbstractDictionaryMember>,
+                     std::unique_ptr<Type>,
+                     hashing::Hasher<std::vector<AbstractDictionaryMember>>>
+      argpack_types_;
+  std::mutex argpack_mut_;
 
   // TODO: is_bit_ptr?
-  std::unordered_map<std::pair<Type *, bool>,
+  std::unordered_map<std::pair<const Type *, bool>,
                      std::unique_ptr<Type>,
-                     hashing::Hasher<std::pair<Type *, bool>>>
+                     hashing::Hasher<std::pair<const Type *, bool>>>
       pointer_types_;
   std::mutex pointer_mut_;
 

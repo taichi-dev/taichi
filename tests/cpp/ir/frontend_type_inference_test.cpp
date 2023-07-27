@@ -14,7 +14,8 @@ TEST(FrontendTypeInference, Const) {
 }
 
 TEST(FrontendTypeInference, ArgLoad) {
-  auto arg_load_u64 = Expr::make<ArgLoadExpression>(2, PrimitiveType::u64);
+  auto arg_load_u64 =
+      Expr::make<ArgLoadExpression>(std::vector<int>{2}, PrimitiveType::u64);
   arg_load_u64->type_check(nullptr);
   EXPECT_EQ(arg_load_u64->ret_type, PrimitiveType::u64);
 }
@@ -31,7 +32,8 @@ TEST(FrontendTypeInference, Id) {
   auto kernel = std::make_unique<Kernel>(*prog, func, "fake_kernel");
   auto const_i32 = value<int32>(-(1 << 20));
   const_i32->type_check(nullptr);
-  auto id_i32 = kernel->context->builder().make_var(const_i32, const_i32->tb);
+  auto id_i32 =
+      kernel->context->builder().make_var(const_i32, const_i32->dbg_info);
   EXPECT_EQ(id_i32->ret_type,
             DataType(TypeFactory::get_instance().get_pointer_type(
                 PrimitiveType::i32)));
@@ -154,8 +156,8 @@ TEST(FrontendTypeInference, GlobalPtr_ExternalTensor) {
 
   auto index = value<float32>(2);
   index->type_check(nullptr);
-  auto external_tensor =
-      Expr::make<ExternalTensorExpression>(PrimitiveType::u16, 1, 0, 0);
+  auto external_tensor = Expr::make<ExternalTensorExpression>(
+      PrimitiveType::u16, 1, std::vector<int>{0}, 0);
   auto global_ptr =
       ast_builder->expr_subscript(external_tensor, ExprGroup(index));
   EXPECT_THROW(global_ptr->type_check(nullptr), TaichiTypeError);
@@ -207,8 +209,8 @@ TEST(FrontendTypeInference, SNodeOp) {
 }
 
 TEST(FrontendTypeInference, ExternalTensorShapeAlongAxis) {
-  auto external_tensor =
-      Expr::make<ExternalTensorExpression>(PrimitiveType::u64, 1, 0, 0);
+  auto external_tensor = Expr::make<ExternalTensorExpression>(
+      PrimitiveType::u64, 1, std::vector<int>{0}, 0);
   auto shape =
       Expr::make<ExternalTensorShapeAlongAxisExpression>(external_tensor, 0);
   shape->type_check(nullptr);

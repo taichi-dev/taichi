@@ -120,8 +120,12 @@ Stmt::Stmt(const Stmt &stmt) : field_manager(this), fields_registered(false) {
   instance_id = instance_id_counter++;
   id = instance_id;
   erased = stmt.erased;
-  tb = stmt.tb;
+  dbg_info = stmt.dbg_info;
   ret_type = stmt.ret_type;
+}
+
+Stmt::Stmt(const DebugInfo &dbg_info) : Stmt() {
+  this->dbg_info = dbg_info;
 }
 
 Callable *Stmt::get_callable() const {

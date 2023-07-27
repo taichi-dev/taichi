@@ -6,8 +6,10 @@
 
 namespace taichi::lang {
 
-UnaryOpStmt::UnaryOpStmt(UnaryOpType op_type, Stmt *operand)
-    : op_type(op_type), operand(operand) {
+UnaryOpStmt::UnaryOpStmt(UnaryOpType op_type,
+                         Stmt *operand,
+                         const DebugInfo &dbg_info)
+    : Stmt(dbg_info), op_type(op_type), operand(operand) {
   TI_ASSERT(!operand->is<AllocaStmt>());
   cast_type = PrimitiveType::unknown;
   TI_STMT_REG_FIELDS;
@@ -62,8 +64,10 @@ ExternalPtrStmt::ExternalPtrStmt(Stmt *base_ptr,
 GlobalPtrStmt::GlobalPtrStmt(SNode *snode,
                              const std::vector<Stmt *> &indices,
                              bool activate,
-                             bool is_cell_access)
-    : snode(snode),
+                             bool is_cell_access,
+                             const DebugInfo &dbg_info)
+    : Stmt(dbg_info),
+      snode(snode),
       indices(indices),
       activate(activate),
       is_cell_access(is_cell_access),
@@ -98,20 +102,22 @@ MatrixOfMatrixPtrStmt::MatrixOfMatrixPtrStmt(const std::vector<Stmt *> &stmts,
 
 MatrixPtrStmt::MatrixPtrStmt(Stmt *origin_input,
                              Stmt *offset_input,
-                             const std::string &tb) {
+                             const DebugInfo &dbg_info) {
   origin = origin_input;
   offset = offset_input;
-  this->tb = tb;
+  this->dbg_info = dbg_info;
 
   if (origin->is<AllocaStmt>() || origin->is<GlobalTemporaryStmt>() ||
       origin->is<ExternalPtrStmt>() || origin->is<MatrixOfGlobalPtrStmt>() ||
-      origin->is<MatrixOfMatrixPtrStmt>() || origin->is<ThreadLocalPtrStmt>()) {
+      origin->is<MatrixOfMatrixPtrStmt>() || origin->is<ThreadLocalPtrStmt>() ||
+      origin->is<MatrixPtrStmt>()) {
     auto tensor_type = origin->ret_type.ptr_removed()->cast<TensorType>();
     TI_ASSERT(tensor_type != nullptr);
     element_type() = tensor_type->get_element_type();
     element_type().set_is_pointer(true);
-  } else if (origin->is<GlobalPtrStmt>()) {
-    element_type() = origin->cast<GlobalPtrStmt>()->ret_type;
+  } else if (origin->is<GlobalPtrStmt>() || origin->is<GetChStmt>()) {
+    element_type() = origin->ret_type.ptr_removed().get_element_type();
+    element_type().set_is_pointer(true);
   } else if (origin->is<AdStackLoadTopStmt>()) {
     TI_ASSERT(origin->as<AdStackLoadTopStmt>()->return_ptr == true);
     element_type() = origin->ret_type.get_element_type();
@@ -134,8 +140,9 @@ bool MatrixPtrStmt::common_statement_eliminable() const {
 SNodeOpStmt::SNodeOpStmt(SNodeOpType op_type,
                          SNode *snode,
                          Stmt *ptr,
-                         Stmt *val)
-    : op_type(op_type), snode(snode), ptr(ptr), val(val) {
+                         Stmt *val,
+                         const DebugInfo &dbg_info)
+    : Stmt(dbg_info), op_type(op_type), snode(snode), ptr(ptr), val(val) {
   element_type() = PrimitiveType::i32;
   TI_STMT_REG_FIELDS;
 }
@@ -150,9 +157,17 @@ bool SNodeOpStmt::need_activation(SNodeOpType op) {
          op == SNodeOpType::allocate;
 }
 
-ExternalTensorShapeAlongAxisStmt::ExternalTensorShapeAlongAxisStmt(int axis,
-                                                                   int arg_id)
+ExternalTensorShapeAlongAxisStmt::ExternalTensorShapeAlongAxisStmt(
+    int axis,
+    const std::vector<int> &arg_id)
     : axis(axis), arg_id(arg_id) {
+  TI_STMT_REG_FIELDS;
+}
+
+ExternalTensorBasePtrStmt::ExternalTensorBasePtrStmt(
+    const std::vector<int> &arg_id,
+    bool is_grad)
+    : arg_id(arg_id), is_grad(is_grad) {
   TI_STMT_REG_FIELDS;
 }
 
@@ -304,8 +319,14 @@ std::unique_ptr<Stmt> WhileStmt::clone() const {
   return new_stmt;
 }
 
-GetChStmt::GetChStmt(Stmt *input_ptr, int chid, bool is_bit_vectorized)
-    : input_ptr(input_ptr), chid(chid), is_bit_vectorized(is_bit_vectorized) {
+GetChStmt::GetChStmt(Stmt *input_ptr,
+                     int chid,
+                     bool is_bit_vectorized,
+                     const DebugInfo &dbg_info)
+    : Stmt(dbg_info),
+      input_ptr(input_ptr),
+      chid(chid),
+      is_bit_vectorized(is_bit_vectorized) {
   TI_ASSERT(input_ptr->is<SNodeLookupStmt>());
   input_snode = input_ptr->as<SNodeLookupStmt>()->snode;
   output_snode = input_snode->ch[chid].get();
@@ -315,8 +336,12 @@ GetChStmt::GetChStmt(Stmt *input_ptr, int chid, bool is_bit_vectorized)
 GetChStmt::GetChStmt(Stmt *input_ptr,
                      SNode *snode,
                      int chid,
-                     bool is_bit_vectorized)
-    : input_ptr(input_ptr), chid(chid), is_bit_vectorized(is_bit_vectorized) {
+                     bool is_bit_vectorized,
+                     const DebugInfo &dbg_info)
+    : Stmt(dbg_info),
+      input_ptr(input_ptr),
+      chid(chid),
+      is_bit_vectorized(is_bit_vectorized) {
   input_snode = snode;
   output_snode = input_snode->ch[chid].get();
   TI_STMT_REG_FIELDS;

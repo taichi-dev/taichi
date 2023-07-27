@@ -63,13 +63,21 @@ from taichi.types.primitive_types import (
 
 @taichi_scope
 def expr_init_shared_array(shape, element_type):
-    return get_runtime().compiling_callable.ast_builder().expr_alloca_shared_array(shape, element_type)
+    return (
+        get_runtime()
+        .compiling_callable.ast_builder()
+        .expr_alloca_shared_array(shape, element_type, _ti_core.DebugInfo(get_runtime().get_current_src_info()))
+    )
 
 
 @taichi_scope
 def expr_init(rhs):
     if rhs is None:
-        return Expr(get_runtime().compiling_callable.ast_builder().expr_alloca())
+        return Expr(
+            get_runtime()
+            .compiling_callable.ast_builder()
+            .expr_alloca(_ti_core.DebugInfo(get_runtime().get_current_src_info()))
+        )
     if isinstance(rhs, Matrix) and (hasattr(rhs, "_DIM")):
         return Matrix(*rhs.to_list(), ndim=rhs.ndim)
     if isinstance(rhs, Matrix):
@@ -97,7 +105,9 @@ def expr_init(rhs):
     if hasattr(rhs, "_data_oriented"):
         return rhs
     return Expr(
-        get_runtime().compiling_callable.ast_builder().expr_var(Expr(rhs).ptr, get_runtime().get_current_src_info())
+        get_runtime()
+        .compiling_callable.ast_builder()
+        .expr_var(Expr(rhs).ptr, _ti_core.DebugInfo(get_runtime().get_current_src_info()))
     )
 
 
@@ -125,7 +135,7 @@ def begin_frontend_struct_for(ast_builder, group, loop_range):
         ast_builder.begin_frontend_struct_for_on_snode(group, loop_range._loop_range())
 
 
-def begin_frontend_if(ast_builder, cond):
+def begin_frontend_if(ast_builder, cond, stmt_dbg_info):
     assert ast_builder is not None
     if is_taichi_class(cond):
         raise ValueError(
@@ -135,7 +145,7 @@ def begin_frontend_if(ast_builder, cond):
             "or\n"
             "    if any(x != y):\n"
         )
-    ast_builder.begin_frontend_if(Expr(cond).ptr)
+    ast_builder.begin_frontend_if(Expr(cond).ptr, stmt_dbg_info)
 
 
 @taichi_scope
@@ -175,6 +185,7 @@ def validate_subscript_index(value, index):
 
 @taichi_scope
 def subscript(ast_builder, value, *_indices, skip_reordered=False):
+    dbg_info = _ti_core.DebugInfo(get_runtime().get_current_src_info())
     ast_builder = get_runtime().compiling_callable.ast_builder()
     # Directly evaluate in Python for non-Taichi types
     if not isinstance(
@@ -251,14 +262,14 @@ def subscript(ast_builder, value, *_indices, skip_reordered=False):
                 )
 
         if isinstance(value, MatrixField):
-            return Expr(ast_builder.expr_subscript(value.ptr, indices_expr_group, get_runtime().get_current_src_info()))
+            return Expr(ast_builder.expr_subscript(value.ptr, indices_expr_group, dbg_info))
         if isinstance(value, StructField):
             entries = {k: subscript(ast_builder, v, *indices) for k, v in value._items}
             entries["__struct_methods"] = value.struct_methods
             return _IntermediateStruct(entries)
-        return Expr(ast_builder.expr_subscript(_var, indices_expr_group, get_runtime().get_current_src_info()))
+        return Expr(ast_builder.expr_subscript(_var, indices_expr_group, dbg_info))
     if isinstance(value, AnyArray):
-        return Expr(ast_builder.expr_subscript(value.ptr, indices_expr_group, get_runtime().get_current_src_info()))
+        return Expr(ast_builder.expr_subscript(value.ptr, indices_expr_group, dbg_info))
     assert isinstance(value, Expr)
     # Index into TensorType
     # value: IndexExpression with ret_type = TensorType
@@ -291,10 +302,10 @@ def subscript(ast_builder, value, *_indices, skip_reordered=False):
                 value.ptr,
                 multiple_indices,
                 return_shape,
-                get_runtime().get_current_src_info(),
+                dbg_info,
             )
         )
-    return Expr(ast_builder.expr_subscript(value.ptr, indices_expr_group, get_runtime().get_current_src_info()))
+    return Expr(ast_builder.expr_subscript(value.ptr, indices_expr_group, dbg_info))
 
 
 class SrcInfoGuard:
@@ -829,6 +840,8 @@ def ndarray(dtype, shape, needs_grad=False):
 
     if isinstance(shape, numbers.Number):
         shape = (shape,)
+    if not all((isinstance(x, int) or isinstance(x, np.integer)) and x > 0 and x <= 2**31 - 1 for x in shape):
+        raise TaichiRuntimeError(f"{shape} is not a valid shape for ndarray")
     if dtype in all_types:
         dt = cook_dtype(dtype)
         x = ScalarNdarray(dt, shape)
@@ -924,7 +937,9 @@ def ti_print(*_vars, sep=" ", end="\n"):
 
     _vars = add_separators(_vars)
     contents, formats = ti_format_list_to_content_entries(_vars)
-    get_runtime().compiling_callable.ast_builder().create_print(contents, formats)
+    get_runtime().compiling_callable.ast_builder().create_print(
+        contents, formats, _ti_core.DebugInfo(get_runtime().get_current_src_info())
+    )
 
 
 @taichi_scope
@@ -951,10 +966,10 @@ def ti_format(*args):
 
 
 @taichi_scope
-def ti_assert(cond, msg, extra_args):
+def ti_assert(cond, msg, extra_args, dbg_info):
     # Mostly a wrapper to help us convert from Expr (defined in Python) to
     # _ti_core.Expr (defined in C++)
-    get_runtime().compiling_callable.ast_builder().create_assert_stmt(Expr(cond).ptr, msg, extra_args)
+    get_runtime().compiling_callable.ast_builder().create_assert_stmt(Expr(cond).ptr, msg, extra_args, dbg_info)
 
 
 @taichi_scope

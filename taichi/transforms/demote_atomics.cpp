@@ -13,7 +13,11 @@ namespace taichi::lang {
 class DemoteAtomics : public BasicStmtVisitor {
  private:
   std::unordered_map<const SNode *, GlobalPtrStmt *> loop_unique_ptr_;
-  std::unordered_map<int, ExternalPtrStmt *> loop_unique_arr_ptr_;
+  std::unordered_map<std::vector<int>,
+                     ExternalPtrStmt *,
+                     hashing::Hasher<std::vector<int>>>
+      loop_unique_arr_ptr_;
+  std::unordered_set<MatrixPtrStmt *> loop_unique_matrix_ptr_;
 
  public:
   using BasicStmtVisitor::visit;
@@ -48,6 +52,10 @@ class DemoteAtomics : public BasicStmtVisitor {
         } else if (stmt->dest->is<MatrixPtrStmt>() &&
                    stmt->dest->as<MatrixPtrStmt>()
                        ->origin->is<GlobalPtrStmt>()) {
+          if (loop_unique_matrix_ptr_.find(stmt->dest->as<MatrixPtrStmt>()) ==
+              loop_unique_matrix_ptr_.end()) {
+            return;
+          }
           is_global_ptr_stmt = true;
           dest = stmt->dest->as<MatrixPtrStmt>()->origin->as<GlobalPtrStmt>();
         }
@@ -94,6 +102,10 @@ class DemoteAtomics : public BasicStmtVisitor {
         } else if (stmt->dest->is<MatrixPtrStmt>() &&
                    stmt->dest->as<MatrixPtrStmt>()
                        ->origin->is<ExternalPtrStmt>()) {
+          if (loop_unique_matrix_ptr_.find(stmt->dest->as<MatrixPtrStmt>()) ==
+              loop_unique_matrix_ptr_.end()) {
+            return;
+          }
           is_external_ptr_stmt = true;
           dest_ptr =
               stmt->dest->as<MatrixPtrStmt>()->origin->as<ExternalPtrStmt>();
@@ -105,7 +117,7 @@ class DemoteAtomics : public BasicStmtVisitor {
             demote = false;
           }
           ArgLoadStmt *arg_load_stmt = dest_ptr->base_ptr->as<ArgLoadStmt>();
-          int arg_id = arg_load_stmt->arg_id;
+          std::vector<int> arg_id = arg_load_stmt->arg_id;
           if (loop_unique_arr_ptr_[arg_id] == nullptr) {
             // Not loop unique
             demote = false;
@@ -139,7 +151,7 @@ class DemoteAtomics : public BasicStmtVisitor {
         TI_WARN(
             "AtomicOp on QuantFloatType is not supported. "
             "Demoting to non-atomic RMW.\n{}",
-            stmt->tb);
+            stmt->get_tb());
         demote = true;
       }
     }
@@ -194,8 +206,10 @@ class DemoteAtomics : public BasicStmtVisitor {
         stmt->task_type == OffloadedTaskType::struct_for) {
       auto uniquely_accessed_pointers =
           irpass::analysis::gather_uniquely_accessed_pointers(stmt);
-      loop_unique_ptr_ = std::move(uniquely_accessed_pointers.first);
-      loop_unique_arr_ptr_ = std::move(uniquely_accessed_pointers.second);
+      loop_unique_ptr_ = std::move(std::get<0>(uniquely_accessed_pointers));
+      loop_unique_arr_ptr_ = std::move(std::get<1>(uniquely_accessed_pointers));
+      loop_unique_matrix_ptr_ =
+          std::move(std::get<2>(uniquely_accessed_pointers));
     }
     // We don't need to visit TLS/BLS prologues/epilogues.
     if (stmt->body) {

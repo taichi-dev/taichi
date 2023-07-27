@@ -32,7 +32,7 @@ TEST(LlvmAotTest, CpuKernel) {
 
   constexpr int kArrLen = 32;
   constexpr int kArrBytes = kArrLen * sizeof(int32_t);
-  auto arr_devalloc = exec.allocate_memory_ndarray(kArrBytes, result_buffer);
+  auto arr_devalloc = exec.allocate_memory_on_device(kArrBytes, result_buffer);
   Ndarray arr = Ndarray(arr_devalloc, PrimitiveType::i32, {kArrLen});
 
   LLVM::AotModuleParams aot_params;
@@ -50,16 +50,16 @@ TEST(LlvmAotTest, CpuKernel) {
   auto *k_run = mod->get_kernel("run");
 
   LaunchContextBuilder builder(k_run);
-  builder.set_arg(0, /*v=*/0);
-  builder.set_arg_ndarray(/*arg_id=*/1, arr);
+  builder.set_arg({0}, /*v=*/0);
+  builder.set_arg_ndarray(/*arg_id=*/{1}, arr);
   std::vector<int> vec = {1, 2, 3};
   for (int i = 0; i < vec.size(); ++i) {
     builder.set_struct_arg(/*arg_indices=*/{2, i}, vec[i]);
   }
   k_run->launch(builder);
 
-  auto *data = reinterpret_cast<int32_t *>(
-      exec.get_ndarray_alloc_info_ptr(arr_devalloc));
+  auto *data =
+      reinterpret_cast<int32_t *>(exec.get_device_alloc_info_ptr(arr_devalloc));
   for (int i = 0; i < kArrLen; ++i) {
     EXPECT_EQ(data[i], i + vec[0]);
   }
@@ -80,7 +80,8 @@ TEST(LlvmAotTest, CudaKernel) {
 
     constexpr int kArrLen = 32;
     constexpr int kArrBytes = kArrLen * sizeof(int32_t);
-    auto arr_devalloc = exec.allocate_memory_ndarray(kArrBytes, result_buffer);
+    auto arr_devalloc =
+        exec.allocate_memory_on_device(kArrBytes, result_buffer);
     Ndarray arr = Ndarray(arr_devalloc, PrimitiveType::i32, {kArrLen});
 
     LLVM::AotModuleParams aot_params;
@@ -96,8 +97,8 @@ TEST(LlvmAotTest, CudaKernel) {
 
     auto *k_run = mod->get_kernel("run");
     LaunchContextBuilder builder(k_run);
-    builder.set_arg(0, /*v=*/0);
-    builder.set_arg_ndarray(/*arg_id=*/1, arr);
+    builder.set_arg({0}, /*v=*/0);
+    builder.set_arg_ndarray(/*arg_id=*/{1}, arr);
     std::vector<int> vec = {1, 2, 3};
     for (int i = 0; i < vec.size(); ++i) {
       builder.set_struct_arg(/*arg_indices=*/{2, i}, vec[i]);
@@ -105,7 +106,7 @@ TEST(LlvmAotTest, CudaKernel) {
     k_run->launch(builder);
 
     auto *data = reinterpret_cast<int32_t *>(
-        exec.get_ndarray_alloc_info_ptr(arr_devalloc));
+        exec.get_device_alloc_info_ptr(arr_devalloc));
 
     std::vector<int32_t> cpu_data(kArrLen);
     CUDADriver::get_instance().memcpy_device_to_host(

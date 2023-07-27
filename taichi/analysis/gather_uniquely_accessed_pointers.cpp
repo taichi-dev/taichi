@@ -104,6 +104,25 @@ class LoopUniqueStmtSearcher : public BasicStmtVisitor {
     return loop_unique_.find(stmt) != loop_unique_.end();
   }
 
+  bool is_matrix_ptr_indices_loop_unique(MatrixPtrStmt *stmt) const {
+    bool ret = true;
+    if (stmt->origin->is<GlobalPtrStmt>()) {
+      ret &= is_ptr_indices_loop_unique(stmt->origin->as<GlobalPtrStmt>());
+    } else if (stmt->origin->is<ExternalPtrStmt>()) {
+      ret &= is_ptr_indices_loop_unique(stmt->origin->as<ExternalPtrStmt>());
+    } else {
+      return true;
+    }
+
+    if (loop_unique_.find(stmt->offset) != loop_unique_.end()) {
+      ret &= (loop_unique_.find(stmt->offset)->second == -1);
+    } else {
+      return false;
+    }
+
+    return ret;
+  }
+
   bool is_ptr_indices_loop_unique(GlobalPtrStmt *stmt) const {
     // Check if the address is loop-unique, i.e., stmt contains
     // either a loop-unique index or all top-level loop indices.
@@ -174,7 +193,13 @@ class UniquelyAccessedSNodeSearcher : public BasicStmtVisitor {
   std::unordered_map<const SNode *, GlobalPtrStmt *> rel_access_pointer_;
 
   // Search any_arrs that are uniquely accessed. Maps: ArgID -> ExternalPtrStmt
-  std::unordered_map<int, ExternalPtrStmt *> accessed_arr_pointer_;
+  std::unordered_map<std::vector<int>,
+                     ExternalPtrStmt *,
+                     hashing::Hasher<std::vector<int>>>
+      accessed_arr_pointer_;
+
+  // Search for MatrixPtrstmt that are uniquely accessed.
+  std::unordered_set<MatrixPtrStmt *> accessed_matrix_pointer_;
 
  public:
   using BasicStmtVisitor::visit;
@@ -182,6 +207,29 @@ class UniquelyAccessedSNodeSearcher : public BasicStmtVisitor {
   UniquelyAccessedSNodeSearcher() {
     allow_undefined_visitor = true;
     invoke_default_visitor = true;
+  }
+
+  void visit(MatrixPtrStmt *stmt) override {
+    bool accessed = true;
+    if (stmt->origin->is<GlobalPtrStmt>()) {
+      auto snode = stmt->origin->as<GlobalPtrStmt>()->snode;
+      accessed &= (accessed_pointer_.find(snode) != accessed_pointer_.end());
+    } else if (stmt->origin->is<ExternalPtrStmt>()) {
+      auto arg_id = stmt->origin->as<ExternalPtrStmt>()
+                        ->base_ptr->as<ArgLoadStmt>()
+                        ->arg_id;
+      accessed &=
+          (accessed_arr_pointer_.find(arg_id) != accessed_arr_pointer_.end());
+    } else {
+      return;
+    }
+
+    accessed &=
+        loop_unique_stmt_searcher_.is_matrix_ptr_indices_loop_unique(stmt);
+
+    if (accessed) {
+      accessed_matrix_pointer_.insert(stmt);
+    }
   }
 
   void visit(GlobalPtrStmt *stmt) override {
@@ -229,7 +277,7 @@ class UniquelyAccessedSNodeSearcher : public BasicStmtVisitor {
     // If the accessed indices are loop unique,
     // the accessed memory location is loop unique
     ArgLoadStmt *arg_load_stmt = stmt->base_ptr->as<ArgLoadStmt>();
-    int arg_id = arg_load_stmt->arg_id;
+    std::vector<int> arg_id = arg_load_stmt->arg_id;
 
     auto accessed_ptr = accessed_arr_pointer_.find(arg_id);
 
@@ -278,8 +326,11 @@ class UniquelyAccessedSNodeSearcher : public BasicStmtVisitor {
     }
   }
 
-  static std::pair<std::unordered_map<const SNode *, GlobalPtrStmt *>,
-                   std::unordered_map<int, ExternalPtrStmt *>>
+  static std::tuple<std::unordered_map<const SNode *, GlobalPtrStmt *>,
+                    std::unordered_map<std::vector<int>,
+                                       ExternalPtrStmt *,
+                                       hashing::Hasher<std::vector<int>>>,
+                    std::unordered_set<MatrixPtrStmt *>>
   run(IRNode *root) {
     TI_ASSERT(root->is<OffloadedStmt>());
     auto offload = root->as<OffloadedStmt>();
@@ -297,8 +348,9 @@ class UniquelyAccessedSNodeSearcher : public BasicStmtVisitor {
     root->accept(&searcher.loop_unique_stmt_searcher_);
     root->accept(&searcher);
 
-    return std::make_pair(searcher.accessed_pointer_,
-                          searcher.accessed_arr_pointer_);
+    return std::make_tuple(searcher.accessed_pointer_,
+                           searcher.accessed_arr_pointer_,
+                           searcher.accessed_matrix_pointer_);
   }
 };
 
@@ -321,8 +373,8 @@ class UniquelyAccessedBitStructGatherer : public BasicStmtVisitor {
         stmt->task_type == OffloadedTaskType::mesh_for ||
         stmt->task_type == OffloadedTaskType::struct_for) {
       auto &loop_unique_bit_struct = result_[stmt];
-      auto loop_unique_ptr =
-          irpass::analysis::gather_uniquely_accessed_pointers(stmt).first;
+      auto loop_unique_ptr = std::get<0>(
+          irpass::analysis::gather_uniquely_accessed_pointers(stmt));
       for (auto &it : loop_unique_ptr) {
         auto *snode = it.first;
         auto *ptr1 = it.second;
@@ -372,8 +424,11 @@ const std::string GatherUniquelyAccessedBitStructsPass::id =
     "GatherUniquelyAccessedBitStructsPass";
 
 namespace irpass::analysis {
-std::pair<std::unordered_map<const SNode *, GlobalPtrStmt *>,
-          std::unordered_map<int, ExternalPtrStmt *>>
+std::tuple<std::unordered_map<const SNode *, GlobalPtrStmt *>,
+           std::unordered_map<std::vector<int>,
+                              ExternalPtrStmt *,
+                              hashing::Hasher<std::vector<int>>>,
+           std::unordered_set<MatrixPtrStmt *>>
 gather_uniquely_accessed_pointers(IRNode *root) {
   // TODO: What about SNodeOpStmts?
   return UniquelyAccessedSNodeSearcher::run(root);

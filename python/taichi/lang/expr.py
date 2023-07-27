@@ -13,14 +13,16 @@ from taichi.types.primitive_types import integer_types, real_types
 class Expr(TaichiOperations):
     """A Python-side Expr wrapper, whose member variable `ptr` is an instance of C++ Expr class. A C++ Expr object contains member variable `expr` which holds an instance of C++ Expression class."""
 
-    def __init__(self, *args, tb=None, dtype=None):
-        self.tb = tb
+    def __init__(self, *args, dbg_info=None, dtype=None):
+        self.dbg_info = dbg_info
+        self.ptr_type_checked = False
         if len(args) == 1:
             if isinstance(args[0], _ti_core.Expr):
                 self.ptr = args[0]
             elif isinstance(args[0], Expr):
                 self.ptr = args[0].ptr
-                self.tb = args[0].tb
+                self.ptr_type_checked = args[0].ptr_type_checked
+                self.dbg_info = args[0].dbg_info
             elif is_matrix_class(args[0]):
                 self.ptr = make_matrix(args[0].to_list()).ptr
             elif isinstance(args[0], (list, tuple)):
@@ -37,9 +39,11 @@ class Expr(TaichiOperations):
                 self.ptr = make_constant_expr(arg, dtype).ptr
         else:
             assert False
-        if self.tb:
-            self.ptr.set_tb(self.tb)
-        self.ptr.type_check(impl.get_runtime().prog.config())
+        if self.dbg_info:
+            self.ptr.set_dbg_info(self.dbg_info)
+        if not self.ptr_type_checked:
+            self.ptr.type_check(impl.get_runtime().prog.config())
+            self.ptr_type_checked = True
 
     def is_tensor(self):
         return self.ptr.is_tensor()
@@ -136,7 +140,7 @@ def make_var_list(size, ast_builder=None):
     return exprs
 
 
-def make_expr_group(*exprs, real_func_arg=False):
+def make_expr_group(*exprs):
     from taichi.lang.matrix import Matrix  # pylint: disable=C0415
 
     if len(exprs) == 1:

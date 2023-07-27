@@ -1,5 +1,6 @@
 from taichi.lang.enums import Layout, to_boundary_enum
 from taichi.types.compound_types import CompoundType, matrix, vector
+from taichi.lang import util
 
 
 class NdarrayTypeMetadata:
@@ -94,7 +95,7 @@ class NdarrayType:
         else:
             if self.dtype is not None:
                 # Check dtype match for scalar.
-                if not self.dtype == ndarray_type.element_type:
+                if not util.cook_dtype(self.dtype) == ndarray_type.element_type:
                     raise TypeError(
                         f"Expect element type {self.dtype} for argument {arg_name}, but get {ndarray_type.element_type}"
                     )

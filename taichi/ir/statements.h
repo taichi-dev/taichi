@@ -18,7 +18,8 @@ class Function;
  */
 class AllocaStmt : public Stmt, public ir_traits::Store {
  public:
-  explicit AllocaStmt(DataType type) : is_shared(false) {
+  explicit AllocaStmt(DataType type, const DebugInfo &dbg_info = DebugInfo())
+      : Stmt(dbg_info), is_shared(false) {
     if (type->is_primitive(PrimitiveTypeID::unknown)) {
       ret_type = type;
     } else {
@@ -29,8 +30,9 @@ class AllocaStmt : public Stmt, public ir_traits::Store {
 
   AllocaStmt(const std::vector<int> &shape,
              DataType type,
-             bool is_shared = false)
-      : is_shared(is_shared) {
+             bool is_shared = false,
+             const DebugInfo &dbg_info = DebugInfo())
+      : Stmt(dbg_info), is_shared(is_shared) {
     ret_type = TypeFactory::get_instance().get_pointer_type(
         TypeFactory::create_tensor_type(shape, type));
     TI_STMT_REG_FIELDS;
@@ -156,7 +158,9 @@ class UnaryOpStmt : public Stmt {
   Stmt *operand;
   DataType cast_type;
 
-  UnaryOpStmt(UnaryOpType op_type, Stmt *operand);
+  UnaryOpStmt(UnaryOpType op_type,
+              Stmt *operand,
+              const DebugInfo &dbg_info = DebugInfo());
 
   bool same_operation(UnaryOpStmt *o) const;
   bool is_cast() const;
@@ -172,11 +176,13 @@ class UnaryOpStmt : public Stmt {
 /**
  * Load a kernel argument. The data type should be known when constructing this
  * statement. |is_ptr| should be true iff the result can be used as a base
- * pointer of an ExternalPtrStmt.
+ * pointer of an ExternalPtrStmt. |arg_depth| indicates the nested depth in the
+ * argpack of this value. |argpack_ptr| holds buffer for argpack, only valid if
+ * |arg_depth| > 0.
  */
 class ArgLoadStmt : public Stmt {
  public:
-  int arg_id;
+  std::vector<int> arg_id;
 
   /* TODO(zhanlue): more organized argument-type information
 
@@ -192,8 +198,19 @@ class ArgLoadStmt : public Stmt {
 
   bool create_load;
 
-  ArgLoadStmt(int arg_id, const DataType &dt, bool is_ptr, bool create_load)
-      : arg_id(arg_id), is_ptr(is_ptr), create_load(create_load) {
+  int arg_depth;
+
+  ArgLoadStmt(const std::vector<int> &arg_id,
+              const DataType &dt,
+              bool is_ptr,
+              bool create_load,
+              int arg_depth,
+              const DebugInfo &dbg_info = DebugInfo())
+      : Stmt(dbg_info),
+        arg_id(arg_id),
+        is_ptr(is_ptr),
+        create_load(create_load),
+        arg_depth(arg_depth) {
     this->ret_type = dt;
     TI_STMT_REG_FIELDS;
   }
@@ -202,7 +219,7 @@ class ArgLoadStmt : public Stmt {
     return false;
   }
 
-  TI_STMT_DEF_FIELDS(ret_type, arg_id, is_ptr);
+  TI_STMT_DEF_FIELDS(ret_type, arg_id, is_ptr, arg_depth);
   TI_DEFINE_ACCEPT_AND_CLONE
 };
 
@@ -217,7 +234,8 @@ class ArgLoadStmt : public Stmt {
  */
 class RandStmt : public Stmt {
  public:
-  explicit RandStmt(const DataType &dt) {
+  explicit RandStmt(const DataType &dt, const DebugInfo &dbg_info = DebugInfo())
+      : Stmt(dbg_info) {
     ret_type = dt;
     TI_STMT_REG_FIELDS;
   }
@@ -246,8 +264,10 @@ class BinaryOpStmt : public Stmt {
   BinaryOpStmt(BinaryOpType op_type,
                Stmt *lhs,
                Stmt *rhs,
+               const DebugInfo &dbg_info = DebugInfo(),
                bool is_bit_vectorized = false)
-      : op_type(op_type),
+      : Stmt(dbg_info),
+        op_type(op_type),
         lhs(lhs),
         rhs(rhs),
         is_bit_vectorized(is_bit_vectorized) {
@@ -273,8 +293,12 @@ class TernaryOpStmt : public Stmt {
   TernaryOpType op_type;
   Stmt *op1, *op2, *op3;
 
-  TernaryOpStmt(TernaryOpType op_type, Stmt *op1, Stmt *op2, Stmt *op3)
-      : op_type(op_type), op1(op1), op2(op2), op3(op3) {
+  TernaryOpStmt(TernaryOpType op_type,
+                Stmt *op1,
+                Stmt *op2,
+                Stmt *op3,
+                const DebugInfo &dbg_info = DebugInfo())
+      : Stmt(dbg_info), op_type(op_type), op1(op1), op2(op2), op3(op3) {
     TI_ASSERT(!op1->is<AllocaStmt>());
     TI_ASSERT(!op2->is<AllocaStmt>());
     TI_ASSERT(!op3->is<AllocaStmt>());
@@ -300,8 +324,15 @@ class AtomicOpStmt : public Stmt,
   Stmt *dest, *val;
   bool is_reduction;
 
-  AtomicOpStmt(AtomicOpType op_type, Stmt *dest, Stmt *val)
-      : op_type(op_type), dest(dest), val(val), is_reduction(false) {
+  AtomicOpStmt(AtomicOpType op_type,
+               Stmt *dest,
+               Stmt *val,
+               const DebugInfo &dbg_info = DebugInfo())
+      : Stmt(dbg_info),
+        op_type(op_type),
+        dest(dest),
+        val(val),
+        is_reduction(false) {
     TI_STMT_REG_FIELDS;
   }
 
@@ -394,7 +425,8 @@ class GlobalPtrStmt : public Stmt {
   GlobalPtrStmt(SNode *snode,
                 const std::vector<Stmt *> &indices,
                 bool activate = true,
-                bool is_cell_access = false);
+                bool is_cell_access = false,
+                const DebugInfo &dbg_info = DebugInfo());
 
   bool has_global_side_effect() const override {
     return activate;
@@ -475,7 +507,7 @@ class MatrixPtrStmt : public Stmt {
   Stmt *origin{nullptr};
   Stmt *offset{nullptr};
 
-  MatrixPtrStmt(Stmt *, Stmt *, const std::string & = "");
+  MatrixPtrStmt(Stmt *, Stmt *, const DebugInfo & = DebugInfo());
 
   /* TODO(zhanlue/yi): Unify semantics of offset in MatrixPtrStmt
 
@@ -488,7 +520,7 @@ class MatrixPtrStmt : public Stmt {
   */
   bool offset_used_as_index() const {
     if (origin->is<AllocaStmt>() || origin->is<GlobalTemporaryStmt>() ||
-        origin->is<ExternalPtrStmt>()) {
+        origin->is<ExternalPtrStmt>() || origin->is<MatrixPtrStmt>()) {
       TI_ASSERT_INFO(origin->ret_type.ptr_removed()->is<TensorType>(),
                      "MatrixPtrStmt can only be used for TensorType.");
       return true;
@@ -533,7 +565,8 @@ class SNodeOpStmt : public Stmt, public ir_traits::Store {
   SNodeOpStmt(SNodeOpType op_type,
               SNode *snode,
               Stmt *ptr,
-              Stmt *val = nullptr);
+              Stmt *val = nullptr,
+              const DebugInfo &dbg_info = DebugInfo());
 
   static bool activation_related(SNodeOpType op);
 
@@ -562,15 +595,30 @@ class SNodeOpStmt : public Stmt, public ir_traits::Store {
 class ExternalTensorShapeAlongAxisStmt : public Stmt {
  public:
   int axis;
-  int arg_id;
+  std::vector<int> arg_id;
 
-  ExternalTensorShapeAlongAxisStmt(int axis, int arg_id);
+  ExternalTensorShapeAlongAxisStmt(int axis, const std::vector<int> &arg_id);
 
   bool has_global_side_effect() const override {
     return false;
   }
 
   TI_STMT_DEF_FIELDS(ret_type, axis, arg_id);
+  TI_DEFINE_ACCEPT_AND_CLONE
+};
+
+class ExternalTensorBasePtrStmt : public Stmt {
+ public:
+  std::vector<int> arg_id;
+  bool is_grad;
+
+  ExternalTensorBasePtrStmt(const std::vector<int> &arg_id, bool is_grad);
+
+  bool has_global_side_effect() const override {
+    return false;
+  }
+
+  TI_STMT_DEF_FIELDS(ret_type, arg_id, is_grad);
   TI_DEFINE_ACCEPT_AND_CLONE
 };
 
@@ -587,8 +635,9 @@ class AssertStmt : public Stmt {
 
   AssertStmt(Stmt *cond,
              const std::string &text,
-             const std::vector<Stmt *> &args)
-      : cond(cond), text(text), args(args) {
+             const std::vector<Stmt *> &args,
+             const DebugInfo &dbg_info = DebugInfo())
+      : Stmt(dbg_info), cond(cond), text(text), args(args) {
     TI_ASSERT(cond);
     TI_STMT_REG_FIELDS;
   }
@@ -749,7 +798,10 @@ class GlobalStoreStmt : public Stmt, public ir_traits::Store {
   Stmt *dest;
   Stmt *val;
 
-  GlobalStoreStmt(Stmt *dest, Stmt *val) : dest(dest), val(val) {
+  GlobalStoreStmt(Stmt *dest,
+                  Stmt *val,
+                  const DebugInfo &dbg_info = DebugInfo())
+      : Stmt(dbg_info), dest(dest), val(val) {
     TI_STMT_REG_FIELDS;
   }
 
@@ -777,7 +829,8 @@ class LocalLoadStmt : public Stmt, public ir_traits::Load {
  public:
   Stmt *src;
 
-  explicit LocalLoadStmt(Stmt *src) : src(src) {
+  explicit LocalLoadStmt(Stmt *src, const DebugInfo &dbg_info = DebugInfo())
+      : Stmt(dbg_info), src(src) {
     TI_STMT_REG_FIELDS;
   }
 
@@ -1304,11 +1357,15 @@ class GetChStmt : public Stmt {
   // irpass::type_check()
   bool overrided_dtype = false;
 
-  GetChStmt(Stmt *input_ptr, int chid, bool is_bit_vectorized = false);
+  GetChStmt(Stmt *input_ptr,
+            int chid,
+            bool is_bit_vectorized = false,
+            const DebugInfo &dbg_info = DebugInfo());
   GetChStmt(Stmt *input_ptr,
             SNode *snode,
             int chid,
-            bool is_bit_vectorized = false);
+            bool is_bit_vectorized = false,
+            const DebugInfo &dbg_info = DebugInfo());
 
   bool has_global_side_effect() const override {
     return false;
@@ -2017,5 +2074,35 @@ class MatrixInitStmt : public Stmt {
   TI_STMT_DEF_FIELDS(ret_type, values);
   TI_DEFINE_ACCEPT_AND_CLONE
 };
+
+template <typename T>
+std::vector<std::unique_ptr<Stmt>> get_const_stmt_with_value(DataType dt,
+                                                             T value) {
+  if (dt->is<PrimitiveType>()) {
+    TypedConstant constant(dt, value);
+    auto const_stmt = std::make_unique<ConstStmt>(constant);
+
+    std::vector<std::unique_ptr<Stmt>> ret;
+    ret.push_back(std::move(const_stmt));
+    return ret;
+
+  } else if (dt->is<TensorType>()) {
+    DataType element_dt = dt.get_element_type();
+    std::vector<std::unique_ptr<Stmt>> stmts =
+        get_const_stmt_with_value(element_dt, value);
+
+    Stmt *elem_stmt = stmts.back().get();
+    std::vector<Stmt *> elem_stmts(dt->as<TensorType>()->get_num_elements(),
+                                   elem_stmt);
+
+    auto matrix_init_stmt = std::make_unique<MatrixInitStmt>(elem_stmts);
+    matrix_init_stmt->ret_type = dt;
+
+    stmts.push_back(std::move(matrix_init_stmt));
+    return stmts;
+  } else {
+    TI_NOT_IMPLEMENTED
+  }
+}
 
 }  // namespace taichi::lang

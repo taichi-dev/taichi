@@ -276,7 +276,8 @@ Kernel &Program::get_snode_reader(SNode *snode) {
   auto &ker = kernel([snode, this](Kernel *kernel) {
     ExprGroup indices;
     for (int i = 0; i < snode->num_active_indices; i++) {
-      auto argload_expr = Expr::make<ArgLoadExpression>(i, PrimitiveType::i32);
+      auto argload_expr = Expr::make<ArgLoadExpression>(std::vector<int>{i},
+                                                        PrimitiveType::i32);
       argload_expr->type_check(&this->compile_config());
       indices.push_back(std::move(argload_expr));
     }
@@ -301,7 +302,8 @@ Kernel &Program::get_snode_writer(SNode *snode) {
   auto &ker = kernel([snode, this](Kernel *kernel) {
     ExprGroup indices;
     for (int i = 0; i < snode->num_active_indices; i++) {
-      auto argload_expr = Expr::make<ArgLoadExpression>(i, PrimitiveType::i32);
+      auto argload_expr = Expr::make<ArgLoadExpression>(std::vector<int>{i},
+                                                        PrimitiveType::i32);
       argload_expr->type_check(&this->compile_config());
       indices.push_back(std::move(argload_expr));
     }
@@ -309,9 +311,10 @@ Kernel &Program::get_snode_writer(SNode *snode) {
     auto expr =
         builder.expr_subscript(Expr(snode_to_fields_.at(snode)), indices);
     auto argload_expr = Expr::make<ArgLoadExpression>(
-        snode->num_active_indices, snode->dt->get_compute_type());
+        std::vector<int>{snode->num_active_indices},
+        snode->dt->get_compute_type());
     argload_expr->type_check(&this->compile_config());
-    builder.insert_assignment(expr, argload_expr, expr->tb);
+    builder.insert_assignment(expr, argload_expr, expr->dbg_info);
   });
   ker.name = kernel_name;
   ker.is_accessor = true;
@@ -372,8 +375,9 @@ std::size_t Program::get_snode_num_dynamically_allocated(SNode *snode) {
 Ndarray *Program::create_ndarray(const DataType type,
                                  const std::vector<int> &shape,
                                  ExternalArrayLayout layout,
-                                 bool zero_fill) {
-  auto arr = std::make_unique<Ndarray>(this, type, shape, layout);
+                                 bool zero_fill,
+                                 const DebugInfo &dbg_info) {
+  auto arr = std::make_unique<Ndarray>(this, type, shape, layout, dbg_info);
   if (zero_fill) {
     Arch arch = compile_config().arch;
     if (arch_is_cpu(arch) || arch == Arch::cuda || arch == Arch::amdgpu) {
@@ -395,6 +399,13 @@ Ndarray *Program::create_ndarray(const DataType type,
   return arr_ptr;
 }
 
+ArgPack *Program::create_argpack(const DataType dt) {
+  auto pack = std::make_unique<ArgPack>(this, dt);
+  auto pack_ptr = pack.get();
+  argpacks_.insert({pack_ptr, std::move(pack)});
+  return pack_ptr;
+}
+
 void Program::delete_ndarray(Ndarray *ndarray) {
   // [Note] Ndarray memory deallocation
   // Ndarray's memory allocation is managed by Taichi and Python can control
@@ -410,6 +421,24 @@ void Program::delete_ndarray(Ndarray *ndarray) {
   if (ndarrays_.count(ndarray) &&
       !program_impl_->used_in_kernel(ndarray->ndarray_alloc_.alloc_id)) {
     ndarrays_.erase(ndarray);
+  }
+}
+
+void Program::delete_argpack(ArgPack *argpack) {
+  // [Note] Argpack memory deallocation
+  // Argpack's memory allocation is managed by Taichi and Python can control
+  // this via Taichi indirectly. For example, when an argpack is GC-ed in
+  // Python, it signals Taichi to free its memory allocation. But Taichi will
+  // make sure **no pending kernels to be executed needs the argpack** before it
+  // actually frees the memory. When `ti.reset()` is called, all argpack
+  // allocated in this program should be gone and no longer valid in Python.
+  // This isn't the best implementation, argpacks should be managed by taichi
+  // runtime instead of this giant program and it should be freed when:
+  // - Python GC signals taichi that it's no longer useful
+  // - All kernels using it are executed.
+  if (argpacks_.count(argpack) &&
+      !program_impl_->used_in_kernel(argpack->argpack_alloc_.alloc_id)) {
+    argpacks_.erase(argpack);
   }
 }
 
@@ -437,7 +466,7 @@ intptr_t Program::get_ndarray_data_ptr_as_int(const Ndarray *ndarray) {
       compile_config().arch == Arch::amdgpu) {
     // For the LLVM backends, device allocation is a physical pointer.
     data_ptr =
-        program_impl_->get_ndarray_alloc_info_ptr(ndarray->ndarray_alloc_);
+        program_impl_->get_device_alloc_info_ptr(ndarray->ndarray_alloc_);
   }
 
   return reinterpret_cast<intptr_t>(data_ptr);
@@ -450,6 +479,31 @@ void Program::fill_ndarray_fast_u32(Ndarray *ndarray, uint32_t val) {
       ndarray->ndarray_alloc_,
       ndarray->get_nelement() * ndarray->get_element_size() / sizeof(uint32_t),
       val);
+}
+
+std::pair<const ArgPackType *, size_t>
+Program::get_argpack_type_with_data_layout(const ArgPackType *old_ty,
+                                           const std::string &layout) {
+  // Convert to StructType
+  auto *struct_type_old =
+      TypeFactory::get_instance()
+          .get_struct_type(old_ty->elements(), old_ty->get_layout())
+          ->as<StructType>();
+  // Call get_struct_type_with_data_layout
+  auto [struct_type, size] = program_impl_->get_struct_type_with_data_layout(
+      const_cast<StructType *>(struct_type_old), layout);
+  // Convert back to ArgPackType
+  auto *new_ty =
+      TypeFactory::get_instance()
+          .get_argpack_type(struct_type->elements(), struct_type->get_layout())
+          ->as<ArgPackType>();
+  return {new_ty, size};
+}
+
+std::pair<const StructType *, size_t> Program::get_struct_type_with_data_layout(
+    const StructType *old_ty,
+    const std::string &layout) {
+  return program_impl_->get_struct_type_with_data_layout(old_ty, layout);
 }
 
 Program::~Program() {

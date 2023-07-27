@@ -6,20 +6,6 @@
 
 namespace taichi::lang {
 
-std::function<void(const std::string &)>
-make_pass_printer(bool verbose, const std::string &kernel_name, IRNode *ir) {
-  if (!verbose) {
-    return [](const std::string &) {};
-  }
-  return [ir, kernel_name](const std::string &pass) {
-    TI_INFO("[{}] {}:", kernel_name, pass);
-    std::cout << std::flush;
-    irpass::re_id(ir);
-    irpass::print(ir);
-    std::cout << std::flush;
-  };
-}
-
 TEST(Half2Vectorization, Ndarray) {
   // Basic tests within a basic block
   TestProgram test_prog;
@@ -35,8 +21,8 @@ TEST(Half2Vectorization, Ndarray) {
       TypeFactory::get_instance().create_tensor_type({2}, PrimitiveType::f16);
 
   auto argload_stmt = block->push_back<ArgLoadStmt>(
-      0 /*arg_id*/, PrimitiveType::f16, /*is_ptr*/ true,
-      /*create_load*/ false);
+      std::vector<int>{0} /*arg_id*/, PrimitiveType::f16, /*is_ptr*/ true,
+      /*create_load*/ false, /*arg_depth*/ 0);
   argload_stmt->ret_type = half2_type;
   auto const_0_stmt = block->push_back<ConstStmt>(TypedConstant(0));
 

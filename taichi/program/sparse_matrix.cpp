@@ -271,7 +271,7 @@ const std::string EigenSparseMatrix<EigenMatrix>::to_string() const {
 template <class EigenMatrix>
 void EigenSparseMatrix<EigenMatrix>::mmwrite(const std::string &filename) {
   std::ofstream file(filename);
-  file << "%%MatrixMarket matrix coordinate real general\n %" << std::endl;
+  file << "%%MatrixMarket matrix coordinate real general\n%" << std::endl;
   file << matrix_.rows() << " " << matrix_.cols() << " " << matrix_.nonZeros()
        << std::endl;
   for (int k = 0; k < matrix_.outerSize(); ++k) {

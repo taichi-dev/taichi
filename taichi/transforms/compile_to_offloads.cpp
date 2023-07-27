@@ -22,7 +22,8 @@ void compile_to_offloads(IRNode *ir,
                          bool start_from_ast) {
   TI_AUTO_PROF;
 
-  auto print = make_pass_printer(verbose, kernel->get_name(), ir);
+  auto print = make_pass_printer(verbose, config.print_ir_dbg_info,
+                                 kernel->get_name(), ir);
   print("Initial IR");
 
   if (!verbose && config.print_preprocessed_ir && start_from_ast) {
@@ -161,7 +162,8 @@ void offload_to_executable(IRNode *ir,
                            bool make_block_local) {
   TI_AUTO_PROF;
 
-  auto print = make_pass_printer(verbose, kernel->get_name(), ir);
+  auto print = make_pass_printer(verbose, config.print_ir_dbg_info,
+                                 kernel->get_name(), ir);
 
   // TODO: This is just a proof that we can demote struct-fors after offloading.
   // Eventually we might want the order to be TLS/BLS -> demote struct-for.
@@ -294,10 +296,13 @@ void offload_to_executable(IRNode *ir,
        !get_custom_cuda_library_path().empty());
   if (config.real_matrix_scalarize) {
     if (irpass::scalarize(ir, half2_optimization_enabled)) {
+      irpass::die(ir);
+      print("DIE");
+
       // Remove redundant MatrixInitStmt inserted during scalarization
-      irpass::full_simplify(ir, config,
-                            {lower_global_access, /*autodiff_enabled*/ false,
-                             kernel->get_name(), verbose});
+      irpass::full_simplify(
+          ir, config,
+          {false, /*autodiff_enabled*/ false, kernel->get_name(), verbose});
       print("Scalarized");
     }
   }
@@ -338,7 +343,8 @@ void compile_function(IRNode *ir,
   TI_AUTO_PROF;
 
   auto current_stage = func->ir_stage();
-  auto print = make_pass_printer(verbose, func->get_name(), ir);
+  auto print = make_pass_printer(verbose, config.print_ir_dbg_info,
+                                 func->get_name(), ir);
   print("Initial IR");
 
   if (target_stage >= Function::IRStage::BeforeLowerAccess &&
@@ -354,15 +360,14 @@ void compile_function(IRNode *ir,
       print("Lowered");
     }
 
-    if (config.real_matrix_scalarize) {
-      if (irpass::scalarize(ir)) {
-        // Remove redundant MatrixInitStmt inserted during scalarization
-        irpass::die(ir);
-        print("Scalarized");
-      }
-    }
+    // Removes MatrixOfMatrixPtrStmt & MatrixOfGlobalPtrStmt
+    irpass::lower_matrix_ptr(ir);
+    print("Matrix ptr lowered");
+
     irpass::demote_atomics(ir, config);
     print("Atomics demoted");
+    irpass::associate_continue_scope(ir, config);
+    print("Associated continue scope");
     func->set_ir_stage(Function::IRStage::BeforeLowerAccess);
   }
 
@@ -385,6 +390,14 @@ void compile_function(IRNode *ir,
 
     irpass::demote_operations(ir, config);
     print("Operations demoted");
+
+    if (config.real_matrix_scalarize) {
+      if (irpass::scalarize(ir)) {
+        // Remove redundant MatrixInitStmt inserted during scalarization
+        irpass::die(ir);
+        print("Scalarized");
+      }
+    }
 
     irpass::full_simplify(ir, config,
                           {true, autodiff_mode != AutodiffMode::kNone,

@@ -28,7 +28,11 @@ class Inliner : public BasicStmtVisitor {
           inlined_ir.get(),
           /*filter=*/[&](Stmt *s) { return s->is<ArgLoadStmt>(); },
           /*finder=*/
-          [&](Stmt *s) { return stmt->args[s->as<ArgLoadStmt>()->arg_id]; });
+          [&](Stmt *s) {
+            // Note: Functions in taichi do not support argpack.
+            TI_ASSERT(s->as<ArgLoadStmt>()->arg_id.size() == 1);
+            return stmt->args[s->as<ArgLoadStmt>()->arg_id[0]];
+          });
     }
     if (func->rets.empty()) {
       modifier_.replace_with(
@@ -40,7 +44,7 @@ class Inliner : public BasicStmtVisitor {
         TI_WARN(
             "Multiple returns in function \"{}\" may not be handled "
             "properly.\n{}",
-            func->get_name(), stmt->tb);
+            func->get_name(), stmt->get_tb());
       }
       // Use a local variable to store the return value
       auto *return_address = inlined_ir->as<Block>()->insert(

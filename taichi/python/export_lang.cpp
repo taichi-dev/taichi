@@ -12,6 +12,7 @@
 #include "pybind11/pybind11.h"
 #include "pybind11/eigen.h"
 #include "pybind11/numpy.h"
+#include "fp16.h"
 
 #include "taichi/ir/expression_ops.h"
 #include "taichi/ir/frontend_ir.h"
@@ -19,6 +20,7 @@
 #include "taichi/program/graph_builder.h"
 #include "taichi/program/extension.h"
 #include "taichi/program/ndarray.h"
+#include "taichi/program/matrix.h"
 #include "taichi/python/export.h"
 #include "taichi/math/svd.h"
 #include "taichi/system/timeline.h"
@@ -120,6 +122,13 @@ void export_lang(py::module &m) {
       .def(
           "get_ptr", [](DataType *dtype) -> Type * { return *dtype; },
           py::return_value_policy::reference)
+      .def("__call__",
+           [](DataType *dtype, py::args args, const py::kwargs &kwargs) {
+             // Defining __call__ here to make DataType callable in Python,
+             // which enables us to write `typing.Tuple[ti.i32, ti.i32]`.
+             throw TaichiSyntaxError(
+                 "Taichi data types cannot be called outside Taichi kernels.");
+           })
       .def(py::pickle(
           [](const DataType &dt) {
             // Note: this only works for primitive types, which is fine for now.
@@ -138,6 +147,13 @@ void export_lang(py::module &m) {
             return dt;
           }));
 
+  py::class_<DebugInfo>(m, "DebugInfo")
+      .def(py::init<>())
+      .def(py::init<std::string>())
+      .def(py::init<>())
+      .def_readwrite("tb", &DebugInfo::tb)
+      .def_readwrite("src_loc", &DebugInfo::src_loc);
+
   py::class_<CompileConfig>(m, "CompileConfig")
       .def(py::init<>())
       .def_readwrite("arch", &CompileConfig::arch)
@@ -145,6 +161,7 @@ void export_lang(py::module &m) {
       .def_readwrite("print_ir", &CompileConfig::print_ir)
       .def_readwrite("print_preprocessed_ir",
                      &CompileConfig::print_preprocessed_ir)
+      .def_readwrite("print_ir_dbg_info", &CompileConfig::print_ir_dbg_info)
       .def_readwrite("debug", &CompileConfig::debug)
       .def_readwrite("cfg_optimization", &CompileConfig::cfg_optimization)
       .def_readwrite("check_out_of_bound", &CompileConfig::check_out_of_bound)
@@ -421,13 +438,22 @@ void export_lang(py::module &m) {
           "create_ndarray",
           [&](Program *program, const DataType &dt,
               const std::vector<int> &shape, ExternalArrayLayout layout,
-              bool zero_fill) -> Ndarray * {
-            return program->create_ndarray(dt, shape, layout, zero_fill);
+              bool zero_fill, DebugInfo dbg_info) -> Ndarray * {
+            return program->create_ndarray(dt, shape, layout, zero_fill,
+                                           dbg_info);
           },
           py::arg("dt"), py::arg("shape"),
           py::arg("layout") = ExternalArrayLayout::kNull,
-          py::arg("zero_fill") = false, py::return_value_policy::reference)
+          py::arg("zero_fill") = false, py::arg("dbg_info") = DebugInfo(),
+          py::return_value_policy::reference)
       .def("delete_ndarray", &Program::delete_ndarray)
+      .def(
+          "create_argpack",
+          [&](Program *program, const DataType &dt) -> ArgPack * {
+            return program->create_argpack(dt);
+          },
+          py::arg("dt"), py::return_value_policy::reference)
+      .def("delete_argpack", &Program::delete_argpack)
       .def(
           "create_texture",
           [&](Program *program, BufferFormat fmt, const std::vector<int> &shape)
@@ -476,23 +502,23 @@ void export_lang(py::module &m) {
       .def("dense",
            (SNode & (SNode::*)(const std::vector<Axis> &,
                                const std::vector<int> &,
-                               const std::string &))(&SNode::dense),
+                               const DebugInfo &))(&SNode::dense),
            py::return_value_policy::reference)
       .def("pointer",
            (SNode & (SNode::*)(const std::vector<Axis> &,
                                const std::vector<int> &,
-                               const std::string &))(&SNode::pointer),
+                               const DebugInfo &))(&SNode::pointer),
            py::return_value_policy::reference)
       .def("hash",
            (SNode & (SNode::*)(const std::vector<Axis> &,
                                const std::vector<int> &,
-                               const std::string &))(&SNode::hash),
+                               const DebugInfo &))(&SNode::hash),
            py::return_value_policy::reference)
       .def("dynamic", &SNode::dynamic, py::return_value_policy::reference)
       .def("bitmasked",
            (SNode & (SNode::*)(const std::vector<Axis> &,
                                const std::vector<int> &,
-                               const std::string &))(&SNode::bitmasked),
+                               const DebugInfo &))(&SNode::bitmasked),
            py::return_value_policy::reference)
       .def("bit_struct", &SNode::bit_struct, py::return_value_policy::reference)
       .def("quant_array", &SNode::quant_array,
@@ -568,6 +594,17 @@ void export_lang(py::module &m) {
       .def_readonly("dtype", &Ndarray::dtype)
       .def_readonly("shape", &Ndarray::shape);
 
+  py::class_<ArgPack>(m, "ArgPack")
+      .def("device_allocation_ptr", &ArgPack::get_device_allocation_ptr_as_int)
+      .def("device_allocation", &ArgPack::get_device_allocation)
+      .def("nelement", &ArgPack::get_nelement)
+      .def("data_type", &ArgPack::get_data_type)
+      .def("set_arg_float", &ArgPack::set_arg_float)
+      .def("set_arg_int", &ArgPack::set_arg_int)
+      .def("set_arg_uint", &ArgPack::set_arg_uint)
+      .def("set_arg_nested_argpack", &ArgPack::set_arg_nested_argpack)
+      .def_readonly("dtype", &ArgPack::dtype);
+
   py::enum_<BufferFormat>(m, "Format")
 #define PER_BUFFER_FORMAT(x) .value(#x, BufferFormat::x)
 #include "taichi/inc/rhi_constants.inc.h"
@@ -622,55 +659,97 @@ void export_lang(py::module &m) {
       .def("seq", &GraphBuilder::seq, py::return_value_policy::reference);
 
   py::class_<aot::CompiledGraph>(m, "CompiledGraph")
-      .def("jit_run",
-           [](aot::CompiledGraph *self, const CompileConfig &compile_config,
-              const py::dict &pyargs) {
-             std::unordered_map<std::string, aot::IValue> args;
-             auto insert_scalar_arg = [&args](std::string arg_name,
-                                              DataType expected_dtype,
-                                              py::object pyarg) {
-               auto type_id = expected_dtype->as<PrimitiveType>()->type;
-               switch (type_id) {
+      .def("jit_run", [](aot::CompiledGraph *self,
+                         const CompileConfig &compile_config,
+                         const py::dict &pyargs) {
+        std::unordered_map<std::string, aot::IValue> args;
+        auto insert_scalar_arg = [&args](std::string arg_name,
+                                         DataType expected_dtype,
+                                         py::object pyarg) {
+          auto type_id = expected_dtype->as<PrimitiveType>()->type;
+          switch (type_id) {
 #define PER_C_TYPE(type, ctype)                                           \
   case PrimitiveTypeID::type:                                             \
     args.insert({arg_name, aot::IValue::create(py::cast<ctype>(pyarg))}); \
     break;
 #include "taichi/inc/data_type_with_c_type.inc.h"
 #undef PER_C_TYPE
-                 default:
-                   TI_ERROR("Unsupported scalar type {}", type_id);
-               }
-             };
-             for (const auto &[arg_name, arg] : self->args) {
-               auto tag = arg.tag;
-               if (tag == aot::ArgKind::kMatrix) {
-                 int size = arg.element_shape[0] * arg.element_shape[1];
-                 for (int i = 0; i < size; i++) {
-                   auto name = fmt::format("{}_{}", arg_name, i);
-                   TI_ASSERT(pyargs.contains(name.c_str()));
-                   auto pyarg = pyargs[name.c_str()];
-                   insert_scalar_arg(name, arg.dtype(), pyarg);
-                 }
-                 continue;
-               }
-               TI_ASSERT(pyargs.contains(arg_name.c_str()));
-               auto pyarg = pyargs[arg_name.c_str()];
-               if (tag == aot::ArgKind::kNdarray) {
-                 auto &val = pyarg.cast<Ndarray &>();
-                 args.insert({arg_name, aot::IValue::create(val)});
-               } else if (tag == aot::ArgKind::kTexture ||
-                          tag == aot::ArgKind::kRWTexture) {
-                 auto &val = pyarg.cast<Texture &>();
-                 args.insert({arg_name, aot::IValue::create(val)});
-               } else if (tag == aot::ArgKind::kScalar) {
-                 auto expected_dtype = arg.dtype();
-                 insert_scalar_arg(arg_name, expected_dtype, pyarg);
-               } else {
-                 TI_NOT_IMPLEMENTED;
-               }
-             }
-             self->jit_run(compile_config, args);
-           });
+            default:
+              TI_ERROR("Unsupported scalar type {}", type_id);
+          }
+        };
+
+        std::vector<std::unique_ptr<char[]>> matrix_buffers;
+        matrix_buffers.reserve(self->args.size());
+        std::vector<Matrix> matrices;
+        // Reserve to avoid changes in element addresses
+        matrices.reserve(self->args.size());
+        for (const auto &[arg_name, arg] : self->args) {
+          auto tag = arg.tag;
+          TI_ASSERT(pyargs.contains(arg_name.c_str()));
+          auto pyarg = pyargs[arg_name.c_str()];
+          if (tag == aot::ArgKind::kNdarray) {
+            auto &val = pyarg.cast<Ndarray &>();
+            args.insert({arg_name, aot::IValue::create(val)});
+          } else if (tag == aot::ArgKind::kTexture ||
+                     tag == aot::ArgKind::kRWTexture) {
+            auto &val = pyarg.cast<Texture &>();
+            args.insert({arg_name, aot::IValue::create(val)});
+          } else if (tag == aot::ArgKind::kScalar) {
+            auto expected_dtype = arg.dtype();
+            insert_scalar_arg(arg_name, expected_dtype, pyarg);
+          } else if (tag == aot::ArgKind::kMatrix) {
+            auto type_id = arg.dtype()->as<PrimitiveType>()->type;
+            switch (type_id) {
+              case PrimitiveTypeID::f16: {
+                auto arr = pyarg.cast<py::array_t<float32>>();
+                py::buffer_info buffer_info = arr.request();
+                auto length = buffer_info.size;
+                auto ptr = reinterpret_cast<intptr_t>(buffer_info.ptr);
+
+                std::unique_ptr<char[]> data(new char[128]);
+                for (uint32_t i = 0; i < length; i++) {
+                  uint16 half = fp16_ieee_from_fp32_value(
+                      reinterpret_cast<float32 *>(ptr)[i]);
+                  reinterpret_cast<uint16 *>(data.get())[i] = half;
+                }
+                matrix_buffers.emplace_back(std::move(data));
+
+                matrices.emplace_back(Matrix(
+                    length, arg.dtype(),
+                    reinterpret_cast<intptr_t>(matrix_buffers.back().get())));
+                args.insert({arg_name, aot::IValue::create(matrices.back())});
+                break;
+              }
+#define PER_C_TYPE(type, ctype)                                           \
+  case PrimitiveTypeID::type: {                                           \
+    auto arr = pyarg.cast<py::array_t<ctype>>();                          \
+    py::buffer_info buffer_info = arr.request();                          \
+    auto length = buffer_info.size;                                       \
+    auto ptr = reinterpret_cast<intptr_t>(buffer_info.ptr);               \
+                                                                          \
+    std::unique_ptr<char[]> data(new char[128]);                          \
+    std::memcpy(data.get(), reinterpret_cast<char *>(ptr),                \
+                sizeof(ctype) * length);                                  \
+    matrix_buffers.emplace_back(std::move(data));                         \
+                                                                          \
+    matrices.emplace_back(                                                \
+        Matrix(length, arg.dtype(),                                       \
+               reinterpret_cast<intptr_t>(matrix_buffers.back().get()))); \
+    args.insert({arg_name, aot::IValue::create(matrices.back())});        \
+    break;                                                                \
+  }
+#include "taichi/inc/data_type_with_c_type.inc.h"
+#undef PER_C_TYPE
+              default:
+                TI_ERROR("Unsupported scalar type {}", type_id);
+            }
+          } else {
+            TI_NOT_IMPLEMENTED;
+          }
+        }
+        self->jit_run(compile_config, args);
+      });
 
   py::class_<Kernel>(m, "Kernel")
       .def("no_activate",
@@ -684,6 +763,9 @@ void export_lang(py::module &m) {
       .def("insert_texture_param", &Kernel::insert_texture_param)
       .def("insert_pointer_param", &Kernel::insert_pointer_param)
       .def("insert_rw_texture_param", &Kernel::insert_rw_texture_param)
+      .def("insert_argpack_param_and_push",
+           &Kernel::insert_argpack_param_and_push)
+      .def("pop_argpack_stack", &Kernel::pop_argpack_stack)
       .def("insert_ret", &Kernel::insert_ret)
       .def("finalize_rets", &Kernel::finalize_rets)
       .def("finalize_params", &Kernel::finalize_params)
@@ -705,6 +787,7 @@ void export_lang(py::module &m) {
            &LaunchContextBuilder::set_struct_arg<double>)
       .def("set_arg_external_array_with_shape",
            &LaunchContextBuilder::set_arg_external_array_with_shape)
+      .def("set_arg_argpack", &LaunchContextBuilder::set_arg_argpack)
       .def("set_arg_ndarray", &LaunchContextBuilder::set_arg_ndarray)
       .def("set_arg_ndarray_with_grad",
            &LaunchContextBuilder::set_arg_ndarray_with_grad)
@@ -717,6 +800,7 @@ void export_lang(py::module &m) {
   py::class_<Function>(m, "Function")
       .def("insert_scalar_param", &Function::insert_scalar_param)
       .def("insert_arr_param", &Function::insert_arr_param)
+      .def("insert_ndarray_param", &Function::insert_ndarray_param)
       .def("insert_texture_param", &Function::insert_texture_param)
       .def("insert_pointer_param", &Function::insert_pointer_param)
       .def("insert_rw_texture_param", &Function::insert_rw_texture_param)
@@ -745,7 +829,8 @@ void export_lang(py::module &m) {
                     SNodeGradType::kPrimal;
            })
       .def("is_lvalue", [](Expr *expr) { return expr->expr->is_lvalue(); })
-      .def("set_tb", &Expr::set_tb)
+      .def("set_dbg_info", &Expr::set_dbg_info)
+      .def("get_dbg_info", [](Expr *expr) { return expr->expr->dbg_info; })
       .def("set_name",
            [&](Expr *expr, std::string na) {
              expr->cast<FieldExpression>()->name = na;
@@ -926,22 +1011,26 @@ void export_lang(py::module &m) {
   m.def("make_global_load_stmt", Stmt::make<GlobalLoadStmt, Stmt *>);
   m.def("make_global_store_stmt", Stmt::make<GlobalStoreStmt, Stmt *, Stmt *>);
   m.def("make_frontend_assign_stmt",
-        Stmt::make<FrontendAssignStmt, const Expr &, const Expr &>);
+        Stmt::make<FrontendAssignStmt, const Expr &, const Expr &,
+                   const DebugInfo &>);
 
   m.def("make_arg_load_expr",
-        Expr::make<ArgLoadExpression, int, const DataType &, bool, bool>,
-        "arg_id"_a, "dt"_a, "is_ptr"_a = false, "create_load"_a = true);
+        Expr::make<ArgLoadExpression, const std::vector<int> &,
+                   const DataType &, bool, bool, int, const DebugInfo &>,
+        "arg_id"_a, "dt"_a, "is_ptr"_a = false, "create_load"_a = true,
+        "arg_depth"_a = 0, "dbg_info"_a = DebugInfo());
 
   m.def("make_reference", Expr::make<ReferenceExpression, const Expr &>);
 
   m.def("make_external_tensor_expr",
-        Expr::make<ExternalTensorExpression, const DataType &, int, int, bool,
-                   const BoundaryMode &>);
+        Expr::make<ExternalTensorExpression, const DataType &, int,
+                   const std::vector<int> &, bool, int, const BoundaryMode &>);
 
   m.def("make_external_tensor_grad_expr",
         Expr::make<ExternalTensorExpression, Expr *>);
 
-  m.def("make_rand_expr", Expr::make<RandExpression, const DataType &>);
+  m.def("make_rand_expr",
+        Expr::make<RandExpression, const DataType &, const DebugInfo &>);
 
   m.def("make_const_expr_bool",
         Expr::make<ConstExpression, const DataType &, uint1>);
@@ -952,9 +1041,11 @@ void export_lang(py::module &m) {
   m.def("make_const_expr_fp",
         Expr::make<ConstExpression, const DataType &, float64>);
 
-  m.def("make_texture_ptr_expr", Expr::make<TexturePtrExpression, int, int>);
+  m.def("make_texture_ptr_expr",
+        Expr::make<TexturePtrExpression, const std::vector<int> &, int, int>);
   m.def("make_rw_texture_ptr_expr",
-        Expr::make<TexturePtrExpression, int, int, const BufferFormat &, int>);
+        Expr::make<TexturePtrExpression, const std::vector<int> &, int, int,
+                   const BufferFormat &, int>);
 
   auto &&texture =
       py::enum_<TextureOpType>(m, "TextureOpType", py::arithmetic());
@@ -996,7 +1087,7 @@ void export_lang(py::module &m) {
   m.def(
       "subscript_with_multiple_indices",
       Expr::make<IndexExpression, const Expr &, const std::vector<ExprGroup> &,
-                 const std::vector<int> &, std::string>);
+                 const std::vector<int> &, const DebugInfo &>);
 
   m.def("get_external_tensor_element_dim", [](const Expr &expr) {
     TI_ASSERT(expr.is<ExternalTensorExpression>());
@@ -1010,6 +1101,12 @@ void export_lang(py::module &m) {
   m.def("get_external_tensor_needs_grad", [](const Expr &expr) {
     TI_ASSERT(expr.is<ExternalTensorExpression>());
     return expr.cast<ExternalTensorExpression>()->needs_grad;
+  });
+
+  m.def("get_external_tensor_element_type", [](const Expr &expr) {
+    TI_ASSERT(expr.is<ExternalTensorExpression>());
+    auto external_tensor_expr = expr.cast<ExternalTensorExpression>();
+    return external_tensor_expr->dt;
   });
 
   m.def("get_external_tensor_element_shape", [](const Expr &expr) {
@@ -1031,6 +1128,30 @@ void export_lang(py::module &m) {
 
   m.def("get_external_tensor_shape_along_axis",
         Expr::make<ExternalTensorShapeAlongAxisExpression, const Expr &, int>);
+
+  m.def("get_external_tensor_real_func_args", [](const Expr &expr) {
+    TI_ASSERT(expr.is<ExternalTensorExpression>());
+    auto external_tensor_expr = expr.cast<ExternalTensorExpression>();
+
+    std::vector<Expr> args;
+    for (int i = 0; i < external_tensor_expr->ndim; i++) {
+      args.push_back(
+          Expr::make<ExternalTensorShapeAlongAxisExpression>(expr, i));
+      args.back()->type_check(nullptr);
+    }
+
+    args.push_back(
+        Expr::make<ExternalTensorBasePtrExpression>(expr, /*is_grad=*/false));
+    args.back()->type_check(nullptr);
+
+    if (external_tensor_expr->needs_grad) {
+      args.push_back(
+          Expr::make<ExternalTensorBasePtrExpression>(expr, /*is_grad=*/true));
+      args.back()->type_check(nullptr);
+    }
+
+    return args;
+  });
 
   // Mesh related.
   m.def("get_relation_size", [](mesh::MeshPtr mesh_ptr, const Expr &mesh_idx,
@@ -1132,11 +1253,31 @@ void export_lang(py::module &m) {
           "get_struct_type",
           [&](TypeFactory *factory,
               std::vector<std::pair<DataType, std::string>> elements) {
-            std::vector<StructMember> members;
+            std::vector<AbstractDictionaryMember> members;
             for (auto &[type, name] : elements) {
               members.push_back({type, name});
             }
             return DataType(factory->get_struct_type(members));
+          },
+          py::return_value_policy::reference)
+      .def("get_rwtexture_struct_type", &TypeFactory::get_rwtexture_struct_type,
+           py::return_value_policy::reference)
+      .def("get_ndarray_struct_type", &TypeFactory::get_ndarray_struct_type,
+           py::arg("dt"), py::arg("ndim"), py::arg("needs_grad"),
+           py::return_value_policy::reference)
+      .def("get_struct_type_for_argpack_ptr",
+           &TypeFactory::get_struct_type_for_argpack_ptr, py::arg("dt"),
+           py::arg("layout") = "none", py::return_value_policy::reference)
+      .def(
+          "get_argpack_type",
+          [&](TypeFactory *factory,
+              std::vector<std::pair<DataType, std::string>> elements) {
+            std::vector<AbstractDictionaryMember> members;
+            size_t pos = 0;
+            for (auto &[type, name] : elements) {
+              members.push_back({type, name, ++pos});
+            }
+            return DataType(factory->get_argpack_type(members));
           },
           py::return_value_policy::reference);
 

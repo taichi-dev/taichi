@@ -47,15 +47,15 @@ class LlvmRuntimeExecutor {
       const LlvmOfflineCache::FieldCacheData &field_cache_data,
       uint64 *result_buffer);
 
-  // Ndarray Allocation
-  DeviceAllocation allocate_memory_ndarray(std::size_t alloc_size,
-                                           uint64 *result_buffer);
+  // Ndarray and ArgPack Allocation
+  DeviceAllocation allocate_memory_on_device(std::size_t alloc_size,
+                                             uint64 *result_buffer);
 
-  void deallocate_memory_ndarray(DeviceAllocation handle);
+  void deallocate_memory_on_device(DeviceAllocation handle);
 
   void check_runtime_error(uint64 *result_buffer);
 
-  uint64_t *get_ndarray_alloc_info_ptr(const DeviceAllocation &alloc);
+  uint64_t *get_device_alloc_info_ptr(const DeviceAllocation &alloc);
 
   const CompileConfig &get_config() const {
     return config_;

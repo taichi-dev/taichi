@@ -48,7 +48,7 @@ void run_snode() {
   int n = 10;
   program.materialize_runtime();
   auto *root = new SNode(0, SNodeType::root);
-  auto *pointer = &root->pointer(Axis(0), n, "");
+  auto *pointer = &root->pointer(Axis(0), n);
   auto *place = &pointer->insert_children(SNodeType::place);
   place->dt = PrimitiveType::i32;
   program.add_snode_tree(std::unique_ptr<SNode>(root), /*compile_only=*/false);
@@ -116,7 +116,7 @@ void run_snode() {
       auto _ = builder.get_loop_guard(loop);
       auto *index = builder.get_loop_index(loop);
       auto *ext = builder.create_external_ptr(
-          builder.create_arg_load(0, PrimitiveType::i32, true), {index});
+          builder.create_arg_load({0}, PrimitiveType::i32, true, 0), {index});
       auto *place_index =
           builder.create_global_load(builder.create_global_ptr(place, {index}));
       builder.create_global_store(ext, place_index);
@@ -131,7 +131,7 @@ void run_snode() {
   auto ctx_ret = kernel_ret->make_launch_context();
   auto ctx_ext = kernel_ext->make_launch_context();
   std::vector<int> ext_arr(n);
-  ctx_ext.set_arg_external_array_with_shape(0, taichi::uint64(ext_arr.data()),
+  ctx_ext.set_arg_external_array_with_shape({0}, taichi::uint64(ext_arr.data()),
                                             n, {n});
 
   {

@@ -20,6 +20,7 @@ from taichi.lang.exception import (
 from taichi.lang.field import Field, ScalarField, SNodeHostAccess
 from taichi.lang.util import (
     cook_dtype,
+    get_traceback,
     in_python_scope,
     python_scope,
     taichi_scope,
@@ -1477,6 +1478,24 @@ class MatrixType(CompoundType):
                 for j in range(self.m):
                     set_arg_func(ret_index + (i * self.m + j,), mat[i, j])
 
+    def set_argpack_struct_args(self, mat, argpack, ret_index=()):
+        if self.dtype in primitive_types.integer_types:
+            if is_signed(cook_dtype(self.dtype)):
+                set_arg_func = argpack.set_arg_int
+            else:
+                set_arg_func = argpack.set_arg_uint
+        elif self.dtype in primitive_types.real_types:
+            set_arg_func = argpack.set_arg_float
+        else:
+            raise TaichiRuntimeTypeError(f"Invalid return type on index={ret_index}")
+        if self.ndim == 1:
+            for i in range(self.n):
+                set_arg_func(ret_index + (i,), mat[i])
+        else:
+            for i in range(self.n):
+                for j in range(self.m):
+                    set_arg_func(ret_index + (i * self.m + j,), mat[i, j])
+
     def _instantiate_in_python_scope(self, entries):
         entries = [[entries[k * self.m + i] for i in range(self.m)] for k in range(self.n)]
         return Matrix(
@@ -1637,7 +1656,11 @@ class MatrixNdarray(Ndarray):
         self.element_type = _type_factory.get_tensor_type((self.n, self.m), self.dtype)
         # TODO: we should pass in element_type, shape, layout instead.
         self.arr = impl.get_runtime().prog.create_ndarray(
-            cook_dtype(self.element_type), shape, Layout.AOS, zero_fill=True
+            cook_dtype(self.element_type),
+            shape,
+            Layout.AOS,
+            zero_fill=True,
+            dbg_info=ti_python_core.DebugInfo(get_traceback()),
         )
 
     @property
@@ -1747,7 +1770,11 @@ class VectorNdarray(Ndarray):
         self.shape = tuple(shape)
         self.element_type = _type_factory.get_tensor_type((n,), self.dtype)
         self.arr = impl.get_runtime().prog.create_ndarray(
-            cook_dtype(self.element_type), shape, Layout.AOS, zero_fill=True
+            cook_dtype(self.element_type),
+            shape,
+            Layout.AOS,
+            zero_fill=True,
+            dbg_info=ti_python_core.DebugInfo(get_traceback()),
         )
 
     @property

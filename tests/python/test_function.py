@@ -465,6 +465,19 @@ def test_real_func_matrix_arg():
 
 
 @test_utils.test(arch=[ti.cpu, ti.cuda])
+def test_real_func_matrix_return():
+    @ti.experimental.real_func
+    def mat_ret() -> ti.math.mat2:
+        return ti.math.mat2(1, 2, 3, 4)
+
+    @ti.kernel
+    def foo() -> ti.math.mat2:
+        return mat_ret()
+
+    assert (foo() == ti.math.mat2(1, 2, 3, 4)).all()
+
+
+@test_utils.test(arch=[ti.cpu, ti.cuda])
 def test_real_func_struct_ret():
     s = ti.types.struct(a=ti.i16, b=ti.f64)
 
@@ -495,3 +508,39 @@ def test_real_func_struct_ret_with_matrix():
         return s.a + s.b.a[0] + s.b.a[1] + s.b.a[2] + s.b.b
 
     assert foo() == pytest.approx(105.2)
+
+
+@test_utils.test(arch=[ti.cpu, ti.cuda])
+def test_break_in_real_func():
+    @ti.experimental.real_func
+    def bar() -> int:
+        a = 0
+        for i in range(10):
+            if i == 5:
+                break
+            a += 1
+        return a
+
+    @ti.kernel
+    def foo() -> int:
+        return bar()
+
+    assert foo() == 5
+
+
+@test_utils.test(arch=[ti.cpu, ti.cuda])
+def test_continue_in_real_func():
+    @ti.experimental.real_func
+    def bar() -> int:
+        a = 0
+        for i in range(10):
+            if i % 2 == 0:
+                continue
+            a += 1
+        return a
+
+    @ti.kernel
+    def foo() -> int:
+        return bar()
+
+    assert foo() == 5

@@ -1691,8 +1691,10 @@ class TexturePtrStmt : public Stmt {
                           int dimensions,
                           bool is_storage,
                           BufferFormat format,
-                          int lod)
-      : arg_load_stmt(stmt),
+                          int lod,
+                          const DebugInfo &dbg_info = DebugInfo())
+      : Stmt(dbg_info),
+        arg_load_stmt(stmt),
         dimensions(dimensions),
         is_storage(is_storage),
         format(format),
@@ -1700,8 +1702,13 @@ class TexturePtrStmt : public Stmt {
     TI_STMT_REG_FIELDS;
   }
 
-  explicit TexturePtrStmt(Stmt *stmt, int dimensions)
-      : arg_load_stmt(stmt), dimensions(dimensions), is_storage(false) {
+  explicit TexturePtrStmt(Stmt *stmt,
+                          int dimensions,
+                          const DebugInfo &dbg_info = DebugInfo())
+      : Stmt(dbg_info),
+        arg_load_stmt(stmt),
+        dimensions(dimensions),
+        is_storage(false) {
     TI_STMT_REG_FIELDS;
   }
 

@@ -1042,10 +1042,11 @@ void export_lang(py::module &m) {
         Expr::make<ConstExpression, const DataType &, float64>);
 
   m.def("make_texture_ptr_expr",
-        Expr::make<TexturePtrExpression, const std::vector<int> &, int, int>);
+        Expr::make<TexturePtrExpression, const std::vector<int> &, int, int,
+                   const DebugInfo &>);
   m.def("make_rw_texture_ptr_expr",
         Expr::make<TexturePtrExpression, const std::vector<int> &, int, int,
-                   const BufferFormat &, int>);
+                   const BufferFormat &, int, const DebugInfo &>);
 
   auto &&texture =
       py::enum_<TextureOpType>(m, "TextureOpType", py::arithmetic());

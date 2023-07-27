@@ -1,5 +1,5 @@
 import platform
-from math import acos, asin, cos, sin
+from math import asin, cos, sin
 
 import numpy as np
 from taichi._lib import core as _ti_core

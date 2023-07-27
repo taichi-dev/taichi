@@ -829,6 +829,7 @@ void export_lang(py::module &m) {
            })
       .def("is_lvalue", [](Expr *expr) { return expr->expr->is_lvalue(); })
       .def("set_dbg_info", &Expr::set_dbg_info)
+      .def("get_dbg_info", [](Expr *expr) { return expr->expr->dbg_info; })
       .def("set_name",
            [&](Expr *expr, std::string na) {
              expr->cast<FieldExpression>()->name = na;

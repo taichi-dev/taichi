@@ -37,14 +37,14 @@ std::string block_dim_info(int block_dim) {
 class IRPrinter : public IRVisitor {
  private:
   ExpressionPrinter *expr_printer_{nullptr};
+  std::function<void(const Stmt *stmt)> dbg_info_printer_{
+      [](const Stmt *stmt) {}};
 
  public:
   int current_indent{0};
 
   std::string *output{nullptr};
   std::stringstream ss;
-  std::function<void(const Stmt *stmt)> dbg_info_printer_{
-      [](const Stmt *stmt) {}};
 
   explicit IRPrinter(ExpressionPrinter *expr_printer = nullptr,
                      std::string *output = nullptr,

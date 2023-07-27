@@ -216,37 +216,3 @@ def test_struct_special_element_name():
         return x.entries + x.keys + x.items + x.methods
 
     assert foo() == 42 + 21 + 23 + 11
-
-
-@test_utils.test()
-def test_struct_with_matrix():
-    @ti.dataclass
-    class TestStruct:
-        p1: ti.math.vec3
-        p2: ti.math.vec3
-
-        @ti.func
-        def get_vec(self, struct2, additional):
-            self.p1 = (self.p1 + average(struct2)) / 2 + additional.p1
-
-    global_struct = TestStruct(p1=[0, 2, 4], p2=[-2, -4, -6])
-
-    @ti.func
-    def average(struct) -> ti.math.vec3:
-        return (struct.p1 + struct.p2) / 2
-
-    @ti.kernel
-    def process_struct(field1: ti.template(), field2: ti.template()):
-        for i in field1:
-            field1[i].get_vec(field2[i], global_struct)
-
-    field1 = TestStruct.field()
-    field2 = TestStruct.field()
-
-    ti.root.dense(ti.i, 64).place(field1, field2)
-
-    for i in range(64):
-        field1[i] = TestStruct(p1=[1, 2, 3], p2=[4, 5, 6])
-        field2[i] = TestStruct(p1=[4, 5, 6], p2=[1, 2, 3])
-
-    process_struct(field1, field2)

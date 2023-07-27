@@ -22,7 +22,8 @@ void compile_to_offloads(IRNode *ir,
                          bool start_from_ast) {
   TI_AUTO_PROF;
 
-  auto print = make_pass_printer(verbose, kernel->get_name(), ir);
+  auto print = make_pass_printer(verbose, config.print_ir_dbg_info,
+                                 kernel->get_name(), ir);
   print("Initial IR");
 
   if (!verbose && config.print_preprocessed_ir && start_from_ast) {
@@ -161,7 +162,8 @@ void offload_to_executable(IRNode *ir,
                            bool make_block_local) {
   TI_AUTO_PROF;
 
-  auto print = make_pass_printer(verbose, kernel->get_name(), ir);
+  auto print = make_pass_printer(verbose, config.print_ir_dbg_info,
+                                 kernel->get_name(), ir);
 
   // TODO: This is just a proof that we can demote struct-fors after offloading.
   // Eventually we might want the order to be TLS/BLS -> demote struct-for.
@@ -341,7 +343,8 @@ void compile_function(IRNode *ir,
   TI_AUTO_PROF;
 
   auto current_stage = func->ir_stage();
-  auto print = make_pass_printer(verbose, func->get_name(), ir);
+  auto print = make_pass_printer(verbose, config.print_ir_dbg_info,
+                                 func->get_name(), ir);
   print("Initial IR");
 
   if (target_stage >= Function::IRStage::BeforeLowerAccess &&

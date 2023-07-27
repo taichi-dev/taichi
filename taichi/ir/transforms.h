@@ -54,9 +54,14 @@ bool cache_loop_invariant_global_vars(IRNode *root,
 void full_simplify(IRNode *root,
                    const CompileConfig &config,
                    const FullSimplifyPass::Args &args);
-void print(IRNode *root, std::string *output = nullptr);
-std::function<void(const std::string &)>
-make_pass_printer(bool verbose, const std::string &kernel_name, IRNode *ir);
+void print(IRNode *root,
+           std::string *output = nullptr,
+           bool print_ir_dbg_info = false);
+std::function<void(const std::string &)> make_pass_printer(
+    bool verbose,
+    bool print_ir_dbg_info,
+    const std::string &kernel_name,
+    IRNode *ir);
 void frontend_type_check(IRNode *root);
 void lower_ast(IRNode *root);
 void type_check(IRNode *root, const CompileConfig &config);

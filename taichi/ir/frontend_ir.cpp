@@ -294,7 +294,8 @@ bool UnaryOpExpression::is_cast() const {
 
 void UnaryOpExpression::flatten(FlattenContext *ctx) {
   auto operand_stmt = flatten_rvalue(operand, ctx);
-  auto unary = std::make_unique<UnaryOpStmt>(type, operand_stmt, operand_stmt->dbg_info);
+  auto unary =
+      std::make_unique<UnaryOpStmt>(type, operand_stmt, operand_stmt->dbg_info);
   if (is_cast()) {
     unary->cast_type = cast_type;
   }
@@ -476,8 +477,8 @@ void BinaryOpExpression::flatten(FlattenContext *ctx) {
     return;
   }
   auto rhs_stmt = flatten_rvalue(rhs, ctx);
-  ctx->push_back(
-      std::make_unique<BinaryOpStmt>(type, lhs_stmt, rhs_stmt, dbg_info));
+  ctx->push_back(std::make_unique<BinaryOpStmt>(
+      type, lhs_stmt, rhs_stmt, /*is_bit_vectorized=*/false, dbg_info));
   stmt = ctx->back_stmt();
   stmt->ret_type = ret_type;
 }

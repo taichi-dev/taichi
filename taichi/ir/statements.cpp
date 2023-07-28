@@ -187,7 +187,8 @@ LoopUniqueStmt::LoopUniqueStmt(Stmt *input, const std::vector<SNode *> &covers)
   TI_STMT_REG_FIELDS;
 }
 
-IfStmt::IfStmt(Stmt *cond, const DebugInfo& dbg_info) : Stmt(dbg_info), cond(cond) {
+IfStmt::IfStmt(Stmt *cond, const DebugInfo &dbg_info)
+    : Stmt(dbg_info), cond(cond) {
   TI_STMT_REG_FIELDS;
 }
 

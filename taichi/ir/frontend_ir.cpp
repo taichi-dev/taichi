@@ -294,7 +294,7 @@ bool UnaryOpExpression::is_cast() const {
 
 void UnaryOpExpression::flatten(FlattenContext *ctx) {
   auto operand_stmt = flatten_rvalue(operand, ctx);
-  auto unary = std::make_unique<UnaryOpStmt>(type, operand_stmt, dbg_info);
+  auto unary = std::make_unique<UnaryOpStmt>(type, operand_stmt, operand_stmt->dbg_info);
   if (is_cast()) {
     unary->cast_type = cast_type;
   }

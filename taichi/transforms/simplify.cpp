@@ -512,8 +512,8 @@ bool simplify(IRNode *root, const CompileConfig &config) {
 void full_simplify(IRNode *root,
                    const CompileConfig &config,
                    const FullSimplifyPass::Args &args) {
-  auto print =
-      make_pass_printer(args.verbose, args.kernel_name + ".simplify", root);
+  auto print = make_pass_printer(args.verbose, config.print_ir_dbg_info,
+                                 args.kernel_name + ".simplify", root);
   TI_AUTO_PROF;
   if (config.advanced_optimization) {
     bool first_iteration = true;

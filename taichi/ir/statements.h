@@ -30,8 +30,9 @@ class AllocaStmt : public Stmt, public ir_traits::Store {
 
   AllocaStmt(const std::vector<int> &shape,
              DataType type,
-             bool is_shared = false)
-      : is_shared(is_shared) {
+             bool is_shared = false,
+             const DebugInfo &dbg_info = DebugInfo())
+      : Stmt(dbg_info), is_shared(is_shared) {
     ret_type = TypeFactory::get_instance().get_pointer_type(
         TypeFactory::create_tensor_type(shape, type));
     TI_STMT_REG_FIELDS;
@@ -233,7 +234,8 @@ class ArgLoadStmt : public Stmt {
  */
 class RandStmt : public Stmt {
  public:
-  explicit RandStmt(const DataType &dt) {
+  explicit RandStmt(const DataType &dt, const DebugInfo &dbg_info = DebugInfo())
+      : Stmt(dbg_info) {
     ret_type = dt;
     TI_STMT_REG_FIELDS;
   }
@@ -633,8 +635,9 @@ class AssertStmt : public Stmt {
 
   AssertStmt(Stmt *cond,
              const std::string &text,
-             const std::vector<Stmt *> &args)
-      : cond(cond), text(text), args(args) {
+             const std::vector<Stmt *> &args,
+             const DebugInfo &dbg_info = DebugInfo())
+      : Stmt(dbg_info), cond(cond), text(text), args(args) {
     TI_ASSERT(cond);
     TI_STMT_REG_FIELDS;
   }

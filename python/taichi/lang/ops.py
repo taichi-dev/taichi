@@ -109,7 +109,7 @@ def _unary_operation(taichi_op, python_op, a):
     if isinstance(a, Field):
         return NotImplemented
     if is_taichi_expr(a):
-        return expr.Expr(taichi_op(a.ptr), tb=stack_info())
+        return expr.Expr(taichi_op(a.ptr), dbg_info=_ti_core.DebugInfo(stack_info()))
     from taichi.lang.matrix import Matrix  # pylint: disable-msg=C0415
 
     if isinstance(a, Matrix):
@@ -122,7 +122,7 @@ def _binary_operation(taichi_op, python_op, a, b):
         return NotImplemented
     if is_taichi_expr(a) or is_taichi_expr(b):
         a, b = wrap_if_not_expr(a), wrap_if_not_expr(b)
-        return expr.Expr(taichi_op(a.ptr, b.ptr), tb=stack_info())
+        return expr.Expr(taichi_op(a.ptr, b.ptr), dbg_info=_ti_core.DebugInfo(stack_info()))
     from taichi.lang.matrix import Matrix  # pylint: disable-msg=C0415
 
     if isinstance(a, Matrix) or isinstance(b, Matrix):
@@ -135,7 +135,7 @@ def _ternary_operation(taichi_op, python_op, a, b, c):
         return NotImplemented
     if is_taichi_expr(a) or is_taichi_expr(b) or is_taichi_expr(c):
         a, b, c = wrap_if_not_expr(a), wrap_if_not_expr(b), wrap_if_not_expr(c)
-        return expr.Expr(taichi_op(a.ptr, b.ptr, c.ptr), tb=stack_info())
+        return expr.Expr(taichi_op(a.ptr, b.ptr, c.ptr), dbg_info=_ti_core.DebugInfo(stack_info()))
     from taichi.lang.matrix import Matrix  # pylint: disable-msg=C0415
 
     if isinstance(a, Matrix) or isinstance(b, Matrix) or isinstance(c, Matrix):
@@ -587,7 +587,7 @@ def random(dtype=float) -> Union[float, int]:
         >>>     print(j)  # 73412986184350777
     """
     dtype = cook_dtype(dtype)
-    x = expr.Expr(_ti_core.make_rand_expr(dtype))
+    x = expr.Expr(_ti_core.make_rand_expr(dtype, _ti_core.DebugInfo(impl.get_runtime().get_current_src_info())))
     return impl.expr_init(x)
 
 
@@ -1143,7 +1143,7 @@ def atomic_add(x, y):
         >>>
         >>>     ti.atomic_add(1, x)  # will raise TaichiSyntaxError
     """
-    return impl.expr_init(expr.Expr(_ti_core.expr_atomic_add(x.ptr, y.ptr), tb=stack_info()))
+    return impl.expr_init(expr.Expr(_ti_core.expr_atomic_add(x.ptr, y.ptr), dbg_info=_ti_core.DebugInfo(stack_info())))
 
 
 @writeback_binary
@@ -1173,7 +1173,7 @@ def atomic_mul(x, y):
         >>>
         >>>     ti.atomic_mul(1, x)  # will raise TaichiSyntaxError
     """
-    return impl.expr_init(expr.Expr(_ti_core.expr_atomic_mul(x.ptr, y.ptr), tb=stack_info()))
+    return impl.expr_init(expr.Expr(_ti_core.expr_atomic_mul(x.ptr, y.ptr), dbg_info=_ti_core.DebugInfo(stack_info())))
 
 
 @writeback_binary
@@ -1203,7 +1203,7 @@ def atomic_sub(x, y):
         >>>
         >>>     ti.atomic_sub(1, x)  # will raise TaichiSyntaxError
     """
-    return impl.expr_init(expr.Expr(_ti_core.expr_atomic_sub(x.ptr, y.ptr), tb=stack_info()))
+    return impl.expr_init(expr.Expr(_ti_core.expr_atomic_sub(x.ptr, y.ptr), dbg_info=_ti_core.DebugInfo(stack_info())))
 
 
 @writeback_binary
@@ -1233,7 +1233,7 @@ def atomic_min(x, y):
         >>>
         >>>     ti.atomic_min(1, x)  # will raise TaichiSyntaxError
     """
-    return impl.expr_init(expr.Expr(_ti_core.expr_atomic_min(x.ptr, y.ptr), tb=stack_info()))
+    return impl.expr_init(expr.Expr(_ti_core.expr_atomic_min(x.ptr, y.ptr), dbg_info=_ti_core.DebugInfo(stack_info())))
 
 
 @writeback_binary
@@ -1263,7 +1263,7 @@ def atomic_max(x, y):
         >>>
         >>>     ti.atomic_max(1, x)  # will raise TaichiSyntaxError
     """
-    return impl.expr_init(expr.Expr(_ti_core.expr_atomic_max(x.ptr, y.ptr), tb=stack_info()))
+    return impl.expr_init(expr.Expr(_ti_core.expr_atomic_max(x.ptr, y.ptr), dbg_info=_ti_core.DebugInfo(stack_info())))
 
 
 @writeback_binary
@@ -1293,7 +1293,9 @@ def atomic_and(x, y):
         >>>
         >>>     ti.atomic_and(1, x)  # will raise TaichiSyntaxError
     """
-    return impl.expr_init(expr.Expr(_ti_core.expr_atomic_bit_and(x.ptr, y.ptr), tb=stack_info()))
+    return impl.expr_init(
+        expr.Expr(_ti_core.expr_atomic_bit_and(x.ptr, y.ptr), dbg_info=_ti_core.DebugInfo(stack_info()))
+    )
 
 
 @writeback_binary
@@ -1323,7 +1325,9 @@ def atomic_or(x, y):
         >>>
         >>>     ti.atomic_or(1, x)  # will raise TaichiSyntaxError
     """
-    return impl.expr_init(expr.Expr(_ti_core.expr_atomic_bit_or(x.ptr, y.ptr), tb=stack_info()))
+    return impl.expr_init(
+        expr.Expr(_ti_core.expr_atomic_bit_or(x.ptr, y.ptr), dbg_info=_ti_core.DebugInfo(stack_info()))
+    )
 
 
 @writeback_binary
@@ -1353,7 +1357,9 @@ def atomic_xor(x, y):
         >>>
         >>>     ti.atomic_xor(1, x)  # will raise TaichiSyntaxError
     """
-    return impl.expr_init(expr.Expr(_ti_core.expr_atomic_bit_xor(x.ptr, y.ptr), tb=stack_info()))
+    return impl.expr_init(
+        expr.Expr(_ti_core.expr_atomic_bit_xor(x.ptr, y.ptr), dbg_info=_ti_core.DebugInfo(stack_info()))
+    )
 
 
 @writeback_binary

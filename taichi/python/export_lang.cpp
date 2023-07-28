@@ -161,6 +161,7 @@ void export_lang(py::module &m) {
       .def_readwrite("print_ir", &CompileConfig::print_ir)
       .def_readwrite("print_preprocessed_ir",
                      &CompileConfig::print_preprocessed_ir)
+      .def_readwrite("print_ir_dbg_info", &CompileConfig::print_ir_dbg_info)
       .def_readwrite("debug", &CompileConfig::debug)
       .def_readwrite("cfg_optimization", &CompileConfig::cfg_optimization)
       .def_readwrite("check_out_of_bound", &CompileConfig::check_out_of_bound)
@@ -829,6 +830,7 @@ void export_lang(py::module &m) {
            })
       .def("is_lvalue", [](Expr *expr) { return expr->expr->is_lvalue(); })
       .def("set_dbg_info", &Expr::set_dbg_info)
+      .def("get_dbg_info", [](Expr *expr) { return expr->expr->dbg_info; })
       .def("set_name",
            [&](Expr *expr, std::string na) {
              expr->cast<FieldExpression>()->name = na;
@@ -1009,13 +1011,14 @@ void export_lang(py::module &m) {
   m.def("make_global_load_stmt", Stmt::make<GlobalLoadStmt, Stmt *>);
   m.def("make_global_store_stmt", Stmt::make<GlobalStoreStmt, Stmt *, Stmt *>);
   m.def("make_frontend_assign_stmt",
-        Stmt::make<FrontendAssignStmt, const Expr &, const Expr &>);
+        Stmt::make<FrontendAssignStmt, const Expr &, const Expr &,
+                   const DebugInfo &>);
 
   m.def("make_arg_load_expr",
         Expr::make<ArgLoadExpression, const std::vector<int> &,
-                   const DataType &, bool, bool, int>,
+                   const DataType &, bool, bool, int, const DebugInfo &>,
         "arg_id"_a, "dt"_a, "is_ptr"_a = false, "create_load"_a = true,
-        "arg_depth"_a = 0);
+        "arg_depth"_a = 0, "dbg_info"_a = DebugInfo());
 
   m.def("make_reference", Expr::make<ReferenceExpression, const Expr &>);
 
@@ -1026,7 +1029,8 @@ void export_lang(py::module &m) {
   m.def("make_external_tensor_grad_expr",
         Expr::make<ExternalTensorExpression, Expr *>);
 
-  m.def("make_rand_expr", Expr::make<RandExpression, const DataType &>);
+  m.def("make_rand_expr",
+        Expr::make<RandExpression, const DataType &, const DebugInfo &>);
 
   m.def("make_const_expr_bool",
         Expr::make<ConstExpression, const DataType &, uint1>);

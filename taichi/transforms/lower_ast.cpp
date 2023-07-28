@@ -495,7 +495,8 @@ class LowerAST : public IRVisitor {
     for (int i = 0; i < (int)fargs.size(); ++i) {
       args_stmts[i] = flatten_rvalue(fargs[i], &fctx);
     }
-    fctx.push_back<AssertStmt>(val_stmt, stmt->text, args_stmts);
+    fctx.push_back<AssertStmt>(val_stmt, stmt->text, args_stmts,
+                               stmt->dbg_info);
     stmt->parent->replace_with(stmt, std::move(fctx.stmts));
   }
 
@@ -526,9 +527,11 @@ class LowerAST : public IRVisitor {
           output_statements));
     } else {
       for (auto &s : stmt->args) {
-        TI_ASSERT_INFO(
-            s.is<IdExpression>(),
-            "external func call via bitcode must pass in local variables.")
+        if (!s.is<IdExpression>()) {
+          ErrorEmitter(
+              TaichiSyntaxError(), stmt,
+              "external func call via bitcode must pass in local variables.");
+        }
         arg_statements.push_back(flatten_lvalue(s, &ctx));
       }
       ctx.push_back(std::make_unique<ExternalFuncCallStmt>(

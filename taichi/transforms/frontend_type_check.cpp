@@ -6,11 +6,13 @@
 namespace taichi::lang {
 
 class FrontendTypeCheck : public IRVisitor {
-  void check_cond_type(const Expr &cond, const std::string &stmt_name) {
+  void check_cond_type(const Expr &cond,
+                       const Stmt *stmt,
+                       const std::string &stmt_name) {
     DataType cond_type = cond.get_rvalue_type();
     if (!cond_type->is<PrimitiveType>() || !is_integral(cond_type)) {
       ErrorEmitter(
-          TaichiTypeError(), cond,
+          TaichiTypeError(), stmt,
           fmt::format("`{0}` conditions must be an integer; found {1}. "
                       "Consider using "
                       "`{0} x != 0` instead of `{0} x` for float values.",
@@ -77,7 +79,7 @@ class FrontendTypeCheck : public IRVisitor {
   }
 
   void visit(FrontendAssertStmt *stmt) override {
-    check_cond_type(stmt->cond, "assert");
+    check_cond_type(stmt->cond, stmt, "assert");
   }
 
   void visit(FrontendAssignStmt *stmt) override {
@@ -108,7 +110,7 @@ class FrontendTypeCheck : public IRVisitor {
 
   void visit(FrontendIfStmt *stmt) override {
     // TODO: use PrimitiveType::u1 when it's supported
-    check_cond_type(stmt->condition, "if");
+    check_cond_type(stmt->condition, stmt, "if");
     if (stmt->true_statements)
       stmt->true_statements->accept(this);
     if (stmt->false_statements)
@@ -184,7 +186,7 @@ class FrontendTypeCheck : public IRVisitor {
   }
 
   void visit(FrontendWhileStmt *stmt) override {
-    check_cond_type(stmt->cond, "while");
+    check_cond_type(stmt->cond, stmt, "while");
     stmt->body->accept(this);
   }
 

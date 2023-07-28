@@ -68,6 +68,9 @@ class ASTTransformer(Builder):
     @staticmethod
     def build_Name(ctx, node):
         node.ptr = ctx.get_var_by_name(node.id)
+        if isinstance(node, (ast.stmt, ast.expr)) and isinstance(node.ptr, Expr):
+            node.ptr.dbg_info = _ti_core.DebugInfo(ctx.get_pos_info(node))
+            node.ptr.ptr.set_dbg_info(node.ptr.dbg_info)
         return node.ptr
 
     @staticmethod
@@ -888,7 +891,9 @@ class ASTTransformer(Builder):
                     return_exprs += expr._get_flattened_ptrs(values)
                 else:
                     raise TaichiSyntaxError("The return type is not supported now!")
-            ctx.ast_builder.create_kernel_exprgroup_return(expr.make_expr_group(return_exprs))
+            ctx.ast_builder.create_kernel_exprgroup_return(
+                expr.make_expr_group(return_exprs), _ti_core.DebugInfo(ctx.get_pos_info(node))
+            )
         else:
             ctx.return_data = node.value.ptr
             if ctx.func.return_type is not None:
@@ -1274,7 +1279,8 @@ class ASTTransformer(Builder):
                 begin = ti_ops.cast(expr.Expr(0), primitive_types.i32)
                 end = ti_ops.cast(end_expr, primitive_types.i32)
 
-            ctx.ast_builder.begin_frontend_range_for(loop_var.ptr, begin.ptr, end.ptr)
+            for_di = _ti_core.DebugInfo(ctx.get_pos_info(node))
+            ctx.ast_builder.begin_frontend_range_for(loop_var.ptr, begin.ptr, end.ptr, for_di)
             build_stmts(ctx, node.body)
             ctx.ast_builder.end_frontend_range_for()
         return None
@@ -1289,7 +1295,8 @@ class ASTTransformer(Builder):
                 primitive_types.i32,
             )
             ndrange_loop_var = expr.Expr(ctx.ast_builder.make_id_expr(""))
-            ctx.ast_builder.begin_frontend_range_for(ndrange_loop_var.ptr, ndrange_begin.ptr, ndrange_end.ptr)
+            for_di = _ti_core.DebugInfo(ctx.get_pos_info(node))
+            ctx.ast_builder.begin_frontend_range_for(ndrange_loop_var.ptr, ndrange_begin.ptr, ndrange_end.ptr, for_di)
             I = impl.expr_init(ndrange_loop_var)
             targets = ASTTransformer.get_for_loop_targets(node)
             if len(targets) != len(ndrange_var.dimensions):
@@ -1331,7 +1338,8 @@ class ASTTransformer(Builder):
                 primitive_types.i32,
             )
             ndrange_loop_var = expr.Expr(ctx.ast_builder.make_id_expr(""))
-            ctx.ast_builder.begin_frontend_range_for(ndrange_loop_var.ptr, ndrange_begin.ptr, ndrange_end.ptr)
+            for_di = _ti_core.DebugInfo(ctx.get_pos_info(node))
+            ctx.ast_builder.begin_frontend_range_for(ndrange_loop_var.ptr, ndrange_begin.ptr, ndrange_end.ptr, for_di)
 
             targets = ASTTransformer.get_for_loop_targets(node)
             if len(targets) != 1:
@@ -1422,7 +1430,8 @@ class ASTTransformer(Builder):
             ctx.create_variable(loop_name, loop_var)
             begin = expr.Expr(0)
             end = ti_ops.cast(node.iter.ptr.size, primitive_types.i32)
-            ctx.ast_builder.begin_frontend_range_for(loop_var.ptr, begin.ptr, end.ptr)
+            for_di = _ti_core.DebugInfo(ctx.get_pos_info(node))
+            ctx.ast_builder.begin_frontend_range_for(loop_var.ptr, begin.ptr, end.ptr, for_di)
             entry_expr = _ti_core.get_relation_access(
                 ctx.mesh.mesh_ptr,
                 node.iter.ptr.from_index.ptr,
@@ -1490,13 +1499,14 @@ class ASTTransformer(Builder):
             raise TaichiSyntaxError("'else' clause for 'while' not supported in Taichi kernels")
 
         with ctx.loop_scope_guard():
-            ctx.ast_builder.begin_frontend_while(expr.Expr(1, dtype=primitive_types.i32).ptr)
+            stmt_dbg_info = _ti_core.DebugInfo(ctx.get_pos_info(node))
+            ctx.ast_builder.begin_frontend_while(expr.Expr(1, dtype=primitive_types.i32).ptr, stmt_dbg_info)
             while_cond = build_stmt(ctx, node.test)
-            impl.begin_frontend_if(ctx.ast_builder, while_cond)
+            impl.begin_frontend_if(ctx.ast_builder, while_cond, stmt_dbg_info)
             ctx.ast_builder.begin_frontend_if_true()
             ctx.ast_builder.pop_scope()
             ctx.ast_builder.begin_frontend_if_false()
-            ctx.ast_builder.insert_break_stmt()
+            ctx.ast_builder.insert_break_stmt(stmt_dbg_info)
             ctx.ast_builder.pop_scope()
             build_stmts(ctx, node.body)
             ctx.ast_builder.pop_scope()
@@ -1515,7 +1525,8 @@ class ASTTransformer(Builder):
             return node
 
         with ctx.non_static_if_guard(node):
-            impl.begin_frontend_if(ctx.ast_builder, node.test.ptr)
+            stmt_dbg_info = _ti_core.DebugInfo(ctx.get_pos_info(node))
+            impl.begin_frontend_if(ctx.ast_builder, node.test.ptr, stmt_dbg_info)
             ctx.ast_builder.begin_frontend_if_true()
             build_stmts(ctx, node.body)
             ctx.ast_builder.pop_scope()
@@ -1630,7 +1641,7 @@ class ASTTransformer(Builder):
         else:
             msg = unparse(node.test)
         test = build_stmt(ctx, node.test)
-        impl.ti_assert(test, msg.strip(), extra_args)
+        impl.ti_assert(test, msg.strip(), extra_args, _ti_core.DebugInfo(ctx.get_pos_info(node)))
         return None
 
     @staticmethod
@@ -1646,7 +1657,7 @@ class ASTTransformer(Builder):
                 raise TaichiSyntaxError(msg)
             ctx.set_loop_status(LoopStatus.Break)
         else:
-            ctx.ast_builder.insert_break_stmt()
+            ctx.ast_builder.insert_break_stmt(_ti_core.DebugInfo(ctx.get_pos_info(node)))
         return None
 
     @staticmethod
@@ -1662,7 +1673,7 @@ class ASTTransformer(Builder):
                 raise TaichiSyntaxError(msg)
             ctx.set_loop_status(LoopStatus.Continue)
         else:
-            ctx.ast_builder.insert_continue_stmt()
+            ctx.ast_builder.insert_continue_stmt(_ti_core.DebugInfo(ctx.get_pos_info(node)))
         return None
 
     @staticmethod

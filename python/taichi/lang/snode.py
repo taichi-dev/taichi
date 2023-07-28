@@ -377,7 +377,7 @@ def append(node, indices, val):
         impl.get_runtime()
         .compiling_callable.ast_builder()
         .expr_snode_append(node._snode.ptr, expr.make_expr_group(indices), ptrs),
-        tb=impl.get_runtime().get_current_src_info(),
+        dbg_info=_ti_core.DebugInfo(impl.get_runtime().get_current_src_info()),
     )
     a = impl.expr_init(append_expr)
     return a
@@ -408,7 +408,9 @@ def activate(node, indices):
         node (:class:`~taichi.SNode`): Must be a pointer, hash or bitmasked node.
         indices (Union[int, :class:`~taichi.Vector`]): the indices to activate.
     """
-    impl.get_runtime().compiling_callable.ast_builder().insert_activate(node._snode.ptr, expr.make_expr_group(indices))
+    impl.get_runtime().compiling_callable.ast_builder().insert_activate(
+        node._snode.ptr, expr.make_expr_group(indices), _ti_core.DebugInfo(impl.get_runtime().get_current_src_info())
+    )
 
 
 def deactivate(node, indices):
@@ -422,7 +424,7 @@ def deactivate(node, indices):
         indices (Union[int, :class:`~taichi.Vector`]): the indices to deactivate.
     """
     impl.get_runtime().compiling_callable.ast_builder().insert_deactivate(
-        node._snode.ptr, expr.make_expr_group(indices)
+        node._snode.ptr, expr.make_expr_group(indices), _ti_core.DebugInfo(impl.get_runtime().get_current_src_info())
     )
 
 

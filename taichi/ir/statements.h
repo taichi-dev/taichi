@@ -768,7 +768,8 @@ class GlobalLoadStmt : public Stmt, public ir_traits::Load {
  public:
   Stmt *src;
 
-  explicit GlobalLoadStmt(Stmt *src) : src(src) {
+  explicit GlobalLoadStmt(Stmt *src, const DebugInfo &dbg_info = DebugInfo())
+      : Stmt(dbg_info), src(src) {
     TI_STMT_REG_FIELDS;
   }
 

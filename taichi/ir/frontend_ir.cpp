@@ -1911,11 +1911,14 @@ Expr ASTBuilder::make_texture_op_expr(const TextureOpType &op,
 
 Stmt *flatten_lvalue(Expr expr, Expression::FlattenContext *ctx) {
   expr->flatten(ctx);
-  return expr->get_flattened_stmt();
+  Stmt *ptr_stmt = expr->get_flattened_stmt();
+  ptr_stmt->dbg_info = expr->dbg_info;
+  return ptr_stmt;
 }
 
 Stmt *flatten_global_load(Stmt *ptr_stmt, Expression::FlattenContext *ctx) {
-  auto load_stmt = std::make_unique<GlobalLoadStmt>(ptr_stmt);
+  auto load_stmt =
+      std::make_unique<GlobalLoadStmt>(ptr_stmt, ptr_stmt->dbg_info);
   auto pointee_type = load_stmt->src->ret_type.ptr_removed();
   load_stmt->ret_type = pointee_type->get_compute_type();
   ctx->push_back(std::move(load_stmt));
@@ -1923,7 +1926,7 @@ Stmt *flatten_global_load(Stmt *ptr_stmt, Expression::FlattenContext *ctx) {
 }
 
 Stmt *flatten_local_load(Stmt *ptr_stmt, Expression::FlattenContext *ctx) {
-  auto local_load = ctx->push_back<LocalLoadStmt>(ptr_stmt);
+  auto local_load = ctx->push_back<LocalLoadStmt>(ptr_stmt, ptr_stmt->dbg_info);
   local_load->ret_type = local_load->src->ret_type.ptr_removed();
   return local_load;
 }
@@ -1931,6 +1934,7 @@ Stmt *flatten_local_load(Stmt *ptr_stmt, Expression::FlattenContext *ctx) {
 Stmt *flatten_rvalue(Expr ptr, Expression::FlattenContext *ctx) {
   ptr->flatten(ctx);
   Stmt *ptr_stmt = ptr->get_flattened_stmt();
+  ptr_stmt->dbg_info = ptr->dbg_info;
   if (ptr.is<IdExpression>()) {
     if (ptr_stmt->is<AllocaStmt>()) {
       return flatten_local_load(ptr_stmt, ctx);

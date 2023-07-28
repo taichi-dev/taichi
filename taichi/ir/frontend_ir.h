@@ -442,13 +442,21 @@ class UnaryOpExpression : public Expression {
   Expr operand;
   DataType cast_type;
 
-  UnaryOpExpression(UnaryOpType type, const Expr &operand)
-      : type(type), operand(operand) {
+  UnaryOpExpression(UnaryOpType type,
+                    const Expr &operand,
+                    const DebugInfo &dbg_info = DebugInfo())
+      : Expression(dbg_info), type(type), operand(operand) {
     cast_type = PrimitiveType::unknown;
   }
 
-  UnaryOpExpression(UnaryOpType type, const Expr &operand, DataType cast_type)
-      : type(type), operand(operand), cast_type(cast_type) {
+  UnaryOpExpression(UnaryOpType type,
+                    const Expr &operand,
+                    DataType cast_type,
+                    const DebugInfo &dbg_info = DebugInfo())
+      : Expression(dbg_info),
+        type(type),
+        operand(operand),
+        cast_type(cast_type) {
   }
 
   void type_check(const CompileConfig *config) override;
@@ -643,8 +651,9 @@ class MatrixExpression : public Expression {
 
   MatrixExpression(const std::vector<Expr> &elements,
                    std::vector<int> shape,
-                   DataType element_type)
-      : elements(elements) {
+                   DataType element_type,
+                   const DebugInfo &dbg_info = DebugInfo())
+      : Expression(dbg_info), elements(elements) {
     dt = TypeFactory::create_tensor_type(shape, element_type);
   }
 

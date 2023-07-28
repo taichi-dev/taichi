@@ -330,7 +330,7 @@ Expr to_broadcast_tensor(const Expr &elt, const DataType &dt) {
   }
   std::vector<Expr> broadcast_values(tensor_type->get_num_elements(), elt);
   auto matrix_expr = Expr::make<MatrixExpression>(
-      broadcast_values, tensor_type->get_shape(), elt_type);
+      broadcast_values, tensor_type->get_shape(), elt_type, elt->dbg_info);
   matrix_expr->type_check(nullptr);
   return matrix_expr;
 }
@@ -1078,10 +1078,10 @@ void AtomicOpExpression::flatten(FlattenContext *ctx) {
   if (op_type == AtomicOpType::sub) {
     if (val->ret_type != ret_type) {
       val.set(Expr::make<UnaryOpExpression>(UnaryOpType::cast_value, val,
-                                            ret_type));
+                                            ret_type, val->dbg_info));
     }
 
-    val.set(Expr::make<UnaryOpExpression>(UnaryOpType::neg, val));
+    val.set(Expr::make<UnaryOpExpression>(UnaryOpType::neg, val, val->dbg_info));
     op_type = AtomicOpType::add;
   }
   // expand rhs

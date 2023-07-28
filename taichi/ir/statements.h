@@ -754,7 +754,9 @@ class LoopUniqueStmt : public Stmt {
   // std::unordered_set<> provides operator==, and StmtFieldManager will
   // use that to check if two LoopUniqueStmts are the same.
 
-  LoopUniqueStmt(Stmt *input, const std::vector<SNode *> &covers);
+  LoopUniqueStmt(Stmt *input,
+                 const std::vector<SNode *> &covers,
+                 const DebugInfo &dbg_info = DebugInfo());
 
   bool has_global_side_effect() const override {
     return false;

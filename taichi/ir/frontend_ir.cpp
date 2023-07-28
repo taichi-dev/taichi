@@ -1006,7 +1006,7 @@ void LoopUniqueExpression::type_check(const CompileConfig *) {
 
 void LoopUniqueExpression::flatten(FlattenContext *ctx) {
   auto input_stmt = flatten_rvalue(input, ctx);
-  ctx->push_back(Stmt::make<LoopUniqueStmt>(input_stmt, covers));
+  ctx->push_back(Stmt::make<LoopUniqueStmt>(input_stmt, covers, dbg_info));
   stmt = ctx->back_stmt();
 }
 

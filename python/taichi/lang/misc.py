@@ -574,7 +574,9 @@ def loop_unique(val, covers=None):
     if not isinstance(covers, (list, tuple)):
         covers = [covers]
     covers = [x.snode.ptr if isinstance(x, Expr) else x.ptr for x in covers]
-    return _ti_core.expr_loop_unique(Expr(val).ptr, covers)
+    return _ti_core.expr_loop_unique(
+        Expr(val).ptr, covers, _ti_core.DebugInfo(impl.get_runtime().get_current_src_info())
+    )
 
 
 def _parallelize(v):

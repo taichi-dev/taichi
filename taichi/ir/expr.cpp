@@ -121,8 +121,10 @@ Expr assume_range(const Expr &expr,
   return Expr::make<RangeAssumptionExpression>(expr, base, low, high, dbg_info);
 }
 
-Expr loop_unique(const Expr &input, const std::vector<SNode *> &covers) {
-  return Expr::make<LoopUniqueExpression>(input, covers);
+Expr loop_unique(const Expr &input,
+                 const std::vector<SNode *> &covers,
+                 const DebugInfo &dbg_info) {
+  return Expr::make<LoopUniqueExpression>(input, covers, dbg_info);
 }
 
 Expr expr_field(Expr id_expr, DataType dt) {

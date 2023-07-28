@@ -722,8 +722,10 @@ class LoopUniqueExpression : public Expression {
   Expr input;
   std::vector<SNode *> covers;
 
-  LoopUniqueExpression(const Expr &input, const std::vector<SNode *> &covers)
-      : input(input), covers(covers) {
+  LoopUniqueExpression(const Expr &input,
+                       const std::vector<SNode *> &covers,
+                       const DebugInfo &dbg_info = DebugInfo())
+      : Expression(dbg_info), input(input), covers(covers) {
   }
 
   void type_check(const CompileConfig *config) override;

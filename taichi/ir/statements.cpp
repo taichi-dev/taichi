@@ -171,8 +171,10 @@ ExternalTensorBasePtrStmt::ExternalTensorBasePtrStmt(
   TI_STMT_REG_FIELDS;
 }
 
-LoopUniqueStmt::LoopUniqueStmt(Stmt *input, const std::vector<SNode *> &covers)
-    : input(input) {
+LoopUniqueStmt::LoopUniqueStmt(Stmt *input,
+                               const std::vector<SNode *> &covers,
+                               const DebugInfo &dbg_info)
+    : Stmt(dbg_info), input(input) {
   for (const auto &sn : covers) {
     if (sn->is_place()) {
       TI_INFO(

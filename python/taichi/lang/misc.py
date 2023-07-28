@@ -563,7 +563,9 @@ def assume_in_range(val, base, low, high):
         >>> x
         10
     """
-    return _ti_core.expr_assume_in_range(Expr(val).ptr, Expr(base).ptr, low, high)
+    return _ti_core.expr_assume_in_range(
+        Expr(val).ptr, Expr(base).ptr, low, high, _ti_core.DebugInfo(impl.get_runtime().get_current_src_info())
+    )
 
 
 def loop_unique(val, covers=None):

@@ -705,8 +705,9 @@ class RangeAssumptionExpression : public Expression {
   RangeAssumptionExpression(const Expr &input,
                             const Expr &base,
                             int low,
-                            int high)
-      : input(input), base(base), low(low), high(high) {
+                            int high,
+                            const DebugInfo &dbg_info = DebugInfo())
+      : Expression(dbg_info), input(input), base(base), low(low), high(high) {
   }
 
   void type_check(const CompileConfig *config) override;

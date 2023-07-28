@@ -113,8 +113,12 @@ Expr expr_rand(DataType dt) {
   return Expr::make<RandExpression>(dt);
 }
 
-Expr assume_range(const Expr &expr, const Expr &base, int low, int high) {
-  return Expr::make<RangeAssumptionExpression>(expr, base, low, high);
+Expr assume_range(const Expr &expr,
+                  const Expr &base,
+                  int low,
+                  int high,
+                  const DebugInfo &dbg_info) {
+  return Expr::make<RangeAssumptionExpression>(expr, base, low, high, dbg_info);
 }
 
 Expr loop_unique(const Expr &input, const std::vector<SNode *> &covers) {

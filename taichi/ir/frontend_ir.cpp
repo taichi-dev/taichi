@@ -987,8 +987,8 @@ void RangeAssumptionExpression::type_check(const CompileConfig *) {
 void RangeAssumptionExpression::flatten(FlattenContext *ctx) {
   auto input_stmt = flatten_rvalue(input, ctx);
   auto base_stmt = flatten_rvalue(base, ctx);
-  ctx->push_back(
-      Stmt::make<RangeAssumptionStmt>(input_stmt, base_stmt, low, high));
+  ctx->push_back(Stmt::make<RangeAssumptionStmt>(input_stmt, base_stmt, low,
+                                                 high, dbg_info));
   stmt = ctx->back_stmt();
 }
 

@@ -720,8 +720,12 @@ class RangeAssumptionStmt : public Stmt {
   Stmt *base;
   int low, high;
 
-  RangeAssumptionStmt(Stmt *input, Stmt *base, int low, int high)
-      : input(input), base(base), low(low), high(high) {
+  RangeAssumptionStmt(Stmt *input,
+                      Stmt *base,
+                      int low,
+                      int high,
+                      const DebugInfo &dbg_info = DebugInfo())
+      : Stmt(dbg_info), input(input), base(base), low(low), high(high) {
     TI_STMT_REG_FIELDS;
   }
 

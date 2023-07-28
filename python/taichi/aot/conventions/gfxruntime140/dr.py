@@ -30,19 +30,19 @@ class FieldAttributes:
 @json_data_model
 class ArgumentAttributes:
     def __init__(self, j: Dict[str, Any]) -> None:
-        dtype = j["dtype"]
-        element_shape = j["element_shape"]
-        field_dim = j["field_dim"]
-        fmt = j["format"]
-        index = j["index"]
-        is_array = j["is_array"]
-        offset_in_mem = j["offset_in_mem"]
-        stride = j["stride"]
+        index = j["key"][0]
+        dtype = j["value"]["dtype"]
+        element_shape = j["value"]["element_shape"]
+        field_dim = j["value"]["field_dim"]
+        fmt = j["value"]["format"]
+        is_array = j["value"]["is_array"]
+        offset_in_mem = j["value"]["offset_in_mem"]
+        stride = j["value"]["stride"]
         # (penguinliong) Note that the name field is optional for kernels.
         # Kernels are always launched by indexed arguments and this is for
         # debugging and header generation only.
-        name = j["name"] if "name" in j and len(j["name"]) > 0 else None
-        ptype = j["ptype"] if "ptype" in j else None
+        name = j["value"]["name"] if "name" in j["value"] and len(j["value"]["name"]) > 0 else None
+        ptype = j["value"]["ptype"] if "ptype" in j["value"] else None
 
         self.dtype: int = int(dtype)
         self.element_shape: List[int] = [int(x) for x in element_shape]
@@ -66,8 +66,9 @@ class ContextAttributes:
         rets_bytes_ = j["rets_bytes_"]
 
         self.arg_attribs_vec_: List[ArgumentAttributes] = [ArgumentAttributes(x) for x in arg_attribs_vec_]
+        self.arg_attribs_vec_.sort(key=lambda x: x.index)
         self.args_bytes_: int = int(args_bytes_)
-        self.arr_access: List[int] = [int(x) for x in arr_access]
+        self.arr_access: List[int] = [int(x["value"]) for x in arr_access]
         self.ret_attribs_vec_: List[ArgumentAttributes] = [ArgumentAttributes(x) for x in ret_attribs_vec_]
         self.rets_bytes_: int = int(rets_bytes_)
 
@@ -75,7 +76,7 @@ class ContextAttributes:
 @json_data_model
 class Buffer:
     def __init__(self, j: Dict[str, Any]) -> None:
-        root_id = j["root_id"]
+        root_id = j["root_id"][0]
         ty = j["type"]
 
         self.root_id: int = int(root_id)

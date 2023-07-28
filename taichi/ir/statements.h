@@ -860,7 +860,7 @@ class LocalStoreStmt : public Stmt, public ir_traits::Store {
   Stmt *dest;
   Stmt *val;
 
-  LocalStoreStmt(Stmt *dest, Stmt *val) : dest(dest), val(val) {
+  LocalStoreStmt(Stmt *dest, Stmt *val, const DebugInfo& dbg_info = DebugInfo()) : dest(dest), val(val) {
     TI_ASSERT(dest->is<AllocaStmt>() || dest->is<MatrixPtrStmt>() ||
               dest->is<MatrixOfMatrixPtrStmt>() || dest->is<GetElementStmt>());
     TI_STMT_REG_FIELDS;
@@ -900,7 +900,7 @@ class IfStmt : public Stmt {
   Stmt *cond;
   std::unique_ptr<Block> true_statements, false_statements;
 
-  explicit IfStmt(Stmt *cond);
+  explicit IfStmt(Stmt *cond, const DebugInfo& dbg_info = DebugInfo());
 
   // Use these setters to set Block::parent_stmt at the same time.
   void set_true_statements(std::unique_ptr<Block> &&new_true_statements);

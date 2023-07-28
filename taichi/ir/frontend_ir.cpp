@@ -448,15 +448,15 @@ void BinaryOpExpression::flatten(FlattenContext *ctx) {
   auto rhs_type = rhs.get_rvalue_type();
 
   if (binary_is_logical(type) && !is_tensor(lhs_type) && !is_tensor(rhs_type)) {
-    auto result = ctx->push_back<AllocaStmt>(ret_type);
-    ctx->push_back<LocalStoreStmt>(result, lhs_stmt);
-    auto cond = ctx->push_back<LocalLoadStmt>(result);
-    auto if_stmt = ctx->push_back<IfStmt>(cond);
+    auto result = ctx->push_back<AllocaStmt>(ret_type, dbg_info);
+    ctx->push_back<LocalStoreStmt>(result, lhs_stmt, lhs_stmt->dbg_info);
+    auto cond = ctx->push_back<LocalLoadStmt>(result, dbg_info);
+    auto if_stmt = ctx->push_back<IfStmt>(cond, dbg_info);
 
     FlattenContext rctx;
     rctx.current_block = ctx->current_block;
     auto rhs_stmt = flatten_rvalue(rhs, &rctx);
-    rctx.push_back<LocalStoreStmt>(result, rhs_stmt);
+    rctx.push_back<LocalStoreStmt>(result, rhs_stmt, rhs_stmt->dbg_info);
 
     auto true_block = std::make_unique<Block>();
     if (type == BinaryOpType::logical_and) {

@@ -1,5 +1,5 @@
 import platform
-from math import acos, asin, cos, sin
+from math import asin, cos, sin
 
 import numpy as np
 from taichi._lib import core as _ti_core
@@ -46,17 +46,12 @@ def vec_to_euler(v, eps: float = 1e-6):
     v = v.normalized()
     pitch = asin(v[1])
 
-    sin_yaw = v[0] / cos(pitch)
-    cos_yaw = v[2] / cos(pitch)
+    cos_pitch = np.sqrt(1 - v[1] * v[1])
 
-    if abs(sin_yaw) < eps:
-        yaw = 0
-    else:
-        # fix math domain error due to float precision loss
-        cos_yaw = max(min(cos_yaw, 1.0), -1.0)
-        yaw = acos(cos_yaw)
-        if sin_yaw < 0:
-            yaw = -yaw
+    sin_yaw = v[0] / cos_pitch
+    cos_yaw = v[2] / cos_pitch
+
+    yaw = np.arctan2(sin_yaw, cos_yaw)
 
     return yaw, pitch
 

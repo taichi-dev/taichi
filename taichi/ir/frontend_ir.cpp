@@ -1148,11 +1148,11 @@ void SNodeOpExpression::flatten(FlattenContext *ctx) {
           TaichiTypeError(), this,
           "ti.is_active only works on pointer, hash or bitmasked nodes.");
     }
-    ctx->push_back<SNodeOpStmt>(SNodeOpType::is_active, snode, ptr, nullptr);
+    ctx->push_back<SNodeOpStmt>(SNodeOpType::is_active, snode, ptr, nullptr, dbg_info);
   } else if (op_type == SNodeOpType::length) {
-    ctx->push_back<SNodeOpStmt>(SNodeOpType::length, snode, ptr, nullptr);
+    ctx->push_back<SNodeOpStmt>(SNodeOpType::length, snode, ptr, nullptr, dbg_info);
   } else if (op_type == SNodeOpType::get_addr) {
-    ctx->push_back<SNodeOpStmt>(SNodeOpType::get_addr, snode, ptr, nullptr);
+    ctx->push_back<SNodeOpStmt>(SNodeOpType::get_addr, snode, ptr, nullptr, dbg_info);
   } else if (op_type == SNodeOpType::append) {
     auto alloca = ctx->push_back<AllocaStmt>(PrimitiveType::i32, dbg_info);
     auto addr = ctx->push_back<SNodeOpStmt>(SNodeOpType::allocate, snode, ptr,

@@ -150,7 +150,12 @@ def make_matrix_with_shape(arr, shape, dt):
     return expr.Expr(
         impl.get_runtime()
         .compiling_callable.ast_builder()
-        .make_matrix_expr(shape, dt, [expr.Expr(elt).ptr for elt in arr])
+        .make_matrix_expr(
+            shape,
+            dt,
+            [expr.Expr(elt).ptr for elt in arr],
+            ti_python_core.DebugInfo(impl.get_runtime().get_current_src_info()),
+        )
     )
 
 
@@ -172,7 +177,12 @@ def make_matrix(arr, dt=None):
     return expr.Expr(
         impl.get_runtime()
         .compiling_callable.ast_builder()
-        .make_matrix_expr(shape, dt, [expr.Expr(elt).ptr for elt in arr])
+        .make_matrix_expr(
+            shape,
+            dt,
+            [expr.Expr(elt).ptr for elt in arr],
+            ti_python_core.DebugInfo(impl.get_runtime().get_current_src_info()),
+        )
     )
 
 

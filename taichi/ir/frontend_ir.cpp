@@ -1586,7 +1586,8 @@ std::optional<Expr> ASTBuilder::insert_func_call(Function *func,
 
 Expr ASTBuilder::make_matrix_expr(const std::vector<int> &shape,
                                   const DataType &dt,
-                                  const std::vector<Expr> &elements) {
+                                  const std::vector<Expr> &elements,
+                                  const DebugInfo &dbg_info) {
   /*
     Since we have both "shape" and "element_type" in MatrixExpression,
     we should flatten all the elements and disallow recursive TensorType in
@@ -1594,8 +1595,8 @@ Expr ASTBuilder::make_matrix_expr(const std::vector<int> &shape,
   */
   TI_ASSERT(dt->is<PrimitiveType>());
   auto expanded_elements = this->expand_exprs(elements);
-  auto mat =
-      Expr(std::make_shared<MatrixExpression>(expanded_elements, shape, dt));
+  auto mat = Expr(std::make_shared<MatrixExpression>(expanded_elements, shape,
+                                                     dt, dbg_info));
   return mat;
 }
 

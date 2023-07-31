@@ -1409,7 +1409,12 @@ class ASTTransformer(Builder):
             assert isinstance(ctx.mesh, impl.MeshInstance)
             mesh_idx = mesh.MeshElementFieldProxy(ctx.mesh, node.iter.ptr._type, var.ptr)
             ctx.create_variable(target, mesh_idx)
-            ctx.ast_builder.begin_frontend_mesh_for(mesh_idx.ptr, ctx.mesh.mesh_ptr, node.iter.ptr._type)
+            ctx.ast_builder.begin_frontend_mesh_for(
+                mesh_idx.ptr,
+                ctx.mesh.mesh_ptr,
+                node.iter.ptr._type,
+                _ti_core.DebugInfo(impl.get_runtime().get_current_src_info()),
+            )
             build_stmts(ctx, node.body)
             ctx.mesh = None
             ctx.ast_builder.end_frontend_mesh_for()

@@ -266,7 +266,7 @@ class Func:
         func_call = (
             impl.get_runtime()
             .compiling_callable.ast_builder()
-            .insert_func_call(self.taichi_functions[key.instance_id], non_template_args)
+            .insert_func_call(self.taichi_functions[key.instance_id], non_template_args, dbg_info)
         )
         if self.return_type is None:
             return None

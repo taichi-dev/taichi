@@ -892,8 +892,9 @@ class FrontendFuncCallStmt : public Stmt {
   explicit FrontendFuncCallStmt(
       Function *func,
       const ExprGroup &args,
-      const std::optional<Identifier> &id = std::nullopt)
-      : ident(id), func(func), args(args) {
+      const std::optional<Identifier> &id = std::nullopt,
+      const DebugInfo &dbg_info = DebugInfo())
+      : Stmt(dbg_info), ident(id), func(func), args(args) {
     TI_ASSERT(id.has_value() == !func->rets.empty());
   }
 
@@ -1098,7 +1099,9 @@ class ASTBuilder {
   void expr_assign(const Expr &lhs,
                    const Expr &rhs,
                    const DebugInfo &dbg_info = DebugInfo());
-  std::optional<Expr> insert_func_call(Function *func, const ExprGroup &args);
+  std::optional<Expr> insert_func_call(Function *func,
+                                       const ExprGroup &args,
+                                       const DebugInfo &dbg_info = DebugInfo());
   void create_assert_stmt(const Expr &cond,
                           const std::string &msg,
                           const std::vector<Expr> &args,
@@ -1107,14 +1110,18 @@ class ASTBuilder {
                                 const Expr &s,
                                 const Expr &e,
                                 const DebugInfo &dbg_info = DebugInfo());
-  void begin_frontend_struct_for_on_snode(const ExprGroup &loop_vars,
-                                          SNode *snode);
+  void begin_frontend_struct_for_on_snode(
+      const ExprGroup &loop_vars,
+      SNode *snode,
+      const DebugInfo &dbg_info = DebugInfo());
   void begin_frontend_struct_for_on_external_tensor(
       const ExprGroup &loop_vars,
-      const Expr &external_tensor);
+      const Expr &external_tensor,
+      const DebugInfo &dbg_info = DebugInfo());
   void begin_frontend_mesh_for(const Expr &i,
                                const mesh::MeshPtr &mesh_ptr,
-                               const mesh::MeshElementType &element_type);
+                               const mesh::MeshElementType &element_type,
+                               const DebugInfo &dbg_info = DebugInfo());
   void begin_frontend_while(const Expr &cond,
                             const DebugInfo &dbg_info = DebugInfo());
   void insert_break_stmt(const DebugInfo &dbg_info = DebugInfo());

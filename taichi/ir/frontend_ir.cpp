@@ -1575,19 +1575,21 @@ Expr ASTBuilder::expr_alloca(const DebugInfo &dbg_info) {
 }
 
 std::optional<Expr> ASTBuilder::insert_func_call(Function *func,
-                                                 const ExprGroup &args) {
+                                                 const ExprGroup &args,
+                                                 const DebugInfo &dbg_info) {
   ExprGroup expanded_args;
   expanded_args.exprs = this->expand_exprs(args.exprs);
   if (!func->rets.empty()) {
     auto var = Expr(std::make_shared<IdExpression>(get_next_id()));
     this->insert(std::make_unique<FrontendFuncCallStmt>(
         func, expanded_args,
-        std::static_pointer_cast<IdExpression>(var.expr)->id));
+        std::static_pointer_cast<IdExpression>(var.expr)->id, dbg_info));
     var.expr->ret_type = func->ret_type;
     var.expr->ret_type.set_is_pointer(true);
     return var;
   } else {
-    this->insert(std::make_unique<FrontendFuncCallStmt>(func, expanded_args));
+    this->insert(std::make_unique<FrontendFuncCallStmt>(
+        func, expanded_args, /*id=*/std::nullopt, dbg_info));
     return std::nullopt;
   }
 }
@@ -1669,13 +1671,14 @@ void ASTBuilder::begin_frontend_range_for(const Expr &i,
 }
 
 void ASTBuilder::begin_frontend_struct_for_on_snode(const ExprGroup &loop_vars,
-                                                    SNode *snode) {
+                                                    SNode *snode,
+                                                    const DebugInfo &dbg_info) {
   TI_WARN_IF(
       for_loop_dec_.config.strictly_serialized,
       "ti.loop_config(serialize=True) does not have effect on the struct for. "
       "The execution order is not guaranteed.");
-  auto stmt_unique = std::make_unique<FrontendForStmt>(loop_vars, snode, arch_,
-                                                       for_loop_dec_.config);
+  auto stmt_unique = std::make_unique<FrontendForStmt>(
+      loop_vars, snode, arch_, for_loop_dec_.config, dbg_info);
   for_loop_dec_.reset();
   auto stmt = stmt_unique.get();
   this->insert(std::move(stmt_unique));
@@ -1684,13 +1687,14 @@ void ASTBuilder::begin_frontend_struct_for_on_snode(const ExprGroup &loop_vars,
 
 void ASTBuilder::begin_frontend_struct_for_on_external_tensor(
     const ExprGroup &loop_vars,
-    const Expr &external_tensor) {
+    const Expr &external_tensor,
+    const DebugInfo &dbg_info) {
   TI_WARN_IF(
       for_loop_dec_.config.strictly_serialized,
       "ti.loop_config(serialize=True) does not have effect on the struct for. "
       "The execution order is not guaranteed.");
   auto stmt_unique = std::make_unique<FrontendForStmt>(
-      loop_vars, external_tensor, arch_, for_loop_dec_.config);
+      loop_vars, external_tensor, arch_, for_loop_dec_.config, dbg_info);
   for_loop_dec_.reset();
   auto stmt = stmt_unique.get();
   this->insert(std::move(stmt_unique));
@@ -1700,13 +1704,15 @@ void ASTBuilder::begin_frontend_struct_for_on_external_tensor(
 void ASTBuilder::begin_frontend_mesh_for(
     const Expr &i,
     const mesh::MeshPtr &mesh_ptr,
-    const mesh::MeshElementType &element_type) {
+    const mesh::MeshElementType &element_type,
+    const DebugInfo &dbg_info) {
   TI_WARN_IF(
       for_loop_dec_.config.strictly_serialized,
       "ti.loop_config(serialize=True) does not have effect on the mesh for. "
       "The execution order is not guaranteed.");
-  auto stmt_unique = std::make_unique<FrontendForStmt>(
-      ExprGroup(i), mesh_ptr, element_type, arch_, for_loop_dec_.config);
+  auto stmt_unique =
+      std::make_unique<FrontendForStmt>(ExprGroup(i), mesh_ptr, element_type,
+                                        arch_, for_loop_dec_.config, dbg_info);
   for_loop_dec_.reset();
   auto stmt = stmt_unique.get();
   this->insert(std::move(stmt_unique));
@@ -1857,8 +1863,8 @@ std::vector<Expr> ASTBuilder::expand_exprs(const std::vector<Expr> &exprs) {
             if (auto element_struct_type = element_type->cast<StructType>()) {
               expand_struct(expr, element_struct_type, indices);
             } else {
-              auto elem =
-                  Expr(std::make_shared<GetElementExpression>(expr, indices));
+              auto elem = Expr(std::make_shared<GetElementExpression>(
+                  expr, indices, expr->dbg_info));
               elem.expr->ret_type = element_type;
               expand_tensor_or_scalar(elem);
             }

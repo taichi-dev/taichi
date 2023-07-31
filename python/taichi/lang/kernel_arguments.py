@@ -133,7 +133,7 @@ def decl_texture_arg(num_dimensions, name):
     # FIXME: texture_arg doesn't have element_shape so better separate them
     arg_id = impl.get_runtime().compiling_callable.insert_texture_param(num_dimensions, name)
     dbg_info = _ti_core.DebugInfo(impl.get_runtime().get_current_src_info())
-    return TextureSampler(_ti_core.make_texture_ptr_expr(arg_id, num_dimensions, 0), num_dimensions, dbg_info)
+    return TextureSampler(_ti_core.make_texture_ptr_expr(arg_id, num_dimensions, 0, dbg_info), num_dimensions)
 
 
 def decl_rw_texture_arg(num_dimensions, buffer_format, lod, name):
@@ -141,7 +141,7 @@ def decl_rw_texture_arg(num_dimensions, buffer_format, lod, name):
     arg_id = impl.get_runtime().compiling_callable.insert_rw_texture_param(num_dimensions, buffer_format, name)
     dbg_info = _ti_core.DebugInfo(impl.get_runtime().get_current_src_info())
     return RWTextureAccessor(
-        _ti_core.make_rw_texture_ptr_expr(arg_id, num_dimensions, 0, buffer_format, lod), num_dimensions, dbg_info
+        _ti_core.make_rw_texture_ptr_expr(arg_id, num_dimensions, 0, buffer_format, lod, dbg_info), num_dimensions
     )
 
 

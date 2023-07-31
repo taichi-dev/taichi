@@ -850,8 +850,11 @@ class ExternalTensorShapeAlongAxisExpression : public Expression {
   Expr ptr;
   int axis;
 
-  ExternalTensorShapeAlongAxisExpression(const Expr &ptr, int axis)
-      : ptr(ptr), axis(axis) {
+  ExternalTensorShapeAlongAxisExpression(
+      const Expr &ptr,
+      int axis,
+      const DebugInfo &dbg_info = DebugInfo())
+      : Expression(dbg_info), ptr(ptr), axis(axis) {
   }
 
   void type_check(const CompileConfig *config) override;
@@ -866,7 +869,10 @@ class ExternalTensorBasePtrExpression : public Expression {
   Expr ptr;
   bool is_grad;
 
-  explicit ExternalTensorBasePtrExpression(const Expr &ptr, bool is_grad)
+  explicit ExternalTensorBasePtrExpression(
+      const Expr &ptr,
+      bool is_grad,
+      const DebugInfo &dbg_info = DebugInfo())
       : ptr(ptr), is_grad(is_grad) {
   }
 
@@ -906,8 +912,10 @@ class GetElementExpression : public Expression {
 
   void type_check(const CompileConfig *config) override;
 
-  GetElementExpression(const Expr &src, std::vector<int> index)
-      : src(src), index(index) {
+  GetElementExpression(const Expr &src,
+                       std::vector<int> index,
+                       const DebugInfo &dbg_info = DebugInfo())
+      : Expression(dbg_info), src(src), index(index) {
   }
 
   void flatten(FlattenContext *ctx) override;

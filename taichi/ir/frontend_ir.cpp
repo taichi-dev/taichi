@@ -1292,7 +1292,7 @@ void ConstExpression::type_check(const CompileConfig *) {
 }
 
 void ConstExpression::flatten(FlattenContext *ctx) {
-  ctx->push_back(Stmt::make<ConstStmt>(val));
+  ctx->push_back(Stmt::make<ConstStmt>(val, dbg_info));
   stmt = ctx->back_stmt();
 }
 
@@ -1310,7 +1310,8 @@ void ExternalTensorShapeAlongAxisExpression::type_check(const CompileConfig *) {
 void ExternalTensorShapeAlongAxisExpression::flatten(FlattenContext *ctx) {
   auto temp = ptr.cast<ExternalTensorExpression>();
   TI_ASSERT(0 <= axis && axis < temp->ndim);
-  ctx->push_back<ExternalTensorShapeAlongAxisStmt>(axis, temp->arg_id);
+  ctx->push_back<ExternalTensorShapeAlongAxisStmt>(axis, temp->arg_id,
+                                                   dbg_info);
   stmt = ctx->back_stmt();
 }
 
@@ -1324,7 +1325,7 @@ void ExternalTensorBasePtrExpression::type_check(const CompileConfig *) {
 
 void ExternalTensorBasePtrExpression::flatten(FlattenContext *ctx) {
   auto tensor = ptr.cast<ExternalTensorExpression>();
-  ctx->push_back<ExternalTensorBasePtrStmt>(tensor->arg_id, is_grad);
+  ctx->push_back<ExternalTensorBasePtrStmt>(tensor->arg_id, is_grad, dbg_info);
   stmt = ctx->back_stmt();
   stmt->ret_type = ret_type;
 }
@@ -1343,7 +1344,7 @@ void GetElementExpression::type_check(const CompileConfig *config) {
 }
 
 void GetElementExpression::flatten(FlattenContext *ctx) {
-  ctx->push_back<GetElementStmt>(flatten_rvalue(src, ctx), index);
+  ctx->push_back<GetElementStmt>(flatten_rvalue(src, ctx), index, dbg_info);
   stmt = ctx->back_stmt();
 }
 // Mesh related.

@@ -51,7 +51,8 @@ class AnyArray:
             List[Int]: The result list.
         """
         dim = _ti_core.get_external_tensor_dim(self.ptr)
-        return [Expr(_ti_core.get_external_tensor_shape_along_axis(self.ptr, i)) for i in range(dim)]
+        dbg_info = _ti_core.DebugInfo(impl.get_runtime().get_current_src_info())
+        return [Expr(_ti_core.get_external_tensor_shape_along_axis(self.ptr, i, dbg_info)) for i in range(dim)]
 
     @taichi_scope
     def _loop_range(self):

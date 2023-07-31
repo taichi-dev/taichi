@@ -597,7 +597,9 @@ class ExternalTensorShapeAlongAxisStmt : public Stmt {
   int axis;
   std::vector<int> arg_id;
 
-  ExternalTensorShapeAlongAxisStmt(int axis, const std::vector<int> &arg_id);
+  ExternalTensorShapeAlongAxisStmt(int axis,
+                                   const std::vector<int> &arg_id,
+                                   const DebugInfo &dbg_info = DebugInfo());
 
   bool has_global_side_effect() const override {
     return false;
@@ -612,7 +614,9 @@ class ExternalTensorBasePtrStmt : public Stmt {
   std::vector<int> arg_id;
   bool is_grad;
 
-  ExternalTensorBasePtrStmt(const std::vector<int> &arg_id, bool is_grad);
+  ExternalTensorBasePtrStmt(const std::vector<int> &arg_id,
+                            bool is_grad,
+                            const DebugInfo &dbg_info = DebugInfo());
 
   bool has_global_side_effect() const override {
     return false;
@@ -983,7 +987,9 @@ class ConstStmt : public Stmt {
  public:
   TypedConstant val;
 
-  explicit ConstStmt(const TypedConstant &val) : val(val) {
+  explicit ConstStmt(const TypedConstant &val,
+                     const DebugInfo &dbg_info = DebugInfo())
+      : Stmt(dbg_info), val(val) {
     ret_type = val.dt;
     TI_STMT_REG_FIELDS;
   }
@@ -1178,8 +1184,10 @@ class GetElementStmt : public Stmt {
  public:
   Stmt *src;
   std::vector<int> index;
-  GetElementStmt(Stmt *src, const std::vector<int> &index)
-      : src(src), index(index) {
+  GetElementStmt(Stmt *src,
+                 const std::vector<int> &index,
+                 const DebugInfo &dbg_info = DebugInfo())
+      : Stmt(dbg_info), src(src), index(index) {
     TI_STMT_REG_FIELDS;
   }
 

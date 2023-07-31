@@ -159,15 +159,17 @@ bool SNodeOpStmt::need_activation(SNodeOpType op) {
 
 ExternalTensorShapeAlongAxisStmt::ExternalTensorShapeAlongAxisStmt(
     int axis,
-    const std::vector<int> &arg_id)
-    : axis(axis), arg_id(arg_id) {
+    const std::vector<int> &arg_id,
+    const DebugInfo &dbg_info)
+    : Stmt(dbg_info), axis(axis), arg_id(arg_id) {
   TI_STMT_REG_FIELDS;
 }
 
 ExternalTensorBasePtrStmt::ExternalTensorBasePtrStmt(
     const std::vector<int> &arg_id,
-    bool is_grad)
-    : arg_id(arg_id), is_grad(is_grad) {
+    bool is_grad,
+    const DebugInfo &dbg_info)
+    : Stmt(dbg_info), arg_id(arg_id), is_grad(is_grad) {
   TI_STMT_REG_FIELDS;
 }
 

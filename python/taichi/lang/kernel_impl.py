@@ -258,7 +258,9 @@ class Func:
                         raise TaichiTypeError(
                             f"Expected ndarray in the kernel argument for argument {kernel_arg.name}, got {args[i]}"
                         )
-                    non_template_args += _ti_core.get_external_tensor_real_func_args(args[i].ptr)
+                    non_template_args += _ti_core.get_external_tensor_real_func_args(
+                        args[i].ptr, _ti_core.DebugInfo(impl.get_runtime().get_current_src_info())
+                    )
                 else:
                     non_template_args.append(args[i])
         non_template_args = impl.make_expr_group(non_template_args)
@@ -274,7 +276,13 @@ class Func:
 
         for i, return_type in enumerate(self.return_type):
             if id(return_type) in primitive_types.type_ids:
-                ret.append(Expr(_ti_core.make_get_element_expr(func_call.ptr, (i,))))
+                ret.append(
+                    Expr(
+                        _ti_core.make_get_element_expr(
+                            func_call.ptr, (i,), _ti_core.DebugInfo(impl.get_runtime().get_current_src_info())
+                        )
+                    )
+                )
             elif isinstance(return_type, (StructType, MatrixType)):
                 ret.append(return_type.from_taichi_object(func_call, (i,)))
             else:

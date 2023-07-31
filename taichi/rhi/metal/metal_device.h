@@ -35,6 +35,7 @@ DEFINE_METAL_ID_TYPE(MTLBlitCommandEncoder);
 DEFINE_METAL_ID_TYPE(MTLComputeCommandEncoder);
 DEFINE_METAL_ID_TYPE(CAMetalDrawable);
 DEFINE_OBJC_TYPE(CAMetalLayer);
+DEFINE_OBJC_TYPE(MTLVertexDescriptor);
 
 #undef DEFINE_METAL_ID_TYPE
 #undef DEFINE_OBJC_TYPE
@@ -95,6 +96,33 @@ struct MetalSampler {
   MTLSamplerState_id mtl_sampler_state_;
 };
 
+struct MetalRenderPassTargetDetails {
+  std::vector<std::pair<BufferFormat, bool>> color_attachments;
+  BufferFormat depth_attach_format{BufferFormat::unknown};
+  bool clear_depth{false};
+
+  bool operator==(const MetalRenderPassTargetDetails &other) const {
+    if (other.depth_attach_format != depth_attach_format) {
+      return false;
+    }
+    if (other.clear_depth != clear_depth) {
+      return false;
+    }
+    return other.color_attachments == color_attachments;
+  }
+};
+struct MRPTDHasher {
+  std::size_t operator()(const MetalRenderPassTargetDetails &desc) const {
+    size_t hash = std::hash<uint64_t>()(
+        (uint64_t(desc.depth_attach_format) << 1) | uint64_t(desc.clear_depth));
+    for (auto &pair : desc.color_attachments) {
+      size_t hash_pair = std::hash<uint64_t>()((uint64_t(pair.first) << 1) |
+                                               uint64_t(pair.second));
+      rhi_impl::hash_combine(hash, hash_pair);
+    }
+    return hash;
+  }
+};
 struct MetalWorkgroupSize {
   uint32_t x{0};
   uint32_t y{0};
@@ -117,7 +145,7 @@ class MetalPipeline final : public Pipeline {
   explicit MetalPipeline(const MetalDevice &device,
                          MTLLibrary_id mtl_library,
                          const MetalRasterFunctions &mtl_functions,
-                         MTLRenderPipelineState_id mtl_render_pipeline_state,
+                         MTLVertexDescriptor *vertex_descriptor,
                          const RasterParams raster_params);
   ~MetalPipeline() final;
 
@@ -125,6 +153,9 @@ class MetalPipeline final : public Pipeline {
                                                 const uint32_t *spv_data,
                                                 size_t spv_size,
                                                 const std::string &name);
+
+  MTLRenderPipelineState_id build_mtl_render_pipeline(
+      const MetalRenderPassTargetDetails &renderpass_details);
 
   void destroy();
 
@@ -135,20 +166,24 @@ class MetalPipeline final : public Pipeline {
     return workgroup_size_;
   }
 
-  inline MTLRenderPipelineState_id mtl_render_pipeline_state() const {
-    return mtl_render_pipeline_state_;
-  }
-
   inline const RasterParams raster_params() const {
     return raster_params_;
   }
+
+  bool is_graphics() {
+    return is_raster_pipeline_;
+  }
+
+  std::unordered_map<MetalRenderPassTargetDetails,
+                     MTLRenderPipelineState_id,
+                     MRPTDHasher>
+      built_pipelines_;
 
  private:
   const MetalDevice *device_;
   MTLLibrary_id mtl_library_;
 
   bool is_destroyed_{false};
-  bool is_raster_pipeline{false};
 
   // Compute variables
   MTLFunction_id mtl_function_;
@@ -157,8 +192,11 @@ class MetalPipeline final : public Pipeline {
 
   // Raster variables
   MetalRasterFunctions mtl_functions_;
-  MTLRenderPipelineState_id mtl_render_pipeline_state_;
+  MTLVertexDescriptor *vertex_descriptor_;
   const RasterParams raster_params_;
+  
+  bool is_raster_pipeline_{false};
+  
 };
 
 enum class MetalShaderResourceType {
@@ -251,7 +289,16 @@ class MetalCommandList final : public CommandList {
   void buffer_copy(DevicePtr dst, DevicePtr src, size_t size) noexcept final;
   void buffer_fill(DevicePtr ptr, size_t size, uint32_t data) noexcept final;
   RhiResult dispatch(uint32_t x, uint32_t y = 1, uint32_t z = 1) noexcept final;
-
+  void begin_renderpass(int x0,
+                        int y0,
+                        int x1,
+                        int y1,
+                        uint32_t num_color_attachments,
+                        DeviceAllocation *color_attachments,
+                        bool *color_clear,
+                        std::vector<float> *clear_colors,
+                        DeviceAllocation *depth_attachment,
+                        bool depth_clear) override;
   void image_transition(DeviceAllocation img,
                         ImageLayout old_layout,
                         ImageLayout new_layout) final;
@@ -267,6 +314,8 @@ class MetalCommandList final : public CommandList {
   // Non-null after `bind*` methods.
   const MetalPipeline *current_pipeline_;
   const MetalShaderResourceSet *current_shader_resource_set_;
+  MetalRenderPassTargetDetails current_renderpass_details_;
+  std::vector<float> *clear_colors_;
 };
 
 class MetalStream final : public Stream {

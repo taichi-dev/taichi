@@ -114,7 +114,9 @@ class LoopUniqueStmtSearcher : public BasicStmtVisitor {
       return true;
     }
 
-    if (loop_unique_.find(stmt->offset) != loop_unique_.end()) {
+    if (loop_invariant_.find(stmt->offset) != loop_invariant_.end()) {
+      ret &= true;
+    } else if (loop_unique_.find(stmt->offset) != loop_unique_.end()) {
       ret &= (loop_unique_.find(stmt->offset)->second == -1);
     } else {
       return false;

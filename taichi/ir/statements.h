@@ -1732,8 +1732,9 @@ class TextureOpStmt : public Stmt {
 
   explicit TextureOpStmt(TextureOpType op,
                          Stmt *texture_ptr,
-                         const std::vector<Stmt *> &args)
-      : op(op), texture_ptr(texture_ptr), args(args) {
+                         const std::vector<Stmt *> &args,
+                         const DebugInfo &dbg_info = DebugInfo())
+      : Stmt(dbg_info), op(op), texture_ptr(texture_ptr), args(args) {
     TI_STMT_REG_FIELDS;
   }
 

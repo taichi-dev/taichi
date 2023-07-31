@@ -20,7 +20,11 @@ def is_taichi_expr(a):
 
 
 def wrap_if_not_expr(a):
-    return expr.Expr(a, dbg_info=_ti_core.DebugInfo(impl.get_runtime().get_current_src_info())) if not is_taichi_expr(a) else a
+    return (
+        expr.Expr(a, dbg_info=_ti_core.DebugInfo(impl.get_runtime().get_current_src_info()))
+        if not is_taichi_expr(a)
+        else a
+    )
 
 
 def _read_matrix_or_scalar(x):

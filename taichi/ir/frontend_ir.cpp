@@ -1081,7 +1081,8 @@ void AtomicOpExpression::flatten(FlattenContext *ctx) {
                                             ret_type, val->dbg_info));
     }
 
-    val.set(Expr::make<UnaryOpExpression>(UnaryOpType::neg, val, val->dbg_info));
+    val.set(
+        Expr::make<UnaryOpExpression>(UnaryOpType::neg, val, val->dbg_info));
     op_type = AtomicOpType::add;
   }
   // expand rhs
@@ -1148,11 +1149,14 @@ void SNodeOpExpression::flatten(FlattenContext *ctx) {
           TaichiTypeError(), this,
           "ti.is_active only works on pointer, hash or bitmasked nodes.");
     }
-    ctx->push_back<SNodeOpStmt>(SNodeOpType::is_active, snode, ptr, nullptr, dbg_info);
+    ctx->push_back<SNodeOpStmt>(SNodeOpType::is_active, snode, ptr, nullptr,
+                                dbg_info);
   } else if (op_type == SNodeOpType::length) {
-    ctx->push_back<SNodeOpStmt>(SNodeOpType::length, snode, ptr, nullptr, dbg_info);
+    ctx->push_back<SNodeOpStmt>(SNodeOpType::length, snode, ptr, nullptr,
+                                dbg_info);
   } else if (op_type == SNodeOpType::get_addr) {
-    ctx->push_back<SNodeOpStmt>(SNodeOpType::get_addr, snode, ptr, nullptr, dbg_info);
+    ctx->push_back<SNodeOpStmt>(SNodeOpType::get_addr, snode, ptr, nullptr,
+                                dbg_info);
   } else if (op_type == SNodeOpType::append) {
     auto alloca = ctx->push_back<AllocaStmt>(PrimitiveType::i32, dbg_info);
     auto addr = ctx->push_back<SNodeOpStmt>(SNodeOpType::allocate, snode, ptr,
@@ -1174,8 +1178,9 @@ void SNodeOpExpression::flatten(FlattenContext *ctx) {
 
 TextureOpExpression::TextureOpExpression(TextureOpType op,
                                          Expr texture_ptr,
-                                         const ExprGroup &args)
-    : op(op), texture_ptr(texture_ptr), args(args) {
+                                         const ExprGroup &args,
+                                         const DebugInfo &dbg_info)
+    : Expression(dbg_info), op(op), texture_ptr(texture_ptr), args(args) {
 }
 
 void TextureOpExpression::type_check(const CompileConfig *config) {
@@ -1273,7 +1278,7 @@ void TextureOpExpression::flatten(FlattenContext *ctx) {
   for (Expr &arg : args.exprs) {
     arg_stmts.push_back(flatten_rvalue(arg, ctx));
   }
-  ctx->push_back<TextureOpStmt>(op, texture_ptr_stmt, arg_stmts);
+  ctx->push_back<TextureOpStmt>(op, texture_ptr_stmt, arg_stmts, dbg_info);
   stmt = ctx->back_stmt();
 }
 
@@ -1905,10 +1910,12 @@ void ASTBuilder::pop_scope() {
 
 Expr ASTBuilder::make_texture_op_expr(const TextureOpType &op,
                                       const Expr &texture_ptr,
-                                      const ExprGroup &args) {
+                                      const ExprGroup &args,
+                                      const DebugInfo &dbg_info) {
   ExprGroup expanded_args;
   expanded_args.exprs = this->expand_exprs(args.exprs);
-  return Expr::make<TextureOpExpression>(op, texture_ptr, expanded_args);
+  return Expr::make<TextureOpExpression>(op, texture_ptr, expanded_args,
+                                         dbg_info);
 }
 
 Stmt *flatten_lvalue(Expr expr, Expression::FlattenContext *ctx) {

@@ -459,13 +459,11 @@ def get_addr(f, indices):
     Returns:
         ti.u64: The memory address of `f[indices]`.
     """
-    return (
-        expr.Expr(
-            impl.get_runtime()
-            .compiling_callable.ast_builder()
-            .expr_snode_get_addr(f._snode.ptr, expr.make_expr_group(indices)),
-            dbg_info=_ti_core.DebugInfo(impl.get_runtime().get_current_src_info()),
-        ),
+    return expr.Expr(
+        impl.get_runtime()
+        .compiling_callable.ast_builder()
+        .expr_snode_get_addr(f._snode.ptr, expr.make_expr_group(indices)),
+        dbg_info=_ti_core.DebugInfo(impl.get_runtime().get_current_src_info()),
     )
 
 

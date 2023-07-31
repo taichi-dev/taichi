@@ -1159,16 +1159,18 @@ void export_lang(py::module &m) {
 
   // Mesh related.
   m.def("get_relation_size", [](mesh::MeshPtr mesh_ptr, const Expr &mesh_idx,
-                                mesh::MeshElementType to_type) {
-    return Expr::make<MeshRelationAccessExpression>(mesh_ptr.ptr.get(),
-                                                    mesh_idx, to_type);
+                                mesh::MeshElementType to_type,
+                                const DebugInfo &dbg_info = DebugInfo()) {
+    return Expr::make<MeshRelationAccessExpression>(
+        mesh_ptr.ptr.get(), mesh_idx, to_type, dbg_info);
   });
 
   m.def("get_relation_access",
         [](mesh::MeshPtr mesh_ptr, const Expr &mesh_idx,
-           mesh::MeshElementType to_type, const Expr &neighbor_idx) {
+           mesh::MeshElementType to_type, const Expr &neighbor_idx,
+           const DebugInfo &dbg_info = DebugInfo()) {
           return Expr::make<MeshRelationAccessExpression>(
-              mesh_ptr.ptr.get(), mesh_idx, to_type, neighbor_idx);
+              mesh_ptr.ptr.get(), mesh_idx, to_type, neighbor_idx, dbg_info);
         });
 
   py::class_<FunctionKey>(m, "FunctionKey")

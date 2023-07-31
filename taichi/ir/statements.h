@@ -1991,8 +1991,10 @@ class MeshRelationAccessStmt : public Stmt {
   MeshRelationAccessStmt(mesh::Mesh *mesh,
                          Stmt *mesh_idx,
                          mesh::MeshElementType to_type,
-                         Stmt *neighbor_idx)
-      : mesh(mesh),
+                         Stmt *neighbor_idx,
+                         const DebugInfo &dbg_info = DebugInfo())
+      : Stmt(dbg_info),
+        mesh(mesh),
         mesh_idx(mesh_idx),
         to_type(to_type),
         neighbor_idx(neighbor_idx) {
@@ -2002,8 +2004,10 @@ class MeshRelationAccessStmt : public Stmt {
 
   MeshRelationAccessStmt(mesh::Mesh *mesh,
                          Stmt *mesh_idx,
-                         mesh::MeshElementType to_type)
-      : mesh(mesh),
+                         mesh::MeshElementType to_type,
+                         const DebugInfo &dbg_info = DebugInfo())
+      : Stmt(dbg_info),
+        mesh(mesh),
         mesh_idx(mesh_idx),
         to_type(to_type),
         neighbor_idx(nullptr) {
@@ -2049,8 +2053,13 @@ class MeshIndexConversionStmt : public Stmt {
   MeshIndexConversionStmt(mesh::Mesh *mesh,
                           mesh::MeshElementType idx_type,
                           Stmt *idx,
-                          mesh::ConvType conv_type)
-      : mesh(mesh), idx_type(idx_type), idx(idx), conv_type(conv_type) {
+                          mesh::ConvType conv_type,
+                          const DebugInfo &dbg_info = DebugInfo())
+      : Stmt(dbg_info),
+        mesh(mesh),
+        idx_type(idx_type),
+        idx(idx),
+        conv_type(conv_type) {
     this->ret_type = PrimitiveType::i32;
     TI_STMT_REG_FIELDS;
   }
@@ -2068,7 +2077,8 @@ class MeshIndexConversionStmt : public Stmt {
  */
 class MeshPatchIndexStmt : public Stmt {
  public:
-  MeshPatchIndexStmt() {
+  explicit MeshPatchIndexStmt(const DebugInfo &dbg_info = DebugInfo())
+      : Stmt(dbg_info) {
     this->ret_type = PrimitiveType::i32;
     TI_STMT_REG_FIELDS;
   }

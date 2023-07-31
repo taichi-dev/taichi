@@ -239,10 +239,7 @@ def subscript(ast_builder, value, *_indices, skip_reordered=False):
             [
                 Expr(
                     ast_builder.mesh_index_conversion(
-                        value.mesh_ptr,
-                        value.element_type,
-                        Expr(indices[0]).ptr,
-                        ConvType.g2r,
+                        value.mesh_ptr, value.element_type, Expr(indices[0]).ptr, ConvType.g2r, dbg_info
                     )
                 )
             ]

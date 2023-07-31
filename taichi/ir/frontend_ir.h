@@ -927,7 +927,8 @@ class GetElementExpression : public Expression {
 
 class MeshPatchIndexExpression : public Expression {
  public:
-  MeshPatchIndexExpression() {
+  explicit MeshPatchIndexExpression(const DebugInfo &dbg_info = DebugInfo())
+      : Expression(dbg_info) {
   }
 
   void type_check(const CompileConfig *config) override;
@@ -948,15 +949,18 @@ class MeshRelationAccessExpression : public Expression {
 
   MeshRelationAccessExpression(mesh::Mesh *mesh,
                                const Expr mesh_idx,
-                               mesh::MeshElementType to_type)
-      : mesh(mesh), mesh_idx(mesh_idx), to_type(to_type) {
+                               mesh::MeshElementType to_type,
+                               const DebugInfo &dbg_info = DebugInfo())
+      : Expression(dbg_info), mesh(mesh), mesh_idx(mesh_idx), to_type(to_type) {
   }
 
   MeshRelationAccessExpression(mesh::Mesh *mesh,
                                const Expr mesh_idx,
                                mesh::MeshElementType to_type,
-                               const Expr neighbor_idx)
-      : mesh(mesh),
+                               const Expr neighbor_idx,
+                               const DebugInfo &dbg_info = DebugInfo())
+      : Expression(dbg_info),
+        mesh(mesh),
         mesh_idx(mesh_idx),
         to_type(to_type),
         neighbor_idx(neighbor_idx) {
@@ -979,7 +983,8 @@ class MeshIndexConversionExpression : public Expression {
   MeshIndexConversionExpression(mesh::Mesh *mesh,
                                 mesh::MeshElementType idx_type,
                                 const Expr idx,
-                                mesh::ConvType conv_type);
+                                mesh::ConvType conv_type,
+                                const DebugInfo &dbg_info = DebugInfo());
 
   void flatten(FlattenContext *ctx) override;
 
@@ -1055,7 +1060,7 @@ class ASTBuilder {
                         const std::vector<Expr> &elements,
                         const DebugInfo &dbg_info = DebugInfo());
   Expr insert_thread_idx_expr();
-  Expr insert_patch_idx_expr();
+  Expr insert_patch_idx_expr(const DebugInfo &dbg_info = DebugInfo());
   void create_kernel_exprgroup_return(const ExprGroup &group,
                                       const DebugInfo &dbg_info = DebugInfo());
   void create_print(std::vector<std::variant<Expr, std::string>> contents,
@@ -1085,7 +1090,8 @@ class ASTBuilder {
   Expr mesh_index_conversion(mesh::MeshPtr mesh_ptr,
                              mesh::MeshElementType idx_type,
                              const Expr &idx,
-                             mesh::ConvType &conv_type);
+                             mesh::ConvType &conv_type,
+                             const DebugInfo &dbg_info = DebugInfo());
 
   void expr_assign(const Expr &lhs,
                    const Expr &rhs,

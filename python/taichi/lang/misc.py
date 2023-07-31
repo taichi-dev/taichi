@@ -704,7 +704,11 @@ def mesh_patch_idx():
 
     Related to https://github.com/taichi-dev/taichi/issues/3608
     """
-    return impl.get_runtime().compiling_callable.ast_builder().insert_patch_idx_expr()
+    return (
+        impl.get_runtime()
+        .compiling_callable.ast_builder()
+        .insert_patch_idx_expr(_ti_core.DebugInfo(impl.get_runtime().get_current_src_info()))
+    )
 
 
 def is_arch_supported(arch):

@@ -1350,7 +1350,7 @@ void GetElementExpression::flatten(FlattenContext *ctx) {
 // Mesh related.
 
 void MeshPatchIndexExpression::flatten(FlattenContext *ctx) {
-  auto pid_stmt = std::make_unique<MeshPatchIndexStmt>();
+  auto pid_stmt = std::make_unique<MeshPatchIndexStmt>(dbg_info);
   ctx->push_back(std::move(pid_stmt));
   stmt = ctx->back_stmt();
 }
@@ -1368,9 +1368,10 @@ void MeshRelationAccessExpression::flatten(FlattenContext *ctx) {
   if (neighbor_idx) {
     auto neighbor_idx_stmt = flatten_rvalue(neighbor_idx, ctx);
     ctx->push_back<MeshRelationAccessStmt>(mesh, mesh_idx_stmt, to_type,
-                                           neighbor_idx_stmt);
+                                           neighbor_idx_stmt, dbg_info);
   } else {
-    ctx->push_back<MeshRelationAccessStmt>(mesh, mesh_idx_stmt, to_type);
+    ctx->push_back<MeshRelationAccessStmt>(mesh, mesh_idx_stmt, to_type,
+                                           dbg_info);
   }
   stmt = ctx->back_stmt();
 }
@@ -1379,8 +1380,13 @@ MeshIndexConversionExpression::MeshIndexConversionExpression(
     mesh::Mesh *mesh,
     mesh::MeshElementType idx_type,
     const Expr idx,
-    mesh::ConvType conv_type)
-    : mesh(mesh), idx_type(idx_type), idx(idx), conv_type(conv_type) {
+    mesh::ConvType conv_type,
+    const DebugInfo &dbg_info)
+    : Expression(dbg_info),
+      mesh(mesh),
+      idx_type(idx_type),
+      idx(idx),
+      conv_type(conv_type) {
 }
 
 void MeshIndexConversionExpression::type_check(const CompileConfig *) {
@@ -1389,7 +1395,8 @@ void MeshIndexConversionExpression::type_check(const CompileConfig *) {
 
 void MeshIndexConversionExpression::flatten(FlattenContext *ctx) {
   auto idx_stmt = flatten_rvalue(idx, ctx);
-  ctx->push_back<MeshIndexConversionStmt>(mesh, idx_type, idx_stmt, conv_type);
+  ctx->push_back<MeshIndexConversionStmt>(mesh, idx_type, idx_stmt, conv_type,
+                                          dbg_info);
   stmt = ctx->back_stmt();
 }
 
@@ -1487,7 +1494,7 @@ Expr ASTBuilder::insert_thread_idx_expr() {
       Operations::get(InternalOp::linear_thread_idx), std::vector<Expr>{});
 }
 
-Expr ASTBuilder::insert_patch_idx_expr() {
+Expr ASTBuilder::insert_patch_idx_expr(const DebugInfo &dbg_info) {
   auto loop = stack_.size() ? stack_.back()->parent_stmt() : nullptr;
   if (loop != nullptr) {
     auto i = stack_.size() - 1;
@@ -1500,7 +1507,7 @@ Expr ASTBuilder::insert_patch_idx_expr() {
   TI_ERROR_IF(!(loop && loop->is<FrontendForStmt>() &&
                 loop->as<FrontendForStmt>()->mesh),
               "ti.mesh_patch_idx() is only valid within mesh-for loops.");
-  return Expr::make<MeshPatchIndexExpression>();
+  return Expr::make<MeshPatchIndexExpression>(dbg_info);
 }
 
 void ASTBuilder::create_kernel_exprgroup_return(const ExprGroup &group,
@@ -1872,7 +1879,8 @@ std::vector<Expr> ASTBuilder::expand_exprs(const std::vector<Expr> &exprs) {
 Expr ASTBuilder::mesh_index_conversion(mesh::MeshPtr mesh_ptr,
                                        mesh::MeshElementType idx_type,
                                        const Expr &idx,
-                                       mesh::ConvType &conv_type) {
+                                       mesh::ConvType &conv_type,
+                                       const DebugInfo &dbg_info) {
   Expr expanded_idx;
   if (idx.is<IdExpression>() && idx.get_ret_type() == PrimitiveType::unknown) {
     expanded_idx = idx;
@@ -1884,8 +1892,8 @@ Expr ASTBuilder::mesh_index_conversion(mesh::MeshPtr mesh_ptr,
     expanded_idx = this->expand_exprs({idx})[0];
   }
 
-  return Expr::make<MeshIndexConversionExpression>(mesh_ptr.ptr.get(), idx_type,
-                                                   expanded_idx, conv_type);
+  return Expr::make<MeshIndexConversionExpression>(
+      mesh_ptr.ptr.get(), idx_type, expanded_idx, conv_type, dbg_info);
 }
 
 void ASTBuilder::create_scope(std::unique_ptr<Block> &list, LoopType tp) {

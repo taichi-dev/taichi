@@ -1021,7 +1021,8 @@ void export_lang(py::module &m) {
         "arg_id"_a, "dt"_a, "is_ptr"_a = false, "create_load"_a = true,
         "arg_depth"_a = 0, "dbg_info"_a = DebugInfo());
 
-  m.def("make_reference", Expr::make<ReferenceExpression, const Expr &>);
+  m.def("make_reference",
+        Expr::make<ReferenceExpression, const Expr &, const DebugInfo &>);
 
   m.def("make_external_tensor_expr",
         Expr::make<ExternalTensorExpression, const DataType &, int,

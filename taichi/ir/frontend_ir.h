@@ -996,7 +996,9 @@ class ReferenceExpression : public Expression {
   Expr var;
   void type_check(const CompileConfig *config) override;
 
-  explicit ReferenceExpression(const Expr &expr) : var(expr) {
+  explicit ReferenceExpression(const Expr &expr,
+                               const DebugInfo &dbg_info = DebugInfo())
+      : Expression(dbg_info), var(expr) {
   }
 
   void flatten(FlattenContext *ctx) override;

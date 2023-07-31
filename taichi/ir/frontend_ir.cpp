@@ -1406,7 +1406,7 @@ void ReferenceExpression::type_check(const CompileConfig *) {
 
 void ReferenceExpression::flatten(FlattenContext *ctx) {
   auto var_stmt = flatten_lvalue(var, ctx);
-  ctx->push_back<ReferenceStmt>(var_stmt);
+  ctx->push_back<ReferenceStmt>(var_stmt, dbg_info);
   stmt = ctx->back_stmt();
 }
 

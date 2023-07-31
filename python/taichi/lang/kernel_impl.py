@@ -246,21 +246,20 @@ class Func:
         # Skip the template args, e.g., |self|
         assert self.is_real_function
         non_template_args = []
+        dbg_info = _ti_core.DebugInfo(impl.get_runtime().get_current_src_info())
         for i, kernel_arg in enumerate(self.arguments):
             anno = kernel_arg.annotation
             if not isinstance(anno, template):
                 if id(anno) in primitive_types.type_ids:
                     non_template_args.append(ops.cast(args[i], anno))
                 elif isinstance(anno, primitive_types.RefType):
-                    non_template_args.append(_ti_core.make_reference(args[i].ptr))
+                    non_template_args.append(_ti_core.make_reference(args[i].ptr, dbg_info))
                 elif isinstance(anno, ndarray_type.NdarrayType):
                     if not isinstance(args[i], AnyArray):
                         raise TaichiTypeError(
                             f"Expected ndarray in the kernel argument for argument {kernel_arg.name}, got {args[i]}"
                         )
-                    non_template_args += _ti_core.get_external_tensor_real_func_args(
-                        args[i].ptr, _ti_core.DebugInfo(impl.get_runtime().get_current_src_info())
-                    )
+                    non_template_args += _ti_core.get_external_tensor_real_func_args(args[i].ptr, dbg_info)
                 else:
                     non_template_args.append(args[i])
         non_template_args = impl.make_expr_group(non_template_args)

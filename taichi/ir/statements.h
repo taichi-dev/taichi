@@ -1160,7 +1160,8 @@ class ReferenceStmt : public Stmt, public ir_traits::Load {
   Stmt *var;
   bool global_side_effect{false};
 
-  explicit ReferenceStmt(Stmt *var) : var(var) {
+  explicit ReferenceStmt(Stmt *var, const DebugInfo &dbg_info = DebugInfo())
+      : Stmt(dbg_info), var(var) {
     TI_STMT_REG_FIELDS;
   }
 

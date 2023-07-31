@@ -21,7 +21,7 @@ def test_kernel_keyword_args_missing():
         assert a == 1
         assert b == 2
 
-    with pytest.raises(ti.TaichiSyntaxError, match="Parameter 'a' missing"):
+    with pytest.raises(ti.TaichiSyntaxError, match="Parameter `a : i32` missing"):
         foo(b=2)
 
 
@@ -81,7 +81,7 @@ def test_function_keyword_args_missing():
     def missing():
         foo(1, c=3)
 
-    with pytest.raises(ti.TaichiSyntaxError, match="Parameter 'b' missing"):
+    with pytest.raises(ti.TaichiSyntaxError, match="Parameter `b` missing"):
         missing()
 
 

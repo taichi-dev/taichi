@@ -138,9 +138,15 @@ Expr expr_rand() {
   return taichi::lang::expr_rand(get_data_type<T>());
 }
 
-Expr assume_range(const Expr &expr, const Expr &base, int low, int high);
+Expr assume_range(const Expr &expr,
+                  const Expr &base,
+                  int low,
+                  int high,
+                  const DebugInfo &dbg_info = DebugInfo());
 
-Expr loop_unique(const Expr &input, const std::vector<SNode *> &covers);
+Expr loop_unique(const Expr &input,
+                 const std::vector<SNode *> &covers,
+                 const DebugInfo &dbg_info = DebugInfo());
 
 Expr expr_field(Expr id_expr, DataType dt);
 

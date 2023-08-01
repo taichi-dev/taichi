@@ -397,7 +397,8 @@ def is_active(node, indices):
     return expr.Expr(
         impl.get_runtime()
         .compiling_callable.ast_builder()
-        .expr_snode_is_active(node._snode.ptr, expr.make_expr_group(indices))
+        .expr_snode_is_active(node._snode.ptr, expr.make_expr_group(indices)),
+        dbg_info=_ti_core.DebugInfo(impl.get_runtime().get_current_src_info()),
     )
 
 
@@ -441,7 +442,8 @@ def length(node, indices):
     return expr.Expr(
         impl.get_runtime()
         .compiling_callable.ast_builder()
-        .expr_snode_length(node._snode.ptr, expr.make_expr_group(indices))
+        .expr_snode_length(node._snode.ptr, expr.make_expr_group(indices)),
+        dbg_info=_ti_core.DebugInfo(impl.get_runtime().get_current_src_info()),
     )
 
 
@@ -460,7 +462,8 @@ def get_addr(f, indices):
     return expr.Expr(
         impl.get_runtime()
         .compiling_callable.ast_builder()
-        .expr_snode_get_addr(f._snode.ptr, expr.make_expr_group(indices))
+        .expr_snode_get_addr(f._snode.ptr, expr.make_expr_group(indices)),
+        dbg_info=_ti_core.DebugInfo(impl.get_runtime().get_current_src_info()),
     )
 
 

@@ -357,10 +357,21 @@ class MeshInstance:
         _ti_core.add_mesh_attribute(self.mesh_ptr, element_type, snode, reorder_type)
 
     def get_relation_size(self, from_index, to_element_type):
-        return _ti_core.get_relation_size(self.mesh_ptr, from_index.ptr, to_element_type)
+        return _ti_core.get_relation_size(
+            self.mesh_ptr,
+            from_index.ptr,
+            to_element_type,
+            _ti_core.DebugInfo(impl.get_runtime().get_current_src_info()),
+        )
 
     def get_relation_access(self, from_index, to_element_type, neighbor_idx_ptr):
-        return _ti_core.get_relation_access(self.mesh_ptr, from_index.ptr, to_element_type, neighbor_idx_ptr)
+        return _ti_core.get_relation_access(
+            self.mesh_ptr,
+            from_index.ptr,
+            to_element_type,
+            neighbor_idx_ptr,
+            _ti_core.DebugInfo(impl.get_runtime().get_current_src_info()),
+        )
 
 
 class MeshMetadata:
@@ -586,6 +597,7 @@ class MeshElementFieldProxy:
                     element_type,
                     entry_expr,
                     ConvType.l2r if element_field.attr_dict[key].reorder else ConvType.l2g,
+                    _ti_core.DebugInfo(impl.get_runtime().get_current_src_info()),
                 )
             )  # transform index space
             global_entry_expr_group = impl.make_expr_group(*tuple([global_entry_expr]))
@@ -637,7 +649,13 @@ class MeshElementFieldProxy:
     def id(self):  # return the global non-reordered index
         ast_builder = impl.get_runtime().compiling_callable.ast_builder()
         l2g_expr = impl.Expr(
-            ast_builder.mesh_index_conversion(self.mesh.mesh_ptr, self.element_type, self.entry_expr, ConvType.l2g)
+            ast_builder.mesh_index_conversion(
+                self.mesh.mesh_ptr,
+                self.element_type,
+                self.entry_expr,
+                ConvType.l2g,
+                _ti_core.DebugInfo(impl.get_runtime().get_current_src_info()),
+            )
         )
         return l2g_expr
 

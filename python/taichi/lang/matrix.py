@@ -150,7 +150,12 @@ def make_matrix_with_shape(arr, shape, dt):
     return expr.Expr(
         impl.get_runtime()
         .compiling_callable.ast_builder()
-        .make_matrix_expr(shape, dt, [expr.Expr(elt).ptr for elt in arr])
+        .make_matrix_expr(
+            shape,
+            dt,
+            [expr.Expr(elt).ptr for elt in arr],
+            ti_python_core.DebugInfo(impl.get_runtime().get_current_src_info()),
+        )
     )
 
 
@@ -172,7 +177,12 @@ def make_matrix(arr, dt=None):
     return expr.Expr(
         impl.get_runtime()
         .compiling_callable.ast_builder()
-        .make_matrix_expr(shape, dt, [expr.Expr(elt).ptr for elt in arr])
+        .make_matrix_expr(
+            shape,
+            dt,
+            [expr.Expr(elt).ptr for elt in arr],
+            ti_python_core.DebugInfo(impl.get_runtime().get_current_src_info()),
+        )
     )
 
 
@@ -1443,7 +1453,13 @@ class MatrixType(CompoundType):
     def from_taichi_object(self, func_ret, ret_index=()):
         return self(
             [
-                expr.Expr(ti_python_core.make_get_element_expr(func_ret.ptr, ret_index + (i,)))
+                expr.Expr(
+                    ti_python_core.make_get_element_expr(
+                        func_ret.ptr,
+                        ret_index + (i,),
+                        _ti_python_core.DebugInfo(impl.get_runtime().get_current_src_info()),
+                    )
+                )
                 for i in range(self.m * self.n)
             ]
         )

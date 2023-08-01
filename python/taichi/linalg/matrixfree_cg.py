@@ -64,7 +64,7 @@ def MatrixFreeCG(A, b, x, tol=1e-6, maxiter=5000, quiet=True):
     beta = ti.field(dtype=solver_dtype)
     scalar_builder.place(alpha, beta)
     scalar_snode_tree = scalar_builder.finalize()
-    suc = True
+    succeeded = True
 
     @ti.kernel
     def init():
@@ -104,7 +104,7 @@ def MatrixFreeCG(A, b, x, tol=1e-6, maxiter=5000, quiet=True):
         old_rTr = initial_rTr
         new_rTr = initial_rTr
         update_p()
-        if sqrt(initial_rTr) >= tol:
+        if sqrt(initial_rTr) >= tol: # Do nothing if the initial residual is small enough
             # -- Main loop --
             for i in range(maxiter):
                 A._matvec(p, Ap)  # compute Ap = A x p
@@ -128,12 +128,12 @@ def MatrixFreeCG(A, b, x, tol=1e-6, maxiter=5000, quiet=True):
                 print(
                     f">>> Conjugate Gradient method failed to converge in {maxiter} iterations: Residual = {sqrt(new_rTr):e}"
                 )
-            suc = False
+            succeeded = False
 
     solve()
     vector_fields_snode_tree.destroy()
     scalar_snode_tree.destroy()
-    return suc
+    return succeeded
 
 
 def MatrixFreeBICGSTAB(A, b, x, tol=1e-6, maxiter=5000, quiet=True):
@@ -193,7 +193,7 @@ def MatrixFreeBICGSTAB(A, b, x, tol=1e-6, maxiter=5000, quiet=True):
     rho_1 = ti.field(dtype=solver_dtype)
     scalar_builder.place(alpha, beta, omega, rho, rho_1)
     scalar_snode_tree = scalar_builder.finalize()
-    suc = True
+    succeeded = True
 
     @ti.kernel
     def init():
@@ -258,13 +258,13 @@ def MatrixFreeBICGSTAB(A, b, x, tol=1e-6, maxiter=5000, quiet=True):
         rTr = initial_rTr
         if not quiet:
             print(f">>> Initial residual = {initial_rTr:e}")
-        if sqrt(initial_rTr) >= tol:
+        if sqrt(initial_rTr) >= tol: # Do nothing if the initial residual is small enough
             for i in range(maxiter):
                 rho[None] = reduce(r, r_tld)
                 if rho[None] == 0.0:
                     if not quiet:
                         print(">>> BICGSTAB failed because r@r_tld = 0.")
-                    suc = False
+                    succeeded = False
                     break
                 if i == 0:
                     copy(orig=r, dest=p)
@@ -295,9 +295,9 @@ def MatrixFreeBICGSTAB(A, b, x, tol=1e-6, maxiter=5000, quiet=True):
         if rTr >= tol:
             if not quiet:
                 print(f">>> BICGSTAB failed to converge in {maxiter} iterations: Residual = {sqrt(rTr):e}")
-            suc = False
+            succeeded = False
 
     solve()
     vector_fields_snode_tree.destroy()
     scalar_snode_tree.destroy()
-    return suc
+    return succeeded

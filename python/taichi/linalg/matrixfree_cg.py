@@ -69,7 +69,7 @@ def MatrixFreeCG(A, b, x, tol=1e-6, maxiter=5000, quiet=True):
     @ti.kernel
     def init():
         for I in ti.grouped(x):
-            r[I] = b[I]-Ax[I]
+            r[I] = b[I] - Ax[I]
             p[I] = 0.0
             Ap[I] = 0.0
 
@@ -125,7 +125,9 @@ def MatrixFreeCG(A, b, x, tol=1e-6, maxiter=5000, quiet=True):
                     print(f">>> Iter = {i+1:4}, Residual = {sqrt(new_rTr):e}")
         if new_rTr >= tol:
             if not quiet:
-                print(f">>> Conjugate Gradient method failed to converge in {maxiter} iterations: Residual = {sqrt(new_rTr):e}")
+                print(
+                    f">>> Conjugate Gradient method failed to converge in {maxiter} iterations: Residual = {sqrt(new_rTr):e}"
+                )
             suc = False
 
     solve()
@@ -294,6 +296,7 @@ def MatrixFreeBICGSTAB(A, b, x, tol=1e-6, maxiter=5000, quiet=True):
             if not quiet:
                 print(f">>> BICGSTAB failed to converge in {maxiter} iterations: Residual = {sqrt(rTr):e}")
             suc = False
+
     solve()
     vector_fields_snode_tree.destroy()
     scalar_snode_tree.destroy()

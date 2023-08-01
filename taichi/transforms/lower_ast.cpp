@@ -66,17 +66,18 @@ class LowerAST : public IRVisitor {
   void visit(FrontendAllocaStmt *stmt) override {
     auto block = stmt->parent;
     auto ident = stmt->ident;
+    auto dbg_info = stmt->dbg_info;
     TI_ASSERT(block->local_var_to_stmt.find(ident) ==
               block->local_var_to_stmt.end());
     auto alloca_type = stmt->ret_type.ptr_removed();
     if (auto tensor_type = alloca_type->cast<TensorType>()) {
       auto lowered = std::make_unique<AllocaStmt>(
           tensor_type->get_shape(), tensor_type->get_element_type(),
-          stmt->is_shared);
+          stmt->is_shared, dbg_info);
       block->local_var_to_stmt.insert(std::make_pair(ident, lowered.get()));
       stmt->parent->replace_with(stmt, std::move(lowered));
     } else {
-      auto lowered = std::make_unique<AllocaStmt>(alloca_type);
+      auto lowered = std::make_unique<AllocaStmt>(alloca_type, dbg_info);
       block->local_var_to_stmt.insert(std::make_pair(ident, lowered.get()));
       stmt->parent->replace_with(stmt, std::move(lowered));
     }
@@ -90,7 +91,8 @@ class LowerAST : public IRVisitor {
     for (const auto &arg : stmt->args.exprs) {
       args.push_back(flatten_rvalue(arg, &fctx));
     }
-    auto lowered = fctx.push_back<FuncCallStmt>(stmt->func, args);
+    auto lowered =
+        fctx.push_back<FuncCallStmt>(stmt->func, args, stmt->dbg_info);
     stmt->parent->replace_with(stmt, std::move(fctx.stmts));
     if (const auto &ident = stmt->ident) {
       TI_ASSERT(block->local_var_to_stmt.find(ident.value()) ==
@@ -103,7 +105,7 @@ class LowerAST : public IRVisitor {
     auto fctx = make_flatten_ctx();
     auto condition_stmt = flatten_rvalue(stmt->condition, &fctx);
 
-    auto new_if = std::make_unique<IfStmt>(condition_stmt);
+    auto new_if = std::make_unique<IfStmt>(condition_stmt, stmt->dbg_info);
 
     if (stmt->true_statements) {
       new_if->set_true_statements(std::move(stmt->true_statements));
@@ -141,20 +143,22 @@ class LowerAST : public IRVisitor {
         new_contents.push_back(x);
       }
     }
-    fctx.push_back<PrintStmt>(new_contents, stmt->formats);
+    fctx.push_back<PrintStmt>(new_contents, stmt->formats, stmt->dbg_info);
     stmt->parent->replace_with(stmt, std::move(fctx.stmts));
   }
 
   void visit(FrontendBreakStmt *stmt) override {
     auto while_stmt = capturing_loop_->as<WhileStmt>();
     VecStatement stmts;
-    auto const_true = stmts.push_back<ConstStmt>(TypedConstant((int32)0));
-    stmts.push_back<WhileControlStmt>(while_stmt->mask, const_true);
+    auto const_true =
+        stmts.push_back<ConstStmt>(TypedConstant((int32)0), stmt->dbg_info);
+    stmts.push_back<WhileControlStmt>(while_stmt->mask, const_true,
+                                      stmt->dbg_info);
     stmt->parent->replace_with(stmt, std::move(stmts));
   }
 
   void visit(FrontendContinueStmt *stmt) override {
-    stmt->parent->replace_with(stmt, Stmt::make<ContinueStmt>());
+    stmt->parent->replace_with(stmt, Stmt::make<ContinueStmt>(stmt->dbg_info));
   }
 
   void visit(FrontendWhileStmt *stmt) override {
@@ -164,22 +168,24 @@ class LowerAST : public IRVisitor {
     auto fctx = make_flatten_ctx();
     auto cond_stmt = flatten_rvalue(cond, &fctx);
 
-    auto &&new_while = std::make_unique<WhileStmt>(std::move(stmt->body));
-    auto mask = std::make_unique<AllocaStmt>(PrimitiveType::i32);
+    auto &&new_while =
+        std::make_unique<WhileStmt>(std::move(stmt->body), stmt->dbg_info);
+    auto mask =
+        std::make_unique<AllocaStmt>(PrimitiveType::i32, cond_stmt->dbg_info);
     new_while->mask = mask.get();
     auto &stmts = new_while->body;
     stmts->insert(std::move(fctx.stmts), /*location=*/0);
     // insert break
-    stmts->insert(
-        std::make_unique<WhileControlStmt>(new_while->mask, cond_stmt),
-        fctx.stmts.size());
-    auto &&const_stmt =
-        std::make_unique<ConstStmt>(TypedConstant((int32)0xFFFFFFFF));
+    stmts->insert(std::make_unique<WhileControlStmt>(new_while->mask, cond_stmt,
+                                                     cond_stmt->dbg_info),
+                  fctx.stmts.size());
+    auto &&const_stmt = std::make_unique<ConstStmt>(
+        TypedConstant((int32)0xFFFFFFFF), stmt->dbg_info);
     auto const_stmt_ptr = const_stmt.get();
     stmt->insert_before_me(std::move(mask));
     stmt->insert_before_me(std::move(const_stmt));
-    stmt->insert_before_me(
-        std::make_unique<LocalStoreStmt>(new_while->mask, const_stmt_ptr));
+    stmt->insert_before_me(std::make_unique<LocalStoreStmt>(
+        new_while->mask, const_stmt_ptr, cond_stmt->dbg_info));
     auto pwhile = new_while.get();
     stmt->parent->replace_with(stmt, std::move(new_while));
     pwhile->accept(this);
@@ -230,17 +236,18 @@ class LowerAST : public IRVisitor {
 
       auto &&new_for = std::make_unique<StructForStmt>(
           snode, std::move(stmt->body), stmt->is_bit_vectorized,
-          stmt->num_cpu_threads, stmt->block_dim);
+          stmt->num_cpu_threads, stmt->block_dim, stmt->dbg_info);
       new_for->index_offsets = offsets;
       VecStatement new_statements;
       for (int i = 0; i < (int)stmt->loop_var_ids.size(); i++) {
         Stmt *loop_index = new_statements.push_back<LoopIndexStmt>(
-            new_for.get(), snode->physical_index_position[i]);
+            new_for.get(), snode->physical_index_position[i], stmt->dbg_info);
         if ((int)offsets.size() > i && offsets[i] != 0) {
-          auto offset_const =
-              new_statements.push_back<ConstStmt>(TypedConstant(offsets[i]));
+          auto offset_const = new_statements.push_back<ConstStmt>(
+              TypedConstant(offsets[i]), stmt->dbg_info);
           auto result = new_statements.push_back<BinaryOpStmt>(
-              BinaryOpType::add, loop_index, offset_const);
+              BinaryOpType::add, loop_index, offset_const,
+              /*is_bit_vectorized=*/false, stmt->dbg_info);
           loop_index = result;
         }
         new_for->body->local_var_to_stmt[stmt->loop_var_ids[i]] = loop_index;
@@ -255,49 +262,55 @@ class LowerAST : public IRVisitor {
         auto tensor = stmt->external_tensor.cast<ExternalTensorExpression>();
         arg_id = tensor->arg_id;
         for (int i = 0; i < tensor->ndim; i++) {
-          shape.push_back(
-              fctx.push_back<ExternalTensorShapeAlongAxisStmt>(i, arg_id));
+          shape.push_back(fctx.push_back<ExternalTensorShapeAlongAxisStmt>(
+              i, arg_id, tensor->dbg_info));
         }
       } else if (stmt->external_tensor.is<TexturePtrExpression>()) {
         auto rw_texture = stmt->external_tensor.cast<TexturePtrExpression>();
         arg_id = rw_texture->arg_id;
         for (size_t i = 0; i < rw_texture->num_dims; ++i) {
-          shape.emplace_back(
-              fctx.push_back<ExternalTensorShapeAlongAxisStmt>(i, arg_id));
+          shape.emplace_back(fctx.push_back<ExternalTensorShapeAlongAxisStmt>(
+              i, arg_id, rw_texture->dbg_info));
         }
       }
 
-      Stmt *begin = fctx.push_back<ConstStmt>(TypedConstant(0));
-      Stmt *end = fctx.push_back<ConstStmt>(TypedConstant(1));
+      Stmt *begin = fctx.push_back<ConstStmt>(TypedConstant(0), stmt->dbg_info);
+      Stmt *end = fctx.push_back<ConstStmt>(TypedConstant(1), stmt->dbg_info);
       for (int i = 0; i < (int)shape.size(); i++) {
-        end = fctx.push_back<BinaryOpStmt>(BinaryOpType::mul, end, shape[i]);
+        end = fctx.push_back<BinaryOpStmt>(BinaryOpType::mul, end, shape[i],
+                                           /*is_bit_vectorized=*/false,
+                                           stmt->dbg_info);
       }
       // TODO: add a note explaining why shape might be empty.
       auto &&new_for = std::make_unique<RangeForStmt>(
           begin, end, std::move(stmt->body), stmt->is_bit_vectorized,
           stmt->num_cpu_threads, stmt->block_dim, stmt->strictly_serialized,
-          /*range_hint=*/fmt::format("arg ({})", fmt::join(arg_id, ", ")));
+          /*range_hint=*/fmt::format("arg ({})", fmt::join(arg_id, ", ")),
+          stmt->dbg_info);
       VecStatement new_statements;
-      Stmt *loop_index =
-          new_statements.push_back<LoopIndexStmt>(new_for.get(), 0);
+      Stmt *loop_index = new_statements.push_back<LoopIndexStmt>(
+          new_for.get(), 0, stmt->dbg_info);
       for (int i = (int)shape.size() - 1; i >= 0; i--) {
         Stmt *loop_var = new_statements.push_back<BinaryOpStmt>(
-            BinaryOpType::mod, loop_index, shape[i]);
+            BinaryOpType::mod, loop_index, shape[i],
+            /*is_bit_vectorized=*/false, stmt->dbg_info);
         new_for->body->local_var_to_stmt[stmt->loop_var_ids[i]] = loop_var;
         std::vector<uint32_t> decoration = {
             uint32_t(DecorationStmt::Decoration::kLoopUnique), uint32_t(i)};
         new_statements.push_back<DecorationStmt>(loop_var, decoration);
         loop_index = new_statements.push_back<BinaryOpStmt>(
-            BinaryOpType::div, loop_index, shape[i]);
+            BinaryOpType::div, loop_index, shape[i],
+            /*is_bit_vectorized=*/false, stmt->dbg_info);
       }
       new_for->body->insert(std::move(new_statements), 0);
       fctx.push_back(std::move(new_for));
     } else if (stmt->mesh) {
       auto &&new_for = std::make_unique<MeshForStmt>(
           stmt->mesh, stmt->element_type, std::move(stmt->body),
-          stmt->is_bit_vectorized, stmt->num_cpu_threads, stmt->block_dim);
-      new_for->body->insert(std::make_unique<LoopIndexStmt>(new_for.get(), 0),
-                            0);
+          stmt->is_bit_vectorized, stmt->num_cpu_threads, stmt->block_dim,
+          stmt->dbg_info);
+      new_for->body->insert(
+          std::make_unique<LoopIndexStmt>(new_for.get(), 0, stmt->dbg_info), 0);
       new_for->body->local_var_to_stmt[stmt->loop_var_ids[0]] =
           new_for->body->statements[0].get();
       new_for->mem_access_opt = stmt->mem_access_opt;
@@ -317,9 +330,10 @@ class LowerAST : public IRVisitor {
         auto &&new_for = std::make_unique<RangeForStmt>(
             begin_stmt, end_stmt, std::move(stmt->body),
             stmt->is_bit_vectorized, stmt->num_cpu_threads, stmt->block_dim,
-            stmt->strictly_serialized);
-        new_for->body->insert(std::make_unique<LoopIndexStmt>(new_for.get(), 0),
-                              0);
+            stmt->strictly_serialized, /*range_hint=*/"", stmt->dbg_info);
+        new_for->body->insert(
+            std::make_unique<LoopIndexStmt>(new_for.get(), 0, stmt->dbg_info),
+            0);
         new_for->body->local_var_to_stmt[stmt->loop_var_ids[0]] =
             new_for->body->statements[0].get();
         fctx.push_back(std::move(new_for));
@@ -327,45 +341,53 @@ class LowerAST : public IRVisitor {
         // transform into a structure as
         // i = begin - 1; while (1) { i += 1; if (i >= end) break; original
         // body; }
-        fctx.push_back<AllocaStmt>(PrimitiveType::i32);
+        fctx.push_back<AllocaStmt>(PrimitiveType::i32, stmt->dbg_info);
         auto loop_var = fctx.back_stmt();
         stmt->parent->local_var_to_stmt[stmt->loop_var_ids[0]] = loop_var;
-        auto const_one = fctx.push_back<ConstStmt>(TypedConstant((int32)1));
+        auto const_one =
+            fctx.push_back<ConstStmt>(TypedConstant((int32)1), stmt->dbg_info);
         auto begin_minus_one = fctx.push_back<BinaryOpStmt>(
-            BinaryOpType::sub, begin_stmt, const_one);
-        fctx.push_back<LocalStoreStmt>(loop_var, begin_minus_one);
+            BinaryOpType::sub, begin_stmt, const_one,
+            /*is_bit_vectorized=*/false, stmt->dbg_info);
+        fctx.push_back<LocalStoreStmt>(loop_var, begin_minus_one,
+                                       stmt->dbg_info);
         auto loop_var_addr = loop_var->as<AllocaStmt>();
         VecStatement load_and_compare;
-        auto loop_var_load_stmt =
-            load_and_compare.push_back<LocalLoadStmt>(loop_var_addr);
+        auto loop_var_load_stmt = load_and_compare.push_back<LocalLoadStmt>(
+            loop_var_addr, stmt->dbg_info);
         auto loop_var_add_one = load_and_compare.push_back<BinaryOpStmt>(
-            BinaryOpType::add, loop_var_load_stmt, const_one);
+            BinaryOpType::add, loop_var_load_stmt, const_one,
+            /*is_bit_vectorized=*/false, stmt->dbg_info);
 
         auto cond_stmt = load_and_compare.push_back<BinaryOpStmt>(
-            BinaryOpType::cmp_lt, loop_var_add_one, end_stmt);
+            BinaryOpType::cmp_lt, loop_var_add_one, end_stmt,
+            /*is_bit_vectorized=*/false, stmt->dbg_info);
 
-        auto &&new_while = std::make_unique<WhileStmt>(std::move(stmt->body));
-        auto mask = std::make_unique<AllocaStmt>(PrimitiveType::i32);
+        auto &&new_while =
+            std::make_unique<WhileStmt>(std::move(stmt->body), stmt->dbg_info);
+        auto mask =
+            std::make_unique<AllocaStmt>(PrimitiveType::i32, stmt->dbg_info);
         new_while->mask = mask.get();
 
         // insert break
-        load_and_compare.push_back<WhileControlStmt>(new_while->mask,
-                                                     cond_stmt);
-        load_and_compare.push_back<LocalStoreStmt>(loop_var, loop_var_add_one);
+        load_and_compare.push_back<WhileControlStmt>(new_while->mask, cond_stmt,
+                                                     stmt->dbg_info);
+        load_and_compare.push_back<LocalStoreStmt>(loop_var, loop_var_add_one,
+                                                   stmt->dbg_info);
         auto &stmts = new_while->body;
         for (int i = 0; i < (int)load_and_compare.size(); i++) {
           stmts->insert(std::move(load_and_compare[i]), i);
         }
 
         stmt->insert_before_me(
-            std::make_unique<AllocaStmt>(PrimitiveType::i32));
-        auto &&const_stmt =
-            std::make_unique<ConstStmt>(TypedConstant((int32)0xFFFFFFFF));
+            std::make_unique<AllocaStmt>(PrimitiveType::i32, stmt->dbg_info));
+        auto &&const_stmt = std::make_unique<ConstStmt>(
+            TypedConstant((int32)0xFFFFFFFF), stmt->dbg_info);
         auto const_stmt_ptr = const_stmt.get();
         stmt->insert_before_me(std::move(mask));
         stmt->insert_before_me(std::move(const_stmt));
-        stmt->insert_before_me(
-            std::make_unique<LocalStoreStmt>(new_while->mask, const_stmt_ptr));
+        stmt->insert_before_me(std::make_unique<LocalStoreStmt>(
+            new_while->mask, const_stmt_ptr, stmt->dbg_info));
         fctx.push_back(std::move(new_while));
       }
     }
@@ -402,7 +424,7 @@ class LowerAST : public IRVisitor {
     for (auto &x : expr_group.exprs) {
       return_ele.push_back(flatten_rvalue(x, &fctx));
     }
-    fctx.push_back<ReturnStmt>(return_ele);
+    fctx.push_back<ReturnStmt>(return_ele, stmt->dbg_info);
     stmt->parent->replace_with(stmt, std::move(fctx.stmts));
   }
 
@@ -420,7 +442,8 @@ class LowerAST : public IRVisitor {
         int num_elements = dest_tensor_type->get_num_elements();
         std::vector<Stmt *> matrix_members(num_elements, expr_stmt);
 
-        auto bcast_expr_stmt = fctx.push_back<MatrixInitStmt>(matrix_members);
+        auto bcast_expr_stmt =
+            fctx.push_back<MatrixInitStmt>(matrix_members, expr_stmt->dbg_info);
         bcast_expr_stmt->ret_type = dest_tensor_type;
         expr_stmt = bcast_expr_stmt;
       }
@@ -458,17 +481,20 @@ class LowerAST : public IRVisitor {
     }
 
     if (stmt->snode->type == SNodeType::dynamic) {
-      auto ptr = fctx.push_back<GlobalPtrStmt>(stmt->snode, indices_stmt);
+      auto ptr = fctx.push_back<GlobalPtrStmt>(
+          stmt->snode, indices_stmt, /*activate=*/true,
+          /*is_cell_access=*/false, stmt->dbg_info);
       ptr->ret_type = stmt->snode->dt;
       ptr->ret_type.set_is_pointer(true);
-      fctx.push_back<SNodeOpStmt>(stmt->op_type, stmt->snode, ptr, val_stmt);
+      fctx.push_back<SNodeOpStmt>(stmt->op_type, stmt->snode, ptr, val_stmt,
+                                  stmt->dbg_info);
     } else if (stmt->snode->type == SNodeType::pointer ||
                stmt->snode->type == SNodeType::hash ||
                stmt->snode->type == SNodeType::dense ||
                stmt->snode->type == SNodeType::bitmasked) {
       TI_ASSERT(SNodeOpStmt::activation_related(stmt->op_type));
-      auto ptr =
-          fctx.push_back<GlobalPtrStmt>(stmt->snode, indices_stmt, true, true);
+      auto ptr = fctx.push_back<GlobalPtrStmt>(stmt->snode, indices_stmt, true,
+                                               true, stmt->dbg_info);
       ptr->ret_type = stmt->snode->dt;
       ptr->ret_type.set_is_pointer(true);
       fctx.push_back<SNodeOpStmt>(stmt->op_type, stmt->snode, ptr, val_stmt);
@@ -524,7 +550,7 @@ class LowerAST : public IRVisitor {
           (stmt->so_func != nullptr) ? ExternalFuncCallStmt::SHARED_OBJECT
                                      : ExternalFuncCallStmt::ASSEMBLY,
           stmt->so_func, stmt->asm_source, "", "", arg_statements,
-          output_statements));
+          output_statements, stmt->dbg_info));
     } else {
       for (auto &s : stmt->args) {
         if (!s.is<IdExpression>()) {
@@ -536,7 +562,8 @@ class LowerAST : public IRVisitor {
       }
       ctx.push_back(std::make_unique<ExternalFuncCallStmt>(
           ExternalFuncCallStmt::BITCODE, nullptr, "", stmt->bc_filename,
-          stmt->bc_funcname, arg_statements, output_statements));
+          stmt->bc_funcname, arg_statements, output_statements,
+          stmt->dbg_info));
     }
     stmt->parent->replace_with(stmt, std::move(ctx.stmts));
   }

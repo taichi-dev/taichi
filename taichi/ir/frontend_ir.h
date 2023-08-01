@@ -49,7 +49,7 @@ class FrontendExternalFuncStmt : public Stmt {
                            const std::string &bc_funcname,
                            const std::vector<Expr> &args,
                            const std::vector<Expr> &outputs,
-                           const DebugInfo &dbg_info)
+                           const DebugInfo &dbg_info = DebugInfo())
       : Stmt(dbg_info),
         so_func(so_func),
         asm_source(asm_source),
@@ -162,7 +162,8 @@ class FrontendIfStmt : public Stmt {
   Expr condition;
   std::unique_ptr<Block> true_statements, false_statements;
 
-  explicit FrontendIfStmt(const Expr &condition, const DebugInfo &dbg_info)
+  explicit FrontendIfStmt(const Expr &condition,
+                          const DebugInfo &dbg_info = DebugInfo())
       : Stmt(dbg_info), condition(condition) {
   }
 
@@ -303,7 +304,8 @@ class FrontendWhileStmt : public Stmt {
   Expr cond;
   std::unique_ptr<Block> body;
 
-  explicit FrontendWhileStmt(const Expr &cond, const DebugInfo &dbg_info)
+  explicit FrontendWhileStmt(const Expr &cond,
+                             const DebugInfo &dbg_info = DebugInfo())
       : Stmt(dbg_info), cond(cond) {
   }
 

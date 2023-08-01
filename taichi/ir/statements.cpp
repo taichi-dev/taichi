@@ -210,7 +210,7 @@ void IfStmt::set_false_statements(
 }
 
 std::unique_ptr<Stmt> IfStmt::clone() const {
-  auto new_stmt = std::make_unique<IfStmt>(cond);
+  auto new_stmt = std::make_unique<IfStmt>(cond, dbg_info);
   if (true_statements)
     new_stmt->set_true_statements(true_statements->clone());
   if (false_statements)
@@ -225,8 +225,10 @@ RangeForStmt::RangeForStmt(Stmt *begin,
                            int num_cpu_threads,
                            int block_dim,
                            bool strictly_serialized,
-                           std::string range_hint)
-    : begin(begin),
+                           std::string range_hint,
+                           const DebugInfo &dbg_info)
+    : Stmt(dbg_info),
+      begin(begin),
       end(end),
       body(std::move(body)),
       is_bit_vectorized(is_bit_vectorized),
@@ -242,7 +244,7 @@ RangeForStmt::RangeForStmt(Stmt *begin,
 std::unique_ptr<Stmt> RangeForStmt::clone() const {
   auto new_stmt = std::make_unique<RangeForStmt>(
       begin, end, body->clone(), is_bit_vectorized, num_cpu_threads, block_dim,
-      strictly_serialized);
+      strictly_serialized, /*range_hint=*/"", dbg_info);
   new_stmt->reversed = reversed;
   return new_stmt;
 }
@@ -251,8 +253,10 @@ StructForStmt::StructForStmt(SNode *snode,
                              std::unique_ptr<Block> &&body,
                              bool is_bit_vectorized,
                              int num_cpu_threads,
-                             int block_dim)
-    : snode(snode),
+                             int block_dim,
+                             const DebugInfo &dbg_info)
+    : Stmt(dbg_info),
+      snode(snode),
       body(std::move(body)),
       is_bit_vectorized(is_bit_vectorized),
       num_cpu_threads(num_cpu_threads),
@@ -262,8 +266,9 @@ StructForStmt::StructForStmt(SNode *snode,
 }
 
 std::unique_ptr<Stmt> StructForStmt::clone() const {
-  auto new_stmt = std::make_unique<StructForStmt>(
-      snode, body->clone(), is_bit_vectorized, num_cpu_threads, block_dim);
+  auto new_stmt =
+      std::make_unique<StructForStmt>(snode, body->clone(), is_bit_vectorized,
+                                      num_cpu_threads, block_dim, dbg_info);
   new_stmt->mem_access_opt = mem_access_opt;
   return new_stmt;
 }
@@ -273,8 +278,10 @@ MeshForStmt::MeshForStmt(mesh::Mesh *mesh,
                          std::unique_ptr<Block> &&body,
                          bool is_bit_vectorized,
                          int num_cpu_threads,
-                         int block_dim)
-    : mesh(mesh),
+                         int block_dim,
+                         const DebugInfo &dbg_info)
+    : Stmt(dbg_info),
+      mesh(mesh),
       body(std::move(body)),
       is_bit_vectorized(is_bit_vectorized),
       num_cpu_threads(num_cpu_threads),
@@ -287,15 +294,17 @@ MeshForStmt::MeshForStmt(mesh::Mesh *mesh,
 std::unique_ptr<Stmt> MeshForStmt::clone() const {
   auto new_stmt = std::make_unique<MeshForStmt>(
       mesh, major_from_type, body->clone(), is_bit_vectorized, num_cpu_threads,
-      block_dim);
+      block_dim, dbg_info);
   new_stmt->major_to_types = major_to_types;
   new_stmt->minor_relation_types = minor_relation_types;
   new_stmt->mem_access_opt = mem_access_opt;
   return new_stmt;
 }
 
-FuncCallStmt::FuncCallStmt(Function *func, const std::vector<Stmt *> &args)
-    : func(func), args(args) {
+FuncCallStmt::FuncCallStmt(Function *func,
+                           const std::vector<Stmt *> &args,
+                           const DebugInfo &dbg_info)
+    : Stmt(dbg_info), func(func), args(args) {
   TI_STMT_REG_FIELDS;
 }
 
@@ -312,14 +321,14 @@ stmt_refs FuncCallStmt::get_store_destination() const {
   return ret;
 }
 
-WhileStmt::WhileStmt(std::unique_ptr<Block> &&body)
-    : mask(nullptr), body(std::move(body)) {
+WhileStmt::WhileStmt(std::unique_ptr<Block> &&body, const DebugInfo &dbg_info)
+    : Stmt(dbg_info), mask(nullptr), body(std::move(body)) {
   this->body->set_parent_stmt(this);
   TI_STMT_REG_FIELDS;
 }
 
 std::unique_ptr<Stmt> WhileStmt::clone() const {
-  auto new_stmt = std::make_unique<WhileStmt>(body->clone());
+  auto new_stmt = std::make_unique<WhileStmt>(body->clone(), dbg_info);
   new_stmt->mask = mask;
   return new_stmt;
 }

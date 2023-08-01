@@ -70,7 +70,10 @@ class WhileControlStmt : public Stmt {
  public:
   Stmt *mask;
   Stmt *cond;
-  WhileControlStmt(Stmt *mask, Stmt *cond) : mask(mask), cond(cond) {
+  WhileControlStmt(Stmt *mask,
+                   Stmt *cond,
+                   const DebugInfo &dbg_info = DebugInfo())
+      : Stmt(dbg_info), mask(mask), cond(cond) {
     TI_STMT_REG_FIELDS;
   }
 
@@ -87,7 +90,8 @@ class ContinueStmt : public Stmt {
   // an offloaded task, or a for/while loop inside the kernel.
   Stmt *scope;
 
-  ContinueStmt() : scope(nullptr) {
+  explicit ContinueStmt(const DebugInfo &dbg_info = DebugInfo())
+      : Stmt(dbg_info), scope(nullptr) {
     TI_STMT_REG_FIELDS;
   }
 
@@ -673,8 +677,10 @@ class ExternalFuncCallStmt : public Stmt,
                        std::string bc_filename,
                        std::string bc_funcname,
                        const std::vector<Stmt *> &arg_stmts,
-                       const std::vector<Stmt *> &output_stmts)
-      : type(type),
+                       const std::vector<Stmt *> &output_stmts,
+                       const DebugInfo &dbg_info = DebugInfo())
+      : Stmt(dbg_info),
+        type(type),
         so_func(so_func),
         asm_source(asm_source),
         bc_filename(bc_filename),
@@ -940,8 +946,9 @@ class PrintStmt : public Stmt {
   const std::vector<FormatType> formats;
 
   PrintStmt(const std::vector<EntryType> &contents_,
-            const std::vector<FormatType> &formats_)
-      : contents(contents_), formats(formats_) {
+            const std::vector<FormatType> &formats_,
+            const DebugInfo &dbg_info = DebugInfo())
+      : Stmt(dbg_info), contents(contents_), formats(formats_) {
     TI_STMT_REG_FIELDS;
   }
 
@@ -1028,7 +1035,8 @@ class RangeForStmt : public Stmt {
                int num_cpu_threads,
                int block_dim,
                bool strictly_serialized,
-               std::string range_hint = "");
+               std::string range_hint = "",
+               const DebugInfo &dbg_info = DebugInfo());
 
   bool is_container_statement() const override {
     return true;
@@ -1070,7 +1078,8 @@ class StructForStmt : public Stmt {
                 std::unique_ptr<Block> &&body,
                 bool is_bit_vectorized,
                 int num_cpu_threads,
-                int block_dim);
+                int block_dim,
+                const DebugInfo &dbg_info = DebugInfo());
 
   bool is_container_statement() const override {
     return true;
@@ -1107,7 +1116,8 @@ class MeshForStmt : public Stmt {
               std::unique_ptr<Block> &&body,
               bool is_bit_vectorized,
               int num_cpu_threads,
-              int block_dim);
+              int block_dim,
+              const DebugInfo &dbg_info = DebugInfo());
 
   bool is_container_statement() const override {
     return true;
@@ -1135,7 +1145,9 @@ class FuncCallStmt : public Stmt, public ir_traits::Store {
   std::vector<Stmt *> args;
   bool global_side_effect{true};
 
-  FuncCallStmt(Function *func, const std::vector<Stmt *> &args);
+  FuncCallStmt(Function *func,
+               const std::vector<Stmt *> &args,
+               const DebugInfo &dbg_info = DebugInfo());
 
   bool has_global_side_effect() const override {
     return global_side_effect;
@@ -1203,7 +1215,9 @@ class ReturnStmt : public Stmt {
  public:
   std::vector<Stmt *> values;
 
-  explicit ReturnStmt(const std::vector<Stmt *> &values) : values(values) {
+  explicit ReturnStmt(const std::vector<Stmt *> &values,
+                      const DebugInfo &dbg_info = DebugInfo())
+      : Stmt(dbg_info), values(values) {
     TI_STMT_REG_FIELDS;
   }
 
@@ -1241,7 +1255,8 @@ class WhileStmt : public Stmt {
   Stmt *mask;
   std::unique_ptr<Block> body;
 
-  explicit WhileStmt(std::unique_ptr<Block> &&body);
+  explicit WhileStmt(std::unique_ptr<Block> &&body,
+                     const DebugInfo &dbg_info = DebugInfo());
 
   bool is_container_statement() const override {
     return true;
@@ -1497,7 +1512,8 @@ class LoopIndexStmt : public Stmt {
   Stmt *loop;
   int index;
 
-  LoopIndexStmt(Stmt *loop, int index) : loop(loop), index(index) {
+  LoopIndexStmt(Stmt *loop, int index, const DebugInfo &dbg_info = DebugInfo())
+      : Stmt(dbg_info), loop(loop), index(index) {
     TI_STMT_REG_FIELDS;
   }
 
@@ -2099,7 +2115,9 @@ class MatrixInitStmt : public Stmt {
  public:
   std::vector<Stmt *> values;
 
-  explicit MatrixInitStmt(const std::vector<Stmt *> &values) : values(values) {
+  explicit MatrixInitStmt(const std::vector<Stmt *> &values,
+                          const DebugInfo &dbg_info = DebugInfo())
+      : Stmt(dbg_info), values(values) {
     TI_STMT_REG_FIELDS;
   }
 

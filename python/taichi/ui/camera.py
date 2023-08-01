@@ -241,9 +241,9 @@ class Camera:
         if window.is_pressed("q"):
             position_change -= up * movement_speed
         self.position(*(self.curr_position + position_change))
-        self.lookat(*(self.curr_lookat + position_change))
 
         curr_mouse_x, curr_mouse_y = window.get_cursor_pos()
+
         if (hold_key is None) or window.is_pressed(hold_key):
             if (self.last_mouse_x is None) or (self.last_mouse_y is None):
                 self.last_mouse_x, self.last_mouse_y = curr_mouse_x, curr_mouse_y
@@ -252,10 +252,8 @@ class Camera:
 
             yaw, pitch = vec_to_euler(front)
 
-            yaw_speed *= time_elapsed * 60.0
-            pitch_speed *= time_elapsed * 60.0
-            yaw -= dx * yaw_speed
-            pitch += dy * pitch_speed
+            yaw -= dx * yaw_speed * time_elapsed * 60.0
+            pitch += dy * pitch_speed * time_elapsed * 60.0
 
             pitch_limit = pi / 2 * 0.99
             if pitch > pitch_limit:
@@ -264,6 +262,6 @@ class Camera:
                 pitch = -pitch_limit
 
             front = euler_to_vec(yaw, pitch)
-            self.lookat(*(self.curr_position + front))
 
+        self.lookat(*(self.curr_position + front))
         self.last_mouse_x, self.last_mouse_y = curr_mouse_x, curr_mouse_y

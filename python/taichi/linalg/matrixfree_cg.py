@@ -104,7 +104,7 @@ def MatrixFreeCG(A, b, x, tol=1e-6, maxiter=5000, quiet=True):
         old_rTr = initial_rTr
         new_rTr = initial_rTr
         update_p()
-        if sqrt(initial_rTr) >= tol: # Do nothing if the initial residual is small enough
+        if sqrt(initial_rTr) >= tol:  # Do nothing if the initial residual is small enough
             # -- Main loop --
             for i in range(maxiter):
                 A._matvec(p, Ap)  # compute Ap = A x p
@@ -258,7 +258,7 @@ def MatrixFreeBICGSTAB(A, b, x, tol=1e-6, maxiter=5000, quiet=True):
         rTr = initial_rTr
         if not quiet:
             print(f">>> Initial residual = {initial_rTr:e}")
-        if sqrt(initial_rTr) >= tol: # Do nothing if the initial residual is small enough
+        if sqrt(initial_rTr) >= tol:  # Do nothing if the initial residual is small enough
             for i in range(maxiter):
                 rho[None] = reduce(r, r_tld)
                 if rho[None] == 0.0:

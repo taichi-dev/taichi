@@ -159,20 +159,24 @@ bool SNodeOpStmt::need_activation(SNodeOpType op) {
 
 ExternalTensorShapeAlongAxisStmt::ExternalTensorShapeAlongAxisStmt(
     int axis,
-    const std::vector<int> &arg_id)
-    : axis(axis), arg_id(arg_id) {
+    const std::vector<int> &arg_id,
+    const DebugInfo &dbg_info)
+    : Stmt(dbg_info), axis(axis), arg_id(arg_id) {
   TI_STMT_REG_FIELDS;
 }
 
 ExternalTensorBasePtrStmt::ExternalTensorBasePtrStmt(
     const std::vector<int> &arg_id,
-    bool is_grad)
-    : arg_id(arg_id), is_grad(is_grad) {
+    bool is_grad,
+    const DebugInfo &dbg_info)
+    : Stmt(dbg_info), arg_id(arg_id), is_grad(is_grad) {
   TI_STMT_REG_FIELDS;
 }
 
-LoopUniqueStmt::LoopUniqueStmt(Stmt *input, const std::vector<SNode *> &covers)
-    : input(input) {
+LoopUniqueStmt::LoopUniqueStmt(Stmt *input,
+                               const std::vector<SNode *> &covers,
+                               const DebugInfo &dbg_info)
+    : Stmt(dbg_info), input(input) {
   for (const auto &sn : covers) {
     if (sn->is_place()) {
       TI_INFO(
@@ -187,7 +191,8 @@ LoopUniqueStmt::LoopUniqueStmt(Stmt *input, const std::vector<SNode *> &covers)
   TI_STMT_REG_FIELDS;
 }
 
-IfStmt::IfStmt(Stmt *cond) : cond(cond) {
+IfStmt::IfStmt(Stmt *cond, const DebugInfo &dbg_info)
+    : Stmt(dbg_info), cond(cond) {
   TI_STMT_REG_FIELDS;
 }
 

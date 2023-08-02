@@ -264,8 +264,8 @@ class BinaryOpStmt : public Stmt {
   BinaryOpStmt(BinaryOpType op_type,
                Stmt *lhs,
                Stmt *rhs,
-               const DebugInfo &dbg_info = DebugInfo(),
-               bool is_bit_vectorized = false)
+               bool is_bit_vectorized = false,
+               const DebugInfo &dbg_info = DebugInfo())
       : Stmt(dbg_info),
         op_type(op_type),
         lhs(lhs),
@@ -597,7 +597,9 @@ class ExternalTensorShapeAlongAxisStmt : public Stmt {
   int axis;
   std::vector<int> arg_id;
 
-  ExternalTensorShapeAlongAxisStmt(int axis, const std::vector<int> &arg_id);
+  ExternalTensorShapeAlongAxisStmt(int axis,
+                                   const std::vector<int> &arg_id,
+                                   const DebugInfo &dbg_info = DebugInfo());
 
   bool has_global_side_effect() const override {
     return false;
@@ -612,7 +614,9 @@ class ExternalTensorBasePtrStmt : public Stmt {
   std::vector<int> arg_id;
   bool is_grad;
 
-  ExternalTensorBasePtrStmt(const std::vector<int> &arg_id, bool is_grad);
+  ExternalTensorBasePtrStmt(const std::vector<int> &arg_id,
+                            bool is_grad,
+                            const DebugInfo &dbg_info = DebugInfo());
 
   bool has_global_side_effect() const override {
     return false;
@@ -720,8 +724,12 @@ class RangeAssumptionStmt : public Stmt {
   Stmt *base;
   int low, high;
 
-  RangeAssumptionStmt(Stmt *input, Stmt *base, int low, int high)
-      : input(input), base(base), low(low), high(high) {
+  RangeAssumptionStmt(Stmt *input,
+                      Stmt *base,
+                      int low,
+                      int high,
+                      const DebugInfo &dbg_info = DebugInfo())
+      : Stmt(dbg_info), input(input), base(base), low(low), high(high) {
     TI_STMT_REG_FIELDS;
   }
 
@@ -750,7 +758,9 @@ class LoopUniqueStmt : public Stmt {
   // std::unordered_set<> provides operator==, and StmtFieldManager will
   // use that to check if two LoopUniqueStmts are the same.
 
-  LoopUniqueStmt(Stmt *input, const std::vector<SNode *> &covers);
+  LoopUniqueStmt(Stmt *input,
+                 const std::vector<SNode *> &covers,
+                 const DebugInfo &dbg_info = DebugInfo());
 
   bool has_global_side_effect() const override {
     return false;
@@ -768,7 +778,8 @@ class GlobalLoadStmt : public Stmt, public ir_traits::Load {
  public:
   Stmt *src;
 
-  explicit GlobalLoadStmt(Stmt *src) : src(src) {
+  explicit GlobalLoadStmt(Stmt *src, const DebugInfo &dbg_info = DebugInfo())
+      : Stmt(dbg_info), src(src) {
     TI_STMT_REG_FIELDS;
   }
 
@@ -859,7 +870,8 @@ class LocalStoreStmt : public Stmt, public ir_traits::Store {
   Stmt *dest;
   Stmt *val;
 
-  LocalStoreStmt(Stmt *dest, Stmt *val) : dest(dest), val(val) {
+  LocalStoreStmt(Stmt *dest, Stmt *val, const DebugInfo &dbg_info = DebugInfo())
+      : dest(dest), val(val) {
     TI_ASSERT(dest->is<AllocaStmt>() || dest->is<MatrixPtrStmt>() ||
               dest->is<MatrixOfMatrixPtrStmt>() || dest->is<GetElementStmt>());
     TI_STMT_REG_FIELDS;
@@ -899,7 +911,7 @@ class IfStmt : public Stmt {
   Stmt *cond;
   std::unique_ptr<Block> true_statements, false_statements;
 
-  explicit IfStmt(Stmt *cond);
+  explicit IfStmt(Stmt *cond, const DebugInfo &dbg_info = DebugInfo());
 
   // Use these setters to set Block::parent_stmt at the same time.
   void set_true_statements(std::unique_ptr<Block> &&new_true_statements);
@@ -975,7 +987,9 @@ class ConstStmt : public Stmt {
  public:
   TypedConstant val;
 
-  explicit ConstStmt(const TypedConstant &val) : val(val) {
+  explicit ConstStmt(const TypedConstant &val,
+                     const DebugInfo &dbg_info = DebugInfo())
+      : Stmt(dbg_info), val(val) {
     ret_type = val.dt;
     TI_STMT_REG_FIELDS;
   }
@@ -1146,7 +1160,8 @@ class ReferenceStmt : public Stmt, public ir_traits::Load {
   Stmt *var;
   bool global_side_effect{false};
 
-  explicit ReferenceStmt(Stmt *var) : var(var) {
+  explicit ReferenceStmt(Stmt *var, const DebugInfo &dbg_info = DebugInfo())
+      : Stmt(dbg_info), var(var) {
     TI_STMT_REG_FIELDS;
   }
 
@@ -1170,8 +1185,10 @@ class GetElementStmt : public Stmt {
  public:
   Stmt *src;
   std::vector<int> index;
-  GetElementStmt(Stmt *src, const std::vector<int> &index)
-      : src(src), index(index) {
+  GetElementStmt(Stmt *src,
+                 const std::vector<int> &index,
+                 const DebugInfo &dbg_info = DebugInfo())
+      : Stmt(dbg_info), src(src), index(index) {
     TI_STMT_REG_FIELDS;
   }
 
@@ -1691,8 +1708,10 @@ class TexturePtrStmt : public Stmt {
                           int dimensions,
                           bool is_storage,
                           BufferFormat format,
-                          int lod)
-      : arg_load_stmt(stmt),
+                          int lod,
+                          const DebugInfo &dbg_info = DebugInfo())
+      : Stmt(dbg_info),
+        arg_load_stmt(stmt),
         dimensions(dimensions),
         is_storage(is_storage),
         format(format),
@@ -1700,8 +1719,13 @@ class TexturePtrStmt : public Stmt {
     TI_STMT_REG_FIELDS;
   }
 
-  explicit TexturePtrStmt(Stmt *stmt, int dimensions)
-      : arg_load_stmt(stmt), dimensions(dimensions), is_storage(false) {
+  explicit TexturePtrStmt(Stmt *stmt,
+                          int dimensions,
+                          const DebugInfo &dbg_info = DebugInfo())
+      : Stmt(dbg_info),
+        arg_load_stmt(stmt),
+        dimensions(dimensions),
+        is_storage(false) {
     TI_STMT_REG_FIELDS;
   }
 
@@ -1717,8 +1741,9 @@ class TextureOpStmt : public Stmt {
 
   explicit TextureOpStmt(TextureOpType op,
                          Stmt *texture_ptr,
-                         const std::vector<Stmt *> &args)
-      : op(op), texture_ptr(texture_ptr), args(args) {
+                         const std::vector<Stmt *> &args,
+                         const DebugInfo &dbg_info = DebugInfo())
+      : Stmt(dbg_info), op(op), texture_ptr(texture_ptr), args(args) {
     TI_STMT_REG_FIELDS;
   }
 
@@ -1967,8 +1992,10 @@ class MeshRelationAccessStmt : public Stmt {
   MeshRelationAccessStmt(mesh::Mesh *mesh,
                          Stmt *mesh_idx,
                          mesh::MeshElementType to_type,
-                         Stmt *neighbor_idx)
-      : mesh(mesh),
+                         Stmt *neighbor_idx,
+                         const DebugInfo &dbg_info = DebugInfo())
+      : Stmt(dbg_info),
+        mesh(mesh),
         mesh_idx(mesh_idx),
         to_type(to_type),
         neighbor_idx(neighbor_idx) {
@@ -1978,8 +2005,10 @@ class MeshRelationAccessStmt : public Stmt {
 
   MeshRelationAccessStmt(mesh::Mesh *mesh,
                          Stmt *mesh_idx,
-                         mesh::MeshElementType to_type)
-      : mesh(mesh),
+                         mesh::MeshElementType to_type,
+                         const DebugInfo &dbg_info = DebugInfo())
+      : Stmt(dbg_info),
+        mesh(mesh),
         mesh_idx(mesh_idx),
         to_type(to_type),
         neighbor_idx(nullptr) {
@@ -2025,8 +2054,13 @@ class MeshIndexConversionStmt : public Stmt {
   MeshIndexConversionStmt(mesh::Mesh *mesh,
                           mesh::MeshElementType idx_type,
                           Stmt *idx,
-                          mesh::ConvType conv_type)
-      : mesh(mesh), idx_type(idx_type), idx(idx), conv_type(conv_type) {
+                          mesh::ConvType conv_type,
+                          const DebugInfo &dbg_info = DebugInfo())
+      : Stmt(dbg_info),
+        mesh(mesh),
+        idx_type(idx_type),
+        idx(idx),
+        conv_type(conv_type) {
     this->ret_type = PrimitiveType::i32;
     TI_STMT_REG_FIELDS;
   }
@@ -2044,7 +2078,8 @@ class MeshIndexConversionStmt : public Stmt {
  */
 class MeshPatchIndexStmt : public Stmt {
  public:
-  MeshPatchIndexStmt() {
+  explicit MeshPatchIndexStmt(const DebugInfo &dbg_info = DebugInfo())
+      : Stmt(dbg_info) {
     this->ret_type = PrimitiveType::i32;
     TI_STMT_REG_FIELDS;
   }

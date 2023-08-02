@@ -183,9 +183,10 @@ void TexturePtrExpression::type_check(const CompileConfig *config) {
 
 void TexturePtrExpression::flatten(FlattenContext *ctx) {
   ctx->push_back<ArgLoadStmt>(arg_id, PrimitiveType::f32, /*is_ptr=*/true,
-                              /*create_load=*/true, /*arg_depth=*/arg_depth);
+                              /*create_load=*/true, /*arg_depth=*/arg_depth,
+                              dbg_info);
   ctx->push_back<TexturePtrStmt>(ctx->back_stmt(), num_dims, is_storage, format,
-                                 lod);
+                                 lod, dbg_info);
   stmt = ctx->back_stmt();
 }
 
@@ -293,7 +294,8 @@ bool UnaryOpExpression::is_cast() const {
 
 void UnaryOpExpression::flatten(FlattenContext *ctx) {
   auto operand_stmt = flatten_rvalue(operand, ctx);
-  auto unary = std::make_unique<UnaryOpStmt>(type, operand_stmt, dbg_info);
+  auto unary =
+      std::make_unique<UnaryOpStmt>(type, operand_stmt, operand_stmt->dbg_info);
   if (is_cast()) {
     unary->cast_type = cast_type;
   }
@@ -328,7 +330,7 @@ Expr to_broadcast_tensor(const Expr &elt, const DataType &dt) {
   }
   std::vector<Expr> broadcast_values(tensor_type->get_num_elements(), elt);
   auto matrix_expr = Expr::make<MatrixExpression>(
-      broadcast_values, tensor_type->get_shape(), elt_type);
+      broadcast_values, tensor_type->get_shape(), elt_type, elt->dbg_info);
   matrix_expr->type_check(nullptr);
   return matrix_expr;
 }
@@ -447,15 +449,15 @@ void BinaryOpExpression::flatten(FlattenContext *ctx) {
   auto rhs_type = rhs.get_rvalue_type();
 
   if (binary_is_logical(type) && !is_tensor(lhs_type) && !is_tensor(rhs_type)) {
-    auto result = ctx->push_back<AllocaStmt>(ret_type);
-    ctx->push_back<LocalStoreStmt>(result, lhs_stmt);
-    auto cond = ctx->push_back<LocalLoadStmt>(result);
-    auto if_stmt = ctx->push_back<IfStmt>(cond);
+    auto result = ctx->push_back<AllocaStmt>(ret_type, dbg_info);
+    ctx->push_back<LocalStoreStmt>(result, lhs_stmt, lhs_stmt->dbg_info);
+    auto cond = ctx->push_back<LocalLoadStmt>(result, dbg_info);
+    auto if_stmt = ctx->push_back<IfStmt>(cond, dbg_info);
 
     FlattenContext rctx;
     rctx.current_block = ctx->current_block;
     auto rhs_stmt = flatten_rvalue(rhs, &rctx);
-    rctx.push_back<LocalStoreStmt>(result, rhs_stmt);
+    rctx.push_back<LocalStoreStmt>(result, rhs_stmt, rhs_stmt->dbg_info);
 
     auto true_block = std::make_unique<Block>();
     if (type == BinaryOpType::logical_and) {
@@ -475,8 +477,8 @@ void BinaryOpExpression::flatten(FlattenContext *ctx) {
     return;
   }
   auto rhs_stmt = flatten_rvalue(rhs, ctx);
-  ctx->push_back(
-      std::make_unique<BinaryOpStmt>(type, lhs_stmt, rhs_stmt, dbg_info));
+  ctx->push_back(std::make_unique<BinaryOpStmt>(
+      type, lhs_stmt, rhs_stmt, /*is_bit_vectorized=*/false, dbg_info));
   stmt = ctx->back_stmt();
   stmt->ret_type = ret_type;
 }
@@ -485,20 +487,21 @@ void make_ifte(Expression::FlattenContext *ctx,
                DataType ret_type,
                Expr cond,
                Expr true_val,
-               Expr false_val) {
-  auto result = ctx->push_back<AllocaStmt>(ret_type);
+               Expr false_val,
+               const DebugInfo &dbg_info) {
+  auto result = ctx->push_back<AllocaStmt>(ret_type, dbg_info);
   auto cond_stmt = flatten_rvalue(cond, ctx);
-  auto if_stmt = ctx->push_back<IfStmt>(cond_stmt);
+  auto if_stmt = ctx->push_back<IfStmt>(cond_stmt, cond->dbg_info);
 
   Expression::FlattenContext lctx;
   lctx.current_block = ctx->current_block;
   auto true_val_stmt = flatten_rvalue(true_val, &lctx);
-  lctx.push_back<LocalStoreStmt>(result, true_val_stmt);
+  lctx.push_back<LocalStoreStmt>(result, true_val_stmt, true_val->dbg_info);
 
   Expression::FlattenContext rctx;
   rctx.current_block = ctx->current_block;
   auto false_val_stmt = flatten_rvalue(false_val, &rctx);
-  rctx.push_back<LocalStoreStmt>(result, false_val_stmt);
+  rctx.push_back<LocalStoreStmt>(result, false_val_stmt, false_val->dbg_info);
 
   auto true_block = std::make_unique<Block>();
   true_block->set_statements(std::move(lctx.stmts));
@@ -508,7 +511,7 @@ void make_ifte(Expression::FlattenContext *ctx,
   false_block->set_statements(std::move(rctx.stmts));
   if_stmt->set_false_statements(std::move(false_block));
 
-  ctx->push_back<LocalLoadStmt>(result);
+  ctx->push_back<LocalLoadStmt>(result, dbg_info);
   return;
 }
 
@@ -617,7 +620,7 @@ void TernaryOpExpression::flatten(FlattenContext *ctx) {
     ctx->push_back(std::make_unique<TernaryOpStmt>(type, op1_stmt, op2_stmt,
                                                    op3_stmt, dbg_info));
   } else if (type == TernaryOpType::ifte) {
-    make_ifte(ctx, ret_type, op1, op2, op3);
+    make_ifte(ctx, ret_type, op1, op2, op3, dbg_info);
   }
   stmt = ctx->back_stmt();
   stmt->ret_type = ret_type;
@@ -984,8 +987,8 @@ void RangeAssumptionExpression::type_check(const CompileConfig *) {
 void RangeAssumptionExpression::flatten(FlattenContext *ctx) {
   auto input_stmt = flatten_rvalue(input, ctx);
   auto base_stmt = flatten_rvalue(base, ctx);
-  ctx->push_back(
-      Stmt::make<RangeAssumptionStmt>(input_stmt, base_stmt, low, high));
+  ctx->push_back(Stmt::make<RangeAssumptionStmt>(input_stmt, base_stmt, low,
+                                                 high, dbg_info));
   stmt = ctx->back_stmt();
 }
 
@@ -1003,7 +1006,7 @@ void LoopUniqueExpression::type_check(const CompileConfig *) {
 
 void LoopUniqueExpression::flatten(FlattenContext *ctx) {
   auto input_stmt = flatten_rvalue(input, ctx);
-  ctx->push_back(Stmt::make<LoopUniqueStmt>(input_stmt, covers));
+  ctx->push_back(Stmt::make<LoopUniqueStmt>(input_stmt, covers, dbg_info));
   stmt = ctx->back_stmt();
 }
 
@@ -1075,10 +1078,11 @@ void AtomicOpExpression::flatten(FlattenContext *ctx) {
   if (op_type == AtomicOpType::sub) {
     if (val->ret_type != ret_type) {
       val.set(Expr::make<UnaryOpExpression>(UnaryOpType::cast_value, val,
-                                            ret_type));
+                                            ret_type, val->dbg_info));
     }
 
-    val.set(Expr::make<UnaryOpExpression>(UnaryOpType::neg, val));
+    val.set(
+        Expr::make<UnaryOpExpression>(UnaryOpType::neg, val, val->dbg_info));
     op_type = AtomicOpType::add;
   }
   // expand rhs
@@ -1145,11 +1149,14 @@ void SNodeOpExpression::flatten(FlattenContext *ctx) {
           TaichiTypeError(), this,
           "ti.is_active only works on pointer, hash or bitmasked nodes.");
     }
-    ctx->push_back<SNodeOpStmt>(SNodeOpType::is_active, snode, ptr, nullptr);
+    ctx->push_back<SNodeOpStmt>(SNodeOpType::is_active, snode, ptr, nullptr,
+                                dbg_info);
   } else if (op_type == SNodeOpType::length) {
-    ctx->push_back<SNodeOpStmt>(SNodeOpType::length, snode, ptr, nullptr);
+    ctx->push_back<SNodeOpStmt>(SNodeOpType::length, snode, ptr, nullptr,
+                                dbg_info);
   } else if (op_type == SNodeOpType::get_addr) {
-    ctx->push_back<SNodeOpStmt>(SNodeOpType::get_addr, snode, ptr, nullptr);
+    ctx->push_back<SNodeOpStmt>(SNodeOpType::get_addr, snode, ptr, nullptr,
+                                dbg_info);
   } else if (op_type == SNodeOpType::append) {
     auto alloca = ctx->push_back<AllocaStmt>(PrimitiveType::i32, dbg_info);
     auto addr = ctx->push_back<SNodeOpStmt>(SNodeOpType::allocate, snode, ptr,
@@ -1171,8 +1178,9 @@ void SNodeOpExpression::flatten(FlattenContext *ctx) {
 
 TextureOpExpression::TextureOpExpression(TextureOpType op,
                                          Expr texture_ptr,
-                                         const ExprGroup &args)
-    : op(op), texture_ptr(texture_ptr), args(args) {
+                                         const ExprGroup &args,
+                                         const DebugInfo &dbg_info)
+    : Expression(dbg_info), op(op), texture_ptr(texture_ptr), args(args) {
 }
 
 void TextureOpExpression::type_check(const CompileConfig *config) {
@@ -1270,7 +1278,7 @@ void TextureOpExpression::flatten(FlattenContext *ctx) {
   for (Expr &arg : args.exprs) {
     arg_stmts.push_back(flatten_rvalue(arg, ctx));
   }
-  ctx->push_back<TextureOpStmt>(op, texture_ptr_stmt, arg_stmts);
+  ctx->push_back<TextureOpStmt>(op, texture_ptr_stmt, arg_stmts, dbg_info);
   stmt = ctx->back_stmt();
 }
 
@@ -1284,7 +1292,7 @@ void ConstExpression::type_check(const CompileConfig *) {
 }
 
 void ConstExpression::flatten(FlattenContext *ctx) {
-  ctx->push_back(Stmt::make<ConstStmt>(val));
+  ctx->push_back(Stmt::make<ConstStmt>(val, dbg_info));
   stmt = ctx->back_stmt();
 }
 
@@ -1302,7 +1310,8 @@ void ExternalTensorShapeAlongAxisExpression::type_check(const CompileConfig *) {
 void ExternalTensorShapeAlongAxisExpression::flatten(FlattenContext *ctx) {
   auto temp = ptr.cast<ExternalTensorExpression>();
   TI_ASSERT(0 <= axis && axis < temp->ndim);
-  ctx->push_back<ExternalTensorShapeAlongAxisStmt>(axis, temp->arg_id);
+  ctx->push_back<ExternalTensorShapeAlongAxisStmt>(axis, temp->arg_id,
+                                                   dbg_info);
   stmt = ctx->back_stmt();
 }
 
@@ -1316,7 +1325,7 @@ void ExternalTensorBasePtrExpression::type_check(const CompileConfig *) {
 
 void ExternalTensorBasePtrExpression::flatten(FlattenContext *ctx) {
   auto tensor = ptr.cast<ExternalTensorExpression>();
-  ctx->push_back<ExternalTensorBasePtrStmt>(tensor->arg_id, is_grad);
+  ctx->push_back<ExternalTensorBasePtrStmt>(tensor->arg_id, is_grad, dbg_info);
   stmt = ctx->back_stmt();
   stmt->ret_type = ret_type;
 }
@@ -1335,13 +1344,13 @@ void GetElementExpression::type_check(const CompileConfig *config) {
 }
 
 void GetElementExpression::flatten(FlattenContext *ctx) {
-  ctx->push_back<GetElementStmt>(flatten_rvalue(src, ctx), index);
+  ctx->push_back<GetElementStmt>(flatten_rvalue(src, ctx), index, dbg_info);
   stmt = ctx->back_stmt();
 }
 // Mesh related.
 
 void MeshPatchIndexExpression::flatten(FlattenContext *ctx) {
-  auto pid_stmt = std::make_unique<MeshPatchIndexStmt>();
+  auto pid_stmt = std::make_unique<MeshPatchIndexStmt>(dbg_info);
   ctx->push_back(std::move(pid_stmt));
   stmt = ctx->back_stmt();
 }
@@ -1359,9 +1368,10 @@ void MeshRelationAccessExpression::flatten(FlattenContext *ctx) {
   if (neighbor_idx) {
     auto neighbor_idx_stmt = flatten_rvalue(neighbor_idx, ctx);
     ctx->push_back<MeshRelationAccessStmt>(mesh, mesh_idx_stmt, to_type,
-                                           neighbor_idx_stmt);
+                                           neighbor_idx_stmt, dbg_info);
   } else {
-    ctx->push_back<MeshRelationAccessStmt>(mesh, mesh_idx_stmt, to_type);
+    ctx->push_back<MeshRelationAccessStmt>(mesh, mesh_idx_stmt, to_type,
+                                           dbg_info);
   }
   stmt = ctx->back_stmt();
 }
@@ -1370,8 +1380,13 @@ MeshIndexConversionExpression::MeshIndexConversionExpression(
     mesh::Mesh *mesh,
     mesh::MeshElementType idx_type,
     const Expr idx,
-    mesh::ConvType conv_type)
-    : mesh(mesh), idx_type(idx_type), idx(idx), conv_type(conv_type) {
+    mesh::ConvType conv_type,
+    const DebugInfo &dbg_info)
+    : Expression(dbg_info),
+      mesh(mesh),
+      idx_type(idx_type),
+      idx(idx),
+      conv_type(conv_type) {
 }
 
 void MeshIndexConversionExpression::type_check(const CompileConfig *) {
@@ -1380,7 +1395,8 @@ void MeshIndexConversionExpression::type_check(const CompileConfig *) {
 
 void MeshIndexConversionExpression::flatten(FlattenContext *ctx) {
   auto idx_stmt = flatten_rvalue(idx, ctx);
-  ctx->push_back<MeshIndexConversionStmt>(mesh, idx_type, idx_stmt, conv_type);
+  ctx->push_back<MeshIndexConversionStmt>(mesh, idx_type, idx_stmt, conv_type,
+                                          dbg_info);
   stmt = ctx->back_stmt();
 }
 
@@ -1390,7 +1406,7 @@ void ReferenceExpression::type_check(const CompileConfig *) {
 
 void ReferenceExpression::flatten(FlattenContext *ctx) {
   auto var_stmt = flatten_lvalue(var, ctx);
-  ctx->push_back<ReferenceStmt>(var_stmt);
+  ctx->push_back<ReferenceStmt>(var_stmt, dbg_info);
   stmt = ctx->back_stmt();
 }
 
@@ -1478,7 +1494,7 @@ Expr ASTBuilder::insert_thread_idx_expr() {
       Operations::get(InternalOp::linear_thread_idx), std::vector<Expr>{});
 }
 
-Expr ASTBuilder::insert_patch_idx_expr() {
+Expr ASTBuilder::insert_patch_idx_expr(const DebugInfo &dbg_info) {
   auto loop = stack_.size() ? stack_.back()->parent_stmt() : nullptr;
   if (loop != nullptr) {
     auto i = stack_.size() - 1;
@@ -1491,7 +1507,7 @@ Expr ASTBuilder::insert_patch_idx_expr() {
   TI_ERROR_IF(!(loop && loop->is<FrontendForStmt>() &&
                 loop->as<FrontendForStmt>()->mesh),
               "ti.mesh_patch_idx() is only valid within mesh-for loops.");
-  return Expr::make<MeshPatchIndexExpression>();
+  return Expr::make<MeshPatchIndexExpression>(dbg_info);
 }
 
 void ASTBuilder::create_kernel_exprgroup_return(const ExprGroup &group,
@@ -1559,26 +1575,29 @@ Expr ASTBuilder::expr_alloca(const DebugInfo &dbg_info) {
 }
 
 std::optional<Expr> ASTBuilder::insert_func_call(Function *func,
-                                                 const ExprGroup &args) {
+                                                 const ExprGroup &args,
+                                                 const DebugInfo &dbg_info) {
   ExprGroup expanded_args;
   expanded_args.exprs = this->expand_exprs(args.exprs);
   if (!func->rets.empty()) {
     auto var = Expr(std::make_shared<IdExpression>(get_next_id()));
     this->insert(std::make_unique<FrontendFuncCallStmt>(
         func, expanded_args,
-        std::static_pointer_cast<IdExpression>(var.expr)->id));
+        std::static_pointer_cast<IdExpression>(var.expr)->id, dbg_info));
     var.expr->ret_type = func->ret_type;
     var.expr->ret_type.set_is_pointer(true);
     return var;
   } else {
-    this->insert(std::make_unique<FrontendFuncCallStmt>(func, expanded_args));
+    this->insert(std::make_unique<FrontendFuncCallStmt>(
+        func, expanded_args, /*id=*/std::nullopt, dbg_info));
     return std::nullopt;
   }
 }
 
 Expr ASTBuilder::make_matrix_expr(const std::vector<int> &shape,
                                   const DataType &dt,
-                                  const std::vector<Expr> &elements) {
+                                  const std::vector<Expr> &elements,
+                                  const DebugInfo &dbg_info) {
   /*
     Since we have both "shape" and "element_type" in MatrixExpression,
     we should flatten all the elements and disallow recursive TensorType in
@@ -1586,8 +1605,8 @@ Expr ASTBuilder::make_matrix_expr(const std::vector<int> &shape,
   */
   TI_ASSERT(dt->is<PrimitiveType>());
   auto expanded_elements = this->expand_exprs(elements);
-  auto mat =
-      Expr(std::make_shared<MatrixExpression>(expanded_elements, shape, dt));
+  auto mat = Expr(std::make_shared<MatrixExpression>(expanded_elements, shape,
+                                                     dt, dbg_info));
   return mat;
 }
 
@@ -1652,13 +1671,14 @@ void ASTBuilder::begin_frontend_range_for(const Expr &i,
 }
 
 void ASTBuilder::begin_frontend_struct_for_on_snode(const ExprGroup &loop_vars,
-                                                    SNode *snode) {
+                                                    SNode *snode,
+                                                    const DebugInfo &dbg_info) {
   TI_WARN_IF(
       for_loop_dec_.config.strictly_serialized,
       "ti.loop_config(serialize=True) does not have effect on the struct for. "
       "The execution order is not guaranteed.");
-  auto stmt_unique = std::make_unique<FrontendForStmt>(loop_vars, snode, arch_,
-                                                       for_loop_dec_.config);
+  auto stmt_unique = std::make_unique<FrontendForStmt>(
+      loop_vars, snode, arch_, for_loop_dec_.config, dbg_info);
   for_loop_dec_.reset();
   auto stmt = stmt_unique.get();
   this->insert(std::move(stmt_unique));
@@ -1667,13 +1687,14 @@ void ASTBuilder::begin_frontend_struct_for_on_snode(const ExprGroup &loop_vars,
 
 void ASTBuilder::begin_frontend_struct_for_on_external_tensor(
     const ExprGroup &loop_vars,
-    const Expr &external_tensor) {
+    const Expr &external_tensor,
+    const DebugInfo &dbg_info) {
   TI_WARN_IF(
       for_loop_dec_.config.strictly_serialized,
       "ti.loop_config(serialize=True) does not have effect on the struct for. "
       "The execution order is not guaranteed.");
   auto stmt_unique = std::make_unique<FrontendForStmt>(
-      loop_vars, external_tensor, arch_, for_loop_dec_.config);
+      loop_vars, external_tensor, arch_, for_loop_dec_.config, dbg_info);
   for_loop_dec_.reset();
   auto stmt = stmt_unique.get();
   this->insert(std::move(stmt_unique));
@@ -1683,13 +1704,15 @@ void ASTBuilder::begin_frontend_struct_for_on_external_tensor(
 void ASTBuilder::begin_frontend_mesh_for(
     const Expr &i,
     const mesh::MeshPtr &mesh_ptr,
-    const mesh::MeshElementType &element_type) {
+    const mesh::MeshElementType &element_type,
+    const DebugInfo &dbg_info) {
   TI_WARN_IF(
       for_loop_dec_.config.strictly_serialized,
       "ti.loop_config(serialize=True) does not have effect on the mesh for. "
       "The execution order is not guaranteed.");
-  auto stmt_unique = std::make_unique<FrontendForStmt>(
-      ExprGroup(i), mesh_ptr, element_type, arch_, for_loop_dec_.config);
+  auto stmt_unique =
+      std::make_unique<FrontendForStmt>(ExprGroup(i), mesh_ptr, element_type,
+                                        arch_, for_loop_dec_.config, dbg_info);
   for_loop_dec_.reset();
   auto stmt = stmt_unique.get();
   this->insert(std::move(stmt_unique));
@@ -1840,8 +1863,8 @@ std::vector<Expr> ASTBuilder::expand_exprs(const std::vector<Expr> &exprs) {
             if (auto element_struct_type = element_type->cast<StructType>()) {
               expand_struct(expr, element_struct_type, indices);
             } else {
-              auto elem =
-                  Expr(std::make_shared<GetElementExpression>(expr, indices));
+              auto elem = Expr(std::make_shared<GetElementExpression>(
+                  expr, indices, expr->dbg_info));
               elem.expr->ret_type = element_type;
               expand_tensor_or_scalar(elem);
             }
@@ -1862,7 +1885,8 @@ std::vector<Expr> ASTBuilder::expand_exprs(const std::vector<Expr> &exprs) {
 Expr ASTBuilder::mesh_index_conversion(mesh::MeshPtr mesh_ptr,
                                        mesh::MeshElementType idx_type,
                                        const Expr &idx,
-                                       mesh::ConvType &conv_type) {
+                                       mesh::ConvType &conv_type,
+                                       const DebugInfo &dbg_info) {
   Expr expanded_idx;
   if (idx.is<IdExpression>() && idx.get_ret_type() == PrimitiveType::unknown) {
     expanded_idx = idx;
@@ -1874,8 +1898,8 @@ Expr ASTBuilder::mesh_index_conversion(mesh::MeshPtr mesh_ptr,
     expanded_idx = this->expand_exprs({idx})[0];
   }
 
-  return Expr::make<MeshIndexConversionExpression>(mesh_ptr.ptr.get(), idx_type,
-                                                   expanded_idx, conv_type);
+  return Expr::make<MeshIndexConversionExpression>(
+      mesh_ptr.ptr.get(), idx_type, expanded_idx, conv_type, dbg_info);
 }
 
 void ASTBuilder::create_scope(std::unique_ptr<Block> &list, LoopType tp) {
@@ -1902,19 +1926,24 @@ void ASTBuilder::pop_scope() {
 
 Expr ASTBuilder::make_texture_op_expr(const TextureOpType &op,
                                       const Expr &texture_ptr,
-                                      const ExprGroup &args) {
+                                      const ExprGroup &args,
+                                      const DebugInfo &dbg_info) {
   ExprGroup expanded_args;
   expanded_args.exprs = this->expand_exprs(args.exprs);
-  return Expr::make<TextureOpExpression>(op, texture_ptr, expanded_args);
+  return Expr::make<TextureOpExpression>(op, texture_ptr, expanded_args,
+                                         dbg_info);
 }
 
 Stmt *flatten_lvalue(Expr expr, Expression::FlattenContext *ctx) {
   expr->flatten(ctx);
-  return expr->get_flattened_stmt();
+  Stmt *ptr_stmt = expr->get_flattened_stmt();
+  ptr_stmt->dbg_info = expr->dbg_info;
+  return ptr_stmt;
 }
 
 Stmt *flatten_global_load(Stmt *ptr_stmt, Expression::FlattenContext *ctx) {
-  auto load_stmt = std::make_unique<GlobalLoadStmt>(ptr_stmt);
+  auto load_stmt =
+      std::make_unique<GlobalLoadStmt>(ptr_stmt, ptr_stmt->dbg_info);
   auto pointee_type = load_stmt->src->ret_type.ptr_removed();
   load_stmt->ret_type = pointee_type->get_compute_type();
   ctx->push_back(std::move(load_stmt));
@@ -1922,7 +1951,7 @@ Stmt *flatten_global_load(Stmt *ptr_stmt, Expression::FlattenContext *ctx) {
 }
 
 Stmt *flatten_local_load(Stmt *ptr_stmt, Expression::FlattenContext *ctx) {
-  auto local_load = ctx->push_back<LocalLoadStmt>(ptr_stmt);
+  auto local_load = ctx->push_back<LocalLoadStmt>(ptr_stmt, ptr_stmt->dbg_info);
   local_load->ret_type = local_load->src->ret_type.ptr_removed();
   return local_load;
 }
@@ -1930,6 +1959,7 @@ Stmt *flatten_local_load(Stmt *ptr_stmt, Expression::FlattenContext *ctx) {
 Stmt *flatten_rvalue(Expr ptr, Expression::FlattenContext *ctx) {
   ptr->flatten(ctx);
   Stmt *ptr_stmt = ptr->get_flattened_stmt();
+  ptr_stmt->dbg_info = ptr->dbg_info;
   if (ptr.is<IdExpression>()) {
     if (ptr_stmt->is<AllocaStmt>()) {
       return flatten_local_load(ptr_stmt, ctx);

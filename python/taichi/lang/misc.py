@@ -563,7 +563,9 @@ def assume_in_range(val, base, low, high):
         >>> x
         10
     """
-    return _ti_core.expr_assume_in_range(Expr(val).ptr, Expr(base).ptr, low, high)
+    return _ti_core.expr_assume_in_range(
+        Expr(val).ptr, Expr(base).ptr, low, high, _ti_core.DebugInfo(impl.get_runtime().get_current_src_info())
+    )
 
 
 def loop_unique(val, covers=None):
@@ -572,7 +574,9 @@ def loop_unique(val, covers=None):
     if not isinstance(covers, (list, tuple)):
         covers = [covers]
     covers = [x.snode.ptr if isinstance(x, Expr) else x.ptr for x in covers]
-    return _ti_core.expr_loop_unique(Expr(val).ptr, covers)
+    return _ti_core.expr_loop_unique(
+        Expr(val).ptr, covers, _ti_core.DebugInfo(impl.get_runtime().get_current_src_info())
+    )
 
 
 def _parallelize(v):
@@ -700,7 +704,11 @@ def mesh_patch_idx():
 
     Related to https://github.com/taichi-dev/taichi/issues/3608
     """
-    return impl.get_runtime().compiling_callable.ast_builder().insert_patch_idx_expr()
+    return (
+        impl.get_runtime()
+        .compiling_callable.ast_builder()
+        .insert_patch_idx_expr(_ti_core.DebugInfo(impl.get_runtime().get_current_src_info()))
+    )
 
 
 def is_arch_supported(arch):

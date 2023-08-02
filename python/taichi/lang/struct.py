@@ -685,7 +685,13 @@ class StructType(CompoundType):
             if isinstance(dtype, CompoundType):
                 d[name] = dtype.from_taichi_object(func_ret, ret_index + (index,))
             else:
-                d[name] = expr.Expr(_ti_core.make_get_element_expr(func_ret.ptr, ret_index + (index,)))
+                d[name] = expr.Expr(
+                    _ti_core.make_get_element_expr(
+                        func_ret.ptr,
+                        ret_index + (index,),
+                        _ti_core.DebugInfo(impl.get_runtime().get_current_src_info()),
+                    )
+                )
         d["__struct_methods"] = self.methods
 
         struct = Struct(d)

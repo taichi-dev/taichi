@@ -388,8 +388,10 @@ class TexturePtrExpression : public Expression {
 
   explicit TexturePtrExpression(const std::vector<int> &arg_id,
                                 int num_dims,
-                                int arg_depth)
-      : arg_id(arg_id),
+                                int arg_depth,
+                                const DebugInfo &dbg_info = DebugInfo())
+      : Expression(dbg_info),
+        arg_id(arg_id),
         num_dims(num_dims),
         is_storage(false),
         arg_depth(arg_depth),
@@ -401,8 +403,10 @@ class TexturePtrExpression : public Expression {
                        int num_dims,
                        int arg_depth,
                        BufferFormat format,
-                       int lod)
-      : arg_id(arg_id),
+                       int lod,
+                       const DebugInfo &dbg_info = DebugInfo())
+      : Expression(dbg_info),
+        arg_id(arg_id),
         num_dims(num_dims),
         is_storage(true),
         arg_depth(arg_depth),
@@ -438,13 +442,21 @@ class UnaryOpExpression : public Expression {
   Expr operand;
   DataType cast_type;
 
-  UnaryOpExpression(UnaryOpType type, const Expr &operand)
-      : type(type), operand(operand) {
+  UnaryOpExpression(UnaryOpType type,
+                    const Expr &operand,
+                    const DebugInfo &dbg_info = DebugInfo())
+      : Expression(dbg_info), type(type), operand(operand) {
     cast_type = PrimitiveType::unknown;
   }
 
-  UnaryOpExpression(UnaryOpType type, const Expr &operand, DataType cast_type)
-      : type(type), operand(operand), cast_type(cast_type) {
+  UnaryOpExpression(UnaryOpType type,
+                    const Expr &operand,
+                    DataType cast_type,
+                    const DebugInfo &dbg_info = DebugInfo())
+      : Expression(dbg_info),
+        type(type),
+        operand(operand),
+        cast_type(cast_type) {
   }
 
   void type_check(const CompileConfig *config) override;
@@ -639,8 +651,9 @@ class MatrixExpression : public Expression {
 
   MatrixExpression(const std::vector<Expr> &elements,
                    std::vector<int> shape,
-                   DataType element_type)
-      : elements(elements) {
+                   DataType element_type,
+                   const DebugInfo &dbg_info = DebugInfo())
+      : Expression(dbg_info), elements(elements) {
     dt = TypeFactory::create_tensor_type(shape, element_type);
   }
 
@@ -701,8 +714,9 @@ class RangeAssumptionExpression : public Expression {
   RangeAssumptionExpression(const Expr &input,
                             const Expr &base,
                             int low,
-                            int high)
-      : input(input), base(base), low(low), high(high) {
+                            int high,
+                            const DebugInfo &dbg_info = DebugInfo())
+      : Expression(dbg_info), input(input), base(base), low(low), high(high) {
   }
 
   void type_check(const CompileConfig *config) override;
@@ -717,8 +731,10 @@ class LoopUniqueExpression : public Expression {
   Expr input;
   std::vector<SNode *> covers;
 
-  LoopUniqueExpression(const Expr &input, const std::vector<SNode *> &covers)
-      : input(input), covers(covers) {
+  LoopUniqueExpression(const Expr &input,
+                       const std::vector<SNode *> &covers,
+                       const DebugInfo &dbg_info = DebugInfo())
+      : Expression(dbg_info), input(input), covers(covers) {
   }
 
   void type_check(const CompileConfig *config) override;
@@ -799,7 +815,8 @@ class TextureOpExpression : public Expression {
 
   explicit TextureOpExpression(TextureOpType op,
                                Expr texture_ptr,
-                               const ExprGroup &args);
+                               const ExprGroup &args,
+                               const DebugInfo &dbg_info = DebugInfo());
 
   void type_check(const CompileConfig *config) override;
 
@@ -833,8 +850,11 @@ class ExternalTensorShapeAlongAxisExpression : public Expression {
   Expr ptr;
   int axis;
 
-  ExternalTensorShapeAlongAxisExpression(const Expr &ptr, int axis)
-      : ptr(ptr), axis(axis) {
+  ExternalTensorShapeAlongAxisExpression(
+      const Expr &ptr,
+      int axis,
+      const DebugInfo &dbg_info = DebugInfo())
+      : Expression(dbg_info), ptr(ptr), axis(axis) {
   }
 
   void type_check(const CompileConfig *config) override;
@@ -849,7 +869,10 @@ class ExternalTensorBasePtrExpression : public Expression {
   Expr ptr;
   bool is_grad;
 
-  explicit ExternalTensorBasePtrExpression(const Expr &ptr, bool is_grad)
+  explicit ExternalTensorBasePtrExpression(
+      const Expr &ptr,
+      bool is_grad,
+      const DebugInfo &dbg_info = DebugInfo())
       : ptr(ptr), is_grad(is_grad) {
   }
 
@@ -869,8 +892,9 @@ class FrontendFuncCallStmt : public Stmt {
   explicit FrontendFuncCallStmt(
       Function *func,
       const ExprGroup &args,
-      const std::optional<Identifier> &id = std::nullopt)
-      : ident(id), func(func), args(args) {
+      const std::optional<Identifier> &id = std::nullopt,
+      const DebugInfo &dbg_info = DebugInfo())
+      : Stmt(dbg_info), ident(id), func(func), args(args) {
     TI_ASSERT(id.has_value() == !func->rets.empty());
   }
 
@@ -889,8 +913,10 @@ class GetElementExpression : public Expression {
 
   void type_check(const CompileConfig *config) override;
 
-  GetElementExpression(const Expr &src, std::vector<int> index)
-      : src(src), index(index) {
+  GetElementExpression(const Expr &src,
+                       std::vector<int> index,
+                       const DebugInfo &dbg_info = DebugInfo())
+      : Expression(dbg_info), src(src), index(index) {
   }
 
   void flatten(FlattenContext *ctx) override;
@@ -902,7 +928,8 @@ class GetElementExpression : public Expression {
 
 class MeshPatchIndexExpression : public Expression {
  public:
-  MeshPatchIndexExpression() {
+  explicit MeshPatchIndexExpression(const DebugInfo &dbg_info = DebugInfo())
+      : Expression(dbg_info) {
   }
 
   void type_check(const CompileConfig *config) override;
@@ -923,15 +950,18 @@ class MeshRelationAccessExpression : public Expression {
 
   MeshRelationAccessExpression(mesh::Mesh *mesh,
                                const Expr mesh_idx,
-                               mesh::MeshElementType to_type)
-      : mesh(mesh), mesh_idx(mesh_idx), to_type(to_type) {
+                               mesh::MeshElementType to_type,
+                               const DebugInfo &dbg_info = DebugInfo())
+      : Expression(dbg_info), mesh(mesh), mesh_idx(mesh_idx), to_type(to_type) {
   }
 
   MeshRelationAccessExpression(mesh::Mesh *mesh,
                                const Expr mesh_idx,
                                mesh::MeshElementType to_type,
-                               const Expr neighbor_idx)
-      : mesh(mesh),
+                               const Expr neighbor_idx,
+                               const DebugInfo &dbg_info = DebugInfo())
+      : Expression(dbg_info),
+        mesh(mesh),
         mesh_idx(mesh_idx),
         to_type(to_type),
         neighbor_idx(neighbor_idx) {
@@ -954,7 +984,8 @@ class MeshIndexConversionExpression : public Expression {
   MeshIndexConversionExpression(mesh::Mesh *mesh,
                                 mesh::MeshElementType idx_type,
                                 const Expr idx,
-                                mesh::ConvType conv_type);
+                                mesh::ConvType conv_type,
+                                const DebugInfo &dbg_info = DebugInfo());
 
   void flatten(FlattenContext *ctx) override;
 
@@ -966,7 +997,9 @@ class ReferenceExpression : public Expression {
   Expr var;
   void type_check(const CompileConfig *config) override;
 
-  explicit ReferenceExpression(const Expr &expr) : var(expr) {
+  explicit ReferenceExpression(const Expr &expr,
+                               const DebugInfo &dbg_info = DebugInfo())
+      : Expression(dbg_info), var(expr) {
   }
 
   void flatten(FlattenContext *ctx) override;
@@ -1027,9 +1060,10 @@ class ASTBuilder {
   Expr make_id_expr(const std::string &name);
   Expr make_matrix_expr(const std::vector<int> &shape,
                         const DataType &dt,
-                        const std::vector<Expr> &elements);
+                        const std::vector<Expr> &elements,
+                        const DebugInfo &dbg_info = DebugInfo());
   Expr insert_thread_idx_expr();
-  Expr insert_patch_idx_expr();
+  Expr insert_patch_idx_expr(const DebugInfo &dbg_info = DebugInfo());
   void create_kernel_exprgroup_return(const ExprGroup &group,
                                       const DebugInfo &dbg_info = DebugInfo());
   void create_print(std::vector<std::variant<Expr, std::string>> contents,
@@ -1059,12 +1093,15 @@ class ASTBuilder {
   Expr mesh_index_conversion(mesh::MeshPtr mesh_ptr,
                              mesh::MeshElementType idx_type,
                              const Expr &idx,
-                             mesh::ConvType &conv_type);
+                             mesh::ConvType &conv_type,
+                             const DebugInfo &dbg_info = DebugInfo());
 
   void expr_assign(const Expr &lhs,
                    const Expr &rhs,
                    const DebugInfo &dbg_info = DebugInfo());
-  std::optional<Expr> insert_func_call(Function *func, const ExprGroup &args);
+  std::optional<Expr> insert_func_call(Function *func,
+                                       const ExprGroup &args,
+                                       const DebugInfo &dbg_info = DebugInfo());
   void create_assert_stmt(const Expr &cond,
                           const std::string &msg,
                           const std::vector<Expr> &args,
@@ -1073,14 +1110,18 @@ class ASTBuilder {
                                 const Expr &s,
                                 const Expr &e,
                                 const DebugInfo &dbg_info = DebugInfo());
-  void begin_frontend_struct_for_on_snode(const ExprGroup &loop_vars,
-                                          SNode *snode);
+  void begin_frontend_struct_for_on_snode(
+      const ExprGroup &loop_vars,
+      SNode *snode,
+      const DebugInfo &dbg_info = DebugInfo());
   void begin_frontend_struct_for_on_external_tensor(
       const ExprGroup &loop_vars,
-      const Expr &external_tensor);
+      const Expr &external_tensor,
+      const DebugInfo &dbg_info = DebugInfo());
   void begin_frontend_mesh_for(const Expr &i,
                                const mesh::MeshPtr &mesh_ptr,
-                               const mesh::MeshElementType &element_type);
+                               const mesh::MeshElementType &element_type,
+                               const DebugInfo &dbg_info = DebugInfo());
   void begin_frontend_while(const Expr &cond,
                             const DebugInfo &dbg_info = DebugInfo());
   void insert_break_stmt(const DebugInfo &dbg_info = DebugInfo());
@@ -1094,7 +1135,8 @@ class ASTBuilder {
                                const DebugInfo &dbg_info = DebugInfo());
   Expr make_texture_op_expr(const TextureOpType &op,
                             const Expr &texture_ptr,
-                            const ExprGroup &args);
+                            const ExprGroup &args,
+                            const DebugInfo &dbg_info = DebugInfo());
   /*
    * This function allocates the space for a new item (a struct or a scalar)
    * in the Dynamic SNode, and assigns values to the elements inside it.

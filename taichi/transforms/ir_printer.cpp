@@ -183,7 +183,6 @@ class IRPrinter : public IRVisitor {
     print("{} : {} {} {}", stmt->name(), snode_op_type_name(stmt->op_type),
           stmt->snode->get_node_type_name_hinted(), extras);
     dbg_info_printer_(stmt);
-    dbg_info_printer_(stmt);
   }
 
   void visit(SNodeOpStmt *stmt) override {
@@ -197,7 +196,6 @@ class IRPrinter : public IRVisitor {
     print("{}{} = {} [{}] {}", stmt->type_hint(), stmt->name(),
           snode_op_type_name(stmt->op_type), snode, extras);
     dbg_info_printer_(stmt);
-    dbg_info_printer_(stmt);
   }
 
   void visit(AllocaStmt *alloca) override {
@@ -208,7 +206,6 @@ class IRPrinter : public IRVisitor {
 
   void visit(RandStmt *stmt) override {
     print("{}{} = rand()", stmt->type_hint(), stmt->name());
-    dbg_info_printer_(stmt);
     dbg_info_printer_(stmt);
   }
 

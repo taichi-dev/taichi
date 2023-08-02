@@ -73,11 +73,11 @@ class Ndarray:
         elif _ti_core.is_tensor(self.element_type):
             self._fill_by_kernel(val)
         elif self.dtype == primitive_types.f32:
-            impl.get_runtime().prog.fill_float(self.arr, val)
+            impl.get_runtime().prog.fill_ndarray_float(self.arr, val)
         elif self.dtype == primitive_types.i32:
-            impl.get_runtime().prog.fill_int(self.arr, val)
+            impl.get_runtime().prog.fill_ndarray_int(self.arr, val)
         elif self.dtype == primitive_types.u32:
-            impl.get_runtime().prog.fill_uint(self.arr, val)
+            impl.get_runtime().prog.fill_ndarray_uint(self.arr, val)
         else:
             self._fill_by_kernel(val)
 

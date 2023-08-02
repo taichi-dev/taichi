@@ -288,7 +288,7 @@ class Func:
         tree, ctx = _get_tree_and_ctx(
             self, is_kernel=False, args=args, arg_features=arg_features, is_real_function=self.is_real_function
         )
-        fn = _ti_ccore.Function(handle=impl.get_runtime().prog.c_create_function(key))
+        fn = impl.get_runtime().prog.create_function(key.func_name, key.func_id, key.instance_id)
 
         def func_body():
             old_callable = impl.get_runtime().compiling_callable
@@ -638,8 +638,7 @@ class Kernel:
         if self.autodiff_mode != AutodiffMode.NONE:
             KernelSimplicityASTChecker(self.func).visit(tree)
 
-        # FIXME: Remove the lambda argument
-        taichi_kernel = _ti_ccore.Kernel(handle=impl.get_runtime().prog.c_create_kernel(lambda k: None, kernel_name, self.autodiff_mode))
+        taichi_kernel = impl.get_runtime().prog.create_kernel(kernel_name, self.autodiff_mode)
 
         if self.runtime.inside_kernel:
             raise TaichiSyntaxError(
@@ -771,7 +770,7 @@ class Kernel:
                                     "Non contiguous tensors are not supported, please call tensor.contiguous() before "
                                     "passing it into taichi kernel."
                                 )
-                            taichi_arch = _ti_ccore.CompileConfig(handle=self.runtime.prog.c_config()).arch
+                            taichi_arch = self.runtime.prog.config().arch
 
                             def get_call_back(u, v):
                                 def call_back():
@@ -813,7 +812,7 @@ class Kernel:
                                 return call_back
 
                             tmp = v.value().get_tensor()
-                            taichi_arch = _ti_ccore.CompileConfig(handle=self.runtime.prog.c_config()).arch
+                            taichi_arch = self.runtime.prog.config().arch
                             if v.place.is_gpu_place():
                                 if taichi_arch != misc.cuda:
                                     # Paddle cuda tensor on Taichi non-cuda arch
@@ -883,9 +882,9 @@ class Kernel:
         try:
             prog = impl.get_runtime().prog
             # Compile kernel (& Online Cache & Offline Cache)
-            compiled_kernel_data = prog.c_compile_kernel(prog.c_config(), prog.get_device_caps(), t_kernel.get_handle())
+            compiled_kernel_data = prog.compile_kernel(prog.config(), t_kernel)
             # Launch kernel
-            prog.c_launch_kernel(compiled_kernel_data, launch_ctx.get_handle())
+            prog.launch_kernel(compiled_kernel_data, launch_ctx)
         except Exception as e:
             e = handle_exception_from_cpp(e)
             if impl.get_runtime().print_full_traceback:

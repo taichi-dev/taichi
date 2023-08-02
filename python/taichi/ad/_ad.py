@@ -171,7 +171,7 @@ class Tape:
         self.clear_gradients = clear_gradients
         self.validation = validation
         self.runtime = impl.get_runtime()
-        if not self.runtime.prog.config().debug and self.validation:
+        if not impl.current_cfg().debug and self.validation:
             warnings.warn(
                 "Debug mode is disabled, autodiff valid check will not work. Please specify `ti.init(debug=True)` to enable the check.",
                 Warning,

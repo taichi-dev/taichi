@@ -89,6 +89,7 @@ typedef enum TieError {
   TIE_ERROR_INVALID_ARGUMENT = -101,
   TIE_ERROR_INVALID_RETURN_ARG = -102,
   TIE_ERROR_INVALID_HANDLE = -103,
+  TIE_ERROR_INVALID_INDEX = -104,
 
   // CXX exceptions
   TIE_ERROR_TAICHI_TYPE_ERROR = -201,       // taichi::lang::TaichiTypeError
@@ -146,34 +147,47 @@ typedef enum TieExtension {
 typedef int (*TieCallback)(void);  // Return 0 if success, otherwise -1.
 
 typedef void *TieHandle;
-typedef TieHandle TieCompileConfigHandle;           // class CompileConfig
-typedef TieHandle TieKernelHandle;                  // class Kernel
-typedef TieHandle TieFunctionHandle;                // class Function
-typedef TieHandle TieNdarrayHandle;                 // class NDArray
-typedef TieHandle TieTextureHandle;                 // class Texture
-typedef TieHandle TieLaunchContextBuilderHandle;    // class LaunchContextBuilder
-typedef TieHandle TieDataTypeHandle;                // class DataType
-typedef TieHandle TieASTBuilderHandle;              // class ASTBuilder
-typedef TieHandle TieSNodeHandle;                   // class SNode
-typedef TieHandle TieProgramHandle;                 // class Program
-typedef TieHandle TieAotModuleBuilderHandle;        // class AotModuleBuilder
-typedef TieHandle TieSparseMatrixHandle;            // class SparseMatrix
-typedef TieHandle TieCompiledKernelDataHandle;      // class CompiledKernelData
+typedef TieHandle TieStringHandle;                     // std::string
+typedef TieHandle TieCompileConfigHandle;              // class CompileConfig
+typedef TieHandle TieKernelHandle;                     // class Kernel
+typedef TieHandle TieFunctionHandle;                   // class Function
+typedef TieHandle TieNdarrayHandle;                    // class NDArray
+typedef TieHandle TieTextureHandle;                    // class Texture
+typedef TieHandle TieLaunchContextBuilderHandle;       // class LaunchContextBuilder
+typedef TieHandle TieDataTypeHandle;                   // class DataType
+typedef TieHandle TieASTBuilderHandle;                 // class ASTBuilder
+typedef TieHandle TieSNodeHandle;                      // class SNode
+typedef TieHandle TieProgramHandle;                    // class Program
+typedef TieHandle TieAotModuleBuilderHandle;           // class AotModuleBuilder
+typedef TieHandle TieSparseMatrixHandle;               // class SparseMatrix
+typedef TieHandle TieCompiledKernelDataHandle;         // class CompiledKernelData
+typedef TieHandle TieKernelProfileTracedRecordHandle;  // struct KernelProfileTracedRecord
 
 typedef void *TieRef;
-typedef TieRef TieCompileConfigRef;           // class CompileConfig
-typedef TieRef TieKernelRef;                  // class Kernel
-typedef TieRef TieFunctionRef;                // class Function
-typedef TieRef TieNdarrayRef;                 // class NDArray
-typedef TieRef TieTextureRef;                 // class Texture
-typedef TieRef TieLaunchContextBuilderRef;    // class LaunchContextBuilder
-typedef TieRef TieDataTypeRef;                // class DataType
-typedef TieRef TieASTBuilderRef;              // class ASTBuilder
-typedef TieRef TieSNodeRef;                   // class SNode
-typedef TieRef TieProgramRef;                 // class Program
-typedef TieRef TieAotModuleBuilderRef;        // class AotModuleBuilder
-typedef TieRef TieSparseMatrixRef;            // class SparseMatrix
-typedef TieRef TieCompiledKernelDataRef;      // class CompiledKernelData
+typedef TieRef TieStringRef;                     // std::string
+typedef TieRef TieCompileConfigRef;              // class CompileConfig
+typedef TieRef TieKernelRef;                     // class Kernel
+typedef TieRef TieFunctionRef;                   // class Function
+typedef TieRef TieNdarrayRef;                    // class NDArray
+typedef TieRef TieTextureRef;                    // class Texture
+typedef TieRef TieLaunchContextBuilderRef;       // class LaunchContextBuilder
+typedef TieRef TieDataTypeRef;                   // class DataType
+typedef TieRef TieASTBuilderRef;                 // class ASTBuilder
+typedef TieRef TieSNodeRef;                      // class SNode
+typedef TieRef TieProgramRef;                    // class Program
+typedef TieRef TieAotModuleBuilderRef;           // class AotModuleBuilder
+typedef TieRef TieSparseMatrixRef;               // class SparseMatrix
+typedef TieRef TieCompiledKernelDataRef;         // class CompiledKernelData
+typedef TieRef TieKernelProfileTracedRecordRef;  // struct KernelProfileTracedRecord
+
+// std::string
+TI_DLL_EXPORT int TI_API_CALL tie_String_create(const char *str, TieStringHandle *ret_handle);
+
+TI_DLL_EXPORT int TI_API_CALL tie_String_destroy(TieStringHandle self);
+
+TI_DLL_EXPORT int TI_API_CALL tie_String_c_str(TieStringHandle self, const char **ret_c_str);
+
+TI_DLL_EXPORT int TI_API_CALL tie_String_size(TieStringHandle self, size_t *ret_size);
 
 // Error processing
 TI_DLL_EXPORT int TI_API_CALL tie_G_set_last_error(int error, const char *msg);
@@ -285,6 +299,102 @@ TI_DLL_EXPORT int TI_API_CALL tie_LaunchContextBuilder_get_struct_ret_int(TieLau
 TI_DLL_EXPORT int TI_API_CALL tie_LaunchContextBuilder_get_struct_ret_uint(TieLaunchContextBuilderRef self, int *ap_index, size_t index_dim, uint64_t *ret_u64);
 
 TI_DLL_EXPORT int TI_API_CALL tie_LaunchContextBuilder_get_struct_ret_float(TieLaunchContextBuilderRef self, int *ap_index, size_t index_dim, double *ret_d);
+
+// class Program
+
+TI_DLL_EXPORT int TI_API_CALL tie_Program_create(TieProgramHandle *ret_handle);
+
+TI_DLL_EXPORT int TI_API_CALL tie_Program_destroy(TieProgramRef self);
+
+TI_DLL_EXPORT int TI_API_CALL tie_Program_finalize(TieProgramRef self);
+
+TI_DLL_EXPORT int TI_API_CALL tie_Program_synchronize(TieProgramRef self);
+
+TI_DLL_EXPORT int TI_API_CALL tie_Program_config(TieProgramRef self, TieCompileConfigRef *ret_config);
+
+TI_DLL_EXPORT int TI_API_CALL tie_Program_sync_kernel_profiler(TieProgramRef self);
+
+TI_DLL_EXPORT int TI_API_CALL tie_Program_update_kernel_profiler(TieProgramRef self);
+
+TI_DLL_EXPORT int TI_API_CALL tie_Program_clear_kernel_profiler(TieProgramRef self);
+
+TI_DLL_EXPORT int TI_API_CALL tie_Program_query_kernel_profile_info(TieProgramRef self, const char *name, int *ret_counter, double *ret_min, double *ret_max, double *ret_avg);
+
+TI_DLL_EXPORT int TI_API_CALL tie_Program_get_num_kernel_profiler_records(TieProgramRef self, size_t *ret_size);
+
+TI_DLL_EXPORT int TI_API_CALL tie_Program_get_kernel_profiler_record(TieProgramRef self, size_t index, TieKernelProfileTracedRecordRef *ret_record);
+
+TI_DLL_EXPORT int TI_API_CALL tie_Program_get_kernel_profiler_device_name(TieProgramRef self, TieStringHandle *ret_name);
+
+TI_DLL_EXPORT int TI_API_CALL tie_Program_reinit_kernel_profiler_with_metrics(TieProgramRef self, const char **ap_metrics, size_t metrics_dim, bool *ret_b);
+
+TI_DLL_EXPORT int TI_API_CALL tie_Program_kernel_profiler_total_time(TieProgramRef self, double *ret_time);
+
+TI_DLL_EXPORT int TI_API_CALL tie_Program_set_kernel_profiler_toolkit(TieProgramRef self, const char *toolkit_name, bool *ret_b);
+
+TI_DLL_EXPORT int TI_API_CALL tie_Program_timeline_clear(TieProgramRef self);
+
+TI_DLL_EXPORT int TI_API_CALL tie_Program_timeline_save(TieProgramRef self, const char *fn);
+
+TI_DLL_EXPORT int TI_API_CALL tie_Program_print_memory_profiler_info(TieProgramRef self);
+
+TI_DLL_EXPORT int TI_API_CALL tie_Program_get_total_compilation_time(TieProgramRef self, double *ret_time);
+
+TI_DLL_EXPORT int TI_API_CALL tie_Program_get_snode_num_dynamically_allocated(TieProgramRef self, TieSNodeRef snode, size_t *ret_size);
+
+TI_DLL_EXPORT int TI_API_CALL tie_Program_materialize_runtime(TieProgramRef self);
+
+TI_DLL_EXPORT int TI_API_CALL tie_Program_make_aot_module_builder(TieProgramRef self, int arch, const char **ap_caps, size_t caps_count, TieAotModuleBuilderHandle *ret_handle);
+
+TI_DLL_EXPORT int TI_API_CALL tie_Program_get_snode_tree_size(TieProgramRef self, int *ret_size);
+
+TI_DLL_EXPORT int TI_API_CALL tie_Program_get_snode_root(TieProgramRef self, int tree_id, TieSNodeRef *ret_snode);
+
+TI_DLL_EXPORT int TI_API_CALL tie_Program_create_kernel(TieProgramRef self, const char *name, int autodiff_mode, TieKernelRef *ret_kernel);
+
+TI_DLL_EXPORT int TI_API_CALL tie_Program_create_function(TieProgramRef self, const char *func_name, int func_id, int instance_id, TieFunctionRef *ret_func);
+
+TI_DLL_EXPORT int TI_API_CALL tie_Program_create_sparse_matrix(TieProgramRef self, int n, int m, TieDataTypeRef dtype, const char *storage_format, TieSparseMatrixHandle *ret_handle);
+
+TI_DLL_EXPORT int TI_API_CALL tie_Program_make_sparse_matrix_from_ndarray(TieProgramRef self, TieSparseMatrixRef sm, TieNdarrayRef ndarray);
+
+TI_DLL_EXPORT int TI_API_CALL tie_Program_create_ndarray(TieProgramRef self, TieDataTypeRef dt, int *ap_shape, size_t shape_dim, int external_array_layout, bool zero_fill, TieNdarrayRef *ret_handle);
+
+TI_DLL_EXPORT int TI_API_CALL tie_Program_delete_ndarray(TieProgramRef self, TieNdarrayRef ndarray);
+
+TI_DLL_EXPORT int TI_API_CALL tie_Program_create_texture(TieProgramRef self, int fmt, int *ap_shape, size_t shape_dim, TieTextureRef *ret_handle);
+
+TI_DLL_EXPORT int TI_API_CALL tie_Program_fill_ndarray_float(TieProgramRef self, TieNdarrayRef ndarray, float f);
+
+TI_DLL_EXPORT int TI_API_CALL tie_Program_fill_ndarray_int(TieProgramRef self, TieNdarrayRef ndarray, int32_t i);
+
+TI_DLL_EXPORT int TI_API_CALL tie_Program_fill_ndarray_uint(TieProgramRef self, TieNdarrayRef ndarray, uint32_t u);
+
+TI_DLL_EXPORT int TI_API_CALL tie_Program_compile_kernel(TieProgramRef self, TieCompileConfigRef compile_config, TieKernelRef kernel, TieCompiledKernelDataRef *ret_ckd);
+
+TI_DLL_EXPORT int TI_API_CALL tie_Program_launch_kernel(TieProgramRef self, TieCompiledKernelDataRef kernel_data, TieLaunchContextBuilderRef ctx);
+
+// struct KernelProfileTracedRecord
+TI_DLL_EXPORT int TI_API_CALL tie_KernelProfileTracedRecord_get_register_per_thread(TieKernelProfileTracedRecordRef self, int *ret_register_per_thread);
+
+TI_DLL_EXPORT int TI_API_CALL tie_KernelProfileTracedRecord_get_shared_mem_per_block(TieKernelProfileTracedRecordRef self, int *ret_shared_mem_per_block);
+
+TI_DLL_EXPORT int TI_API_CALL tie_KernelProfileTracedRecord_get_grid_size(TieKernelProfileTracedRecordRef self, int *ret_grid_size);
+
+TI_DLL_EXPORT int TI_API_CALL tie_KernelProfileTracedRecord_get_block_size(TieKernelProfileTracedRecordRef self, int *ret_block_size);
+
+TI_DLL_EXPORT int TI_API_CALL tie_KernelProfileTracedRecord_get_active_blocks_per_multiprocessor(TieKernelProfileTracedRecordRef self, int *ret_active_blocks_per_multiprocessor);
+
+TI_DLL_EXPORT int TI_API_CALL tie_KernelProfileTracedRecord_get_kernel_elapsed_time_in_ms(TieKernelProfileTracedRecordRef self, float *ret_kernel_elapsed_time_in_ms);
+
+TI_DLL_EXPORT int TI_API_CALL tie_KernelProfileTracedRecord_get_time_since_base(TieKernelProfileTracedRecordRef self, float *ret_time_since_base);
+
+TI_DLL_EXPORT int TI_API_CALL tie_KernelProfileTracedRecord_get_name(TieKernelProfileTracedRecordRef self, const char **ret_name);
+
+TI_DLL_EXPORT int TI_API_CALL tie_KernelProfileTracedRecord_get_num_metric_values(TieKernelProfileTracedRecordRef self, size_t *ret_size);
+
+TI_DLL_EXPORT int TI_API_CALL tie_KernelProfileTracedRecord_get_metric_value(TieKernelProfileTracedRecordRef self, size_t index, float *ret_value);
+
 
 #ifdef __cplusplus
 }  // extern "C"

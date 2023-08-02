@@ -38,6 +38,14 @@ class StatisticalResult:
         self.max_time = max(self.max_time, time)
 
 
+class KernelProfilerQueryResult:
+    def __init__(self, counter, min, max, avg):
+        self.counter = counter
+        self.min = min
+        self.max = max
+        self.avg = avg
+
+
 class KernelProfiler:
     """Kernel profiler of Taichi.
 
@@ -119,7 +127,7 @@ class KernelProfiler:
         self._update_records()  # kernel records
         self._count_statistics()  # statistics results
         # TODO : query self.StatisticalResult in python scope
-        return impl.get_runtime().prog.query_kernel_profile_info(name)
+        return KernelProfilerQueryResult(*impl.get_runtime().prog.query_kernel_profile_info(name))
 
     def set_metrics(self, metric_list=default_cupti_metrics):
         """For docstring of this function, see :func:`~taichi.profiler.set_kernel_profiler_metrics`."""
@@ -196,7 +204,8 @@ class KernelProfiler:
         impl.get_runtime().prog.sync_kernel_profiler()
         impl.get_runtime().prog.update_kernel_profiler()
         self._clear_frontend()
-        self._traced_records = impl.get_runtime().prog.get_kernel_profiler_records()
+        self._traced_records = [impl.get_runtime().prog.get_kernel_profiler_record(i)
+                                for i in range(impl.get_runtime().prog.num_kernel_profiler_records)]
 
     def _count_statistics(self):
         """Counts the statistics of launched kernels during the profiling period.
@@ -220,7 +229,7 @@ class KernelProfiler:
     def _make_table_header(self, mode):
         header_str = f"Kernel Profiler({mode}, {self._profiling_toolkit})"
         arch_name = f" @ {_ti_ccore.arch_name(impl.current_cfg().arch).upper()}"
-        device_name = impl.get_runtime().prog.get_kernel_profiler_device_name()
+        device_name = str(impl.get_runtime().prog.get_kernel_profiler_device_name())
         if len(device_name) > 1:  # default device_name = ' '
             device_name = " on " + device_name
         return header_str + arch_name + device_name
@@ -276,7 +285,7 @@ class KernelProfiler:
     def _print_kernel_info(self):
         """Print a list of launched kernels during the profiling period."""
         metric_list = self._metric_list
-        values_num = len(self._traced_records[0].metric_values)
+        values_num = self._traced_records[0].num_metric_values
 
         # We currently get kernel attributes through CUDA Driver API,
         # there is no corresponding implementation in other backends yet.
@@ -315,7 +324,7 @@ class KernelProfiler:
                 ]
             for idx in range(values_num):
                 formatted_str += metric_list[idx].val_format + "|"
-                values += [record.metric_values[idx] * metric_list[idx].scale]
+                values += [record.get_metric_value(idx) * metric_list[idx].scale]
             formatted_str = formatted_str + "] " + record.name
             string_list.append(formatted_str.replace("|]", "]"))
             values_list.append(values)

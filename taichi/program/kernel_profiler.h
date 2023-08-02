@@ -88,7 +88,7 @@ class KernelProfilerBase {
              double &max,
              double &avg);
 
-  std::vector<KernelProfileTracedRecord> get_traced_records() {
+  const std::vector<KernelProfileTracedRecord> &get_traced_records() {
     return traced_records_;
   }
 

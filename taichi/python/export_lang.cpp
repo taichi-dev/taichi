@@ -272,6 +272,11 @@ void export_lang(py::module &m) {
       [&]() -> CompileConfig & { return default_compile_config; },
       py::return_value_policy::reference);
 
+  m.def("make_id_expr", [](std::uintptr_t program_h, const std::string &name) {
+    auto program = reinterpret_cast<Program *>(program_h);
+    return Expr::make<IdExpression>(program->get_next_global_id(name));
+  });
+
   py::class_<Program::KernelProfilerQueryResult>(m, "KernelProfilerQueryResult")
       .def_readwrite("counter", &Program::KernelProfilerQueryResult::counter)
       .def_readwrite("min", &Program::KernelProfilerQueryResult::min)
@@ -371,169 +376,17 @@ void export_lang(py::module &m) {
   py::class_<DeviceCapabilityConfig>(
       m, "DeviceCapabilityConfig");  // NOLINT(bugprone-unused-raii)
 
-  py::class_<CompiledKernelData>(
-      m, "CompiledKernelData");  // NOLINT(bugprone-unused-raii)
-
-  py::class_<Program>(m, "Program")
-      .def(py::init<>())
-      .def("config", &Program::compile_config,
-           py::return_value_policy::reference)
-      .def(
-          "c_config",
-          [](Program *program) -> std::uintptr_t {
-            return reinterpret_cast<std::uintptr_t>(&program->compile_config());
-          })
-      .def("sync_kernel_profiler",
-           [](Program *program) { program->profiler->sync(); })
-      .def("update_kernel_profiler",
-           [](Program *program) { program->profiler->update(); })
-      .def("clear_kernel_profiler",
-           [](Program *program) { program->profiler->clear(); })
-      .def("query_kernel_profile_info",
-           [](Program *program, const std::string &name) {
-             return program->query_kernel_profile_info(name);
+  py::class_<CompiledKernelData>(m, "CompiledKernelData")
+      .def("get_handle",
+           [](CompiledKernelData *self) -> std::uintptr_t {
+             return reinterpret_cast<std::uintptr_t>(self);
            })
-      .def("get_kernel_profiler_records",
-           [](Program *program) {
-             return program->profiler->get_traced_records();
-           })
-      .def(
-          "get_kernel_profiler_device_name",
-          [](Program *program) { return program->profiler->get_device_name(); })
-      .def("reinit_kernel_profiler_with_metrics",
-           [](Program *program, const std::vector<std::string> metrics) {
-             return program->profiler->reinit_with_metrics(metrics);
-           })
-      .def("kernel_profiler_total_time",
-           [](Program *program) { return program->profiler->get_total_time(); })
-      .def("set_kernel_profiler_toolkit",
-           [](Program *program, const std::string toolkit_name) {
-             return program->profiler->set_profiler_toolkit(toolkit_name);
-           })
-      .def("timeline_clear",
-           [](Program *) { Timelines::get_instance().clear(); })
-      .def("timeline_save",
-           [](Program *, const std::string &fn) {
-             Timelines::get_instance().save(fn);
-           })
-      .def("print_memory_profiler_info", &Program::print_memory_profiler_info)
-      .def("finalize", &Program::finalize)
-      .def("get_total_compilation_time", &Program::get_total_compilation_time)
-      .def("get_snode_num_dynamically_allocated",
-           &Program::get_snode_num_dynamically_allocated)
-      .def("synchronize", &Program::synchronize)
-      .def("materialize_runtime", &Program::materialize_runtime)
-      .def("make_aot_module_builder", &Program::make_aot_module_builder)
-      .def("c_make_aot_module_builder",
-           [](Program *self, int arch, const std::vector<std::string> &caps)
-               -> std::unique_ptr<AotModuleBuilder> {
-             return self->make_aot_module_builder((taichi::Arch)arch, caps);
-           })
-      .def("get_snode_tree_size", &Program::get_snode_tree_size)
-      .def("get_snode_root", &Program::get_snode_root,
-           py::return_value_policy::reference)
-      .def(
-          "create_kernel",
-          [](Program *program, const std::function<void(Kernel *)> &body,
-             const std::string &name, AutodiffMode autodiff_mode) -> Kernel * {
-            py::gil_scoped_release release;
-            return &program->kernel(body, name, autodiff_mode);
+      .def_static(
+          "from_handle_to_ref",
+          [](std::uintptr_t handle) -> CompiledKernelData * {
+            return reinterpret_cast<CompiledKernelData *>(handle);
           },
-          py::return_value_policy::reference)
-      .def("c_create_kernel",
-           [](Program *program, const std::function<void(Kernel *)> &body,
-              const std::string &name,
-              AutodiffMode autodiff_mode) -> std::uintptr_t {
-             py::gil_scoped_release release;
-             return reinterpret_cast<std::uintptr_t>(
-                 &program->kernel(body, name, autodiff_mode));
-           })
-      .def("create_function", &Program::create_function,
-           py::return_value_policy::reference)
-      .def("c_create_function",
-           [](Program *program, const FunctionKey &func_key) -> std::uintptr_t {
-             return reinterpret_cast<std::uintptr_t>(
-                 program->create_function(func_key));
-           })
-      .def("create_sparse_matrix",
-           [](Program *program, int n, int m, DataType dtype,
-              std::string storage_format) {
-             TI_ERROR_IF(!arch_is_cpu(program->compile_config().arch) &&
-                             !arch_is_cuda(program->compile_config().arch),
-                         "SparseMatrix only supports CPU and CUDA for now.");
-             if (arch_is_cpu(program->compile_config().arch))
-               return make_sparse_matrix(n, m, dtype, storage_format);
-             else
-               return make_cu_sparse_matrix(n, m, dtype);
-           })
-      .def("make_sparse_matrix_from_ndarray",
-           [](Program *program, SparseMatrix &sm, const Ndarray &ndarray) {
-             TI_ERROR_IF(!arch_is_cpu(program->compile_config().arch) &&
-                             !arch_is_cuda(program->compile_config().arch),
-                         "SparseMatrix only supports CPU and CUDA for now.");
-             return make_sparse_matrix_from_ndarray(program, sm, ndarray);
-           })
-      .def("make_id_expr",
-           [](Program *program, const std::string &name) {
-             return Expr::make<IdExpression>(program->get_next_global_id(name));
-           })
-      .def(
-          "create_ndarray",
-          [&](Program *program, const DataType &dt,
-              const std::vector<int> &shape, ExternalArrayLayout layout,
-              bool zero_fill) -> Ndarray * {
-            return program->create_ndarray(dt, shape, layout, zero_fill);
-          },
-          py::arg("dt"), py::arg("shape"),
-          py::arg("layout") = ExternalArrayLayout::kNull,
-          py::arg("zero_fill") = false, py::return_value_policy::reference)
-      .def("delete_ndarray", &Program::delete_ndarray)
-      .def(
-          "create_texture",
-          [&](Program *program, BufferFormat fmt, const std::vector<int> &shape)
-              -> Texture * { return program->create_texture(fmt, shape); },
-          py::arg("fmt"), py::arg("shape") = py::tuple(),
-          py::return_value_policy::reference)
-      .def("get_ndarray_data_ptr_as_int",
-           [](Program *program, Ndarray *ndarray) {
-             return program->get_ndarray_data_ptr_as_int(ndarray);
-           })
-      .def("fill_float",
-           [](Program *program, Ndarray *ndarray, float val) {
-             program->fill_ndarray_fast_u32(ndarray,
-                                            reinterpret_cast<uint32_t &>(val));
-           })
-      .def("fill_int",
-           [](Program *program, Ndarray *ndarray, int32_t val) {
-             program->fill_ndarray_fast_u32(ndarray,
-                                            reinterpret_cast<int32_t &>(val));
-           })
-      .def("fill_uint",
-           [](Program *program, Ndarray *ndarray, uint32_t val) {
-             program->fill_ndarray_fast_u32(ndarray, val);
-           })
-      .def("get_graphics_device",
-           [](Program *program) { return program->get_graphics_device(); })
-      .def("compile_kernel", &Program::compile_kernel,
-           py::return_value_policy::reference)
-      .def(
-          "c_compile_kernel",
-          [](Program *program, std::uintptr_t compile_config_h,
-             const DeviceCapabilityConfig &caps,
-             std::uintptr_t kernel_handle) -> const CompiledKernelData & {
-            auto *config = reinterpret_cast<CompileConfig *>(compile_config_h);
-            auto *kernel = reinterpret_cast<Kernel *>(kernel_handle);
-            return program->compile_kernel(*config, caps, *kernel);
-          },
-          py::return_value_policy::reference)
-      .def("launch_kernel", &Program::launch_kernel)
-      .def("c_launch_kernel",
-           [](Program *self, const CompiledKernelData &compiled_kernel_data,
-              std::uintptr_t ctx_addr) {
-             auto *ctx = reinterpret_cast<LaunchContextBuilder *>(ctx_addr);
-             self->launch_kernel(compiled_kernel_data, *ctx);
-           })
-      .def("get_device_caps", &Program::get_device_caps);
+          py::return_value_policy::reference);
 
   py::class_<AotModuleBuilder>(m, "AotModuleBuilder")
       .def("add_field", &AotModuleBuilder::add_field)
@@ -552,7 +405,13 @@ void export_lang(py::module &m) {
              self->add_kernel_template(identifier, key, kernel);
            })
       .def("add_graph", &AotModuleBuilder::add_graph)
-      .def("dump", &AotModuleBuilder::dump);
+      .def("dump", &AotModuleBuilder::dump)
+      .def_static(
+          "from_handle_to_ref",
+          [](std::uintptr_t handle) -> AotModuleBuilder * {
+            return reinterpret_cast<AotModuleBuilder *>(handle);
+          },
+          py::return_value_policy::reference);
 
   py::class_<Axis>(m, "Axis").def(py::init<int>());
   py::class_<SNode>(m, "SNode")
@@ -623,6 +482,12 @@ void export_lang(py::module &m) {
            [](SNode *self) -> std::uintptr_t {
              return reinterpret_cast<std::uintptr_t>(self);
            })
+      .def_static(
+          "from_handle_to_ref",
+          [](std::uintptr_t handle) -> SNode * {
+            return reinterpret_cast<SNode *>(handle);
+          },
+          py::return_value_policy::reference)
       .def_readonly("cell_size_bytes", &SNode::cell_size_bytes)
       .def_readonly("offset_bytes_in_parent_cell",
                     &SNode::offset_bytes_in_parent_cell);
@@ -662,7 +527,13 @@ void export_lang(py::module &m) {
              return reinterpret_cast<std::uintptr_t>(self);
            })
       .def_readonly("dtype", &Ndarray::dtype)
-      .def_readonly("shape", &Ndarray::shape);
+      .def_readonly("shape", &Ndarray::shape)
+      .def_static(
+          "from_handle_to_ref",
+          [](std::uintptr_t handle) -> Ndarray * {
+            return reinterpret_cast<Ndarray *>(handle);
+          },
+          py::return_value_policy::reference);
 
   py::enum_<BufferFormat>(m, "Format")
 #define PER_BUFFER_FORMAT(x) .value(#x, BufferFormat::x)
@@ -674,9 +545,16 @@ void export_lang(py::module &m) {
       .def("device_allocation_ptr", &Texture::get_device_allocation_ptr_as_int)
       .def("from_ndarray", &Texture::from_ndarray)
       .def("from_snode", &Texture::from_snode)
-      .def("get_handle", [](Texture *self) -> std::uintptr_t {
-        return reinterpret_cast<std::uintptr_t>(self);
-      });
+      .def("get_handle",
+           [](Texture *self) -> std::uintptr_t {
+             return reinterpret_cast<std::uintptr_t>(self);
+           })
+      .def_static(
+          "from_handle_to_ref",
+          [](std::uintptr_t handle) -> Texture * {
+            return reinterpret_cast<Texture *>(handle);
+          },
+          py::return_value_policy::reference);
 
   py::enum_<aot::ArgKind>(m, "ArgKind")
       .value("SCALAR", aot::ArgKind::kScalar)
@@ -1240,6 +1118,8 @@ void export_lang(py::module &m) {
 
   py::class_<FunctionKey>(m, "FunctionKey")
       .def(py::init<const std::string &, int, int>())
+      .def_readonly("func_name", &FunctionKey::func_name)
+      .def_readonly("func_id", &FunctionKey::func_id)
       .def_readonly("instance_id", &FunctionKey::instance_id);
 
   m.def("test_throw", [] {
@@ -1350,12 +1230,28 @@ void export_lang(py::module &m) {
   py::class_<SNodeRegistry>(m, "SNodeRegistry")
       .def(py::init<>())
       .def("create_root", &SNodeRegistry::create_root,
-           py::return_value_policy::reference);
+           py::return_value_policy::reference)
+      .def(
+          "c_create_root",
+          [](SNodeRegistry *self, std::uintptr_t program_h) {
+            auto program = reinterpret_cast<Program *>(program_h);
+            return self->create_root(program);
+          },
+          py::return_value_policy::reference);
 
   m.def(
       "finalize_snode_tree",
       [](SNodeRegistry *registry, const SNode *root, Program *program,
          bool compile_only) -> SNodeTree * {
+        return program->add_snode_tree(registry->finalize(root), compile_only);
+      },
+      py::return_value_policy::reference);
+
+  m.def(
+      "c_finalize_snode_tree",
+      [](SNodeRegistry *registry, const SNode *root, std::uintptr_t program_h,
+         bool compile_only) -> SNodeTree * {
+        auto program = reinterpret_cast<Program *>(program_h);
         return program->add_snode_tree(registry->finalize(root), compile_only);
       },
       py::return_value_policy::reference);
@@ -1392,7 +1288,13 @@ void export_lang(py::module &m) {
       .def("mmwrite", &SparseMatrix::mmwrite)
       .def("num_rows", &SparseMatrix::num_rows)
       .def("num_cols", &SparseMatrix::num_cols)
-      .def("get_data_type", &SparseMatrix::get_data_type);
+      .def("get_data_type", &SparseMatrix::get_data_type)
+      .def_static(
+          "from_handle_to_ref",
+          [](std::uintptr_t handle) -> SparseMatrix * {
+            return reinterpret_cast<SparseMatrix *>(handle);
+          },
+          py::return_value_policy::reference);
 
 #define MAKE_SPARSE_MATRIX(TYPE, STORAGE, VTYPE)                             \
   using STORAGE##TYPE##EigenMatrix =                                         \

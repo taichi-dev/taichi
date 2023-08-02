@@ -377,7 +377,7 @@ class PyTaichi:
 
     def create_program(self):
         if self.prog is None:
-            self.prog = _ti_core.Program()
+            self.prog = _ti_ccore.Program()
 
     @staticmethod
     def materialize_root_fb(is_first_call):
@@ -654,7 +654,7 @@ def create_field_member(dtype, name, needs_grad, needs_dual):
     if prog is None:
         raise TaichiRuntimeError("Cannont create field, maybe you forgot to call `ti.init()` first?")
 
-    x = Expr(prog.make_id_expr(""))
+    x = Expr(_ti_core.make_id_expr(prog.get_handle(), ""))
     x.declaration_tb = get_traceback(stacklevel=4)
     x.ptr = _ti_core.expr_field(x.ptr, dtype)
     x.ptr.set_name(name)
@@ -667,7 +667,7 @@ def create_field_member(dtype, name, needs_grad, needs_dual):
     x_grad_checkbit = None
     if _ti_core.is_real(dtype):
         # adjoint
-        x_grad = Expr(get_runtime().prog.make_id_expr(""))
+        x_grad = Expr(_ti_core.make_id_expr(get_runtime().prog.get_handle(), ""))
         x_grad.declaration_tb = get_traceback(stacklevel=4)
         x_grad.ptr = _ti_core.expr_field(x_grad.ptr, dtype)
         x_grad.ptr.set_name(name + ".grad")
@@ -676,11 +676,11 @@ def create_field_member(dtype, name, needs_grad, needs_dual):
         if needs_grad:
             pytaichi.grad_vars.append(x_grad)
 
-        if _ti_ccore.CompileConfig(handle=prog.c_config()).debug:
+        if prog.config().debug:
             # adjoint checkbit
-            x_grad_checkbit = Expr(get_runtime().prog.make_id_expr(""))
+            x_grad_checkbit = Expr(_ti_core.make_id_expr(get_runtime().prog.get_handle(), ""))
             dtype = u8
-            if _ti_ccore.CompileConfig(handle=prog.c_config()).arch in (_ti_ccore.TIE_ARCH_OPENGL, _ti_ccore.TIE_ARCH_VULKAN, _ti_ccore.TIE_ARCH_GLES):
+            if prog.config().arch in (_ti_ccore.TIE_ARCH_OPENGL, _ti_ccore.TIE_ARCH_VULKAN, _ti_ccore.TIE_ARCH_GLES):
                 dtype = i32
             x_grad_checkbit.ptr = _ti_core.expr_field(x_grad_checkbit.ptr, cook_dtype(dtype))
             x_grad_checkbit.ptr.set_name(name + ".grad_checkbit")
@@ -688,7 +688,7 @@ def create_field_member(dtype, name, needs_grad, needs_dual):
             x.ptr.set_adjoint_checkbit(x_grad_checkbit.ptr)
 
         # dual
-        x_dual = Expr(get_runtime().prog.make_id_expr(""))
+        x_dual = Expr(_ti_core.make_id_expr(get_runtime().prog.get_handle(), ""))
         x_dual.ptr = _ti_core.expr_field(x_dual.ptr, dtype)
         x_dual.ptr.set_name(name + ".dual")
         x_dual.ptr.set_grad_type(SNodeGradType.DUAL)
@@ -1155,7 +1155,7 @@ def stop_grad(x):
 
 
 def current_cfg():
-    return _ti_ccore.CompileConfig(handle=get_runtime().prog.c_config())
+    return get_runtime().prog.config()
 
 
 def default_cfg():

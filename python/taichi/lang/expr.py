@@ -130,7 +130,7 @@ def make_var_list(size, ast_builder=None):
     exprs = []
     for _ in range(size):
         if ast_builder is None:
-            exprs.append(impl.get_runtime().prog.make_id_expr(""))
+            exprs.append(_ti_core.make_id_expr(impl.get_runtime().prog.get_handle(), ""))
         else:
             exprs.append(ast_builder.make_id_expr(""))
     return exprs

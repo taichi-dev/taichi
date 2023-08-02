@@ -32,6 +32,7 @@ TIE_ERROR_TO_PYTHON_EXCEPTION = {
     TIE_ERROR_INVALID_ARGUMENT: TieAPIError,
     TIE_ERROR_INVALID_RETURN_ARG: TieAPIError,
     TIE_ERROR_INVALID_HANDLE: TieAPIError,
+    TIE_ERROR_INVALID_INDEX: TieAPIError,
     TIE_ERROR_TAICHI_TYPE_ERROR: TaichiTypeError,
     TIE_ERROR_TAICHI_SYNTAX_ERROR: TaichiSyntaxError,
     TIE_ERROR_TAICHI_INDEX_ERROR: TaichiIndexError,
@@ -46,6 +47,12 @@ TIE_ERROR_TO_PYTHON_EXCEPTION = {
 TIE_TEMP_CCORE_TYPE_TO_CORE_TYPE = {
     "ASTBuilder": "taichi._lib.core.ASTBuilder",
     "DataType": "taichi._lib.core.DataType",
+    "AotModuleBuilder": "taichi._lib.core.AotModuleBuilder",
+    "SNode": "taichi._lib.core.SNode",
+    "SparseMatrix": "taichi._lib.core.SparseMatrix",
+    "Ndarray": "taichi._lib.core.Ndarray",
+    "Texture": "taichi._lib.core.Texture",
+    "CompiledKernelData": "taichi._lib.core.CompiledKernelData",
 }
 
 
@@ -171,6 +178,8 @@ C_BUILTIN_TYPE_TO_CTYPES_TYPE = {
     "int": "ctypes.c_int",
     "float": "ctypes.c_float",
     "double": "ctypes.c_double",
+    "int32_t": "ctypes.c_int32",
+    "uint32_t": "ctypes.c_uint32",
     "int64_t": "ctypes.c_int64",
     "uint64_t": "ctypes.c_uint64",
     "size_t": "ctypes.c_size_t",
@@ -183,6 +192,8 @@ C_BUILTIN_TYPE_TO_PYTHON_TYPE = {
     "int": "int",
     "float": "float",
     "double": "float",
+    "int32_t": "int",
+    "uint32_t": "int",
     "int64_t": "int",
     "uint64_t": "int",
     "size_t": "int",
@@ -778,6 +789,21 @@ from .utils import get_exception_to_throw_if_not_success, get_python_object_from
                     indent=1,
                     tab=" " * 4,
                 )
+                f.write("\n")
+            if 'get_element' in methods:
+                f.write("    def __getitem__(self, index):\n")
+                f.write("        try:\n")
+                f.write("            return self.get_element(index)\n")
+                f.write("        except:\n")
+                f.write("            raise IndexError()\n")
+                f.write("\n")
+            if 'size' in methods:
+                f.write("    def __len__(self):\n")
+                f.write("        return self.size()\n")
+                f.write("\n")
+            if 'c_str' in methods:
+                f.write("    def __str__(self):\n")
+                f.write("        return self.c_str()\n")
                 f.write("\n")
             for attr_name, (getter_name, setter_name) in attrs.items():
                 f.write(f"    {attr_name} = property({getter_name}, {setter_name})\n")

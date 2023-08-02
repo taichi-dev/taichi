@@ -170,7 +170,7 @@ class MetalPipeline final : public Pipeline {
     return raster_params_;
   }
 
-  bool is_graphics() {
+  bool is_graphics() const {
     return is_raster_pipeline_;
   }
 
@@ -260,6 +260,7 @@ class MetalRasterResources : public RasterResources {
     size_t offset{0};
   };
   BufferBinding index_binding;
+  uint32_t index_type_enum{0};
 
   std::unordered_map<uint32_t, BufferBinding> vertex_buffers;
 
@@ -299,6 +300,8 @@ class MetalCommandList final : public CommandList {
                         std::vector<float> *clear_colors,
                         DeviceAllocation *depth_attachment,
                         bool depth_clear) override;
+  void end_renderpass() override;
+  void draw(uint32_t num_verticies, uint32_t start_vertex = 0) override;
   void image_transition(DeviceAllocation img,
                         ImageLayout old_layout,
                         ImageLayout new_layout) final;
@@ -314,6 +317,7 @@ class MetalCommandList final : public CommandList {
   // Non-null after `bind*` methods.
   const MetalPipeline *current_pipeline_;
   const MetalShaderResourceSet *current_shader_resource_set_;
+  const MetalRasterResources *current_raster_resources_;
   MetalRenderPassTargetDetails current_renderpass_details_;
   std::vector<float> *clear_colors_;
 };

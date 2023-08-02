@@ -415,6 +415,11 @@ RasterResources &MetalRasterResources::index_buffer(DevicePtr ptr,
     index_binding = BufferBinding();
   } else {
     index_binding = {buffer, ptr.offset};
+    if (index_width == 16) {
+      index_type_enum = (uint32_t) MTLIndexType::MTLIndexTypeUInt16;
+    } else {
+      index_type_enum = (uint32_t) MTLIndexType::MTLIndexTypeUInt32;
+    }
   }
   return *this;
 }
@@ -436,6 +441,7 @@ void MetalCommandList::bind_pipeline(Pipeline *p) noexcept {
   auto pipeline = static_cast<MetalPipeline *>(p);
 
   if (pipeline->is_graphics()) {
+    // TODO: clear current shader and raster resources
     // Check if PSO is already built for current render pass parameters
     if (pipeline->built_pipelines_.count(current_renderpass_details_) == 0) {
       // Not built, need to build
@@ -454,8 +460,14 @@ RhiResult MetalCommandList::bind_shader_resources(ShaderResourceSet *res,
 }
 
 RhiResult
-MetalCommandList::bind_raster_resources(RasterResources *res) noexcept {
-  return RhiResult::not_supported;
+MetalCommandList::bind_raster_resources(RasterResources *_res) noexcept {
+  MetalRasterResources *res = static_cast<MetalRasterResources *>(_res);
+  
+  if (!current_pipeline_->is_graphics()) {
+    return RhiResult::invalid_usage;
+  }
+  current_raster_resources_ = res;
+  return RhiResult::success;
 }
 
 void MetalCommandList::buffer_barrier(DeviceAllocation alloc) noexcept {}
@@ -588,7 +600,11 @@ void MetalCommandList::begin_renderpass(int x0, int y0, int x1, int y1,
   }
   clear_colors_ = clear_colors;
 }
+void MetalCommandList::end_renderpass() {
+}
+void MetalCommandList::draw(uint32_t num_verticies, uint32_t start_vertex) {
 
+}
 void MetalCommandList::image_transition(DeviceAllocation img,
                                         ImageLayout old_layout,
                                         ImageLayout new_layout) {}

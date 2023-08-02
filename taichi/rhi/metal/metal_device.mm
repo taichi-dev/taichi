@@ -425,8 +425,9 @@ RhiResult MetalCommandList::bind_shader_resources(ShaderResourceSet *res,
                                                   int set_index) noexcept {
   RHI_ASSERT(res != nullptr);
   RHI_ASSERT(set_index == 0);
-  MetalShaderResourceSet *res_metal = (MetalShaderResourceSet *) res;
-  current_shader_resource_set_ = std::make_unique<MetalShaderResourceSet>(*res_metal);
+  MetalShaderResourceSet *res_metal = (MetalShaderResourceSet *)res;
+  current_shader_resource_set_ =
+      std::make_unique<MetalShaderResourceSet>(*res_metal);
   return RhiResult::success;
 }
 

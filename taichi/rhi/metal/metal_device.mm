@@ -441,7 +441,8 @@ void MetalCommandList::bind_pipeline(Pipeline *p) noexcept {
   auto pipeline = static_cast<MetalPipeline *>(p);
 
   if (pipeline->is_graphics()) {
-    // TODO: clear current shader and raster resources
+    current_shader_resource_set_.reset();
+    current_raster_resources_.reset();
     // Check if PSO is already built for current render pass parameters
     if (pipeline->built_pipelines_.count(current_renderpass_details_) == 0) {
       // Not built, need to build
@@ -455,7 +456,9 @@ RhiResult MetalCommandList::bind_shader_resources(ShaderResourceSet *res,
                                                   int set_index) noexcept {
   RHI_ASSERT(res != nullptr);
   RHI_ASSERT(set_index == 0);
-  current_shader_resource_set_ = (MetalShaderResourceSet *)res;
+  MetalShaderResourceSet *res_metal = (MetalShaderResourceSet *) res;
+  current_shader_resource_set_ = std::make_unique<MetalShaderResourceSet>(*res_metal);
+  free(res_metal);
   return RhiResult::success;
 }
 
@@ -466,7 +469,7 @@ MetalCommandList::bind_raster_resources(RasterResources *_res) noexcept {
   if (!current_pipeline_->is_graphics()) {
     return RhiResult::invalid_usage;
   }
-  current_raster_resources_ = res;
+  current_raster_resources_ = std::make_unique<MetalRasterResources>(*res);
   return RhiResult::success;
 }
 
@@ -598,11 +601,18 @@ void MetalCommandList::begin_renderpass(int x0, int y0, int x1, int y1,
     bool clear = color_clear[i];
     current_renderpass_details_.color_attachments.emplace_back(format, clear);
   }
-  clear_colors_ = clear_colors;
+  clear_colors_ = std::make_unique<std::vector<float>>(*clear_colors);
 }
 void MetalCommandList::end_renderpass() {
 }
 void MetalCommandList::draw(uint32_t num_verticies, uint32_t start_vertex) {
+  @autoreleasepool {
+
+    MTLRenderPassDescriptor* rpd = [MTLRenderPassDescriptor new];
+    
+    RHI_ASSERT(current_pipeline_);
+
+  }
 
 }
 void MetalCommandList::image_transition(DeviceAllocation img,

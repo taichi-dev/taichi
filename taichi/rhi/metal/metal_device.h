@@ -316,10 +316,10 @@ class MetalCommandList final : public CommandList {
 
   // Non-null after `bind*` methods.
   const MetalPipeline *current_pipeline_;
-  const MetalShaderResourceSet *current_shader_resource_set_;
-  const MetalRasterResources *current_raster_resources_;
+  std::unique_ptr<MetalShaderResourceSet> current_shader_resource_set_{nullptr};
+  std::unique_ptr<MetalRasterResources> current_raster_resources_{nullptr};
   MetalRenderPassTargetDetails current_renderpass_details_;
-  std::vector<float> *clear_colors_;
+  std::unique_ptr<std::vector<float>> clear_colors_{nullptr};
 };
 
 class MetalStream final : public Stream {

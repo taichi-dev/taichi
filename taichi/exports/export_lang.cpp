@@ -99,6 +99,10 @@
     tie_api_set_last_error_impl(TIE_ERROR_UNKNOWN_CXX_EXCEPTION, e.what());  \
     return TIE_ERROR_UNKNOWN_CXX_EXCEPTION;                                  \
   }                                                                          \
+  catch (const std::string &e) {                                             \
+    tie_api_set_last_error_impl(TIE_ERROR_UNKNOWN_CXX_EXCEPTION, e);         \
+    return TIE_ERROR_UNKNOWN_CXX_EXCEPTION;                                  \
+  }                                                                          \
   catch (...) {                                                              \
     tie_api_set_last_error_impl(TIE_ERROR_UNKNOWN_CXX_EXCEPTION,             \
                                 "C++ Exception");                            \
@@ -108,9 +112,9 @@
 
 namespace {
 
-class TieCallbackFailedException : public std::exception {
+class TieApiException : std::exception {
  public:
-  explicit TieCallbackFailedException(std::string msg) : msg_(std::move(msg)) {
+  explicit TieApiException(std::string msg) : msg_(std::move(msg)) {
   }
 
   const char *what() const noexcept override {
@@ -119,6 +123,11 @@ class TieCallbackFailedException : public std::exception {
 
  private:
   std::string msg_;
+};
+
+class TieCallbackFailedException : public TieApiException {
+ public:
+  using TieApiException::TieApiException;
 };
 
 struct TieErrorCache {
@@ -1424,3 +1433,57 @@ int tie_KernelProfileTracedRecord_get_metric_value(
   *ret_value = record->metric_values[index];
   TIE_FUNCTION_BODY_END();
 }
+
+// util functions (for Python)
+#if defined(TI_WITH_PYTHON)
+
+#include <Python.h>
+
+namespace {
+
+constexpr const char kTiePyTpFinalAttrName[] = "_tie_api_tp_finalize";
+using TieDestroyFunc = void (*)(TieHandle);
+
+static void tie_api_pytype_tp_finalize(PyObject *self) {
+  PyObject *error_type, *error_value, *error_traceback;
+
+  // Save the current exception, if any.
+  PyErr_Fetch(&error_type, &error_value, &error_traceback);
+
+  // Call tie_XXX_destroy(self)
+  /// if self._manage_handle and self._handle:
+  ///     self.__class__._tie_api_tp_finalize(self)
+  PyObject *manage_handle_ = PyObject_GetAttrString(self, "_manage_handle");
+  if (manage_handle_ && PyObject_IsTrue(manage_handle_)) {
+    PyObject *handle_ = PyObject_GetAttrString(self, "_handle");
+    PyObject *destroy_ = PyObject_GetAttrString((PyObject *)Py_TYPE(self),
+                                                kTiePyTpFinalAttrName);
+    if (handle_ && destroy_) {
+      TieHandle handle = PyLong_AsVoidPtr(handle_);
+      TieDestroyFunc destroy = (TieDestroyFunc)PyLong_AsVoidPtr(destroy_);
+      if (handle && destroy) {
+        destroy(handle);
+      }
+    }
+    Py_XDECREF(handle_);
+    Py_XDECREF(destroy_);
+  }
+  Py_XDECREF(manage_handle_);
+
+  // Restore the saved exception.
+  PyErr_Restore(error_type, error_value, error_traceback);
+}
+
+}  // namespace
+
+// See https://docs.python.org/3/c-api/typeobj.html#c.PyTypeObject.tp_finalize
+int tie_G_set_pytype_tp_finalize(void *py_type_object) {
+  TIE_FUNCTION_BODY_BEGIN();
+  TIE_CHECK_PTR_NOT_NULL(py_type_object);
+  PyTypeObject *type_object = (PyTypeObject *)py_type_object;
+  type_object->tp_flags |= Py_TPFLAGS_HAVE_FINALIZE;
+  type_object->tp_finalize = tie_api_pytype_tp_finalize;
+  TIE_FUNCTION_BODY_END();
+}
+
+#endif  // TI_WITH_PYTHON

@@ -21,13 +21,22 @@ target_sources(${TAICHI_CORE_EXPORTS_NAME}
     ${PROJECT_SOURCE_DIR}/taichi/exports/export_lang.cpp
   )
 
-target_include_directories(${TAICHI_CORE_EXPORTS_NAME}
-  PRIVATE
+set(TAICHI_CORE_EXPORTS_INCLUDE_DIR
     ${PROJECT_SOURCE_DIR}
     ${PROJECT_SOURCE_DIR}/external/spdlog/include
     ${PROJECT_SOURCE_DIR}/external/eigen
-    ${LLVM_INCLUDE_DIRS} # For "llvm/ADT/SmallVector.h" included in ir.h
-  )
+    ${LLVM_INCLUDE_DIRS} # For "llvm/ADT/SmallVector.h" included in ir.h)
+)
+
+if (TI_WITH_PYTHON AND NOT ANDROID)
+  target_compile_definitions(${TAICHI_CORE_EXPORTS_NAME} PRIVATE TI_WITH_PYTHON)
+  list(APPEND TAICHI_CORE_EXPORTS_INCLUDE_DIR ${PYTHON_INCLUDE_DIR})
+endif()
+
+target_include_directories(${TAICHI_CORE_EXPORTS_NAME}
+  PRIVATE
+    ${TAICHI_CORE_EXPORTS_INCLUDE_DIR}  
+)
 
 target_link_libraries(${TAICHI_CORE_EXPORTS_NAME} PRIVATE taichi_core)
 

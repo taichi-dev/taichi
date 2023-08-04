@@ -395,6 +395,8 @@ TI_DLL_EXPORT int TI_API_CALL tie_KernelProfileTracedRecord_get_num_metric_value
 
 TI_DLL_EXPORT int TI_API_CALL tie_KernelProfileTracedRecord_get_metric_value(TieKernelProfileTracedRecordRef self, size_t index, float *ret_value);
 
+// util functions (for Python)
+TI_DLL_EXPORT int TI_API_CALL tie_G_set_pytype_tp_finalize(void *py_type_object);
 
 #ifdef __cplusplus
 }  // extern "C"

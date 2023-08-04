@@ -1,4 +1,4 @@
-from taichi._lib import core
+from taichi._lib import core, ccore
 
 
 class TaichiCompilationError(Exception):
@@ -55,6 +55,22 @@ class TaichiRuntimeTypeError(TaichiRuntimeError, TypeError):
         return TaichiRuntimeTypeError(f"Return (type={provided}) cannot be converted into required type {needed}")
 
 
+_TIE_ERROR_TO_PYTHON_EXCEPTION = {
+    ccore.TIE_ERROR_INVALID_ARGUMENT: RuntimeError,
+    ccore.TIE_ERROR_INVALID_RETURN_ARG: RuntimeError,
+    ccore.TIE_ERROR_INVALID_HANDLE: RuntimeError,
+    ccore.TIE_ERROR_INVALID_INDEX: RuntimeError,
+    ccore.TIE_ERROR_TAICHI_TYPE_ERROR: TaichiTypeError,
+    ccore.TIE_ERROR_TAICHI_SYNTAX_ERROR: TaichiSyntaxError,
+    ccore.TIE_ERROR_TAICHI_INDEX_ERROR: TaichiIndexError,
+    ccore.TIE_ERROR_TAICHI_RUNTIME_ERROR: TaichiRuntimeError,
+    ccore.TIE_ERROR_TAICHI_ASSERTION_ERROR: TaichiAssertionError,
+    ccore.TIE_ERROR_CALLBACK_FAILED: lambda ex: ex,
+    ccore.TIE_ERROR_OUT_OF_MEMORY: RuntimeError,
+    ccore.TIE_ERROR_UNKNOWN_CXX_EXCEPTION: RuntimeError,
+}
+
+
 def handle_exception_from_cpp(exc):
     if isinstance(exc, core.TaichiTypeError):
         return TaichiTypeError(str(exc))
@@ -64,6 +80,10 @@ def handle_exception_from_cpp(exc):
         return TaichiIndexError(str(exc))
     if isinstance(exc, core.TaichiAssertionError):
         return TaichiAssertionError(str(exc))
+    if isinstance(exc, ccore.TieAPIError):
+        err, ex = exc.err, exc.ex
+        assert err in _TIE_ERROR_TO_PYTHON_EXCEPTION
+        return _TIE_ERROR_TO_PYTHON_EXCEPTION[err](ex)
     return exc
 
 

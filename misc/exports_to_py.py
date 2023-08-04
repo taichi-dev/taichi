@@ -6,13 +6,17 @@ from pycparser.c_ast import NodeVisitor
 
 
 UTILS_PYTHON_FILE_CODE = """from .TieError import *
-from taichi.lang.exception import TaichiTypeError, TaichiSyntaxError, TaichiIndexError, TaichiAssertionError, TaichiRuntimeError
 
 
-class TieAPIError(Exception):
-    pass
+class TieAPIError(RuntimeError):
+    def __init__(self, err, ex):
+        self.err = err
+        self.ex = ex
 
-    
+    def __str__(self):
+        return str(self.ex)
+
+
 tie_last_exception = None
 
 
@@ -21,11 +25,11 @@ def set_last_exception(exc):
     tie_last_exception = exc
 
 
-def get_and_clear_last_exception(_):
+def get_and_clear_last_exception(err, _):
     global tie_last_exception
     exc = tie_last_exception
     tie_last_exception = None
-    return exc
+    return TieAPIError(err, exc)
 
 
 TIE_ERROR_TO_PYTHON_EXCEPTION = {
@@ -33,11 +37,11 @@ TIE_ERROR_TO_PYTHON_EXCEPTION = {
     TIE_ERROR_INVALID_RETURN_ARG: TieAPIError,
     TIE_ERROR_INVALID_HANDLE: TieAPIError,
     TIE_ERROR_INVALID_INDEX: TieAPIError,
-    TIE_ERROR_TAICHI_TYPE_ERROR: TaichiTypeError,
-    TIE_ERROR_TAICHI_SYNTAX_ERROR: TaichiSyntaxError,
-    TIE_ERROR_TAICHI_INDEX_ERROR: TaichiIndexError,
-    TIE_ERROR_TAICHI_RUNTIME_ERROR: TaichiRuntimeError,
-    TIE_ERROR_TAICHI_ASSERTION_ERROR: TaichiAssertionError,
+    TIE_ERROR_TAICHI_TYPE_ERROR: TieAPIError,
+    TIE_ERROR_TAICHI_SYNTAX_ERROR: TieAPIError,
+    TIE_ERROR_TAICHI_INDEX_ERROR: TieAPIError,
+    TIE_ERROR_TAICHI_RUNTIME_ERROR: TieAPIError,
+    TIE_ERROR_TAICHI_ASSERTION_ERROR: TieAPIError,
     TIE_ERROR_CALLBACK_FAILED: get_and_clear_last_exception,
     TIE_ERROR_OUT_OF_MEMORY: TieAPIError,
     TIE_ERROR_UNKNOWN_CXX_EXCEPTION: TieAPIError,
@@ -60,7 +64,7 @@ def get_exception_to_throw_if_not_success(ret, get_last_error):
     if ret != 0:
         last_err, last_err_msg = get_last_error()
         assert ret == last_err and ret in TIE_ERROR_TO_PYTHON_EXCEPTION
-        return TIE_ERROR_TO_PYTHON_EXCEPTION[ret](last_err_msg)
+        return TIE_ERROR_TO_PYTHON_EXCEPTION[ret](last_err, last_err_msg)
     return None
 
 
@@ -231,6 +235,9 @@ class CType:
     def is_cstr(self):
         return self.base_type_name == "char" and self.ptr_levels == 1
 
+    def is_void_ptr(self):
+        return self.base_type_name == "void" and self.ptr_levels == 1
+
     def is_bool(self):
         return self.base_type_name == "bool" and self.ptr_levels == 0
 
@@ -293,6 +300,9 @@ class FuncParameter:
 
     def is_cstr_param(self):
         return self.type.is_cstr()
+    
+    def is_void_ptr_param(self):
+        return self.type.is_void_ptr()
     
     def is_basic_type_param(self):
         return self.type.is_basic_type()
@@ -487,6 +497,8 @@ def translate_c_type_to_ctypes_type(type: CType, exclude_ptr_levels: int = 0) ->
             raise ValueError(f"Unknown type: {typename}")
     elif type.is_cstr():
         return "ctypes.c_char_p"
+    elif type.is_void_ptr():
+        return "ctypes.c_void_p"
     else:
         return (
             f"ctypes.POINTER({translate_c_type_to_ctypes_type(type.exclude_ptr(1), 0)})"
@@ -551,6 +563,8 @@ def translate_arg_from_python_to_c(arg_name: str, param: FuncParameter) -> str:
         return f"{arg_name}, len({arg_name})"
     elif param.is_cstr_param():
         return f'{arg_name}.encode("utf-8")'
+    elif param.is_void_ptr_param():
+        return f"ctypes.c_void_p({arg_name})"
     elif param.is_basic_type_param():
         return f'{C_BUILTIN_TYPE_TO_PYTHON_TYPE[arg_type.base_type_name]}({arg_name})'
     elif param.is_callback_param():
@@ -734,6 +748,7 @@ from .utils import get_exception_to_throw_if_not_success, get_python_object_from
             f.write(IMPORTS)
             f.write("\n")
             f.write(f"from .global_functions import get_last_error\n\n")
+            f.write(f"from .global_functions import set_pytype_tp_finalize\n\n")
             f.write("\n")
             f.write(f"# Class {class_name}\n")
             f.write(f"class {class_name}:\n")
@@ -746,13 +761,6 @@ from .utils import get_exception_to_throw_if_not_success, get_python_object_from
             f.write("        else:\n")
             f.write("            self._manage_handle = True\n")
             f.write("            self._handle = self.create(*args)\n")
-            f.write("\n")
-            f.write("    def __del__(self):\n")
-            f.write("        if self._manage_handle:\n")
-            f.write("            try:\n")
-            f.write("                self.destroy()\n")
-            f.write("            except:\n")
-            f.write("                pass\n")
             f.write("\n")
             f.write("    def get_handle(self):\n")
             f.write("        return self._handle\n")
@@ -808,6 +816,12 @@ from .utils import get_exception_to_throw_if_not_success, get_python_object_from
             for attr_name, (getter_name, setter_name) in attrs.items():
                 f.write(f"    {attr_name} = property({getter_name}, {setter_name})\n")
             f.write("\n\n")
+            f.write(f"if hasattr(taichi_ccore, 'tie_{class_name}_destroy'):\n")
+            f.write(f"    destroy_fn_addr = ctypes.addressof(taichi_ccore.tie_{class_name}_destroy)\n")
+            f.write(f"    destroy_fn_addr = ctypes.c_void_p.from_address(destroy_fn_addr).value\n")
+            f.write(f"    {class_name}._tie_api_tp_finalize = destroy_fn_addr\n")
+            f.write(f"    set_pytype_tp_finalize(id({class_name}))\n")
+            f.write("\n\n")
             f.write(f"__all__ = ['{class_name}']\n")
 
     # Generate global functions (global_functions.py)
@@ -856,6 +870,9 @@ from .utils import get_exception_to_throw_if_not_success, get_python_object_from
         f.write("\n")
         # Import: from global_functions import *
         f.write("from .global_functions import *\n")
+        f.write("\n")
+        # Import: from utils import TieAPIError
+        f.write("from .utils import TieAPIError\n")
         f.write("\n")
 
 

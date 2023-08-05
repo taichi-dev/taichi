@@ -1602,14 +1602,16 @@ class TaskCodegen : public IRVisitor {
     spirv::Value addr_ptr;
     spirv::Value dest_val = ir_->query_value(stmt->dest->raw_name());
     // Shared arrays have already created an accesschain, use it directly.
-    const bool dest_is_matrix_ptr = stmt->dest->is<MatrixPtrStmt>();
+    const bool dest_is_ptr = dest_val.stype.flag == TypeKind::kPtr;
 
     if (dt->is_primitive(PrimitiveTypeID::f64)) {
       if (caps_->get(DeviceCapability::spirv_has_atomic_float64_add) &&
           stmt->op_type == AtomicOpType::add) {
         addr_ptr = at_buffer(stmt->dest, dt);
       } else {
-        addr_ptr = dest_is_matrix_ptr ? dest_val : at_buffer(
+        addr_ptr = dest_is_ptr
+                       ? dest_val
+                       : at_buffer(
             stmt->dest, ir_->get_taichi_uint_type(dt));
       }
     } else if (dt->is_primitive(PrimitiveTypeID::f32)) {
@@ -1617,12 +1619,12 @@ class TaskCodegen : public IRVisitor {
           stmt->op_type == AtomicOpType::add) {
         addr_ptr = at_buffer(stmt->dest, dt);
       } else {
-        addr_ptr = dest_is_matrix_ptr
+        addr_ptr = dest_is_ptr
                        ? dest_val
                        : at_buffer(stmt->dest, ir_->get_taichi_uint_type(dt));
       }
     } else {
-      addr_ptr = dest_is_matrix_ptr ? dest_val : at_buffer(stmt->dest, dt);
+      addr_ptr = dest_is_ptr ? dest_val : at_buffer(stmt->dest, dt);
     }
 
     auto ret_type = ir_->get_primitive_type(dt);

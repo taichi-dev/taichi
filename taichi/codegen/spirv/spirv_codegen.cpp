@@ -1609,8 +1609,9 @@ class TaskCodegen : public IRVisitor {
           stmt->op_type == AtomicOpType::add) {
         addr_ptr = at_buffer(stmt->dest, dt);
       } else {
-        addr_ptr = dest_is_matrix_ptr ? dest_val : at_buffer(
-            stmt->dest, ir_->get_taichi_uint_type(dt));
+        addr_ptr = dest_is_matrix_ptr
+                       ? dest_val
+                       : at_buffer(stmt->dest, ir_->get_taichi_uint_type(dt));
       }
     } else if (dt->is_primitive(PrimitiveTypeID::f32)) {
       if (caps_->get(DeviceCapability::spirv_has_atomic_float_add) &&
@@ -2196,7 +2197,10 @@ class TaskCodegen : public IRVisitor {
       return paddr_ptr;
     }
 
-    TI_ERROR_IF(!is_integral(ptr_val.stype.dt), "at_buffer failed, `ptr_val.stype.dt` is not integeral. Stmt = {} : {}", ptr->name(), ptr->type_hint());
+    TI_ERROR_IF(
+        !is_integral(ptr_val.stype.dt),
+        "at_buffer failed, `ptr_val.stype.dt` is not integeral. Stmt = {} : {}",
+        ptr->name(), ptr->type_hint());
 
     spirv::Value buffer = get_buffer_value(ptr_to_buffers_.at(ptr), dt);
     size_t width = ir_->get_primitive_type_size(dt);

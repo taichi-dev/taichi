@@ -1611,8 +1611,7 @@ class TaskCodegen : public IRVisitor {
       } else {
         addr_ptr = dest_is_ptr
                        ? dest_val
-                       : at_buffer(
-            stmt->dest, ir_->get_taichi_uint_type(dt));
+                       : at_buffer(stmt->dest, ir_->get_taichi_uint_type(dt));
       }
     } else if (dt->is_primitive(PrimitiveTypeID::f32)) {
       if (caps_->get(DeviceCapability::spirv_has_atomic_float_add) &&

@@ -2198,7 +2198,10 @@ class TaskCodegen : public IRVisitor {
       return paddr_ptr;
     }
 
-    TI_ERROR_IF(!is_integral(ptr_val.stype.dt), "at_buffer failed, `ptr_val.stype.dt` is not integeral. Stmt = {} : {}", ptr->name(), ptr->type_hint());
+    TI_ERROR_IF(
+        !is_integral(ptr_val.stype.dt),
+        "at_buffer failed, `ptr_val.stype.dt` is not integeral. Stmt = {} : {}",
+        ptr->name(), ptr->type_hint());
 
     spirv::Value buffer = get_buffer_value(ptr_to_buffers_.at(ptr), dt);
     size_t width = ir_->get_primitive_type_size(dt);

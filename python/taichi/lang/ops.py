@@ -1127,6 +1127,7 @@ def clz(a):
         for i in range(32):
             if 2**i > x:
                 return 32 - i
+        return 0
 
     return _unary_operation(_ti_core.expr_clz, _clz, a)
 

@@ -312,6 +312,7 @@ Highlights:
 
 Full changelog:
    - Add test for clz (by **Jett Chen**)
+   - Add test for clz (by **Jett Chen**)
    - fix spirv issue (by **Jett Chen**)
    - Update taichi/codegen/cuda/codegen_cuda.cpp (by **Bob Cao**)
    - [pre-commit.ci] auto fixes from pre-commit.com hooks (by **pre-commit-ci[bot]**)

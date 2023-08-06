@@ -927,7 +927,8 @@ class TaskCodegen : public IRVisitor {
       uint32_t FindMSB_id = 74;
       spirv::Value msb = ir_->call_glsl450(dst_type, FindMSB_id, operand_val);
       spirv::Value bitcnt = ir_->int_immediate_number(ir_->i32_type(), 32);
-      val = ir_->sub(bitcnt, msb);
+      spirv::Value one = ir_->int_immediate_number(ir_->i32_type(), 1);
+      val = ir_->sub(ir_->sub(bitcnt, msb), one);
     }
 #define UNARY_OP_TO_SPIRV(op, instruction, instruction_id, max_bits)           \
   else if (stmt->op_type == UnaryOpType::op) {                                 \

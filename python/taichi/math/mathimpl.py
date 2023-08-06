@@ -823,6 +823,7 @@ __all__ = [
     "atan2",
     "ceil",
     "clamp",
+    "clz",
     "cos",
     "cross",
     "degrees",

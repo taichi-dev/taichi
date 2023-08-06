@@ -311,6 +311,8 @@ Highlights:
       - Add overflow detection on vulkan when debug=True (#6279) (by **Lin Jiang**)
 
 Full changelog:
+   - Add test for clz (by **Jett Chen**)
+   - fix spirv issue (by **Jett Chen**)
    - Update taichi/codegen/cuda/codegen_cuda.cpp (by **Bob Cao**)
    - [pre-commit.ci] auto fixes from pre-commit.com hooks (by **pre-commit-ci[bot]**)
    - add clz instruction (by **Jett Chen**)

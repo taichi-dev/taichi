@@ -537,6 +537,26 @@ struct PyWindow {
     window = std::make_unique<vulkan::Window>(prog, config);
   }
 
+  PyWindow(std::uintptr_t program_h,
+           std::string name,
+           py::tuple res,
+           py::tuple pos,
+           bool vsync,
+           bool show_window,
+           double fps_limit,
+           std::string package_path,
+           Arch ti_arch)
+      : PyWindow(reinterpret_cast<Program *>(program_h),
+                 name,
+                 res,
+                 pos,
+                 vsync,
+                 show_window,
+                 fps_limit,
+                 package_path,
+                 ti_arch) {
+  }
+
   py::tuple get_window_shape() {
     auto [w, h] = window->get_window_shape();
     return pybind11::make_tuple(w, h);
@@ -647,8 +667,8 @@ void export_ggui(py::module &m) {
   m.attr("GGUI_AVAILABLE") = py::bool_(true);
 
   py::class_<PyWindow>(m, "PyWindow")
-      .def(py::init<Program *, std::string, py::tuple, py::tuple, bool, bool,
-                    double, std::string, Arch>())
+      .def(py::init<std::uintptr_t, std::string, py::tuple, py::tuple, bool,
+                    bool, double, std::string, Arch>())
       .def("get_canvas", &PyWindow::get_canvas)
       .def("get_scene", &PyWindow::get_scene)
       .def("show", &PyWindow::show)

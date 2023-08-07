@@ -35,7 +35,7 @@ class Window:
         package_path = str(pathlib.Path(__file__).parent.parent)
         ti_arch = default_cfg().arch
         self.window = _ti_core.PyWindow(
-            get_runtime().prog,
+            get_runtime().prog.get_handle(),
             name,
             res,
             pos,

@@ -78,6 +78,8 @@ def get_python_object_from_handle(tie_type_name, handle_value, manage_handle):
         assert tie_type_name.startswith("Tie")
         assert tie_type_name.endswith("Handle")
         typename = tie_type_name[3:-6]
+        if typename in TIE_TEMP_CCORE_TYPE_TO_CORE_TYPE:
+            return eval(f"{TIE_TEMP_CCORE_TYPE_TO_CORE_TYPE[typename]}.from_handle_to_object({handle_value})")
         return eval(f"taichi._lib.ccore.{typename}(handle={handle_value}, manage_handle=True)")
     else:  # TieXXXRef
         assert tie_type_name.startswith("Tie")

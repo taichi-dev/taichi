@@ -35,11 +35,11 @@ class SparseCG:
             else:
                 raise TaichiRuntimeError(f"Unsupported CG dtype: {self.dtype}")
             if isinstance(b, Ndarray):
-                self.cg_solver.set_b_ndarray(get_runtime().prog, b.arr)
+                self.cg_solver.c_set_b_ndarray(get_runtime().prog.get_handle(), b.arr)
             elif isinstance(b, np.ndarray):
                 self.cg_solver.set_b(b)
             if isinstance(x0, Ndarray):
-                self.cg_solver.set_x_ndarray(get_runtime().prog, x0.arr)
+                self.cg_solver.c_set_x_ndarray(get_runtime().prog.get_handle(), x0.arr)
             elif isinstance(x0, np.ndarray):
                 self.cg_solver.set_x(x0)
         else:
@@ -49,7 +49,7 @@ class SparseCG:
         if self.ti_arch == misc.cuda:
             if isinstance(self.b, Ndarray):
                 x = ScalarNdarray(self.b.dtype, [self.matrix.m])
-                self.cg_solver.solve(get_runtime().prog, x.arr, self.b.arr)
+                self.cg_solver.c_solve(get_runtime().prog.get_handle(), x.arr, self.b.arr)
                 return x, True
             raise TaichiRuntimeError(f"Unsupported CG RHS type: {type(self.b)}")
         else:

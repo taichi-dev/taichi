@@ -27,6 +27,7 @@ class SparseMatrix:
             self.n = n
             self.m = m if m else n
             self.matrix = get_runtime().prog.create_sparse_matrix(n, m, dtype, storage_format)
+            print(type(self.matrix), ' ::sparse matrix created')
         else:
             self.n = sm.num_rows()
             self.m = sm.num_cols()
@@ -153,7 +154,7 @@ class SparseMatrix:
                     f"Dimension mismatch between sparse matrix ({self.n}, {self.m}) and vector ({other.shape})"
                 )
             res = ScalarNdarray(dtype=other.dtype, arr_shape=(self.n,))
-            self.matrix.spmv(get_runtime().prog, other.arr, res.arr)
+            self.matrix.c_spmv(get_runtime().prog.get_handle(), other.arr, res.arr)
             return res
         raise TaichiRuntimeError(
             f"Sparse matrix-matrix/vector multiplication does not support {type(other)} for now. Supported types are SparseMatrix, ti.field, and numpy ndarray."
@@ -260,7 +261,7 @@ class SparseMatrixBuilder:
                     dtype,
                     storage_format,
                 )
-                self.ptr.create_ndarray(get_runtime().prog)
+                self.ptr.c_create_ndarray(get_runtime().prog.get_handle())
             else:
                 raise TaichiRuntimeError("SparseMatrix only supports CPU and CUDA for now.")
 
@@ -295,7 +296,7 @@ class SparseMatrixBuilder:
 
     def __del__(self):
         if get_runtime() is not None and get_runtime().prog is not None:
-            self.ptr.delete_ndarray(get_runtime().prog)
+            self.ptr.c_delete_ndarray(get_runtime().prog.get_handle())
 
 
 __all__ = ["SparseMatrix", "SparseMatrixBuilder"]

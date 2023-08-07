@@ -39,11 +39,11 @@ class StatisticalResult:
 
 
 class KernelProfilerQueryResult:
-    def __init__(self, counter, min, max, avg):
-        self.counter = counter
-        self.min = min
-        self.max = max
-        self.avg = avg
+    def __init__(self, _counter, _min, _max, _avg):
+        self.counter = _counter
+        self.min = _min
+        self.max = _max
+        self.avg = _avg
 
 
 class KernelProfiler:
@@ -215,8 +215,8 @@ class KernelProfiler:
         for record in self._traced_records:
             if self._statistical_results.get(record.name) is None:
                 self._statistical_results[record.name] = StatisticalResult(record.name)
-            self._statistical_results[record.name].insert_record(record.kernel_time)
-            self._total_time_ms += record.kernel_time
+            self._statistical_results[record.name].insert_record(record.kernel_elapsed_time_in_ms)
+            self._total_time_ms += record.kernel_elapsed_time_in_ms
         self._statistical_results = {
             k: v
             for k, v in sorted(
@@ -312,7 +312,7 @@ class KernelProfiler:
         values_list = []
         for record in self._traced_records:
             formatted_str = "[{:9.3f} ms |{:9.3f} ms |"  # default
-            values = [fake_timestamp, record.kernel_time]  # default
+            values = [fake_timestamp, record.kernel_elapsed_time_in_ms]  # default
             if kernel_attribute_state:
                 formatted_str += "    {:4d} | {:6d} bytes |    {:6d} |     {:6d} | {:2d} blocks |"
                 values += [
@@ -328,7 +328,7 @@ class KernelProfiler:
             formatted_str = formatted_str + "] " + record.name
             string_list.append(formatted_str.replace("|]", "]"))
             values_list.append(values)
-            fake_timestamp += record.kernel_time
+            fake_timestamp += record.kernel_elapsed_time_in_ms
 
         # print
         print(outer_partition_line)

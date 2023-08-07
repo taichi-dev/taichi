@@ -411,7 +411,12 @@ void export_lang(py::module &m) {
           [](std::uintptr_t handle) -> AotModuleBuilder * {
             return reinterpret_cast<AotModuleBuilder *>(handle);
           },
-          py::return_value_policy::reference);
+          py::return_value_policy::reference)
+      .def_static("from_handle_to_object", [](std::uintptr_t handle) {
+        // NOTE: handle is heap-allocated, so we need to take ownership
+        auto *raw_ptr = reinterpret_cast<AotModuleBuilder *>(handle);
+        return std::unique_ptr<AotModuleBuilder>(raw_ptr);
+      });
 
   py::class_<Axis>(m, "Axis").def(py::init<int>());
   py::class_<SNode>(m, "SNode")
@@ -494,9 +499,15 @@ void export_lang(py::module &m) {
 
   py::class_<SNodeTree>(m, "SNodeTree")
       .def("id", &SNodeTree::id)
-      .def("destroy_snode_tree", [](SNodeTree *snode_tree, Program *program) {
-        program->destroy_snode_tree(snode_tree);
-      });
+      .def("destroy_snode_tree",
+           [](SNodeTree *snode_tree, Program *program) {
+             program->destroy_snode_tree(snode_tree);
+           })
+      .def("c_destroy_snode_tree",
+           [](SNodeTree *snode_tree, std::uintptr_t program_h) {
+             auto program = reinterpret_cast<Program *>(program_h);
+             program->destroy_snode_tree(snode_tree);
+           });
 
   py::class_<DeviceAllocation>(m, "DeviceAllocation")
       .def(py::init([](uint64_t device, uint64_t alloc_id) -> DeviceAllocation {
@@ -1268,9 +1279,19 @@ void export_lang(py::module &m) {
            [&](SparseMatrixBuilder *builder, Program *prog) {
              return builder->create_ndarray(prog);
            })
+      .def("c_create_ndarray",
+           [&](SparseMatrixBuilder *builder, std::uintptr_t program_h) {
+             auto program = reinterpret_cast<Program *>(program_h);
+             return builder->create_ndarray(program);
+           })
       .def("delete_ndarray",
            [&](SparseMatrixBuilder *builder, Program *prog) {
              return builder->delete_ndarray(prog);
+           })
+      .def("c_delete_ndarray",
+           [&](SparseMatrixBuilder *builder, std::uintptr_t program_h) {
+             auto program = reinterpret_cast<Program *>(program_h);
+             return builder->delete_ndarray(program);
            })
       .def("get_ndarray_data_ptr", &SparseMatrixBuilder::get_ndarray_data_ptr)
       .def("build", &SparseMatrixBuilder::build)
@@ -1289,41 +1310,56 @@ void export_lang(py::module &m) {
       .def("num_rows", &SparseMatrix::num_rows)
       .def("num_cols", &SparseMatrix::num_cols)
       .def("get_data_type", &SparseMatrix::get_data_type)
+      .def("get_handle",
+           [](SparseMatrix *self) -> std::uintptr_t {
+             return reinterpret_cast<std::uintptr_t>(self);
+           })
       .def_static(
           "from_handle_to_ref",
           [](std::uintptr_t handle) -> SparseMatrix * {
             return reinterpret_cast<SparseMatrix *>(handle);
           },
-          py::return_value_policy::reference);
+          py::return_value_policy::reference)
+      .def_static("from_handle_to_object", [](std::uintptr_t handle) {
+        // NOTE: The handle is heap-allocated, so we need to take ownership
+        auto *raw_ptr = reinterpret_cast<SparseMatrix *>(handle);
+        return std::unique_ptr<SparseMatrix>(raw_ptr);
+      });
 
-#define MAKE_SPARSE_MATRIX(TYPE, STORAGE, VTYPE)                             \
-  using STORAGE##TYPE##EigenMatrix =                                         \
-      Eigen::SparseMatrix<float##TYPE, Eigen::STORAGE>;                      \
-  py::class_<EigenSparseMatrix<STORAGE##TYPE##EigenMatrix>, SparseMatrix>(   \
-      m, #VTYPE #STORAGE "_EigenSparseMatrix")                               \
-      .def(py::init<int, int, DataType>())                                   \
-      .def(py::init<EigenSparseMatrix<STORAGE##TYPE##EigenMatrix> &>())      \
-      .def(py::init<const STORAGE##TYPE##EigenMatrix &>())                   \
-      .def(py::self += py::self)                                             \
-      .def(py::self + py::self)                                              \
-      .def(py::self -= py::self)                                             \
-      .def(py::self - py::self)                                              \
-      .def(py::self *= float##TYPE())                                        \
-      .def(py::self *float##TYPE())                                          \
-      .def(float##TYPE() * py::self)                                         \
-      .def(py::self *py::self)                                               \
-      .def("matmul", &EigenSparseMatrix<STORAGE##TYPE##EigenMatrix>::matmul) \
-      .def("spmv", &EigenSparseMatrix<STORAGE##TYPE##EigenMatrix>::spmv)     \
-      .def("transpose",                                                      \
-           &EigenSparseMatrix<STORAGE##TYPE##EigenMatrix>::transpose)        \
-      .def("get_element",                                                    \
-           &EigenSparseMatrix<STORAGE##TYPE##EigenMatrix>::get_element<      \
-               float##TYPE>)                                                 \
-      .def("set_element",                                                    \
-           &EigenSparseMatrix<STORAGE##TYPE##EigenMatrix>::set_element<      \
-               float##TYPE>)                                                 \
-      .def("mat_vec_mul",                                                    \
-           &EigenSparseMatrix<STORAGE##TYPE##EigenMatrix>::mat_vec_mul<      \
+#define MAKE_SPARSE_MATRIX(TYPE, STORAGE, VTYPE)                              \
+  using STORAGE##TYPE##EigenMatrix =                                          \
+      Eigen::SparseMatrix<float##TYPE, Eigen::STORAGE>;                       \
+  py::class_<EigenSparseMatrix<STORAGE##TYPE##EigenMatrix>, SparseMatrix>(    \
+      m, #VTYPE #STORAGE "_EigenSparseMatrix")                                \
+      .def(py::init<int, int, DataType>())                                    \
+      .def(py::init<EigenSparseMatrix<STORAGE##TYPE##EigenMatrix> &>())       \
+      .def(py::init<const STORAGE##TYPE##EigenMatrix &>())                    \
+      .def(py::self += py::self)                                              \
+      .def(py::self + py::self)                                               \
+      .def(py::self -= py::self)                                              \
+      .def(py::self - py::self)                                               \
+      .def(py::self *= float##TYPE())                                         \
+      .def(py::self *float##TYPE())                                           \
+      .def(float##TYPE() * py::self)                                          \
+      .def(py::self *py::self)                                                \
+      .def("matmul", &EigenSparseMatrix<STORAGE##TYPE##EigenMatrix>::matmul)  \
+      .def("spmv", &EigenSparseMatrix<STORAGE##TYPE##EigenMatrix>::spmv)      \
+      .def("c_spmv",                                                          \
+           [](EigenSparseMatrix<STORAGE##TYPE##EigenMatrix> *self,            \
+              std::uintptr_t program_h, const Ndarray &x, const Ndarray &y) { \
+             auto program = reinterpret_cast<Program *>(program_h);           \
+             self->spmv(program, x, y);                                       \
+           })                                                                 \
+      .def("transpose",                                                       \
+           &EigenSparseMatrix<STORAGE##TYPE##EigenMatrix>::transpose)         \
+      .def("get_element",                                                     \
+           &EigenSparseMatrix<STORAGE##TYPE##EigenMatrix>::get_element<       \
+               float##TYPE>)                                                  \
+      .def("set_element",                                                     \
+           &EigenSparseMatrix<STORAGE##TYPE##EigenMatrix>::set_element<       \
+               float##TYPE>)                                                  \
+      .def("mat_vec_mul",                                                     \
+           &EigenSparseMatrix<STORAGE##TYPE##EigenMatrix>::mat_vec_mul<       \
                Eigen::VectorX##VTYPE>);
 
   MAKE_SPARSE_MATRIX(32, ColMajor, f);
@@ -1335,6 +1371,12 @@ void export_lang(py::module &m) {
       .def(py::init<int, int, DataType>())
       .def(py::init<const CuSparseMatrix &>())
       .def("spmv", &CuSparseMatrix::nd_spmv)
+      .def("c_spmv",
+           [](CuSparseMatrix *self, std::uintptr_t program_h, const Ndarray &x,
+              const Ndarray &y) {
+             auto program = reinterpret_cast<Program *>(program_h);
+             self->nd_spmv(program, x, y);
+           })
       .def(py::self + py::self)
       .def(py::self - py::self)
       .def(py::self * float32())
@@ -1362,6 +1404,13 @@ void export_lang(py::module &m) {
       .def("solve_rf",                                                       \
            &EigenSparseSolver##dt##type##order::solve_rf<Eigen::VectorX##fd, \
                                                          dt>)                \
+      .def("c_solve_rf",                                                     \
+           [](EigenSparseSolver##dt##type##order *self,                      \
+              std::uintptr_t program_h, const SparseMatrix &sm,              \
+              const Ndarray &b, const Ndarray &x) {                          \
+             auto program = reinterpret_cast<Program *>(program_h);          \
+             self->solve_rf<Eigen::VectorX##fd, dt>(program, sm, b, x);      \
+           })                                                                \
       .def("info", &EigenSparseSolver##dt##type##order::info);
 
   REGISTER_EIGEN_SOLVER(float32, LLT, AMD, f)
@@ -1382,6 +1431,12 @@ void export_lang(py::module &m) {
       .def("analyze_pattern", &CuSparseSolver::analyze_pattern)
       .def("factorize", &CuSparseSolver::factorize)
       .def("solve_rf", &CuSparseSolver::solve_rf)
+      .def("c_solve_rf",
+           [](CuSparseSolver *self, std::uintptr_t program_h,
+              const CuSparseMatrix &sm, const Ndarray &b, const Ndarray &x) {
+             auto program = reinterpret_cast<Program *>(program_h);
+             self->solve_rf(program, sm, b, x);
+           })
       .def("info", &CuSparseSolver::info);
 
   m.def("make_sparse_solver", &make_sparse_solver);
@@ -1394,16 +1449,40 @@ void export_lang(py::module &m) {
       .def("set_x", &CG<Eigen::VectorXf, float>::set_x)
       .def("get_x", &CG<Eigen::VectorXf, float>::get_x)
       .def("set_x_ndarray", &CG<Eigen::VectorXf, float>::set_x_ndarray)
+      .def("c_set_x_ndarray",
+           [](CG<Eigen::VectorXf, float> *self, std::uintptr_t program_h,
+              Ndarray &x) {
+             auto program = reinterpret_cast<Program *>(program_h);
+             self->set_x_ndarray(program, x);
+           })
       .def("set_b", &CG<Eigen::VectorXf, float>::set_b)
       .def("set_b_ndarray", &CG<Eigen::VectorXf, float>::set_b_ndarray)
+      .def("c_set_b_ndarray",
+           [](CG<Eigen::VectorXf, float> *self, std::uintptr_t program_h,
+              Ndarray &b) {
+             auto program = reinterpret_cast<Program *>(program_h);
+             self->set_b_ndarray(program, b);
+           })
       .def("is_success", &CG<Eigen::VectorXf, float>::is_success);
   py::class_<CG<Eigen::VectorXd, double>>(m, "CGd")
       .def(py::init<SparseMatrix &, int, double, bool>())
       .def("solve", &CG<Eigen::VectorXd, double>::solve)
       .def("set_x", &CG<Eigen::VectorXd, double>::set_x)
       .def("set_x_ndarray", &CG<Eigen::VectorXd, double>::set_x_ndarray)
+      .def("c_set_x_ndarray",
+           [](CG<Eigen::VectorXd, double> *self, std::uintptr_t program_h,
+              Ndarray &x) {
+             auto program = reinterpret_cast<Program *>(program_h);
+             self->set_x_ndarray(program, x);
+           })
       .def("get_x", &CG<Eigen::VectorXd, double>::get_x)
       .def("set_b_ndarray", &CG<Eigen::VectorXd, double>::set_b_ndarray)
+      .def("c_set_b_ndarray",
+           [](CG<Eigen::VectorXd, double> *self, std::uintptr_t program_h,
+              Ndarray &b) {
+             auto program = reinterpret_cast<Program *>(program_h);
+             self->set_b_ndarray(program, b);
+           })
       .def("set_b", &CG<Eigen::VectorXd, double>::set_b)
       .def("is_success", &CG<Eigen::VectorXd, double>::is_success);
   m.def("make_float_cg_solver", [](SparseMatrix &A, int max_iters, float tol,
@@ -1415,7 +1494,13 @@ void export_lang(py::module &m) {
     return make_cg_solver<Eigen::VectorXd, double>(A, max_iters, tol, verbose);
   });
 
-  py::class_<CUCG>(m, "CUCG").def("solve", &CUCG::solve);
+  py::class_<CUCG>(m, "CUCG")
+      .def("solve", &CUCG::solve)
+      .def("c_solve",
+           [](CUCG *self, std::uintptr_t program_h, Ndarray &x, Ndarray &b) {
+             auto program = reinterpret_cast<Program *>(program_h);
+             self->solve(program, x, b);
+           });
   m.def("make_cucg_solver", make_cucg_solver);
 
   // Mesh Class

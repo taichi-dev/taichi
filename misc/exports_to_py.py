@@ -633,11 +633,16 @@ def generate_func_def_code_from_func_decl(
         [translate_arg_from_python_to_c(param.name, param) for param in out_params]
     )
     for param in in_params:
-        if param.is_arr_param():
+        if param.is_arr_param():  # Pre-translate array args
+            element_type = param.type.exclude_ptr(1)
+            if element_type.is_cstr():
+                fp_write(
+                    f"{tab}{param.name} = tuple(e.encode('utf-8') for e in {param.name})\n"
+                )
             fp_write(
-                f"{tab}{param.name} = ({translate_c_type_to_ctypes_type(param.type, exclude_ptr_levels=1)} * len({param.name}))(*{param.name})\n"
+                f"{tab}{param.name} = ({translate_c_type_to_ctypes_type(element_type)} * len({param.name}))(*{param.name})\n"
             )
-    for param in out_params:
+    for param in out_params:  # Pre-translate out args
         fp_write(
             f"{tab}{param.name} = {translate_c_type_to_ctypes_type(param.type, exclude_ptr_levels=1)}()\n"
         )

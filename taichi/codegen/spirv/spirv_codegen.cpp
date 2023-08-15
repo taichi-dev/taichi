@@ -1600,28 +1600,30 @@ class TaskCodegen : public IRVisitor {
     }
 
     spirv::Value addr_ptr;
+    spirv::Value dest_val = ir_->query_value(stmt->dest->raw_name());
+    // Shared arrays have already created an accesschain, use it directly.
+    const bool dest_is_ptr = dest_val.stype.flag == TypeKind::kPtr;
 
     if (dt->is_primitive(PrimitiveTypeID::f64)) {
       if (caps_->get(DeviceCapability::spirv_has_atomic_float64_add) &&
           stmt->op_type == AtomicOpType::add) {
         addr_ptr = at_buffer(stmt->dest, dt);
       } else {
-        addr_ptr = at_buffer(stmt->dest, ir_->get_taichi_uint_type(dt));
+        addr_ptr = dest_is_ptr
+                       ? dest_val
+                       : at_buffer(stmt->dest, ir_->get_taichi_uint_type(dt));
       }
     } else if (dt->is_primitive(PrimitiveTypeID::f32)) {
       if (caps_->get(DeviceCapability::spirv_has_atomic_float_add) &&
           stmt->op_type == AtomicOpType::add) {
         addr_ptr = at_buffer(stmt->dest, dt);
       } else {
-        addr_ptr = at_buffer(stmt->dest, ir_->get_taichi_uint_type(dt));
+        addr_ptr = dest_is_ptr
+                       ? dest_val
+                       : at_buffer(stmt->dest, ir_->get_taichi_uint_type(dt));
       }
     } else {
-      if (stmt->dest->is<MatrixPtrStmt>()) {
-        // Shared arrays have already created an accesschain, use it directly.
-        addr_ptr = ir_->query_value(stmt->dest->raw_name());
-      } else {
-        addr_ptr = at_buffer(stmt->dest, dt);
-      }
+      addr_ptr = dest_is_ptr ? dest_val : at_buffer(stmt->dest, dt);
     }
 
     auto ret_type = ir_->get_primitive_type(dt);
@@ -2195,6 +2197,11 @@ class TaskCodegen : public IRVisitor {
       return paddr_ptr;
     }
 
+    TI_ERROR_IF(
+        !is_integral(ptr_val.stype.dt),
+        "at_buffer failed, `ptr_val.stype.dt` is not integeral. Stmt = {} : {}",
+        ptr->name(), ptr->type_hint());
+
     spirv::Value buffer = get_buffer_value(ptr_to_buffers_.at(ptr), dt);
     size_t width = ir_->get_primitive_type_size(dt);
     spirv::Value idx_val = ir_->make_value(
@@ -2303,8 +2310,7 @@ class TaskCodegen : public IRVisitor {
   spirv::Value make_pointer(size_t offset) {
     if (use_64bit_pointers) {
       // This is hacky, should check out how to encode uint64 values in spirv
-      return ir_->cast(ir_->u64_type(), ir_->uint_immediate_number(
-                                            ir_->u32_type(), uint32_t(offset)));
+      return ir_->uint_immediate_number(ir_->u64_type(), offset);
     } else {
       return ir_->uint_immediate_number(ir_->u32_type(), uint32_t(offset));
     }
@@ -2729,7 +2735,7 @@ void KernelCodegen::run(TaichiKernelAttributes &kernel_attribs,
     bool success = true;
     {
       bool result = false;
-      TI_ERROR_IF(
+      TI_WARN_IF(
           (result = !spirv_opt_->Run(optimized_spv.data(), optimized_spv.size(),
                                      &optimized_spv, spirv_opt_options_)),
           "SPIRV optimization failed");

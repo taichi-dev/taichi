@@ -180,7 +180,11 @@ class FieldsBuilder:
             warning("Finalizing an empty FieldsBuilder!")
         self.finalized = True
         impl.get_runtime().finalize_fields_builder(self)
-        return SNodeTree(_ti_core.c_finalize_snode_tree(_snode_registry, self.ptr, impl.get_runtime().prog.get_handle(), compile_only))
+        return SNodeTree(
+            _ti_core.c_finalize_snode_tree(
+                _snode_registry, self.ptr, impl.get_runtime().prog.get_handle(), compile_only
+            )
+        )
 
     def _check_not_finalized(self):
         if self.finalized:

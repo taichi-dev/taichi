@@ -204,8 +204,10 @@ class KernelProfiler:
         impl.get_runtime().prog.sync_kernel_profiler()
         impl.get_runtime().prog.update_kernel_profiler()
         self._clear_frontend()
-        self._traced_records = [impl.get_runtime().prog.get_kernel_profiler_record(i)
-                                for i in range(impl.get_runtime().prog.num_kernel_profiler_records)]
+        self._traced_records = [
+            impl.get_runtime().prog.get_kernel_profiler_record(i)
+            for i in range(impl.get_runtime().prog.num_kernel_profiler_records)
+        ]
 
     def _count_statistics(self):
         """Counts the statistics of launched kernels during the profiling period.

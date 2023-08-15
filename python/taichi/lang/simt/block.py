@@ -5,7 +5,12 @@ from taichi.lang.util import taichi_scope
 
 
 def arch_uses_spv(arch):
-    return arch == _ti_ccore.TIE_ARCH_VULKAN or arch == _ti_ccore.TIE_ARCH_METAL or arch == _ti_ccore.TIE_ARCH_OPENGL or arch == misc.dx11
+    return (
+        arch == _ti_ccore.TIE_ARCH_VULKAN
+        or arch == _ti_ccore.TIE_ARCH_METAL
+        or arch == _ti_ccore.TIE_ARCH_OPENGL
+        or arch == misc.dx11
+    )
 
 
 def sync():

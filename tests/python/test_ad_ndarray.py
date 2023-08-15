@@ -90,6 +90,7 @@ def test_poly(tifunc):
 
     if has_pytorch():
         import torch
+
         torch.autograd.set_detect_anomaly = True
 
     @test_utils.torch_op(output_shapes=[s])

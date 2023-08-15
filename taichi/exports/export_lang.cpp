@@ -165,8 +165,7 @@ struct TieAttrAssign<taichi::lang::DataType, TieDataTypeRef> {
 
 template <>
 struct TieAttrAssign<TieDataTypeRef, taichi::lang::DataType> {
-  static void assign(TieDataTypeRef &dest,
-                     const taichi::lang::DataType &src) {
+  static void assign(TieDataTypeRef &dest, const taichi::lang::DataType &src) {
     dest = reinterpret_cast<TieDataTypeRef>(
         const_cast<taichi::lang::DataType *>(&src));
   }
@@ -316,7 +315,7 @@ int tie_CompileConfig_destroy(TieCompileConfigRef self) {
 
 #define TIE_IMPL_COMPILE_CONFIG_GET_SET_ATTR(TaichiStruct, attr_name,         \
                                              attr_type, get_set_type)         \
-  int tie_CompileConfig_get_##attr_name(TieCompileConfigRef self,          \
+  int tie_CompileConfig_get_##attr_name(TieCompileConfigRef self,             \
                                         get_set_type *ret_value) {            \
     TIE_FUNCTION_BODY_BEGIN();                                                \
     TIE_CHECK_HANDLE(self);                                                   \
@@ -326,7 +325,7 @@ int tie_CompileConfig_destroy(TieCompileConfigRef self) {
                                                    config->attr_name);        \
     TIE_FUNCTION_BODY_END();                                                  \
   }                                                                           \
-  int tie_CompileConfig_set_##attr_name(TieCompileConfigRef self,          \
+  int tie_CompileConfig_set_##attr_name(TieCompileConfigRef self,             \
                                         get_set_type value) {                 \
     TIE_FUNCTION_BODY_BEGIN();                                                \
     TIE_CHECK_HANDLE(self);                                                   \
@@ -758,10 +757,9 @@ int tie_LaunchContextBuilder_set_arg_external_array_with_shape(
   TIE_FUNCTION_BODY_END();
 }
 
-int tie_LaunchContextBuilder_set_arg_ndarray(
-    TieLaunchContextBuilderRef handle,
-    int arg_id,
-    TieNdarrayRef arr) {
+int tie_LaunchContextBuilder_set_arg_ndarray(TieLaunchContextBuilderRef handle,
+                                             int arg_id,
+                                             TieNdarrayRef arr) {
   TIE_FUNCTION_BODY_BEGIN();
   TIE_CHECK_HANDLE(handle);
   TIE_CHECK_HANDLE(arr);
@@ -790,10 +788,9 @@ int tie_LaunchContextBuilder_set_arg_ndarray_with_grad(
   TIE_FUNCTION_BODY_END();
 }
 
-int tie_LaunchContextBuilder_set_arg_texture(
-    TieLaunchContextBuilderRef handle,
-    int arg_id,
-    TieTextureRef tex) {
+int tie_LaunchContextBuilder_set_arg_texture(TieLaunchContextBuilderRef handle,
+                                             int arg_id,
+                                             TieTextureRef tex) {
   TIE_FUNCTION_BODY_BEGIN();
   TIE_CHECK_HANDLE(handle);
   TIE_CHECK_HANDLE(tex);
@@ -880,7 +877,7 @@ int tie_Program_destroy(TieProgramRef self) {
   TIE_FUNCTION_BODY_BEGIN();
   TIE_CHECK_HANDLE(self);
   auto *program = reinterpret_cast<taichi::lang::Program *>(self);
-  
+
   delete program;
   TIE_FUNCTION_BODY_END();
 }

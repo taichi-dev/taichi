@@ -1,67 +1,236 @@
-// TIE_PER_COMPILE_CONFIG_ATTR(TaichiStruct, attr_name, attr_type, tie_attr_get_set_type)
-TIE_PER_COMPILE_CONFIG_ATTR(taichi::lang::CompileConfig, arch, taichi::Arch, int)
+// TIE_PER_COMPILE_CONFIG_ATTR(TaichiStruct, attr_name, attr_type,
+// tie_attr_get_set_type)
+TIE_PER_COMPILE_CONFIG_ATTR(taichi::lang::CompileConfig,
+                            arch,
+                            taichi::Arch,
+                            int)
 TIE_PER_COMPILE_CONFIG_ATTR(taichi::lang::CompileConfig, opt_level, int, int)
 TIE_PER_COMPILE_CONFIG_ATTR(taichi::lang::CompileConfig, print_ir, bool, bool)
-TIE_PER_COMPILE_CONFIG_ATTR(taichi::lang::CompileConfig, print_preprocessed_ir, bool, bool)
+TIE_PER_COMPILE_CONFIG_ATTR(taichi::lang::CompileConfig,
+                            print_preprocessed_ir,
+                            bool,
+                            bool)
 TIE_PER_COMPILE_CONFIG_ATTR(taichi::lang::CompileConfig, debug, bool, bool)
-TIE_PER_COMPILE_CONFIG_ATTR(taichi::lang::CompileConfig, cfg_optimization, bool, bool)
-TIE_PER_COMPILE_CONFIG_ATTR(taichi::lang::CompileConfig, check_out_of_bound, bool, bool)
-TIE_PER_COMPILE_CONFIG_ATTR(taichi::lang::CompileConfig, print_accessor_ir, bool, bool)
+TIE_PER_COMPILE_CONFIG_ATTR(taichi::lang::CompileConfig,
+                            cfg_optimization,
+                            bool,
+                            bool)
+TIE_PER_COMPILE_CONFIG_ATTR(taichi::lang::CompileConfig,
+                            check_out_of_bound,
+                            bool,
+                            bool)
+TIE_PER_COMPILE_CONFIG_ATTR(taichi::lang::CompileConfig,
+                            print_accessor_ir,
+                            bool,
+                            bool)
 TIE_PER_COMPILE_CONFIG_ATTR(taichi::lang::CompileConfig, use_llvm, bool, bool)
-TIE_PER_COMPILE_CONFIG_ATTR(taichi::lang::CompileConfig, print_struct_llvm_ir, bool, bool)
-TIE_PER_COMPILE_CONFIG_ATTR(taichi::lang::CompileConfig, print_kernel_llvm_ir, bool, bool)
-TIE_PER_COMPILE_CONFIG_ATTR(taichi::lang::CompileConfig, print_kernel_llvm_ir_optimized, bool, bool)
-TIE_PER_COMPILE_CONFIG_ATTR(taichi::lang::CompileConfig, print_kernel_asm, bool, bool)
-TIE_PER_COMPILE_CONFIG_ATTR(taichi::lang::CompileConfig, print_kernel_amdgcn, bool, bool)
-TIE_PER_COMPILE_CONFIG_ATTR(taichi::lang::CompileConfig, simplify_before_lower_access, bool, bool)
-TIE_PER_COMPILE_CONFIG_ATTR(taichi::lang::CompileConfig, simplify_after_lower_access, bool, bool)
-TIE_PER_COMPILE_CONFIG_ATTR(taichi::lang::CompileConfig, lower_access, bool, bool)
-TIE_PER_COMPILE_CONFIG_ATTR(taichi::lang::CompileConfig, move_loop_invariant_outside_if, bool, bool)
-TIE_PER_COMPILE_CONFIG_ATTR(taichi::lang::CompileConfig, cache_loop_invariant_global_vars, bool, bool)
-TIE_PER_COMPILE_CONFIG_ATTR(taichi::lang::CompileConfig, default_cpu_block_dim, int, int)
-TIE_PER_COMPILE_CONFIG_ATTR(taichi::lang::CompileConfig, cpu_block_dim_adaptive, bool, bool)
-TIE_PER_COMPILE_CONFIG_ATTR(taichi::lang::CompileConfig, default_gpu_block_dim, int, int)
+TIE_PER_COMPILE_CONFIG_ATTR(taichi::lang::CompileConfig,
+                            print_struct_llvm_ir,
+                            bool,
+                            bool)
+TIE_PER_COMPILE_CONFIG_ATTR(taichi::lang::CompileConfig,
+                            print_kernel_llvm_ir,
+                            bool,
+                            bool)
+TIE_PER_COMPILE_CONFIG_ATTR(taichi::lang::CompileConfig,
+                            print_kernel_llvm_ir_optimized,
+                            bool,
+                            bool)
+TIE_PER_COMPILE_CONFIG_ATTR(taichi::lang::CompileConfig,
+                            print_kernel_asm,
+                            bool,
+                            bool)
+TIE_PER_COMPILE_CONFIG_ATTR(taichi::lang::CompileConfig,
+                            print_kernel_amdgcn,
+                            bool,
+                            bool)
+TIE_PER_COMPILE_CONFIG_ATTR(taichi::lang::CompileConfig,
+                            simplify_before_lower_access,
+                            bool,
+                            bool)
+TIE_PER_COMPILE_CONFIG_ATTR(taichi::lang::CompileConfig,
+                            simplify_after_lower_access,
+                            bool,
+                            bool)
+TIE_PER_COMPILE_CONFIG_ATTR(taichi::lang::CompileConfig,
+                            lower_access,
+                            bool,
+                            bool)
+TIE_PER_COMPILE_CONFIG_ATTR(taichi::lang::CompileConfig,
+                            move_loop_invariant_outside_if,
+                            bool,
+                            bool)
+TIE_PER_COMPILE_CONFIG_ATTR(taichi::lang::CompileConfig,
+                            cache_loop_invariant_global_vars,
+                            bool,
+                            bool)
+TIE_PER_COMPILE_CONFIG_ATTR(taichi::lang::CompileConfig,
+                            default_cpu_block_dim,
+                            int,
+                            int)
+TIE_PER_COMPILE_CONFIG_ATTR(taichi::lang::CompileConfig,
+                            cpu_block_dim_adaptive,
+                            bool,
+                            bool)
+TIE_PER_COMPILE_CONFIG_ATTR(taichi::lang::CompileConfig,
+                            default_gpu_block_dim,
+                            int,
+                            int)
 TIE_PER_COMPILE_CONFIG_ATTR(taichi::lang::CompileConfig, gpu_max_reg, int, int)
-TIE_PER_COMPILE_CONFIG_ATTR(taichi::lang::CompileConfig, saturating_grid_dim, int, int)
-TIE_PER_COMPILE_CONFIG_ATTR(taichi::lang::CompileConfig, max_block_dim, int, int)
-TIE_PER_COMPILE_CONFIG_ATTR(taichi::lang::CompileConfig, cpu_max_num_threads, int, int)
+TIE_PER_COMPILE_CONFIG_ATTR(taichi::lang::CompileConfig,
+                            saturating_grid_dim,
+                            int,
+                            int)
+TIE_PER_COMPILE_CONFIG_ATTR(taichi::lang::CompileConfig,
+                            max_block_dim,
+                            int,
+                            int)
+TIE_PER_COMPILE_CONFIG_ATTR(taichi::lang::CompileConfig,
+                            cpu_max_num_threads,
+                            int,
+                            int)
 TIE_PER_COMPILE_CONFIG_ATTR(taichi::lang::CompileConfig, random_seed, int, int)
-TIE_PER_COMPILE_CONFIG_ATTR(taichi::lang::CompileConfig, verbose_kernel_launches, bool, bool)
+TIE_PER_COMPILE_CONFIG_ATTR(taichi::lang::CompileConfig,
+                            verbose_kernel_launches,
+                            bool,
+                            bool)
 TIE_PER_COMPILE_CONFIG_ATTR(taichi::lang::CompileConfig, verbose, bool, bool)
-TIE_PER_COMPILE_CONFIG_ATTR(taichi::lang::CompileConfig, demote_dense_struct_fors, bool, bool)
-TIE_PER_COMPILE_CONFIG_ATTR(taichi::lang::CompileConfig, kernel_profiler, bool, bool)
+TIE_PER_COMPILE_CONFIG_ATTR(taichi::lang::CompileConfig,
+                            demote_dense_struct_fors,
+                            bool,
+                            bool)
+TIE_PER_COMPILE_CONFIG_ATTR(taichi::lang::CompileConfig,
+                            kernel_profiler,
+                            bool,
+                            bool)
 TIE_PER_COMPILE_CONFIG_ATTR(taichi::lang::CompileConfig, timeline, bool, bool)
-TIE_PER_COMPILE_CONFIG_ATTR(taichi::lang::CompileConfig, default_fp, taichi::lang::DataType, TieDataTypeRef)
-TIE_PER_COMPILE_CONFIG_ATTR(taichi::lang::CompileConfig, default_ip, taichi::lang::DataType, TieDataTypeRef)
-TIE_PER_COMPILE_CONFIG_ATTR(taichi::lang::CompileConfig, default_up, taichi::lang::DataType, TieDataTypeRef)
-TIE_PER_COMPILE_CONFIG_ATTR(taichi::lang::CompileConfig, device_memory_GB, double, double)
-TIE_PER_COMPILE_CONFIG_ATTR(taichi::lang::CompileConfig, device_memory_fraction, double, double)
+TIE_PER_COMPILE_CONFIG_ATTR(taichi::lang::CompileConfig,
+                            default_fp,
+                            taichi::lang::DataType,
+                            TieDataTypeRef)
+TIE_PER_COMPILE_CONFIG_ATTR(taichi::lang::CompileConfig,
+                            default_ip,
+                            taichi::lang::DataType,
+                            TieDataTypeRef)
+TIE_PER_COMPILE_CONFIG_ATTR(taichi::lang::CompileConfig,
+                            default_up,
+                            taichi::lang::DataType,
+                            TieDataTypeRef)
+TIE_PER_COMPILE_CONFIG_ATTR(taichi::lang::CompileConfig,
+                            device_memory_GB,
+                            double,
+                            double)
+TIE_PER_COMPILE_CONFIG_ATTR(taichi::lang::CompileConfig,
+                            device_memory_fraction,
+                            double,
+                            double)
 TIE_PER_COMPILE_CONFIG_ATTR(taichi::lang::CompileConfig, fast_math, bool, bool)
-TIE_PER_COMPILE_CONFIG_ATTR(taichi::lang::CompileConfig, advanced_optimization, bool, bool)
-TIE_PER_COMPILE_CONFIG_ATTR(taichi::lang::CompileConfig, ad_stack_size, int, int)
+TIE_PER_COMPILE_CONFIG_ATTR(taichi::lang::CompileConfig,
+                            advanced_optimization,
+                            bool,
+                            bool)
+TIE_PER_COMPILE_CONFIG_ATTR(taichi::lang::CompileConfig,
+                            ad_stack_size,
+                            int,
+                            int)
 TIE_PER_COMPILE_CONFIG_ATTR(taichi::lang::CompileConfig, flatten_if, bool, bool)
-TIE_PER_COMPILE_CONFIG_ATTR(taichi::lang::CompileConfig, make_thread_local, bool, bool)
-TIE_PER_COMPILE_CONFIG_ATTR(taichi::lang::CompileConfig, make_block_local, bool, bool)
-TIE_PER_COMPILE_CONFIG_ATTR(taichi::lang::CompileConfig, detect_read_only, bool, bool)
-TIE_PER_COMPILE_CONFIG_ATTR(taichi::lang::CompileConfig, real_matrix_scalarize, bool, bool)
-TIE_PER_COMPILE_CONFIG_ATTR(taichi::lang::CompileConfig, half2_vectorization, bool, bool)
-TIE_PER_COMPILE_CONFIG_ATTR(taichi::lang::CompileConfig, make_cpu_multithreading_loop, bool, bool)
-TIE_PER_COMPILE_CONFIG_ATTR(taichi::lang::CompileConfig, quant_opt_store_fusion, bool, bool)
-TIE_PER_COMPILE_CONFIG_ATTR(taichi::lang::CompileConfig, quant_opt_atomic_demotion, bool, bool)
-TIE_PER_COMPILE_CONFIG_ATTR(taichi::lang::CompileConfig, allow_nv_shader_extension, bool, bool)
-TIE_PER_COMPILE_CONFIG_ATTR(taichi::lang::CompileConfig, make_mesh_block_local, bool, bool)
-TIE_PER_COMPILE_CONFIG_ATTR(taichi::lang::CompileConfig, mesh_localize_to_end_mapping, bool, bool)
-TIE_PER_COMPILE_CONFIG_ATTR(taichi::lang::CompileConfig, mesh_localize_from_end_mapping, bool, bool)
-TIE_PER_COMPILE_CONFIG_ATTR(taichi::lang::CompileConfig, optimize_mesh_reordered_mapping, bool, bool)
-TIE_PER_COMPILE_CONFIG_ATTR(taichi::lang::CompileConfig, mesh_localize_all_attr_mappings, bool, bool)
-TIE_PER_COMPILE_CONFIG_ATTR(taichi::lang::CompileConfig, demote_no_access_mesh_fors, bool, bool)
-TIE_PER_COMPILE_CONFIG_ATTR(taichi::lang::CompileConfig, experimental_auto_mesh_local, bool, bool)
-TIE_PER_COMPILE_CONFIG_ATTR(taichi::lang::CompileConfig, auto_mesh_local_default_occupacy, int, int)
-TIE_PER_COMPILE_CONFIG_ATTR(taichi::lang::CompileConfig, offline_cache, bool, bool)
-TIE_PER_COMPILE_CONFIG_ATTR(taichi::lang::CompileConfig, offline_cache_file_path, std::string, const char *)
-TIE_PER_COMPILE_CONFIG_ATTR(taichi::lang::CompileConfig, offline_cache_cleaning_policy, std::string, const char *)
-TIE_PER_COMPILE_CONFIG_ATTR(taichi::lang::CompileConfig, offline_cache_max_size_of_files, int, int)
-TIE_PER_COMPILE_CONFIG_ATTR(taichi::lang::CompileConfig, offline_cache_cleaning_factor, double, double)
-TIE_PER_COMPILE_CONFIG_ATTR(taichi::lang::CompileConfig, num_compile_threads, int, int)
-TIE_PER_COMPILE_CONFIG_ATTR(taichi::lang::CompileConfig, vk_api_version, std::string, const char *)
-TIE_PER_COMPILE_CONFIG_ATTR(taichi::lang::CompileConfig, cuda_stack_limit, std::size_t, size_t)
+TIE_PER_COMPILE_CONFIG_ATTR(taichi::lang::CompileConfig,
+                            make_thread_local,
+                            bool,
+                            bool)
+TIE_PER_COMPILE_CONFIG_ATTR(taichi::lang::CompileConfig,
+                            make_block_local,
+                            bool,
+                            bool)
+TIE_PER_COMPILE_CONFIG_ATTR(taichi::lang::CompileConfig,
+                            detect_read_only,
+                            bool,
+                            bool)
+TIE_PER_COMPILE_CONFIG_ATTR(taichi::lang::CompileConfig,
+                            real_matrix_scalarize,
+                            bool,
+                            bool)
+TIE_PER_COMPILE_CONFIG_ATTR(taichi::lang::CompileConfig,
+                            half2_vectorization,
+                            bool,
+                            bool)
+TIE_PER_COMPILE_CONFIG_ATTR(taichi::lang::CompileConfig,
+                            make_cpu_multithreading_loop,
+                            bool,
+                            bool)
+TIE_PER_COMPILE_CONFIG_ATTR(taichi::lang::CompileConfig,
+                            quant_opt_store_fusion,
+                            bool,
+                            bool)
+TIE_PER_COMPILE_CONFIG_ATTR(taichi::lang::CompileConfig,
+                            quant_opt_atomic_demotion,
+                            bool,
+                            bool)
+TIE_PER_COMPILE_CONFIG_ATTR(taichi::lang::CompileConfig,
+                            allow_nv_shader_extension,
+                            bool,
+                            bool)
+TIE_PER_COMPILE_CONFIG_ATTR(taichi::lang::CompileConfig,
+                            make_mesh_block_local,
+                            bool,
+                            bool)
+TIE_PER_COMPILE_CONFIG_ATTR(taichi::lang::CompileConfig,
+                            mesh_localize_to_end_mapping,
+                            bool,
+                            bool)
+TIE_PER_COMPILE_CONFIG_ATTR(taichi::lang::CompileConfig,
+                            mesh_localize_from_end_mapping,
+                            bool,
+                            bool)
+TIE_PER_COMPILE_CONFIG_ATTR(taichi::lang::CompileConfig,
+                            optimize_mesh_reordered_mapping,
+                            bool,
+                            bool)
+TIE_PER_COMPILE_CONFIG_ATTR(taichi::lang::CompileConfig,
+                            mesh_localize_all_attr_mappings,
+                            bool,
+                            bool)
+TIE_PER_COMPILE_CONFIG_ATTR(taichi::lang::CompileConfig,
+                            demote_no_access_mesh_fors,
+                            bool,
+                            bool)
+TIE_PER_COMPILE_CONFIG_ATTR(taichi::lang::CompileConfig,
+                            experimental_auto_mesh_local,
+                            bool,
+                            bool)
+TIE_PER_COMPILE_CONFIG_ATTR(taichi::lang::CompileConfig,
+                            auto_mesh_local_default_occupacy,
+                            int,
+                            int)
+TIE_PER_COMPILE_CONFIG_ATTR(taichi::lang::CompileConfig,
+                            offline_cache,
+                            bool,
+                            bool)
+TIE_PER_COMPILE_CONFIG_ATTR(taichi::lang::CompileConfig,
+                            offline_cache_file_path,
+                            std::string,
+                            const char *)
+TIE_PER_COMPILE_CONFIG_ATTR(taichi::lang::CompileConfig,
+                            offline_cache_cleaning_policy,
+                            std::string,
+                            const char *)
+TIE_PER_COMPILE_CONFIG_ATTR(taichi::lang::CompileConfig,
+                            offline_cache_max_size_of_files,
+                            int,
+                            int)
+TIE_PER_COMPILE_CONFIG_ATTR(taichi::lang::CompileConfig,
+                            offline_cache_cleaning_factor,
+                            double,
+                            double)
+TIE_PER_COMPILE_CONFIG_ATTR(taichi::lang::CompileConfig,
+                            num_compile_threads,
+                            int,
+                            int)
+TIE_PER_COMPILE_CONFIG_ATTR(taichi::lang::CompileConfig,
+                            vk_api_version,
+                            std::string,
+                            const char *)
+TIE_PER_COMPILE_CONFIG_ATTR(taichi::lang::CompileConfig,
+                            cuda_stack_limit,
+                            std::size_t,
+                            size_t)

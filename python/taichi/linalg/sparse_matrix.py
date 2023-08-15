@@ -27,7 +27,7 @@ class SparseMatrix:
             self.n = n
             self.m = m if m else n
             self.matrix = get_runtime().prog.create_sparse_matrix(n, m, dtype, storage_format)
-            print(type(self.matrix), ' ::sparse matrix created')
+            print(type(self.matrix), " ::sparse matrix created")
         else:
             self.n = sm.num_rows()
             self.m = sm.num_cols()

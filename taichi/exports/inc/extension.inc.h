@@ -1,10 +1,34 @@
 // TIE_PER_EXTENSION(TieEnum, tie_enum_name, TaichiEnum, ti_enum_name)
-TIE_PER_EXTENSION(TieExtension, TIE_EXTENSION_SPARSE, taichi::lang::Extension, sparse)
-TIE_PER_EXTENSION(TieExtension, TIE_EXTENSION_QUANT, taichi::lang::Extension, quant)
-TIE_PER_EXTENSION(TieExtension, TIE_EXTENSION_MESH, taichi::lang::Extension, mesh)
-TIE_PER_EXTENSION(TieExtension, TIE_EXTENSION_QUANT_BASIC, taichi::lang::Extension, quant_basic)
-TIE_PER_EXTENSION(TieExtension, TIE_EXTENSION_DATA64, taichi::lang::Extension, data64)
-TIE_PER_EXTENSION(TieExtension, TIE_EXTENSION_ADSTACK, taichi::lang::Extension, adstack)
+TIE_PER_EXTENSION(TieExtension,
+                  TIE_EXTENSION_SPARSE,
+                  taichi::lang::Extension,
+                  sparse)
+TIE_PER_EXTENSION(TieExtension,
+                  TIE_EXTENSION_QUANT,
+                  taichi::lang::Extension,
+                  quant)
+TIE_PER_EXTENSION(TieExtension,
+                  TIE_EXTENSION_MESH,
+                  taichi::lang::Extension,
+                  mesh)
+TIE_PER_EXTENSION(TieExtension,
+                  TIE_EXTENSION_QUANT_BASIC,
+                  taichi::lang::Extension,
+                  quant_basic)
+TIE_PER_EXTENSION(TieExtension,
+                  TIE_EXTENSION_DATA64,
+                  taichi::lang::Extension,
+                  data64)
+TIE_PER_EXTENSION(TieExtension,
+                  TIE_EXTENSION_ADSTACK,
+                  taichi::lang::Extension,
+                  adstack)
 TIE_PER_EXTENSION(TieExtension, TIE_EXTENSION_BLS, taichi::lang::Extension, bls)
-TIE_PER_EXTENSION(TieExtension, TIE_EXTENSION_ASSERTION, taichi::lang::Extension, assertion)
-TIE_PER_EXTENSION(TieExtension, TIE_EXTENSION_EXTFUNC, taichi::lang::Extension, extfunc)
+TIE_PER_EXTENSION(TieExtension,
+                  TIE_EXTENSION_ASSERTION,
+                  taichi::lang::Extension,
+                  assertion)
+TIE_PER_EXTENSION(TieExtension,
+                  TIE_EXTENSION_EXTFUNC,
+                  taichi::lang::Extension,
+                  extfunc)

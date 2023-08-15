@@ -269,7 +269,9 @@ def test(arch=None, exclude=None, require=None, **options):
                     "req_arch,req_options",
                     parameters,
                     ids=[
-                        f"arch={_ti_ccore.arch_name(arch)}-{i}" if len(parameters) > 1 else f"arch={_ti_ccore.arch_name(arch)}"
+                        f"arch={_ti_ccore.arch_name(arch)}-{i}"
+                        if len(parameters) > 1
+                        else f"arch={_ti_ccore.arch_name(arch)}"
                         for i, (arch, _) in enumerate(parameters)
                     ],
                 )

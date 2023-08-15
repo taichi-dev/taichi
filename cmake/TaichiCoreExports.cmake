@@ -35,7 +35,7 @@ endif()
 
 target_include_directories(${TAICHI_CORE_EXPORTS_NAME}
   PRIVATE
-    ${TAICHI_CORE_EXPORTS_INCLUDE_DIR}  
+    ${TAICHI_CORE_EXPORTS_INCLUDE_DIR}
 )
 
 target_link_libraries(${TAICHI_CORE_EXPORTS_NAME} PRIVATE taichi_core)

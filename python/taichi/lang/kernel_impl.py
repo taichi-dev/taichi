@@ -744,7 +744,9 @@ class Kernel:
                         array_shape = v.shape[element_dim:] if is_soa else v.shape[:-element_dim]
                     if isinstance(v, np.ndarray):
                         if v.flags.c_contiguous:
-                            launch_ctx.set_arg_external_array_with_shape(actual_argument_slot, int(v.ctypes.data), v.nbytes, array_shape, 0)
+                            launch_ctx.set_arg_external_array_with_shape(
+                                actual_argument_slot, int(v.ctypes.data), v.nbytes, array_shape, 0
+                            )
                         elif v.flags.f_contiguous:
                             # TODO: A better way that avoids copying is saving strides info.
                             tmp = np.ascontiguousarray(v)
@@ -755,7 +757,9 @@ class Kernel:
                                 np.copyto(original, np.asfortranarray(updated))
 
                             callbacks.append(functools.partial(callback, v, tmp))
-                            launch_ctx.set_arg_external_array_with_shape(actual_argument_slot, int(tmp.ctypes.data), tmp.nbytes, array_shape, 0)
+                            launch_ctx.set_arg_external_array_with_shape(
+                                actual_argument_slot, int(tmp.ctypes.data), tmp.nbytes, array_shape, 0
+                            )
                         else:
                             raise ValueError(
                                 "Non contiguous numpy arrays are not supported, please call np.ascontiguousarray(arr) "
@@ -831,11 +835,7 @@ class Kernel:
                                     f"Taichi do not support backend {v.place} that Paddle support"
                                 )
                             launch_ctx.set_arg_external_array_with_shape(
-                                actual_argument_slot,
-                                int(tmp._ptr()),
-                                v.element_size() * v.size,
-                                array_shape,
-                                0
+                                actual_argument_slot, int(tmp._ptr()), v.element_size() * v.size, array_shape, 0
                             )
                         else:
                             raise TaichiRuntimeTypeError.get(i, needed.to_string(), v)

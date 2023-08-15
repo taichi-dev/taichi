@@ -44,8 +44,7 @@
     std::vector<ObjectTypeFullName> data;                              \
     template <typename... Args>                                        \
     explicit ArrayType##Impl(Args &&...args)                           \
-        : data(std::forward<Args>(args)...) {                          \
-    }                                                                  \
+        : data(std::forward<Args>(args)...) {}                         \
   };                                                                   \
   template <typename... Args>                                          \
   ArrayType##Impl *tie_api_create_##ArrayType##_impl(Args &&...args) { \

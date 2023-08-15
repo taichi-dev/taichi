@@ -244,28 +244,17 @@ class CType:
 
     def is_handle(self):
         typename = self.base_type_name
-        return (
-            typename.startswith("Tie")
-            and typename.endswith("Handle")
-            and self.ptr_levels == 0
-        )
-    
+        return typename.startswith("Tie") and typename.endswith("Handle") and self.ptr_levels == 0
+
     def is_ref(self):
         typename = self.base_type_name
-        return (
-            typename.startswith("Tie")
-            and typename.endswith("Ref")
-            and self.ptr_levels == 0
-        )
+        return typename.startswith("Tie") and typename.endswith("Ref") and self.ptr_levels == 0
 
     def is_callback(self):
         return self.base_type_name == "TieCallback" and self.ptr_levels == 0
 
     def is_basic_type(self):
-        return (
-            self.base_type_name in C_BUILTIN_TYPE_TO_CTYPES_TYPE
-            and self.ptr_levels == 0
-        )
+        return self.base_type_name in C_BUILTIN_TYPE_TO_CTYPES_TYPE and self.ptr_levels == 0
 
     def __str__(self):
         return f"{self.base_type_name}{'*' * self.ptr_levels}"
@@ -273,10 +262,7 @@ class CType:
     def __eq__(self, other: object) -> bool:
         if not isinstance(other, CType):
             return False
-        return (
-            self.base_type_name == other.base_type_name
-            and self.ptr_levels == other.ptr_levels
-        )
+        return self.base_type_name == other.base_type_name and self.ptr_levels == other.ptr_levels
 
 
 class EnumDecl:
@@ -301,10 +287,10 @@ class FuncParameter:
 
     def is_cstr_param(self):
         return self.type.is_cstr()
-    
+
     def is_void_ptr_param(self):
         return self.type.is_void_ptr()
-    
+
     def is_basic_type_param(self):
         return self.type.is_basic_type()
 
@@ -460,9 +446,7 @@ def make_printer(verbose: int):
     return printer
 
 
-def parse_exports_header(
-    filename: str, cpp_path: str, cpp_args: List[str], printer
-) -> ExportsHeader:
+def parse_exports_header(filename: str, cpp_path: str, cpp_args: List[str], printer) -> ExportsHeader:
     assert filename.endswith(".h")
 
     printer(f"Parsing {filename} ...")
@@ -501,9 +485,7 @@ def translate_c_type_to_ctypes_type(type: CType, exclude_ptr_levels: int = 0) ->
     elif type.is_void_ptr():
         return "ctypes.c_void_p"
     else:
-        return (
-            f"ctypes.POINTER({translate_c_type_to_ctypes_type(type.exclude_ptr(1), 0)})"
-        )
+        return f"ctypes.POINTER({translate_c_type_to_ctypes_type(type.exclude_ptr(1), 0)})"
 
 
 def translate_func_decl(
@@ -517,9 +499,7 @@ def translate_func_decl(
         )
     tie = splited_by_[0]
     if tie != "tie":
-        raise ValueError(
-            f"Invliad function name: {funcname}, which is not started with 'tie'"
-        )
+        raise ValueError(f"Invliad function name: {funcname}, which is not started with 'tie'")
     class_name = splited_by_[1]
     method_name = "_".join(splited_by_[2:])
 
@@ -567,7 +547,7 @@ def translate_arg_from_python_to_c(arg_name: str, param: FuncParameter) -> str:
     elif param.is_void_ptr_param():
         return f"ctypes.c_void_p({arg_name})"
     elif param.is_basic_type_param():
-        return f'{C_BUILTIN_TYPE_TO_PYTHON_TYPE[arg_type.base_type_name]}({arg_name})'
+        return f"{C_BUILTIN_TYPE_TO_PYTHON_TYPE[arg_type.base_type_name]}({arg_name})"
     elif param.is_callback_param():
         return f"ctypes.CFUNCTYPE(ctypes.c_int)(wrap_callback_to_c({arg_name}))"  # NOTE: Maybe crash
     elif param.is_in_param():
@@ -589,7 +569,9 @@ def translate_ret_from_c_to_python(
     elif value_type.is_handle() and trans_handle_to_object:
         return f"get_python_object_from_handle('{value_type.base_type_name}', {ret_var_name}.value, manage_handle=True)"
     elif value_type.is_ref() and trans_handle_to_object:
-        return f"get_python_object_from_handle('{value_type.base_type_name}', {ret_var_name}.value, manage_handle=False)"
+        return (
+            f"get_python_object_from_handle('{value_type.base_type_name}', {ret_var_name}.value, manage_handle=False)"
+        )
     elif value_type.is_bool():
         return f"bool({ret_var_name}.value)"
     else:
@@ -613,51 +595,31 @@ def generate_func_def_code_from_func_decl(
     in_params = original_func.in_params
     out_params = original_func.out_params
     # Func def
-    in_params = [
-        in_params[i]
-        for i in range(len(in_params))
-        if i == 0 or not in_params[i - 1].is_arr_param()
-    ]
-    fp_write(
-        f"def {func_def_name}("
-        + ", ".join([param.name for param in in_params])
-        + "):\n"
-    )
+    in_params = [in_params[i] for i in range(len(in_params)) if i == 0 or not in_params[i - 1].is_arr_param()]
+    fp_write(f"def {func_def_name}(" + ", ".join([param.name for param in in_params]) + "):\n")
     # Func body
     args = []
-    args.extend(
-        [translate_arg_from_python_to_c(param.name, param) for param in in_params]
-    )
-    args.extend(
-        [translate_arg_from_python_to_c(param.name, param) for param in out_params]
-    )
+    args.extend([translate_arg_from_python_to_c(param.name, param) for param in in_params])
+    args.extend([translate_arg_from_python_to_c(param.name, param) for param in out_params])
     for param in in_params:
         if param.is_arr_param():  # Pre-translate array args
             element_type = param.type.exclude_ptr(1)
             if element_type.is_cstr():
-                fp_write(
-                    f"{tab}{param.name} = tuple(e.encode('utf-8') for e in {param.name})\n"
-                )
+                fp_write(f"{tab}{param.name} = tuple(e.encode('utf-8') for e in {param.name})\n")
             fp_write(
                 f"{tab}{param.name} = ({translate_c_type_to_ctypes_type(element_type)} * len({param.name}))(*{param.name})\n"
             )
     for param in out_params:  # Pre-translate out args
-        fp_write(
-            f"{tab}{param.name} = {translate_c_type_to_ctypes_type(param.type, exclude_ptr_levels=1)}()\n"
-        )
+        fp_write(f"{tab}{param.name} = {translate_c_type_to_ctypes_type(param.type, exclude_ptr_levels=1)}()\n")
     fp_write(f"{tab}ret = taichi_ccore.{original_func.name}(" + ", ".join(args) + ")\n")
 
     # Process ret (error code)
     assert original_func.ret_type == CType("int")
     if func_def_name == "get_last_error":  # NOTE: Avoid infinite recursion
         fp_write(f"{tab}if ret != 0:\n")
-        fp_write(
-            f'{tab*2}raise RuntimeError(f"Failed to call get_last_error, err={{ret}}")\n'
-        )
+        fp_write(f'{tab*2}raise RuntimeError(f"Failed to call get_last_error, err={{ret}}")\n')
     else:
-        fp_write(
-            f"{tab}ex = get_exception_to_throw_if_not_success(ret, get_last_error)\n"
-        )
+        fp_write(f"{tab}ex = get_exception_to_throw_if_not_success(ret, get_last_error)\n")
         fp_write(f"{tab}if ex is not None:\n")
         fp_write(f"{tab*2}raise ex\n")
 
@@ -676,9 +638,7 @@ def generate_func_def_code_from_func_decl(
         fp_write(f"{tab})\n")
 
 
-def generate_py_module_from_exports_header(
-    dirname: str, header: ExportsHeader, printer
-):
+def generate_py_module_from_exports_header(dirname: str, header: ExportsHeader, printer):
     COMMENT_HEADER = """# This file is auto-generated by misc/exports_to_py.py
 # DO NOT edit this file manually!
 # To regenerate this file, run:
@@ -725,9 +685,7 @@ from .utils import get_exception_to_throw_if_not_success, get_python_object_from
         )
         f.write(COMMENT_HEADER)
         f.write("\n")
-        f.write(
-            CCORE_PYTHON_FILE_FORMAT.format(exported_functions=exported_functions_def)
-        )
+        f.write(CCORE_PYTHON_FILE_FORMAT.format(exported_functions=exported_functions_def))
 
     # Generate Python class from exported functions (class0.py, class1.py, ...)
     classes: Mapping[str, ClassDecl] = {}
@@ -743,9 +701,7 @@ from .utils import get_exception_to_throw_if_not_success, get_python_object_from
             classes[class_name].methods[fn.method_name] = fn
 
     for class_name, class_decl in classes.items():
-        printer(
-            f"Generating class {class_name} ({os.path.join(dirname, f'{class_name}.py')}) ..."
-        )
+        printer(f"Generating class {class_name} ({os.path.join(dirname, f'{class_name}.py')}) ...")
         with open(os.path.join(dirname, f"{class_name}.py"), "w") as f:
             methods = class_decl.methods
             attrs = {}  # {attr_name: (getter_name, setter_name), ...}
@@ -758,9 +714,7 @@ from .utils import get_exception_to_throw_if_not_success, get_python_object_from
             f.write("\n")
             f.write(f"# Class {class_name}\n")
             f.write(f"class {class_name}:\n")
-            f.write(
-                "    def __init__(self, *args, handle=None, manage_handle=False):\n"
-            )
+            f.write("    def __init__(self, *args, handle=None, manage_handle=False):\n")
             f.write("        if handle is not None:\n")
             f.write("            self._manage_handle = manage_handle\n")
             f.write("            self._handle = handle\n")
@@ -777,21 +731,14 @@ from .utils import get_exception_to_throw_if_not_success, get_python_object_from
                     ClassMethodDecl.STATIC_METHOD_TYPE,
                 ):
                     f.write(f"    @staticmethod\n")
-                elif (
-                    method_decl.type == ClassMethodDecl.METHOD_TYPE
-                    and method_name.startswith(("get_", "set_"))
-                ):
+                elif method_decl.type == ClassMethodDecl.METHOD_TYPE and method_name.startswith(("get_", "set_")):
                     attr_name = method_name[4:]
                     if attr_name not in attrs:
                         getter_name = f"get_{attr_name}"
                         setter_name = f"set_{attr_name}"
-                        if not ClassMethodDecl.is_getter_method(
-                            (methods.get(getter_name, None))
-                        ):
+                        if not ClassMethodDecl.is_getter_method((methods.get(getter_name, None))):
                             getter_name = None
-                        if not ClassMethodDecl.is_setter_method(
-                            (methods.get(setter_name, None))
-                        ):
+                        if not ClassMethodDecl.is_setter_method((methods.get(setter_name, None))):
                             setter_name = None
                         if getter_name is not None or setter_name is not None:
                             attrs[attr_name] = (getter_name, setter_name)
@@ -804,18 +751,18 @@ from .utils import get_exception_to_throw_if_not_success, get_python_object_from
                     tab=" " * 4,
                 )
                 f.write("\n")
-            if 'get_element' in methods:
+            if "get_element" in methods:
                 f.write("    def __getitem__(self, index):\n")
                 f.write("        try:\n")
                 f.write("            return self.get_element(index)\n")
                 f.write("        except:\n")
                 f.write("            raise IndexError()\n")
                 f.write("\n")
-            if 'size' in methods:
+            if "size" in methods:
                 f.write("    def __len__(self):\n")
                 f.write("        return self.size()\n")
                 f.write("\n")
-            if 'c_str' in methods:
+            if "c_str" in methods:
                 f.write("    def __str__(self):\n")
                 f.write("        return self.c_str()\n")
                 f.write("\n")
@@ -831,9 +778,7 @@ from .utils import get_exception_to_throw_if_not_success, get_python_object_from
             f.write(f"__all__ = ['{class_name}']\n")
 
     # Generate global functions (global_functions.py)
-    printer(
-        f"Generating global functions ({os.path.join(dirname, 'global_functions.py')}) ..."
-    )
+    printer(f"Generating global functions ({os.path.join(dirname, 'global_functions.py')}) ...")
     with open(os.path.join(dirname, "global_functions.py"), "w") as f:
         f.write(COMMENT_HEADER)
         f.write("\n")
@@ -850,14 +795,7 @@ from .utils import get_exception_to_throw_if_not_success, get_python_object_from
             )
         f.write("\n")
         f.write(f"__all__ = [\n")
-        f.write(
-            ",\n".join(
-                [
-                    f'    "{func.name.replace("tie_G_", "")}"'
-                    for func in global_functions
-                ]
-            )
-        )
+        f.write(",\n".join([f'    "{func.name.replace("tie_G_", "")}"' for func in global_functions]))
         f.write("\n]\n")
 
     # Generate __init__.py
@@ -894,9 +832,7 @@ if __name__ == "__main__":
     #           --output-dir python/taichi/_lib/exports \
     #           --verbose 2
 
-    parser = argparse.ArgumentParser(
-        description=f"Generate Python module from exports.h"
-    )
+    parser = argparse.ArgumentParser(description=f"Generate Python module from exports.h")
 
     parser.add_argument(
         "--exports-header",
@@ -947,6 +883,4 @@ if __name__ == "__main__":
         cpp_args=cpp_args,
         printer=printer,
     )
-    generate_py_module_from_exports_header(
-        dirname=args.output_dir, header=exports_header, printer=printer
-    )
+    generate_py_module_from_exports_header(dirname=args.output_dir, header=exports_header, printer=printer)

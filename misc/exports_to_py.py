@@ -5,7 +5,8 @@ from pycparser import parse_file
 from pycparser.c_ast import NodeVisitor
 
 
-UTILS_PYTHON_FILE_CODE = """from .TieError import *
+UTILS_PYTHON_FILE_CODE = """from functools import lru_cache
+from .TieError import *
 
 
 class TieAPIError(RuntimeError):
@@ -68,6 +69,7 @@ def get_exception_to_throw_if_not_success(ret, get_last_error):
     return None
 
 
+@lru_cache()
 def get_python_object_from_handle(tie_type_name, handle_value, manage_handle):
     if handle_value is None or handle_value == 0:
         return None
@@ -156,25 +158,22 @@ def load_core_exports_dll():
     return _load_dll(dll_path[0])
 
 
-class TaichiCCore:
-    def __init__(self) -> None:
-        self._dll = load_core_exports_dll()
-        if self._dll is None:
-            raise RuntimeError("Cannot load taichi_core_exports.dll")
+def load_and_init_core_exports():
+    _dll = load_core_exports_dll()
+    if _dll is None:
+        raise RuntimeError("Cannot load taichi_core_exports.dll")
 
-        global EXPORTED_FUNCTIONS
-        for func in EXPORTED_FUNCTIONS:
-            func_name, func_argtypes, func_restype = func
-            c_func = getattr(self._dll, func_name)
-            c_func.argtypes = func_argtypes
-            c_func.restype = func_restype
-        del EXPORTED_FUNCTIONS
-
-    def __getattr__(self, name):
-        return getattr(self._dll, name)
+    global EXPORTED_FUNCTIONS
+    for func in EXPORTED_FUNCTIONS:
+        func_name, func_argtypes, func_restype = func
+        c_func = getattr(_dll, func_name)
+        c_func.argtypes = func_argtypes
+        c_func.restype = func_restype
+    del EXPORTED_FUNCTIONS
+    return _dll
 
 
-taichi_ccore = TaichiCCore()
+taichi_ccore = load_and_init_core_exports()
 
 __all__ = ['taichi_ccore']
 """

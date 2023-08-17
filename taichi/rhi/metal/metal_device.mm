@@ -471,6 +471,7 @@ void MetalCommandList::bind_pipeline(Pipeline *p) noexcept {
 RhiResult MetalCommandList::bind_shader_resources(ShaderResourceSet *res,
                                                   int set_index) noexcept {
   RHI_ASSERT(set_index == 0);
+
   if (res == nullptr)
     return RhiResult::invalid_usage;
   MetalShaderResourceSet *res_metal =

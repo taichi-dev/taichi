@@ -1375,3 +1375,18 @@ def test_matrix_and_func():
         return length(v)
 
     approx(test(), 5.477226)
+
+
+@test_utils.test()
+def test_matrix_loop_unique():
+    F_x = ti.Vector.field(3, dtype=ti.f32, shape=10)
+
+    @ti.kernel
+    def init():
+        for u in F_x:
+            F_x[u][1] += 1.0
+
+    init()
+
+    for u in range(10):
+        assert F_x[u][1] == 1.0

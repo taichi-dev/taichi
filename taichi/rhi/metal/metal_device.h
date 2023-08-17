@@ -53,7 +53,7 @@ class MetalStream;
 class MetalDevice;
 
 struct MetalMemory {
-public:
+ public:
   // `mtl_buffer` should be already retained.
   explicit MetalMemory(MTLBuffer_id mtl_buffer, bool host_access);
   ~MetalMemory();
@@ -64,14 +64,14 @@ public:
   size_t size() const;
   RhiResult mapped_ptr(void **mapped_ptr) const;
 
-private:
+ private:
   MTLBuffer_id mtl_buffer_;
   bool can_map_{false};
   bool dont_destroy_{false};
 };
 
 struct MetalImage {
-public:
+ public:
   // `mtl_texture` should be already retained.
   explicit MetalImage(MTLTexture_id mtl_texture);
   ~MetalImage();
@@ -80,20 +80,20 @@ public:
 
   MTLTexture_id mtl_texture() const;
 
-private:
+ private:
   MTLTexture_id mtl_texture_;
   bool dont_destroy_{false};
 };
 
 struct MetalSampler {
-public:
+ public:
   // `mtl_texture` should be already retained.
   explicit MetalSampler(MTLSamplerState_id mtl_sampler_state);
   ~MetalSampler();
 
   MTLSamplerState_id mtl_sampler_state() const;
 
-private:
+ private:
   MTLSamplerState_id mtl_sampler_state_;
 };
 struct MetalRenderPassTargetDetails {
@@ -140,11 +140,23 @@ struct MetalRasterFunctions {
 
   void destroy();
 };
+struct MetalShaderBindingMapping {
+  // Map GLSL binding to MSL index (buffer/texture index, sampler index)
+  std::unordered_map<int, std::pair<int, int>> vertex;
+  std::unordered_map<int, std::pair<int, int>> fragment;
+  // The highest used buffer index used in the MSL vertex function
+  // Vertex attributes use up vertex buffer indices in Metal, but
+  // SPIRV-cross generated MSL doesn't know how many buffer indices
+  // the vertex attributes will take. So bind vertex input after the other
+  // buffers.
+  int max_vert_buffer_index{-1};
+};
 class MetalPipeline final : public Pipeline {
-public:
+ public:
   // `mtl_library`, `mtl_function`, `mtl_compute_pipeline_state` should be
   // already retained.
-  explicit MetalPipeline(const MetalDevice &device, MTLLibrary_id mtl_library,
+  explicit MetalPipeline(const MetalDevice &device,
+                         MTLLibrary_id mtl_library,
                          MTLFunction_id mtl_function,
                          MTLComputePipelineState_id mtl_compute_pipeline_state,
                          MetalWorkgroupSize workgroup_size);
@@ -153,6 +165,7 @@ public:
                          const MetalRasterLibraries &mtl_libraries,
                          const MetalRasterFunctions &mtl_functions,
                          MTLVertexDescriptor *vertex_descriptor,
+                         const MetalShaderBindingMapping &mapping,
                          const RasterParams raster_params);
   ~MetalPipeline() final;
 
@@ -172,15 +185,23 @@ public:
     return workgroup_size_;
   }
 
-  const RasterParams *raster_params() const { return &raster_params_; }
+  const RasterParams *raster_params() const {
+    return &raster_params_;
+  }
+  const MetalShaderBindingMapping *bind_map() const {
+    return &binding_mapping_;
+  }
 
-  bool is_graphics() const { return is_raster_pipeline_; }
+  bool is_graphics() const {
+    return is_raster_pipeline_;
+  }
 
-  std::unordered_map<MetalRenderPassTargetDetails, MTLRenderPipelineState_id,
+  std::unordered_map<MetalRenderPassTargetDetails,
+                     MTLRenderPipelineState_id,
                      MRPTDHasher>
       built_pipelines_;
 
-private:
+ private:
   const MetalDevice *device_;
 
   bool is_destroyed_{false};
@@ -195,6 +216,7 @@ private:
   MetalRasterLibraries mtl_raster_libraries_;
   MetalRasterFunctions mtl_raster_functions_;
   MTLVertexDescriptor *vertex_descriptor_;
+  MetalShaderBindingMapping binding_mapping_;
   const RasterParams raster_params_;
 
   bool is_raster_pipeline_{false};
@@ -222,35 +244,39 @@ struct MetalShaderResource {
   };
 };
 class MetalShaderResourceSet final : public ShaderResourceSet {
-public:
+ public:
   explicit MetalShaderResourceSet(const MetalDevice &device);
   ~MetalShaderResourceSet() final;
 
-  ShaderResourceSet &rw_buffer(uint32_t binding, DevicePtr ptr,
+  ShaderResourceSet &rw_buffer(uint32_t binding,
+                               DevicePtr ptr,
                                size_t size) final;
   ShaderResourceSet &rw_buffer(uint32_t binding, DeviceAllocation alloc) final;
 
   ShaderResourceSet &buffer(uint32_t binding, DevicePtr ptr, size_t size) final;
   ShaderResourceSet &buffer(uint32_t binding, DeviceAllocation alloc) final;
 
-  ShaderResourceSet &image(uint32_t binding, DeviceAllocation alloc,
+  ShaderResourceSet &image(uint32_t binding,
+                           DeviceAllocation alloc,
                            ImageSamplerConfig sampler_config) override;
 
-  ShaderResourceSet &rw_image(uint32_t binding, DeviceAllocation alloc,
+  ShaderResourceSet &rw_image(uint32_t binding,
+                              DeviceAllocation alloc,
                               int lod) override;
 
   inline const std::vector<MetalShaderResource> &resources() const {
     return resources_;
   }
 
-private:
+ private:
   const MetalDevice *device_;
-  std::vector<MetalShaderResource> resources_; // TODO: need raster resources
+  std::vector<MetalShaderResource> resources_;
 };
 
 class MetalRasterResources : public RasterResources {
-public:
-  explicit MetalRasterResources(MetalDevice *device) : device_(device) {}
+ public:
+  explicit MetalRasterResources(MetalDevice *device) : device_(device) {
+  }
 
   struct BufferBinding {
     MTLBuffer_id buffer{nullptr};
@@ -266,12 +292,18 @@ public:
   RasterResources &vertex_buffer(DevicePtr ptr, uint32_t binding = 0) final;
   RasterResources &index_buffer(DevicePtr ptr, size_t index_width) final;
 
-private:
+ private:
   MetalDevice *device_;
 };
 
+struct ViewportBounds {
+  int x{0};
+  int y{0};
+  int width{0};
+  int height{0};
+};
 class MetalCommandList final : public CommandList {
-public:
+ public:
   explicit MetalCommandList(const MetalDevice &device,
                             MTLCommandQueue_id cmd_queue);
   ~MetalCommandList() final;
@@ -287,22 +319,44 @@ public:
   void buffer_copy(DevicePtr dst, DevicePtr src, size_t size) noexcept final;
   void buffer_fill(DevicePtr ptr, size_t size, uint32_t data) noexcept final;
   RhiResult dispatch(uint32_t x, uint32_t y = 1, uint32_t z = 1) noexcept final;
-  void begin_renderpass(int x0, int y0, int x1, int y1,
+  void begin_renderpass(int x0,
+                        int y0,
+                        int x1,
+                        int y1,
                         uint32_t num_color_attachments,
-                        DeviceAllocation *color_attachments, bool *color_clear,
+                        DeviceAllocation *color_attachments,
+                        bool *color_clear,
                         std::vector<float> *clear_colors,
                         DeviceAllocation *depth_attachment,
                         bool depth_clear) override;
   void end_renderpass() override;
   void draw(uint32_t num_verticies, uint32_t start_vertex = 0) override;
-  void image_transition(DeviceAllocation img, ImageLayout old_layout,
+  void draw_instance(uint32_t num_verticies,
+                     uint32_t num_instances,
+                     uint32_t start_vertex = 0,
+                     uint32_t start_instance = 0) override;
+  void draw_indexed(uint32_t num_indicies,
+                    uint32_t start_vertex = 0,
+                    uint32_t start_index = 0) override;
+  void draw_indexed_instance(uint32_t num_indicies,
+                             uint32_t num_instances,
+                             uint32_t start_vertex = 0,
+                             uint32_t start_index = 0,
+                             uint32_t start_instance = 0) override;
+  void image_transition(DeviceAllocation img,
+                        ImageLayout old_layout,
                         ImageLayout new_layout) final;
+  void set_line_width(float width) override;
 
   MTLCommandBuffer_id finalize();
 
-private:
+ private:
   friend class MetalStream;
 
+  void bind_mtl_shader_resources(MetalShaderResourceSet *resource_set,
+                                 MTLRenderCommandEncoder_id rce,
+                                 const MetalShaderBindingMapping *mapping);
+  MTLRenderCommandEncoder_id pre_draw_setup();
   const MetalDevice *device_;
   MTLCommandBuffer_id cmdbuf_;
 
@@ -311,13 +365,14 @@ private:
   std::unique_ptr<MetalShaderResourceSet> current_shader_resource_set_{nullptr};
   std::unique_ptr<MetalRasterResources> current_raster_resources_{nullptr};
   MetalRenderPassTargetDetails current_renderpass_details_;
+  ViewportBounds current_viewport_;
   std::vector<float> clear_colors_;
   std::vector<MTLTexture_id> render_targets_;
   MTLTexture_id depth_target_;
 };
 
 class MetalStream final : public Stream {
-public:
+ public:
   // `mtl_command_queue` should be already retained.
   explicit MetalStream(const MetalDevice &device,
                        MTLCommandQueue_id mtl_command_queue);
@@ -326,19 +381,21 @@ public:
   static MetalStream *create(const MetalDevice &device);
   void destroy();
 
-  MTLCommandQueue_id mtl_command_queue() const { return mtl_command_queue_; }
+  MTLCommandQueue_id mtl_command_queue() const {
+    return mtl_command_queue_;
+  }
 
   RhiResult new_command_list(CommandList **out_cmdlist) noexcept final;
-  StreamSemaphore
-  submit(CommandList *cmdlist,
-         const std::vector<StreamSemaphore> &wait_semaphores = {}) final;
-  StreamSemaphore
-  submit_synced(CommandList *cmdlist,
-                const std::vector<StreamSemaphore> &wait_semaphores = {}) final;
+  StreamSemaphore submit(
+      CommandList *cmdlist,
+      const std::vector<StreamSemaphore> &wait_semaphores = {}) final;
+  StreamSemaphore submit_synced(
+      CommandList *cmdlist,
+      const std::vector<StreamSemaphore> &wait_semaphores = {}) final;
 
   void command_sync() override;
 
-private:
+ private:
   const MetalDevice *device_;
   MTLCommandQueue_id mtl_command_queue_;
   std::vector<MTLCommandBuffer_id> pending_cmdbufs_;
@@ -346,11 +403,13 @@ private:
 };
 
 class MetalSurface final : public Surface {
-public:
+ public:
   MetalSurface(MetalDevice *device, const SurfaceConfig &config);
   ~MetalSurface() override;
 
-  CAMetalLayer *mtl_layer() { return layer_; }
+  CAMetalLayer *mtl_layer() {
+    return layer_;
+  }
 
   StreamSemaphore acquire_next_image() override;
   DeviceAllocation get_target_image() override;
@@ -365,9 +424,11 @@ public:
   DeviceAllocation get_depth_data(DeviceAllocation &depth_alloc) override {
     TI_NOT_IMPLEMENTED;
   }
-  DeviceAllocation get_image_data() override { TI_NOT_IMPLEMENTED; }
+  DeviceAllocation get_image_data() override {
+    TI_NOT_IMPLEMENTED;
+  }
 
-private:
+ private:
   void destroy_swap_chain();
 
   SurfaceConfig config_;
@@ -391,13 +452,17 @@ constexpr auto kMetalFragFunctionName = "frag_function";
 constexpr auto kMetalVertFunctionName = "vert_function";
 
 class MetalDevice final : public GraphicsDevice {
-public:
+ public:
   // `mtl_device` should be already retained.
   explicit MetalDevice(MTLDevice_id mtl_device);
   ~MetalDevice() override;
 
-  Arch arch() const override { return Arch::metal; }
-  MTLDevice_id mtl_device() const { return mtl_device_; }
+  Arch arch() const override {
+    return Arch::metal;
+  }
+  MTLDevice_id mtl_device() const {
+    return mtl_device_;
+  }
 
   static MetalDevice *create();
   void destroy();
@@ -425,16 +490,17 @@ public:
   void unmap(DeviceAllocation ptr) override;
 
   RhiResult create_pipeline(Pipeline **out_pipeline,
-                            const PipelineSourceDesc &src, std::string name,
+                            const PipelineSourceDesc &src,
+                            std::string name,
                             PipelineCache *cache) noexcept final;
   ShaderResourceSet *create_resource_set() override;
 
-  std::unique_ptr<Pipeline>
-  create_raster_pipeline(const std::vector<PipelineSourceDesc> &src,
-                         const RasterParams &raster_params,
-                         const std::vector<VertexInputBinding> &vertex_inputs,
-                         const std::vector<VertexInputAttribute> &vertex_attrs,
-                         std::string name = "Pipeline") override;
+  std::unique_ptr<Pipeline> create_raster_pipeline(
+      const std::vector<PipelineSourceDesc> &src,
+      const RasterParams &raster_params,
+      const std::vector<VertexInputBinding> &vertex_inputs,
+      const std::vector<VertexInputAttribute> &vertex_attrs,
+      std::string name = "Pipeline") override;
 
   RasterResources *create_raster_resources() override;
 
@@ -444,14 +510,15 @@ public:
 
   void memcpy_internal(DevicePtr dst, DevicePtr src, uint64_t size) override;
 
-  const MetalSampler &get_default_sampler() const { return *default_sampler_; }
+  const MetalSampler &get_default_sampler() const {
+    return *default_sampler_;
+  }
 
   MTLFunction_id get_mtl_function(MTLLibrary_id mtl_lib,
                                   const std::string &func_name) const;
   MTLLibrary_id get_mtl_library(const std::string &source) const;
-  void compile_and_print(void *data, size_t size);
 
-private:
+ private:
   MTLDevice_id mtl_device_;
   rhi_impl::SyncedPtrStableObjectList<MetalMemory> memory_allocs_;
   rhi_impl::SyncedPtrStableObjectList<MetalImage> image_allocs_;
@@ -462,5 +529,5 @@ private:
   bool is_destroyed_{false};
 };
 
-} // namespace metal
-} // namespace taichi::lang
+}  // namespace metal
+}  // namespace taichi::lang

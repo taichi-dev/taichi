@@ -95,3 +95,27 @@ static const std::map<BufferFormat, MTLPixelFormat> map{
     {BufferFormat::depth32f, MTLPixelFormatDepth32Float},
 };
 #endif
+
+#ifdef DIMENSION_TYPES
+static const std::map<ImageDimension, MTLTextureType> map = {
+    {ImageDimension::d1D, MTLTextureType1D},
+    {ImageDimension::d2D, MTLTextureType2D},
+    {ImageDimension::d3D, MTLTextureType3D},
+};
+#endif
+
+#ifdef PRIMITIVE_TYPES
+static const std::unordered_map<TopologyType, MTLPrimitiveType> map = {
+    {TopologyType::Triangles, MTLPrimitiveType::MTLPrimitiveTypeTriangle},
+    {TopologyType::Lines, MTLPrimitiveType::MTLPrimitiveTypeLine},
+    {TopologyType::Points, MTLPrimitiveType::MTLPrimitiveTypePoint},
+};
+#endif
+
+#ifdef FILL_MODES
+static const std::unordered_map<PolygonMode, MTLTriangleFillMode> map = {
+    {PolygonMode::Fill, MTLTriangleFillMode::MTLTriangleFillModeFill},
+    {PolygonMode::Line, MTLTriangleFillMode::MTLTriangleFillModeLines},
+    {PolygonMode::Point, MTLTriangleFillMode::MTLTriangleFillModeLines},
+};
+#endif

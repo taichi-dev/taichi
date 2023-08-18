@@ -361,7 +361,7 @@ class MetalCommandList final : public CommandList {
   MTLCommandBuffer_id cmdbuf_;
 
   // Non-null after `bind*` methods.
-  const MetalPipeline *current_pipeline_{nullptr};
+  const MetalPipeline *current_pipeline_;
   std::unique_ptr<MetalShaderResourceSet> current_shader_resource_set_{nullptr};
   std::unique_ptr<MetalRasterResources> current_raster_resources_{nullptr};
   MetalRenderPassTargetDetails current_renderpass_details_;

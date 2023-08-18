@@ -7,52 +7,7 @@
 namespace taichi::lang {
 namespace metal {
 
-MTLVertexFormat vertexformat2mtl(BufferFormat format) {
-#define VERTEX_FORMATS
 #include "taichi/rhi/metal/metal_rhi_enum_mappings.h"
-#undef VERTEX_FORMATS
-  auto it = map.find(format);
-  RHI_ASSERT(it != map.end());
-  return it->second;
-}
-MTLPixelFormat format2mtl(BufferFormat format) {
-#define PIXEL_FORMATS
-#include "taichi/rhi/metal/metal_rhi_enum_mappings.h"
-#undef PIXEL_FORMATS
-  auto it = map.find(format);
-  RHI_ASSERT(it != map.end());
-  return it->second;
-}
-BufferFormat mtl2format(MTLPixelFormat format) {
-#define PIXEL_FORMATS
-#include "taichi/rhi/metal/metal_rhi_enum_mappings.h"
-#undef PIXEL_FORMATS
-  auto it = std::find_if(map.begin(), map.end(),
-                         [&format](auto &&p) { return p.second == format; });
-  RHI_ASSERT(it != map.end());
-  return it->first;
-}
-MTLTextureType dimension2mtl(ImageDimension dimension) {
-#define DIMENSION_TYPES
-#include "taichi/rhi/metal/metal_rhi_enum_mappings.h"
-#undef DIMENSION_TYPES
-  auto it = map.find(dimension);
-  RHI_ASSERT(it != map.end());
-  return it->second;
-}
-MTLTextureUsage usage2mtl(ImageAllocUsage usage) {
-  MTLTextureUsage out = 0;
-  if (usage & ImageAllocUsage::Sampled) {
-    out |= MTLTextureUsageShaderRead;
-  }
-  if (usage & ImageAllocUsage::Storage) {
-    out |= MTLTextureUsageShaderWrite;
-  }
-  if (usage & ImageAllocUsage::Attachment) {
-    out |= MTLTextureUsageRenderTarget;
-  }
-  return out;
-}
 
 MetalMemory::MetalMemory(MTLBuffer_id mtl_buffer, bool can_map)
     : mtl_buffer_(mtl_buffer), can_map_(can_map) {}
@@ -208,43 +163,10 @@ MetalPipeline *MetalPipeline::create_compute_pipeline(const MetalDevice &device,
 MTLRenderPipelineState_id MetalPipeline::build_mtl_render_pipeline(
     const MetalRenderPassTargetDetails &renderpass_details) {
   // Create render pipeline
-  static const std::unordered_map<TopologyType, MTLPrimitiveTopologyClass>
-      topo_types = {
-          {TopologyType::Triangles,
-           MTLPrimitiveTopologyClass::MTLPrimitiveTopologyClassTriangle},
-          {TopologyType::Lines,
-           MTLPrimitiveTopologyClass::MTLPrimitiveTopologyClassLine},
-          {TopologyType::Points,
-           MTLPrimitiveTopologyClass::MTLPrimitiveTopologyClassPoint},
-      };
-  static const std::unordered_map<BlendOp, MTLBlendOperation> blend_ops = {
-      {BlendOp::add, MTLBlendOperation::MTLBlendOperationAdd},
-      {BlendOp::subtract, MTLBlendOperation::MTLBlendOperationSubtract},
-      {BlendOp::reverse_subtract,
-       MTLBlendOperation::MTLBlendOperationReverseSubtract},
-      {BlendOp::min, MTLBlendOperation::MTLBlendOperationMin},
-      {BlendOp::max, MTLBlendOperation::MTLBlendOperationMax},
-  };
-  static const std::unordered_map<BlendFactor, MTLBlendFactor> blend_factors = {
-      {BlendFactor::zero, MTLBlendFactor::MTLBlendFactorZero},
-      {BlendFactor::one, MTLBlendFactor::MTLBlendFactorOne},
-      {BlendFactor::src_color, MTLBlendFactor::MTLBlendFactorSourceColor},
-      {BlendFactor::one_minus_src_color,
-       MTLBlendFactor::MTLBlendFactorOneMinusSourceColor},
-      {BlendFactor::dst_color, MTLBlendFactor::MTLBlendFactorDestinationColor},
-      {BlendFactor::one_minus_dst_color,
-       MTLBlendFactor::MTLBlendFactorOneMinusDestinationColor},
-      {BlendFactor::src_alpha, MTLBlendFactor::MTLBlendFactorSourceAlpha},
-      {BlendFactor::one_minus_src_alpha,
-       MTLBlendFactor::MTLBlendFactorOneMinusSourceAlpha},
-      {BlendFactor::dst_alpha, MTLBlendFactor::MTLBlendFactorDestinationAlpha},
-      {BlendFactor::one_minus_dst_alpha,
-       MTLBlendFactor::MTLBlendFactorOneMinusDestinationAlpha},
-  };
   MTLRenderPipelineDescriptor *rpd = [MTLRenderPipelineDescriptor new];
   rpd.vertexFunction = mtl_raster_functions_.vertex;
   rpd.fragmentFunction = mtl_raster_functions_.fragment;
-  rpd.inputPrimitiveTopology = topo_types.at(raster_params_.prim_topology);
+  rpd.inputPrimitiveTopology = topotype2mtl(raster_params_.prim_topology);
   rpd.vertexDescriptor = vertex_descriptor_;
 
   if (renderpass_details.depth_attach_format != BufferFormat::unknown) {
@@ -261,17 +183,17 @@ MTLRenderPipelineState_id MetalPipeline::build_mtl_render_pipeline(
   for (int i = 0; i < raster_params_.blending.size(); i++) {
     BlendingParams blending = raster_params_.blending[i];
     rpd.colorAttachments[i].blendingEnabled = blending.enable;
-    rpd.colorAttachments[i].rgbBlendOperation = blend_ops.at(blending.color.op);
+    rpd.colorAttachments[i].rgbBlendOperation = blendop2mtl(blending.color.op);
     rpd.colorAttachments[i].alphaBlendOperation =
-        blend_ops.at(blending.alpha.op);
+        blendop2mtl(blending.alpha.op);
     rpd.colorAttachments[i].destinationRGBBlendFactor =
-        blend_factors.at(blending.color.dst_factor);
+        blendfactor2mtl(blending.color.dst_factor);
     rpd.colorAttachments[i].sourceRGBBlendFactor =
-        blend_factors.at(blending.color.src_factor);
+        blendfactor2mtl(blending.color.src_factor);
     rpd.colorAttachments[i].destinationAlphaBlendFactor =
-        blend_factors.at(blending.alpha.dst_factor);
+        blendfactor2mtl(blending.alpha.dst_factor);
     rpd.colorAttachments[i].sourceAlphaBlendFactor =
-        blend_factors.at(blending.alpha.src_factor);
+        blendfactor2mtl(blending.alpha.src_factor);
   }
 
   MTLRenderPipelineState_id rps = nil;
@@ -471,7 +393,6 @@ void MetalCommandList::bind_pipeline(Pipeline *p) noexcept {
 RhiResult MetalCommandList::bind_shader_resources(ShaderResourceSet *res,
                                                   int set_index) noexcept {
   RHI_ASSERT(set_index == 0);
-
   if (res == nullptr)
     return RhiResult::invalid_usage;
   MetalShaderResourceSet *res_metal =
@@ -726,10 +647,8 @@ MTLRenderCommandEncoder_id MetalCommandList::pre_draw_setup() {
                                  (double)current_viewport_.y,
                                  (double)current_viewport_.width,
                                  (double)current_viewport_.height, 0.0, 1.0}];
-#define FILL_MODES
-#include "taichi/rhi/metal/metal_rhi_enum_mappings.h"
-#undef FILL_MODES
-  [rce setTriangleFillMode:map.at(raster_params->polygon_mode)];
+
+  [rce setTriangleFillMode:fillmode2mtl(raster_params->polygon_mode)];
   MTLCullMode cull_mode = MTLCullModeNone;
   if (raster_params->back_face_cull) {
     cull_mode = MTLCullModeBack;
@@ -763,10 +682,7 @@ void MetalCommandList::draw(uint32_t num_verticies, uint32_t start_vertex) {
 
     const RasterParams *raster_params = current_pipeline_->raster_params();
 
-#define PRIMITIVE_TYPES
-#include "taichi/rhi/metal/metal_rhi_enum_mappings.h"
-#undef PRIMITIVE_TYPES
-    [rce drawPrimitives:map.at(raster_params->prim_topology)
+    [rce drawPrimitives:primtype2mtl(raster_params->prim_topology)
             vertexStart:start_vertex
             vertexCount:num_verticies];
     [rce endEncoding];
@@ -783,10 +699,7 @@ void MetalCommandList::draw_instance(uint32_t num_verticies,
 
     const RasterParams *raster_params = current_pipeline_->raster_params();
 
-#define PRIMITIVE_TYPES
-#include "taichi/rhi/metal/metal_rhi_enum_mappings.h"
-#undef PRIMITIVE_TYPES
-    [rce drawPrimitives:map.at(raster_params->prim_topology)
+    [rce drawPrimitives:primtype2mtl(raster_params->prim_topology)
             vertexStart:start_vertex
             vertexCount:num_verticies
           instanceCount:num_instances
@@ -814,10 +727,7 @@ void MetalCommandList::draw_indexed(uint32_t num_indicies,
     size_t index_offset = current_raster_resources_->index_binding.offset +
                           start_index * index_size;
 
-#define PRIMITIVE_TYPES
-#include "taichi/rhi/metal/metal_rhi_enum_mappings.h"
-#undef PRIMITIVE_TYPES
-    [rce drawIndexedPrimitives:map.at(raster_params->prim_topology)
+    [rce drawIndexedPrimitives:primtype2mtl(raster_params->prim_topology)
                     indexCount:num_indicies
                      indexType:(MTLIndexType)
                                    current_raster_resources_->index_type_enum
@@ -848,10 +758,7 @@ void MetalCommandList::draw_indexed_instance(uint32_t num_indicies,
     size_t index_offset = current_raster_resources_->index_binding.offset +
                           start_index * index_size;
 
-#define PRIMITIVE_TYPES
-#include "taichi/rhi/metal/metal_rhi_enum_mappings.h"
-#undef PRIMITIVE_TYPES
-    [rce drawIndexedPrimitives:map.at(raster_params->prim_topology)
+    [rce drawIndexedPrimitives:primtype2mtl(raster_params->prim_topology)
                     indexCount:num_indicies
                      indexType:(MTLIndexType)
                                    current_raster_resources_->index_type_enum
@@ -1226,6 +1133,32 @@ RhiResult MetalDevice::create_pipeline(Pipeline **out_pipeline,
   return RhiResult::success;
 }
 
+void get_binding_mappings(
+    spirv_cross::SmallVector<spirv_cross::Resource> *resource_list,
+    spirv_cross::CompilerMSL *compiler, MetalShaderBindingMapping *mapping,
+    bool isVertexStage, bool isCombinedSampler) {
+
+  for (auto &resource : *resource_list) {
+    int msl_index = compiler->get_automatic_msl_resource_binding(resource.id);
+    int binding = compiler->get_decoration(resource.id, spv::DecorationBinding);
+    int sampler_index = -1;
+    if (isCombinedSampler) {
+      sampler_index =
+          compiler->get_automatic_msl_resource_binding_secondary(resource.id);
+    }
+
+    std::pair<int, int> MSL_index_pair =
+        std::make_pair(msl_index, sampler_index);
+    if (isVertexStage) {
+      mapping->vertex[binding] = MSL_index_pair;
+      mapping->max_vert_buffer_index =
+          std::max(mapping->max_vert_buffer_index, msl_index);
+    } else {
+      mapping->fragment[binding] = MSL_index_pair;
+    }
+  }
+}
+
 std::unique_ptr<Pipeline> MetalDevice::create_raster_pipeline(
     const std::vector<PipelineSourceDesc> &src,
     const RasterParams &raster_params,
@@ -1283,38 +1216,14 @@ std::unique_ptr<Pipeline> MetalDevice::create_raster_pipeline(
     spirv_cross::ShaderResources shader_res = compiler.get_shader_resources(
         compiler.get_active_interface_variables());
 
-    // TODO: Refactor this ugly, hard-to-read double for-loop.
-    for (int i = 0; i < 4; i++) {
-      spirv_cross::SmallVector<spirv_cross::Resource> *resource_list =
-          &(shader_res.uniform_buffers);
-      if (i == 1)
-        resource_list = &(shader_res.storage_buffers);
-      if (i == 2)
-        resource_list = &(shader_res.sampled_images);
-      if (i == 3)
-        resource_list = &(shader_res.storage_images);
-      for (auto &resource : *resource_list) {
-        int msl_index =
-            compiler.get_automatic_msl_resource_binding(resource.id);
-        int binding =
-            compiler.get_decoration(resource.id, spv::DecorationBinding);
-        int sampler_index = -1;
-        if (i == 2) {
-          sampler_index = compiler.get_automatic_msl_resource_binding_secondary(
-              resource.id);
-        }
-
-        std::pair<int, int> MSL_index_pair =
-            std::make_pair(msl_index, sampler_index);
-        if (isVertexStage) {
-          mapping.vertex[binding] = MSL_index_pair;
-          mapping.max_vert_buffer_index =
-              std::max(mapping.max_vert_buffer_index, msl_index);
-        } else {
-          mapping.fragment[binding] = MSL_index_pair;
-        }
-      }
-    }
+    get_binding_mappings(&shader_res.uniform_buffers, &compiler, &mapping,
+                         isVertexStage, false);
+    get_binding_mappings(&shader_res.storage_buffers, &compiler, &mapping,
+                         isVertexStage, false);
+    get_binding_mappings(&shader_res.sampled_images, &compiler, &mapping,
+                         isVertexStage, true);
+    get_binding_mappings(&shader_res.storage_images, &compiler, &mapping,
+                         isVertexStage, false);
   }
 
   // Compile MSL source to MTLLibrary

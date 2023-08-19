@@ -7,131 +7,7 @@
 namespace taichi::lang {
 namespace metal {
 
-MTLVertexFormat vertexformat2mtl(BufferFormat format) {
-  static const std::map<BufferFormat, MTLVertexFormat> map{
-      {BufferFormat::unknown, MTLVertexFormatInvalid},
-      {BufferFormat::r8, MTLVertexFormatUCharNormalized},
-      {BufferFormat::rg8, MTLVertexFormatUChar2Normalized},
-      {BufferFormat::rgba8, MTLVertexFormatUChar4Normalized},
-      {BufferFormat::rgba8srgb, MTLVertexFormatInvalid},
-      {BufferFormat::bgra8, MTLVertexFormatUChar4Normalized_BGRA},
-      {BufferFormat::bgra8srgb, MTLVertexFormatInvalid},
-      {BufferFormat::r8u, MTLVertexFormatInvalid},
-      {BufferFormat::rg8u, MTLVertexFormatInvalid},
-      {BufferFormat::rgba8u, MTLVertexFormatInvalid},
-      {BufferFormat::r8i, MTLVertexFormatInvalid},
-      {BufferFormat::rg8i, MTLVertexFormatInvalid},
-      {BufferFormat::rgba8i, MTLVertexFormatInvalid},
-      {BufferFormat::r16, MTLVertexFormatUShortNormalized},
-      {BufferFormat::rg16, MTLVertexFormatUShort2Normalized},
-      {BufferFormat::rgb16, MTLVertexFormatUShort3Normalized},
-      {BufferFormat::rgba16, MTLVertexFormatUShort4Normalized},
-      {BufferFormat::r16u, MTLVertexFormatInvalid},
-      {BufferFormat::rg16u, MTLVertexFormatInvalid},
-      {BufferFormat::rgb16u, MTLVertexFormatInvalid},
-      {BufferFormat::rgba16u, MTLVertexFormatInvalid},
-      {BufferFormat::r16i, MTLVertexFormatInvalid},
-      {BufferFormat::rg16i, MTLVertexFormatInvalid},
-      {BufferFormat::rgb16i, MTLVertexFormatInvalid},
-      {BufferFormat::rgba16i, MTLVertexFormatInvalid},
-      {BufferFormat::r16f, MTLVertexFormatHalf},
-      {BufferFormat::rg16f, MTLVertexFormatHalf2},
-      {BufferFormat::rgb16f, MTLVertexFormatHalf3},
-      {BufferFormat::rgba16f, MTLVertexFormatHalf4},
-      {BufferFormat::r32u, MTLVertexFormatUInt},
-      {BufferFormat::rg32u, MTLVertexFormatUInt2},
-      {BufferFormat::rgb32u, MTLVertexFormatUInt3},
-      {BufferFormat::rgba32u, MTLVertexFormatUInt4},
-      {BufferFormat::r32i, MTLVertexFormatInt},
-      {BufferFormat::rg32i, MTLVertexFormatInt2},
-      {BufferFormat::rgb32i, MTLVertexFormatInt3},
-      {BufferFormat::rgba32i, MTLVertexFormatInt4},
-      {BufferFormat::r32f, MTLVertexFormatFloat},
-      {BufferFormat::rg32f, MTLVertexFormatFloat2},
-      {BufferFormat::rgb32f, MTLVertexFormatFloat3},
-      {BufferFormat::rgba32f, MTLVertexFormatFloat4},
-      {BufferFormat::depth16, MTLVertexFormatInvalid},
-      {BufferFormat::depth24stencil8, MTLVertexFormatInvalid},
-      {BufferFormat::depth32f, MTLVertexFormatInvalid},
-  };
-  auto it = map.find(format);
-  RHI_ASSERT(it != map.end());
-  return it->second;
-}
-MTLPixelFormat format2mtl(BufferFormat format) {
-  static const std::map<BufferFormat, MTLPixelFormat> map{
-      {BufferFormat::unknown, MTLPixelFormatInvalid},
-      {BufferFormat::r8, MTLPixelFormatR8Unorm},
-      {BufferFormat::rg8, MTLPixelFormatRG8Unorm},
-      {BufferFormat::rgba8, MTLPixelFormatRGBA8Unorm},
-      {BufferFormat::rgba8srgb, MTLPixelFormatRGBA8Unorm_sRGB},
-      {BufferFormat::bgra8, MTLPixelFormatBGRA8Unorm},
-      {BufferFormat::bgra8srgb, MTLPixelFormatBGRA8Unorm_sRGB},
-      {BufferFormat::r8u, MTLPixelFormatR8Uint},
-      {BufferFormat::rg8u, MTLPixelFormatRG8Uint},
-      {BufferFormat::rgba8u, MTLPixelFormatRGBA8Uint},
-      {BufferFormat::r8i, MTLPixelFormatR8Sint},
-      {BufferFormat::rg8i, MTLPixelFormatRG8Sint},
-      {BufferFormat::rgba8i, MTLPixelFormatRGBA8Sint},
-      {BufferFormat::r16, MTLPixelFormatR16Unorm},
-      {BufferFormat::rg16, MTLPixelFormatRG16Unorm},
-      {BufferFormat::rgb16, MTLPixelFormatInvalid},
-      {BufferFormat::rgba16, MTLPixelFormatRGBA16Unorm},
-      {BufferFormat::r16u, MTLPixelFormatR16Uint},
-      {BufferFormat::rg16u, MTLPixelFormatRG16Uint},
-      {BufferFormat::rgb16u, MTLPixelFormatInvalid},
-      {BufferFormat::rgba16u, MTLPixelFormatRGBA16Uint},
-      {BufferFormat::r16i, MTLPixelFormatR16Sint},
-      {BufferFormat::rg16i, MTLPixelFormatRG16Sint},
-      {BufferFormat::rgb16i, MTLPixelFormatInvalid},
-      {BufferFormat::rgba16i, MTLPixelFormatRGBA16Sint},
-      {BufferFormat::r16f, MTLPixelFormatR16Float},
-      {BufferFormat::rg16f, MTLPixelFormatRG16Float},
-      {BufferFormat::rgb16f, MTLPixelFormatInvalid},
-      {BufferFormat::rgba16f, MTLPixelFormatRGBA16Float},
-      {BufferFormat::r32u, MTLPixelFormatR32Uint},
-      {BufferFormat::rg32u, MTLPixelFormatRG32Uint},
-      {BufferFormat::rgb32u, MTLPixelFormatInvalid},
-      {BufferFormat::rgba32u, MTLPixelFormatRGBA32Uint},
-      {BufferFormat::r32i, MTLPixelFormatR32Sint},
-      {BufferFormat::rg32i, MTLPixelFormatRG32Sint},
-      {BufferFormat::rgb32i, MTLPixelFormatInvalid},
-      {BufferFormat::rgba32i, MTLPixelFormatRGBA32Sint},
-      {BufferFormat::r32f, MTLPixelFormatR32Float},
-      {BufferFormat::rg32f, MTLPixelFormatRG32Float},
-      {BufferFormat::rgb32f, MTLPixelFormatInvalid},
-      {BufferFormat::rgba32f, MTLPixelFormatRGBA32Float},
-      {BufferFormat::depth16, MTLPixelFormatDepth16Unorm},
-      {BufferFormat::depth24stencil8, MTLPixelFormatInvalid},
-      {BufferFormat::depth32f, MTLPixelFormatDepth32Float},
-  };
-  auto it = map.find(format);
-  RHI_ASSERT(it != map.end());
-  return it->second;
-}
-MTLTextureType dimension2mtl(ImageDimension dimension) {
-  static const std::map<ImageDimension, MTLTextureType> map = {
-      {ImageDimension::d1D, MTLTextureType1D},
-      {ImageDimension::d2D, MTLTextureType2D},
-      {ImageDimension::d3D, MTLTextureType3D},
-  };
-  auto it = map.find(dimension);
-  RHI_ASSERT(it != map.end());
-  return it->second;
-}
-MTLTextureUsage usage2mtl(ImageAllocUsage usage) {
-  MTLTextureUsage out = 0;
-  if (usage & ImageAllocUsage::Sampled) {
-    out |= MTLTextureUsageShaderRead;
-  }
-  if (usage & ImageAllocUsage::Storage) {
-    out |= MTLTextureUsageShaderWrite;
-  }
-  if (usage & ImageAllocUsage::Attachment) {
-    out |= MTLTextureUsageRenderTarget;
-  }
-  return out;
-}
+#include "taichi/rhi/metal/metal_rhi_enum_mappings.h"
 
 MetalMemory::MetalMemory(MTLBuffer_id mtl_buffer, bool can_map)
     : mtl_buffer_(mtl_buffer), can_map_(can_map) {}
@@ -177,23 +53,34 @@ MTLSamplerState_id MetalSampler::mtl_sampler_state() const {
   return mtl_sampler_state_;
 }
 
+void MetalRasterLibraries::destroy() {
+  [vertex release];
+  [fragment release];
+}
+void MetalRasterFunctions::destroy() {
+  [vertex release];
+  [fragment release];
+}
+
 MetalPipeline::MetalPipeline(
     const MetalDevice &device, MTLLibrary_id mtl_library,
     MTLFunction_id mtl_function,
     MTLComputePipelineState_id mtl_compute_pipeline_state,
     MetalWorkgroupSize workgroup_size)
-    : device_(&device), mtl_library_(mtl_library), mtl_function_(mtl_function),
+    : device_(&device), mtl_compute_library_(mtl_library),
+      mtl_compute_function_(mtl_function),
       mtl_compute_pipeline_state_(mtl_compute_pipeline_state),
       workgroup_size_(workgroup_size) {}
-MetalPipeline::MetalPipeline(
-    const MetalDevice &device, MTLLibrary_id mtl_library,
-    const MetalRasterFunctions &mtl_functions,
-    MTLRenderPipelineState_id mtl_render_pipeline_state,
-    const RasterParams raster_params)
-    : device_(&device), mtl_library_(mtl_library),
-      mtl_functions_(mtl_functions),
-      mtl_render_pipeline_state_(mtl_render_pipeline_state),
-      raster_params_(raster_params) {}
+MetalPipeline::MetalPipeline(const MetalDevice &device,
+                             const MetalRasterLibraries &mtl_libraries,
+                             const MetalRasterFunctions &mtl_functions,
+                             MTLVertexDescriptor *vertex_descriptor,
+                             const MetalShaderBindingMapping &mapping,
+                             const RasterParams raster_params)
+    : device_(&device), mtl_raster_libraries_(mtl_libraries),
+      mtl_raster_functions_(mtl_functions),
+      vertex_descriptor_(vertex_descriptor), binding_mapping_(mapping),
+      raster_params_(raster_params), is_raster_pipeline_(true) {}
 MetalPipeline::~MetalPipeline() { destroy(); }
 MetalPipeline *MetalPipeline::create_compute_pipeline(const MetalDevice &device,
                                                       const uint32_t *spv_data,
@@ -273,11 +160,74 @@ MetalPipeline *MetalPipeline::create_compute_pipeline(const MetalDevice &device,
                            std::move(workgroup_size));
 }
 
+MTLRenderPipelineState_id MetalPipeline::build_mtl_render_pipeline(
+    const MetalRenderPassTargetDetails &renderpass_details) {
+  // Create render pipeline
+  MTLRenderPipelineDescriptor *rpd = [MTLRenderPipelineDescriptor new];
+  rpd.vertexFunction = mtl_raster_functions_.vertex;
+  rpd.fragmentFunction = mtl_raster_functions_.fragment;
+  rpd.inputPrimitiveTopology = topotype2mtl(raster_params_.prim_topology);
+  rpd.vertexDescriptor = vertex_descriptor_;
+
+  if (renderpass_details.depth_attach_format != BufferFormat::unknown) {
+    rpd.depthAttachmentPixelFormat =
+        format2mtl(renderpass_details.depth_attach_format);
+  }
+
+  for (int i = 0; i < renderpass_details.color_attachments.size(); i++) {
+    MTLPixelFormat format =
+        format2mtl(renderpass_details.color_attachments[i].first);
+    rpd.colorAttachments[i].pixelFormat = format;
+  }
+
+  for (int i = 0; i < raster_params_.blending.size(); i++) {
+    BlendingParams blending = raster_params_.blending[i];
+    rpd.colorAttachments[i].blendingEnabled = blending.enable;
+    rpd.colorAttachments[i].rgbBlendOperation = blendop2mtl(blending.color.op);
+    rpd.colorAttachments[i].alphaBlendOperation =
+        blendop2mtl(blending.alpha.op);
+    rpd.colorAttachments[i].destinationRGBBlendFactor =
+        blendfactor2mtl(blending.color.dst_factor);
+    rpd.colorAttachments[i].sourceRGBBlendFactor =
+        blendfactor2mtl(blending.color.src_factor);
+    rpd.colorAttachments[i].destinationAlphaBlendFactor =
+        blendfactor2mtl(blending.alpha.dst_factor);
+    rpd.colorAttachments[i].sourceAlphaBlendFactor =
+        blendfactor2mtl(blending.alpha.src_factor);
+  }
+
+  MTLRenderPipelineState_id rps = nil;
+  {
+    NSError *err = nil;
+    rps = [device_->mtl_device() newRenderPipelineStateWithDescriptor:rpd
+                                                                error:&err];
+
+    if (rps == nil) {
+      if (err != nil) {
+        std::array<char, 4096> msgbuf;
+        snprintf(msgbuf.data(), msgbuf.size(),
+                 "cannot create render pipeline state: %s (code=%d)",
+                 err.localizedDescription.UTF8String, (int)err.code);
+        RHI_LOG_ERROR(msgbuf.data());
+      }
+      return nullptr;
+    }
+  }
+
+  return rps;
+}
+
 void MetalPipeline::destroy() {
   if (!is_destroyed_) {
     [mtl_compute_pipeline_state_ release];
-    [mtl_function_ release];
-    [mtl_library_ release];
+    [mtl_compute_function_ release];
+    [mtl_compute_library_ release];
+
+    for (auto &pipe : built_pipelines_) {
+      [pipe.second release];
+    }
+    mtl_raster_libraries_.destroy();
+    mtl_raster_functions_.destroy();
     is_destroyed_ = true;
   }
 }
@@ -403,6 +353,11 @@ RasterResources &MetalRasterResources::index_buffer(DevicePtr ptr,
     index_binding = BufferBinding();
   } else {
     index_binding = {buffer, ptr.offset};
+    if (index_width == 16) {
+      index_type_enum = (uint32_t)MTLIndexType::MTLIndexTypeUInt16;
+    } else {
+      index_type_enum = (uint32_t)MTLIndexType::MTLIndexTypeUInt32;
+    }
   }
   return *this;
 }
@@ -420,20 +375,42 @@ MetalCommandList::~MetalCommandList() { [cmdbuf_ release]; }
 void MetalCommandList::bind_pipeline(Pipeline *p) noexcept {
   RHI_ASSERT(p != nullptr);
   current_pipeline_ = (MetalPipeline *)p;
+
+  auto pipeline = static_cast<MetalPipeline *>(p);
+
+  if (pipeline->is_graphics()) {
+    current_shader_resource_set_.reset();
+    current_raster_resources_.reset();
+    // Check if PSO is already built for current render pass parameters
+    if (pipeline->built_pipelines_.count(current_renderpass_details_) == 0) {
+      // Not built, need to build
+      MTLRenderPipelineState_id rps =
+          pipeline->build_mtl_render_pipeline(current_renderpass_details_);
+      pipeline->built_pipelines_[current_renderpass_details_] = rps;
+    }
+  }
 }
 RhiResult MetalCommandList::bind_shader_resources(ShaderResourceSet *res,
                                                   int set_index) noexcept {
-  RHI_ASSERT(res != nullptr);
   RHI_ASSERT(set_index == 0);
-  MetalShaderResourceSet *res_metal = (MetalShaderResourceSet *)res;
+  if (res == nullptr)
+    return RhiResult::invalid_usage;
+  MetalShaderResourceSet *res_metal =
+      static_cast<MetalShaderResourceSet *>(res);
   current_shader_resource_set_ =
       std::make_unique<MetalShaderResourceSet>(*res_metal);
   return RhiResult::success;
 }
 
 RhiResult
-MetalCommandList::bind_raster_resources(RasterResources *res) noexcept {
-  return RhiResult::not_supported;
+MetalCommandList::bind_raster_resources(RasterResources *_res) noexcept {
+  MetalRasterResources *res = static_cast<MetalRasterResources *>(_res);
+
+  if (!current_pipeline_->is_graphics() || res == nullptr) {
+    return RhiResult::invalid_usage;
+  }
+  current_raster_resources_ = std::make_unique<MetalRasterResources>(*res);
+  return RhiResult::success;
 }
 
 void MetalCommandList::buffer_barrier(DeviceAllocation alloc) noexcept {}
@@ -540,6 +517,263 @@ RhiResult MetalCommandList::dispatch(uint32_t x, uint32_t y,
   return RhiResult::success;
 }
 
+void MetalCommandList::begin_renderpass(int x0, int y0, int x1, int y1,
+                                        uint32_t num_color_attachments,
+                                        DeviceAllocation *color_attachments,
+                                        bool *color_clear,
+                                        std::vector<float> *clear_colors,
+                                        DeviceAllocation *depth_attachment,
+                                        bool depth_clear) {
+  current_viewport_.x = x0;
+  current_viewport_.y = y0;
+  current_viewport_.width = x1 - x0;
+  current_viewport_.height = y1 - y0;
+
+  current_renderpass_details_.color_attachments.clear();
+  current_renderpass_details_.clear_depth = depth_clear;
+  render_targets_.clear();
+
+  if (depth_attachment) {
+    MetalImage depth_attach = device_->get_image(depth_attachment->alloc_id);
+    BufferFormat format = mtl2format(depth_attach.mtl_texture().pixelFormat);
+    current_renderpass_details_.depth_attach_format = format;
+    depth_target_ = depth_attach.mtl_texture();
+  }
+
+  for (int i = 0; i < num_color_attachments; i++) {
+    MetalImage col_attach = device_->get_image(color_attachments[i].alloc_id);
+    BufferFormat format = mtl2format(col_attach.mtl_texture().pixelFormat);
+    bool clear = color_clear[i];
+    current_renderpass_details_.color_attachments.emplace_back(format, clear);
+    render_targets_.push_back(col_attach.mtl_texture());
+  }
+  clear_colors_ = *clear_colors;
+}
+void MetalCommandList::end_renderpass() {}
+
+void MetalCommandList::bind_mtl_shader_resources(
+    MetalShaderResourceSet *resource_set, MTLRenderCommandEncoder_id rce,
+    const MetalShaderBindingMapping *mapping) {
+  for (const MetalShaderResource &resource : resource_set->resources()) {
+    bool is_used_in_vertex = mapping->vertex.count(resource.binding) > 0;
+    bool is_used_in_fragment = mapping->fragment.count(resource.binding) > 0;
+
+    std::pair<int, int> msl_vert_index_pair = std::make_pair(-1, -1);
+    std::pair<int, int> msl_frag_index_pair = std::make_pair(-1, -1);
+    if (is_used_in_vertex)
+      msl_vert_index_pair = mapping->vertex.at(resource.binding);
+    if (is_used_in_fragment)
+      msl_frag_index_pair = mapping->fragment.at(resource.binding);
+
+    switch (resource.ty) {
+    case MetalShaderResourceType::buffer: {
+      // If resource isn't used in the MSL code, don't bind it.
+      if (is_used_in_vertex) {
+        [rce setVertexBuffer:resource.buffer.buffer
+                      offset:resource.buffer.offset
+                     atIndex:msl_vert_index_pair.first];
+      }
+      if (is_used_in_fragment) {
+        [rce setFragmentBuffer:resource.buffer.buffer
+                        offset:resource.buffer.offset
+                       atIndex:msl_frag_index_pair.first];
+      }
+      break;
+    }
+    case MetalShaderResourceType::texture: {
+      if (is_used_in_vertex) {
+        [rce setVertexTexture:resource.texture.texture
+                      atIndex:msl_vert_index_pair.first];
+      }
+      if (is_used_in_fragment) {
+        [rce setFragmentTexture:resource.texture.texture
+                        atIndex:msl_frag_index_pair.first];
+      }
+      if (resource.texture.is_sampled) {
+        if (is_used_in_vertex) {
+          RHI_ASSERT(msl_vert_index_pair.second != -1);
+          [rce setVertexSamplerState:device_->get_default_sampler()
+                                         .mtl_sampler_state()
+                             atIndex:msl_vert_index_pair.second];
+        }
+        if (is_used_in_fragment) {
+          RHI_ASSERT(msl_frag_index_pair.second != -1);
+          [rce setFragmentSamplerState:device_->get_default_sampler()
+                                           .mtl_sampler_state()
+                               atIndex:msl_frag_index_pair.second];
+        }
+      }
+      break;
+    }
+    default:
+      RHI_ASSERT(false);
+    }
+  }
+}
+
+MTLRenderCommandEncoder_id MetalCommandList::pre_draw_setup() {
+  const RasterParams *raster_params = current_pipeline_->raster_params();
+
+  MTLRenderPassDescriptor *rpd = [MTLRenderPassDescriptor new];
+  auto *clear_cols = &clear_colors_;
+  int i = 0;
+  for (auto &pair : current_renderpass_details_.color_attachments) {
+    rpd.colorAttachments[i].texture = render_targets_[i];
+    rpd.colorAttachments[i].loadAction =
+        pair.second ? MTLLoadActionClear : MTLLoadActionLoad;
+    rpd.colorAttachments[i].storeAction = MTLStoreActionStore;
+    rpd.colorAttachments[i].clearColor = MTLClearColorMake(
+        clear_cols[i][0], clear_cols[i][1], clear_cols[i][2], clear_cols[i][3]);
+    i++;
+  }
+
+  if (raster_params->depth_write) {
+    rpd.depthAttachment.texture = depth_target_;
+    rpd.depthAttachment.loadAction = current_renderpass_details_.clear_depth
+                                         ? MTLLoadActionClear
+                                         : MTLLoadActionLoad;
+    rpd.depthAttachment.storeAction = MTLStoreActionStore;
+    rpd.depthAttachment.clearDepth = 1.0;
+  }
+
+  RHI_ASSERT(current_pipeline_);
+
+  MTLRenderCommandEncoder_id rce =
+      [cmdbuf_ renderCommandEncoderWithDescriptor:rpd];
+  [rce setRenderPipelineState:current_pipeline_->built_pipelines_.at(
+                                  current_renderpass_details_)];
+
+  [rce setViewport:(MTLViewport){(double)current_viewport_.x,
+                                 (double)current_viewport_.y,
+                                 (double)current_viewport_.width,
+                                 (double)current_viewport_.height, 0.0, 1.0}];
+
+  [rce setTriangleFillMode:fillmode2mtl(raster_params->polygon_mode)];
+  MTLCullMode cull_mode = MTLCullModeNone;
+  if (raster_params->back_face_cull) {
+    cull_mode = MTLCullModeBack;
+  } else if (raster_params->front_face_cull) {
+    cull_mode = MTLCullModeFront;
+  }
+  [rce setCullMode:cull_mode];
+
+  // Bind vertex stage input buffers
+  for (auto &[binding, buffer] : current_raster_resources_->vertex_buffers) {
+    int mapped_index =
+        binding + current_pipeline_->bind_map()->max_vert_buffer_index + 1;
+    [rce setVertexBuffer:buffer.buffer
+                  offset:buffer.offset
+                 atIndex:mapped_index];
+  }
+
+  // Bind shader buffers & images
+  if (current_shader_resource_set_) {
+    bind_mtl_shader_resources(current_shader_resource_set_.get(), rce,
+                              current_pipeline_->bind_map());
+  }
+
+  return rce;
+}
+
+void MetalCommandList::draw(uint32_t num_verticies, uint32_t start_vertex) {
+  @autoreleasepool {
+
+    MTLRenderCommandEncoder_id rce = pre_draw_setup();
+
+    const RasterParams *raster_params = current_pipeline_->raster_params();
+
+    [rce drawPrimitives:primtype2mtl(raster_params->prim_topology)
+            vertexStart:start_vertex
+            vertexCount:num_verticies];
+    [rce endEncoding];
+  }
+}
+
+void MetalCommandList::draw_instance(uint32_t num_verticies,
+                                     uint32_t num_instances,
+                                     uint32_t start_vertex,
+                                     uint32_t start_instance) {
+  @autoreleasepool {
+
+    MTLRenderCommandEncoder_id rce = pre_draw_setup();
+
+    const RasterParams *raster_params = current_pipeline_->raster_params();
+
+    [rce drawPrimitives:primtype2mtl(raster_params->prim_topology)
+            vertexStart:start_vertex
+            vertexCount:num_verticies
+          instanceCount:num_instances
+           baseInstance:start_instance];
+    [rce endEncoding];
+  }
+}
+
+void MetalCommandList::draw_indexed(uint32_t num_indicies,
+                                    uint32_t start_vertex,
+                                    uint32_t start_index) {
+  @autoreleasepool {
+
+    MTLRenderCommandEncoder_id rce = pre_draw_setup();
+
+    const RasterParams *raster_params = current_pipeline_->raster_params();
+
+    // indexBufferOffset must be multiple of 4. But if index type is 16 bit,
+    // this math to get offset using the start_index might not work.
+    // Except it does work fine for some reason.
+    size_t index_size = current_raster_resources_->index_type_enum ==
+                                (uint32_t)MTLIndexType::MTLIndexTypeUInt16
+                            ? 2  // 16 bit
+                            : 4; // 32 bit
+    size_t index_offset = current_raster_resources_->index_binding.offset +
+                          start_index * index_size;
+
+    [rce drawIndexedPrimitives:primtype2mtl(raster_params->prim_topology)
+                    indexCount:num_indicies
+                     indexType:(MTLIndexType)
+                                   current_raster_resources_->index_type_enum
+                   indexBuffer:current_raster_resources_->index_binding.buffer
+             indexBufferOffset:index_offset
+                 instanceCount:1
+                    baseVertex:start_vertex
+                  baseInstance:0];
+    [rce endEncoding];
+  }
+}
+
+void MetalCommandList::draw_indexed_instance(uint32_t num_indicies,
+                                             uint32_t num_instances,
+                                             uint32_t start_vertex,
+                                             uint32_t start_index,
+                                             uint32_t start_instance) {
+  @autoreleasepool {
+
+    MTLRenderCommandEncoder_id rce = pre_draw_setup();
+
+    const RasterParams *raster_params = current_pipeline_->raster_params();
+
+    size_t index_size = current_raster_resources_->index_type_enum ==
+                                (uint32_t)MTLIndexType::MTLIndexTypeUInt16
+                            ? 2  // 16 bit
+                            : 4; // 32 bit
+    size_t index_offset = current_raster_resources_->index_binding.offset +
+                          start_index * index_size;
+
+    [rce drawIndexedPrimitives:primtype2mtl(raster_params->prim_topology)
+                    indexCount:num_indicies
+                     indexType:(MTLIndexType)
+                                   current_raster_resources_->index_type_enum
+                   indexBuffer:current_raster_resources_->index_binding.buffer
+             indexBufferOffset:index_offset
+                 instanceCount:num_instances
+                    baseVertex:start_vertex
+                  baseInstance:start_instance];
+    [rce endEncoding];
+  }
+}
+void MetalCommandList::set_line_width(float width) {
+  // There is no way to set width in metal for rasterizing lines.
+  return;
+}
 void MetalCommandList::image_transition(DeviceAllocation img,
                                         ImageLayout old_layout,
                                         ImageLayout new_layout) {}
@@ -899,6 +1133,32 @@ RhiResult MetalDevice::create_pipeline(Pipeline **out_pipeline,
   return RhiResult::success;
 }
 
+void get_binding_mappings(
+    spirv_cross::SmallVector<spirv_cross::Resource> *resource_list,
+    spirv_cross::CompilerMSL *compiler, MetalShaderBindingMapping *mapping,
+    bool isVertexStage, bool isCombinedSampler) {
+
+  for (auto &resource : *resource_list) {
+    int msl_index = compiler->get_automatic_msl_resource_binding(resource.id);
+    int binding = compiler->get_decoration(resource.id, spv::DecorationBinding);
+    int sampler_index = -1;
+    if (isCombinedSampler) {
+      sampler_index =
+          compiler->get_automatic_msl_resource_binding_secondary(resource.id);
+    }
+
+    std::pair<int, int> MSL_index_pair =
+        std::make_pair(msl_index, sampler_index);
+    if (isVertexStage) {
+      mapping->vertex[binding] = MSL_index_pair;
+      mapping->max_vert_buffer_index =
+          std::max(mapping->max_vert_buffer_index, msl_index);
+    } else {
+      mapping->fragment[binding] = MSL_index_pair;
+    }
+  }
+}
+
 std::unique_ptr<Pipeline> MetalDevice::create_raster_pipeline(
     const std::vector<PipelineSourceDesc> &src,
     const RasterParams &raster_params,
@@ -907,34 +1167,43 @@ std::unique_ptr<Pipeline> MetalDevice::create_raster_pipeline(
 
   // (geometry shaders aren't supported in Vulkan backend either)
   RHI_ASSERT(src.size() == 2);
-  bool has_fragment = false;
   bool has_vertex = false;
+  bool has_fragment = false;
   for (auto &pipe_source_desc : src) {
     RHI_ASSERT(pipe_source_desc.type == PipelineSourceType::spirv_binary);
-    if (pipe_source_desc.stage == PipelineStageType::fragment)
-      has_fragment = true;
     if (pipe_source_desc.stage == PipelineStageType::vertex)
       has_vertex = true;
+    if (pipe_source_desc.stage == PipelineStageType::fragment)
+      has_fragment = true;
   }
   RHI_ASSERT(has_fragment && has_vertex);
 
   spirv_cross::CompilerMSL::Options options{};
-  options.enable_decoration_binding = true;
 
   // Compile spirv binaries to MSL source
-  std::string msl_source = "";
+  MetalShaderBindingMapping mapping;
+  std::string msl_vert_source = "";
+  std::string msl_frag_source = "";
   for (int i = 0; i < 2; i++) {
     const uint32_t *spv_data = (const uint32_t *)src[i].data;
 
     RHI_ASSERT((size_t)spv_data % sizeof(uint32_t) == 0);
     RHI_ASSERT(src[i].size % sizeof(uint32_t) == 0);
 
+    const bool isVertexStage = src[i].stage == PipelineStageType::vertex;
+
     spirv_cross::CompilerMSL compiler(spv_data, src[i].size / sizeof(uint32_t));
     compiler.set_msl_options(options);
+    compiler.rename_entry_point("main",
+                                isVertexStage
+                                    ? std::string(kMetalVertFunctionName)
+                                    : std::string(kMetalFragFunctionName),
+                                isVertexStage ? spv::ExecutionModelVertex
+                                              : spv::ExecutionModelFragment);
 
-    std::string msl = "";
+    auto *msl_string = isVertexStage ? &msl_vert_source : &msl_frag_source;
     try {
-      msl = compiler.compile();
+      *msl_string = compiler.compile();
     } catch (const spirv_cross::CompilerError &e) {
       std::array<char, 4096> msgbuf;
       snprintf(msgbuf.data(), msgbuf.size(), "(spirv-cross compiler) %s: %s",
@@ -943,78 +1212,41 @@ std::unique_ptr<Pipeline> MetalDevice::create_raster_pipeline(
       return nullptr;
     }
 
-    const std::string new_entry_point_name =
-        src[i].stage == PipelineStageType::fragment
-            ? std::string(kMetalFragFunctionName)
-            : std::string(kMetalVertFunctionName);
+    // Find mapping of GLSL binding to MSL index
+    spirv_cross::ShaderResources shader_res = compiler.get_shader_resources(
+        compiler.get_active_interface_variables());
 
-    // Fragment and vertex function names must be different.
-    // If spirv-cross has a method to let you set the emitted entry point's
-    // name, that would be nice, but I could not find anything in the docs.
-    // So for now just using std's regex_replace().
-    std::regex entry_point_regex("main0");
-    msl_source +=
-        std::regex_replace(msl, entry_point_regex, new_entry_point_name);
+    get_binding_mappings(&shader_res.uniform_buffers, &compiler, &mapping,
+                         isVertexStage, false);
+    get_binding_mappings(&shader_res.storage_buffers, &compiler, &mapping,
+                         isVertexStage, false);
+    get_binding_mappings(&shader_res.sampled_images, &compiler, &mapping,
+                         isVertexStage, true);
+    get_binding_mappings(&shader_res.storage_images, &compiler, &mapping,
+                         isVertexStage, false);
   }
 
-  // Compile MSL source
-  MTLLibrary_id mtl_library = get_mtl_library(msl_source);
+  // Compile MSL source to MTLLibrary
+  MetalRasterLibraries raster_libs = MetalRasterLibraries{
+      get_mtl_library(msl_vert_source), get_mtl_library(msl_frag_source)};
 
   // Get the MTLFunctions
-  int frag_func_index = 0;
-  int vert_func_index = 0;
-  std::vector<MTLFunction_id> mtl_functions;
-  for (int i = 0; i < 2; i++) {
-    std::string new_entry_point_name;
-    if (src[i].stage == PipelineStageType::fragment) {
-      frag_func_index = i;
-      new_entry_point_name = std::string(kMetalFragFunctionName);
-    } else {
-      vert_func_index = i;
-      new_entry_point_name = std::string(kMetalVertFunctionName);
-    }
+  MetalRasterFunctions mtl_functions = MetalRasterFunctions{
+      get_mtl_function(raster_libs.vertex, std::string(kMetalVertFunctionName)),
+      get_mtl_function(raster_libs.fragment,
+                       std::string(kMetalFragFunctionName))};
 
-    MTLFunction_id mtl_function =
-        get_mtl_function(mtl_library, new_entry_point_name);
-    mtl_functions.push_back(mtl_function);
-  }
-
-  // Create render pipeline
-  static const std::unordered_map<TopologyType, MTLPrimitiveTopologyClass>
-      topo_types = {
-          {TopologyType::Triangles,
-           MTLPrimitiveTopologyClass::MTLPrimitiveTopologyClassTriangle},
-          {TopologyType::Lines,
-           MTLPrimitiveTopologyClass::MTLPrimitiveTopologyClassLine},
-          {TopologyType::Points,
-           MTLPrimitiveTopologyClass::MTLPrimitiveTopologyClassPoint},
-      };
-
-  MTLRenderPipelineDescriptor *rpd = [MTLRenderPipelineDescriptor new];
-  rpd.vertexFunction = mtl_functions[vert_func_index];
-  rpd.fragmentFunction = mtl_functions[frag_func_index];
-  // FIXME: IMPORTANT! "Forcing the format to swap chain image format might bite
-  // us in the bum later. Usually what I do here is to leave this pipeline
-  // partially constructed, and use a map between renderpass and actual pipeline
-  // states, and build / cache pipeline states in the bind_pipeline command.
-  // Because the color attachment format is not known until begin_renderpass"
-  rpd.colorAttachments[0].pixelFormat = format2mtl(kSwapChainImageFormat);
-  if (raster_params.depth_write) {
-    rpd.depthAttachmentPixelFormat = format2mtl(BufferFormat::depth32f);
-  }
-  rpd.inputPrimitiveTopology = topo_types.at(raster_params.prim_topology);
-
-  // Set vertex description
+  // Set vertex descriptor
   MTLVertexDescriptor *vd = [MTLVertexDescriptor new];
-
   for (auto &vert_attr : vertex_attrs) {
     int location = vert_attr.location;
     vd.attributes[location].format = vertexformat2mtl(vert_attr.format);
     vd.attributes[location].offset = vert_attr.offset;
-    vd.attributes[location].bufferIndex = vert_attr.binding;
+    vd.attributes[location].bufferIndex =
+        vert_attr.binding + mapping.max_vert_buffer_index + 1;
   }
   for (auto &vert_input : vertex_inputs) {
-    int buffer_index = vert_input.binding;
+    int buffer_index = vert_input.binding + mapping.max_vert_buffer_index + 1;
     vd.layouts[buffer_index].stride = vert_input.stride;
     vd.layouts[buffer_index].stepFunction =
         vert_input.instance ? MTLVertexStepFunctionPerInstance
@@ -1022,32 +1254,9 @@ std::unique_ptr<Pipeline> MetalDevice::create_raster_pipeline(
     vd.layouts[buffer_index].stepRate = 1;
   }
 
-  rpd.vertexDescriptor = vd;
-
-  // Create pipeline state
-  MTLRenderPipelineState_id rps = nil;
-  {
-    NSError *err = nil;
-    rps = [mtl_device_ newRenderPipelineStateWithDescriptor:rpd error:&err];
-
-    if (rps == nil) {
-      if (err != nil) {
-        std::array<char, 4096> msgbuf;
-        snprintf(msgbuf.data(), msgbuf.size(),
-                 "cannot create render pipeline state: %s (code=%d)",
-                 err.localizedDescription.UTF8String, (int)err.code);
-        RHI_LOG_ERROR(msgbuf.data());
-      }
-      return nullptr;
-    }
-  }
-
   // Create the pipeline object
-  return std::make_unique<MetalPipeline>(
-      *this, mtl_library,
-      MetalRasterFunctions{mtl_functions[vert_func_index],
-                           mtl_functions[frag_func_index]},
-      rps, raster_params);
+  return std::make_unique<MetalPipeline>(*this, raster_libs, mtl_functions, vd,
+                                         mapping, raster_params);
 }
 
 MTLFunction_id

@@ -777,6 +777,133 @@ void MetalCommandList::set_line_width(float width) {
 void MetalCommandList::image_transition(DeviceAllocation img,
                                         ImageLayout old_layout,
                                         ImageLayout new_layout) {}
+struct MetalBufferImageCopyDesc {
+  // Other params
+  MTLSize source_size;
+
+  // Buffer params
+  NSUInteger buffer_offset;
+  NSUInteger bytes_per_row;
+  NSUInteger bytes_per_image;
+
+  // Image params
+  NSUInteger image_slice;
+  NSUInteger image_mip_level;
+  MTLOrigin image_origin;
+};
+inline void
+buffer_image_copy_params_to_mtl(const BufferImageCopyParams &params,
+                                uint32_t buffer_offset, MTLTexture_id tex,
+                                MetalBufferImageCopyDesc *out_params) {
+  out_params->buffer_offset = buffer_offset;
+  uint32_t buff_width = params.buffer_row_length;
+  if (buff_width == 0)
+    buff_width = params.image_extent.x;
+  uint32_t buff_height = params.buffer_image_height;
+  if (buff_height == 0)
+    buff_height = params.image_extent.y;
+
+  // Only correct for ordinary and packed pixel formats, not for compressed
+  // formats.
+  out_params->bytes_per_row = buff_width * mtlformat2size(tex.pixelFormat);
+  out_params->bytes_per_image = buff_height * out_params->bytes_per_row;
+  if (tex.textureType == MTLTextureType3D)
+    out_params->bytes_per_image = 0;
+
+  out_params->image_slice = params.image_base_layer;
+  out_params->image_mip_level = params.image_mip_level;
+  out_params->image_origin = MTLOriginMake(
+      params.image_offset.x, params.image_offset.y, params.image_offset.z);
+  out_params->source_size = MTLSizeMake(
+      params.image_extent.x, params.image_extent.y, params.image_extent.z);
+}
+
+void MetalCommandList::buffer_to_image(DeviceAllocation dst_img,
+                                       DevicePtr src_buf,
+                                       ImageLayout img_layout,
+                                       const BufferImageCopyParams &params) {
+
+  const MetalMemory &src_buffer = device_->get_memory(src_buf.alloc_id);
+  const MetalImage &dst_image = device_->get_image(dst_img.alloc_id);
+
+  MetalBufferImageCopyDesc mtl_params;
+  buffer_image_copy_params_to_mtl(params, src_buf.offset,
+                                  dst_image.mtl_texture(), &mtl_params);
+
+  @autoreleasepool {
+    MTLBlitCommandEncoder_id encoder = [cmdbuf_ blitCommandEncoder];
+    [encoder copyFromBuffer:src_buffer.mtl_buffer()
+               sourceOffset:mtl_params.buffer_offset
+          sourceBytesPerRow:mtl_params.bytes_per_row
+        sourceBytesPerImage:mtl_params.bytes_per_image
+                 sourceSize:mtl_params.source_size
+                  toTexture:dst_image.mtl_texture()
+           destinationSlice:mtl_params.image_slice
+           destinationLevel:mtl_params.image_mip_level
+          destinationOrigin:mtl_params.image_origin];
+    [encoder endEncoding];
+  }
+}
+
+void MetalCommandList::image_to_buffer(DevicePtr dst_buf,
+                                       DeviceAllocation src_img,
+                                       ImageLayout img_layout,
+                                       const BufferImageCopyParams &params) {
+
+  const MetalImage &src_image = device_->get_image(src_img.alloc_id);
+  const MetalMemory &dst_buffer = device_->get_memory(dst_buf.alloc_id);
+
+  MetalBufferImageCopyDesc mtl_params;
+  buffer_image_copy_params_to_mtl(params, dst_buf.offset,
+                                  src_image.mtl_texture(), &mtl_params);
+
+  @autoreleasepool {
+    MTLBlitCommandEncoder_id encoder = [cmdbuf_ blitCommandEncoder];
+    [encoder copyFromTexture:src_image.mtl_texture()
+                     sourceSlice:mtl_params.image_slice
+                     sourceLevel:mtl_params.image_mip_level
+                    sourceOrigin:mtl_params.image_origin
+                      sourceSize:mtl_params.source_size
+                        toBuffer:dst_buffer.mtl_buffer()
+               destinationOffset:mtl_params.buffer_offset
+          destinationBytesPerRow:mtl_params.bytes_per_row
+        destinationBytesPerImage:mtl_params.bytes_per_image];
+    [encoder endEncoding];
+  }
+}
+
+void MetalCommandList::copy_image(DeviceAllocation dst_img,
+                                  DeviceAllocation src_img,
+                                  ImageLayout dst_img_layout,
+                                  ImageLayout src_img_layout,
+                                  const ImageCopyParams &params) {
+
+  const MetalImage &src_image = device_->get_image(src_img.alloc_id);
+  const MetalImage &dst_image = device_->get_image(dst_img.alloc_id);
+
+  @autoreleasepool {
+    MTLBlitCommandEncoder_id encoder = [cmdbuf_ blitCommandEncoder];
+    [encoder
+          copyFromTexture:src_image.mtl_texture()
+              sourceSlice:0
+              sourceLevel:0
+             sourceOrigin:MTLOriginMake(0, 0, 0)
+               sourceSize:MTLSizeMake(params.width, params.height, params.depth)
+                toTexture:dst_image.mtl_texture()
+         destinationSlice:0
+         destinationLevel:0
+        destinationOrigin:MTLOriginMake(0, 0, 0)];
+    [encoder endEncoding];
+  }
+}
+
+void MetalCommandList::blit_image(DeviceAllocation dst_img,
+                                  DeviceAllocation src_img,
+                                  ImageLayout dst_img_layout,
+                                  ImageLayout src_img_layout,
+                                  const ImageCopyParams &params) {
+  copy_image(dst_img, src_img, dst_img_layout, src_img_layout, params);
+}
 
 MTLCommandBuffer_id MetalCommandList::finalize() { return cmdbuf_; }
 

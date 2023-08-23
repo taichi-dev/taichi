@@ -2,7 +2,7 @@ macro(make_sample executable_name src_file)
 add_executable(${executable_name})
 set_property(TARGET ${executable_name} PROPERTY CXX_STANDARD 17)
 set_property(TARGET ${executable_name} PROPERTY C_STANDARD 17)
-target_sources(${executable_name} PRIVATE ${src_file} "common.h")
+target_sources(${executable_name} PRIVATE ${src_file} "common_vulkan.h" "common_metal.mm")
 target_include_directories(${executable_name}
 PRIVATE
   ${PROJECT_SOURCE_DIR}
@@ -24,8 +24,9 @@ target_include_directories(${executable_name} SYSTEM
   PUBLIC
     ${PROJECT_SOURCE_DIR}/external/VulkanMemoryAllocator/include
   )
-target_link_libraries(${executable_name} taichi_core glfw)
+target_link_libraries(${executable_name} taichi_core glfw "-framework QuartzCore")
 endmacro()
 
 make_sample(sample_1_window sample_1_window.cpp)
 make_sample(sample_2_triangle sample_2_triangle.cpp)
+make_sample(sample_3_textured_triangle sample_3_textured_triangle.cpp)

@@ -302,6 +302,7 @@ struct ViewportBounds {
   int width{0};
   int height{0};
 };
+
 class MetalCommandList final : public CommandList {
  public:
   explicit MetalCommandList(const MetalDevice &device,
@@ -346,6 +347,24 @@ class MetalCommandList final : public CommandList {
   void image_transition(DeviceAllocation img,
                         ImageLayout old_layout,
                         ImageLayout new_layout) final;
+  void buffer_to_image(DeviceAllocation dst_img,
+                       DevicePtr src_buf,
+                       ImageLayout img_layout,
+                       const BufferImageCopyParams &params) override;
+  void image_to_buffer(DevicePtr dst_buf,
+                       DeviceAllocation src_img,
+                       ImageLayout img_layout,
+                       const BufferImageCopyParams &params) override;
+  void copy_image(DeviceAllocation dst_img,
+                  DeviceAllocation src_img,
+                  ImageLayout dst_img_layout,
+                  ImageLayout src_img_layout,
+                  const ImageCopyParams &params) override;
+  void blit_image(DeviceAllocation dst_img,
+                  DeviceAllocation src_img,
+                  ImageLayout dst_img_layout,
+                  ImageLayout src_img_layout,
+                  const ImageCopyParams &params) override;
   void set_line_width(float width) override;
 
   MTLCommandBuffer_id finalize();

@@ -249,3 +249,29 @@ MTLTextureUsage usage2mtl(ImageAllocUsage usage) {
   }
   return out;
 }
+
+uint32_t mtlformat2size(MTLPixelFormat format) {
+  static const std::map<MTLPixelFormat, uint32_t> map{
+      {MTLPixelFormatInvalid, 0},         {MTLPixelFormatR8Unorm, 1},
+      {MTLPixelFormatRG8Unorm, 2},        {MTLPixelFormatRGBA8Unorm, 4},
+      {MTLPixelFormatRGBA8Unorm_sRGB, 4}, {MTLPixelFormatBGRA8Unorm, 4},
+      {MTLPixelFormatBGRA8Unorm_sRGB, 4}, {MTLPixelFormatR8Uint, 1},
+      {MTLPixelFormatRG8Uint, 2},         {MTLPixelFormatRGBA8Uint, 4},
+      {MTLPixelFormatR8Sint, 1},          {MTLPixelFormatRG8Sint, 2},
+      {MTLPixelFormatRGBA8Sint, 4},       {MTLPixelFormatR16Unorm, 2},
+      {MTLPixelFormatRG16Unorm, 4},       {MTLPixelFormatRGBA16Unorm, 8},
+      {MTLPixelFormatR16Uint, 2},         {MTLPixelFormatRG16Uint, 4},
+      {MTLPixelFormatRGBA16Uint, 8},      {MTLPixelFormatR16Sint, 2},
+      {MTLPixelFormatRG16Sint, 4},        {MTLPixelFormatRGBA16Sint, 8},
+      {MTLPixelFormatR16Float, 2},        {MTLPixelFormatRG16Float, 4},
+      {MTLPixelFormatRGBA16Float, 8},     {MTLPixelFormatR32Uint, 4},
+      {MTLPixelFormatRG32Uint, 8},        {MTLPixelFormatRGBA32Uint, 16},
+      {MTLPixelFormatR32Sint, 4},         {MTLPixelFormatRG32Sint, 8},
+      {MTLPixelFormatRGBA32Sint, 16},     {MTLPixelFormatR32Float, 4},
+      {MTLPixelFormatRG32Float, 8},       {MTLPixelFormatRGBA32Float, 16},
+      {MTLPixelFormatDepth16Unorm, 2},    {MTLPixelFormatDepth32Float, 4},
+  };
+  auto it = map.find(format);
+  RHI_ASSERT(it != map.end());
+  return it->second;
+}

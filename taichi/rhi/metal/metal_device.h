@@ -41,6 +41,20 @@ DEFINE_OBJC_TYPE(MTLVertexDescriptor);
 #undef DEFINE_METAL_ID_TYPE
 #undef DEFINE_OBJC_TYPE
 
+/*
+TODO LIST:
+  - Support multiple ShaderResourceSet's bounded in a renderpass.
+    - Use argument buffers? Maybe not necessary. Can just use current system and
+      store a list of resource sets, and bind all of the data rather than using
+      bindless.
+  - Optimize draw call RenderCommandEncoder usage.
+    - Each draw call creates its own RenderCommandEncoder. This is inefficient
+      since ending encoding comes with significant cost. Best to try and keep
+      the encoders alive for as long as possible, and when a non-render command
+      is called, end the current RenderEncoder's encoding and the next draw call
+      will create a new one.
+*/
+
 namespace taichi::lang {
 
 namespace metal {

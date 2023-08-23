@@ -45,13 +45,12 @@ App::App(int width, int height, const std::string &title) {
 
   surface = device->create_surface(config);
 
-  metal::MetalSurface* mtl_surf = dynamic_cast<metal::MetalSurface*> (surface.get());
+  metal::MetalSurface *mtl_surf =
+      dynamic_cast<metal::MetalSurface *>(surface.get());
 
   NSWindow *nswin = glfwGetCocoaWindow(glfw_window);
   nswin.contentView.layer = mtl_surf->mtl_layer();
   nswin.contentView.wantsLayer = YES;
-
-  
 }
 
 App::~App() {

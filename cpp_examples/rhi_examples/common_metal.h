@@ -48,7 +48,6 @@ class App {
 
   GLFWwindow *glfw_window;
   metal::MetalDevice *device;
-  
-  std::unique_ptr<Surface> surface;
 
+  std::unique_ptr<Surface> surface;
 };

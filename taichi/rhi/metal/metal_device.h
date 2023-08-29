@@ -37,6 +37,7 @@ DEFINE_METAL_ID_TYPE(MTLRenderCommandEncoder);
 DEFINE_METAL_ID_TYPE(CAMetalDrawable);
 DEFINE_OBJC_TYPE(CAMetalLayer);
 DEFINE_OBJC_TYPE(MTLVertexDescriptor);
+DEFINE_OBJC_TYPE(MTLRenderPassDescriptor);
 
 #undef DEFINE_METAL_ID_TYPE
 #undef DEFINE_OBJC_TYPE
@@ -53,6 +54,11 @@ TODO LIST:
       the encoders alive for as long as possible, and when a non-render command
       is called, end the current RenderEncoder's encoding and the next draw call
       will create a new one.
+    - This has implications in the ImGUI part of GGUI though, since that
+      requires a render encoder to be passed to ImGUI. Right now it just creates
+      a new render encoder for each ImGUI draw call too, but with this
+      optimization it would get the current render encoder or create a new one
+      if there is none.
 */
 
 namespace taichi::lang {
@@ -382,6 +388,7 @@ class MetalCommandList final : public CommandList {
   void set_line_width(float width) override;
 
   MTLCommandBuffer_id finalize();
+  MTLRenderPassDescriptor *create_render_pass_desc();
 
  private:
   friend class MetalStream;
@@ -453,13 +460,6 @@ class MetalSurface final : public Surface {
   int get_image_count() override;
   BufferFormat image_format() override;
   void resize(uint32_t width, uint32_t height) override;
-
-  DeviceAllocation get_depth_data(DeviceAllocation &depth_alloc) override {
-    TI_NOT_IMPLEMENTED;
-  }
-  DeviceAllocation get_image_data() override {
-    TI_NOT_IMPLEMENTED;
-  }
 
  private:
   void destroy_swap_chain();

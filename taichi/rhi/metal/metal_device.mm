@@ -611,7 +611,7 @@ void MetalCommandList::bind_mtl_shader_resources(
   }
 }
 
-MTLRenderCommandEncoder_id MetalCommandList::pre_draw_setup() {
+MTLRenderPassDescriptor *MetalCommandList::create_render_pass_desc() {
   const RasterParams *raster_params = current_pipeline_->raster_params();
 
   MTLRenderPassDescriptor *rpd = [MTLRenderPassDescriptor new];
@@ -636,10 +636,18 @@ MTLRenderCommandEncoder_id MetalCommandList::pre_draw_setup() {
     rpd.depthAttachment.clearDepth = 1.0;
   }
 
+  return rpd;
+}
+
+MTLRenderCommandEncoder_id MetalCommandList::pre_draw_setup() {
+  MTLRenderPassDescriptor *rpd = create_render_pass_desc();
   RHI_ASSERT(current_pipeline_);
+
+  const RasterParams *raster_params = current_pipeline_->raster_params();
 
   MTLRenderCommandEncoder_id rce =
       [cmdbuf_ renderCommandEncoderWithDescriptor:rpd];
+  [rpd release];
   [rce setRenderPipelineState:current_pipeline_->built_pipelines_.at(
                                   current_renderpass_details_)];
 

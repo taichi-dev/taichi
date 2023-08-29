@@ -1,8 +1,8 @@
 #include "taichi/ui/utils/utils.h"
-#include "taichi/ui/backends/vulkan/app_context.h"
-#include "taichi/ui/backends/vulkan/swap_chain.h"
+#include "taichi/ui/ggui/app_context.h"
+#include "taichi/ui/ggui/swap_chain.h"
 #include "taichi/program/program.h"
-#include "taichi/ui/backends/vulkan/vertex.h"
+#include "taichi/ui/ggui/vertex.h"
 
 #include <string_view>
 
@@ -104,28 +104,30 @@ void AppContext::init(Program *prog,
     evd_params.surface_creator = make_vk_surface;
     embedded_vulkan_device_ =
         std::make_unique<taichi::lang::vulkan::VulkanDeviceCreator>(evd_params);
-    vulkan_device_ = embedded_vulkan_device_->device();
+    graphics_device_ = embedded_vulkan_device_->device();
   } else {
-    vulkan_device_ = static_cast<taichi::lang::vulkan::VulkanDevice *>(
+    graphics_device_ = static_cast<taichi::lang::GraphicsDevice *>(
         prog->get_graphics_device());
   }
 
   if (config.show_window) {
     TI_ASSERT(window);
-    native_surface_ = make_vk_surface(vulkan_device_->vk_instance());
+    native_surface_ = make_vk_surface(
+        static_cast<taichi::lang::vulkan::VulkanDevice *>(graphics_device_)
+            ->vk_instance());
   }
 }
 
-taichi::lang::vulkan::VulkanDevice &AppContext::device() {
-  if (vulkan_device_) {
-    return *vulkan_device_;
+taichi::lang::GraphicsDevice &AppContext::device() {
+  if (graphics_device_) {
+    return *graphics_device_;
   }
   return *(embedded_vulkan_device_->device());
 }
 
-const taichi::lang::vulkan::VulkanDevice &AppContext::device() const {
-  if (vulkan_device_) {
-    return *vulkan_device_;
+const taichi::lang::GraphicsDevice &AppContext::device() const {
+  if (graphics_device_) {
+    return *graphics_device_;
   }
   return *(embedded_vulkan_device_->device());
 }
@@ -134,8 +136,10 @@ AppContext::~AppContext() {
   if (native_surface_ != VK_NULL_HANDLE) {
     // If `embedded_vulkan_device_` then surface is provided by device creator
     // Otherwise we need to manage it
-    vkDestroySurfaceKHR(vulkan_device_->vk_instance(), native_surface_,
-                        nullptr);
+    vkDestroySurfaceKHR(
+        static_cast<taichi::lang::vulkan::VulkanDevice *>(graphics_device_)
+            ->vk_instance(),
+        native_surface_, nullptr);
   }
 }
 

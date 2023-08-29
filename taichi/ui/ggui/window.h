@@ -15,13 +15,14 @@
 #include "taichi/ui/utils/utils.h"
 #include <memory>
 
-#include "taichi/ui/backends/vulkan/swap_chain.h"
-#include "taichi/ui/backends/vulkan/app_context.h"
-#include "taichi/ui/backends/vulkan/canvas.h"
-#include "taichi/ui/backends/vulkan/sceneV2.h"
-#include "taichi/ui/backends/vulkan/renderer.h"
+#include "taichi/ui/ggui/swap_chain.h"
+#include "taichi/ui/ggui/app_context.h"
+#include "taichi/ui/ggui/canvas.h"
+#include "taichi/ui/ggui/sceneV2.h"
+#include "taichi/ui/ggui/renderer.h"
 #include "taichi/ui/common/window_base.h"
-#include "taichi/ui/backends/vulkan/gui.h"
+#include "taichi/ui/ggui/gui.h"
+#include "taichi/ui/ggui/gui_metal.h"
 #include "taichi/program/ndarray.h"
 
 namespace taichi::lang {

@@ -15,21 +15,22 @@
 #include <memory>
 
 #include "taichi/ui/utils/utils.h"
-#include "taichi/ui/backends/vulkan/vertex.h"
-#include "taichi/ui/backends/vulkan/app_context.h"
-#include "taichi/ui/backends/vulkan/swap_chain.h"
-#include "taichi/ui/backends/vulkan/renderable.h"
+#include "taichi/ui/ggui/vertex.h"
+#include "taichi/ui/ggui/app_context.h"
+#include "taichi/ui/ggui/swap_chain.h"
+#include "taichi/ui/ggui/renderable.h"
 #include "taichi/ui/common/canvas_base.h"
 
-#include "taichi/ui/backends/vulkan/gui.h"
-#include "taichi/ui/backends/vulkan/renderer.h"
+#include "taichi/ui/ggui/gui.h"
+#include "taichi/ui/ggui/gui_metal.h"
+#include "taichi/ui/ggui/renderer.h"
 
-#include "taichi/ui/backends/vulkan/renderables/set_image.h"
-#include "taichi/ui/backends/vulkan/renderables/triangles.h"
-#include "taichi/ui/backends/vulkan/renderables/mesh.h"
-#include "taichi/ui/backends/vulkan/renderables/particles.h"
-#include "taichi/ui/backends/vulkan/renderables/circles.h"
-#include "taichi/ui/backends/vulkan/renderables/lines.h"
+#include "taichi/ui/ggui/renderables/set_image.h"
+#include "taichi/ui/ggui/renderables/triangles.h"
+#include "taichi/ui/ggui/renderables/mesh.h"
+#include "taichi/ui/ggui/renderables/particles.h"
+#include "taichi/ui/ggui/renderables/circles.h"
+#include "taichi/ui/ggui/renderables/lines.h"
 
 namespace taichi::ui {
 

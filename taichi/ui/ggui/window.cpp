@@ -24,8 +24,19 @@ void Window::init(Program *prog, const AppConfig &config) {
   renderer_->init(prog, glfw_window_, config);
   canvas_ = std::make_unique<Canvas>(renderer_.get());
   scene_ = std::make_unique<SceneV2>(renderer_.get());
-  gui_ = std::make_unique<Gui>(&renderer_->app_context(),
-                               &renderer_->swap_chain(), glfw_window_);
+  switch (config.ggui_arch) {
+    case Arch::vulkan:
+      gui_ = std::make_unique<Gui>(&renderer_->app_context(),
+                                   &renderer_->swap_chain(), glfw_window_);
+      break;
+    case Arch::metal:
+      gui_ =
+          std::make_unique<GuiMetal>(&renderer_->app_context(), glfw_window_);
+      break;
+    default:
+      break;
+  }
+
   fps_limit_ = config.fps_limit;
 
   if (config_.show_window) {

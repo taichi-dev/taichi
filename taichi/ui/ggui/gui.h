@@ -52,7 +52,7 @@ class TI_DLL_EXPORT Gui final : public GuiBase {
 
   void draw(taichi::lang::CommandList *cmd_list);
 
-  void prepare_for_next_frame();
+  void prepare_for_next_frame() override;
 
   VkRenderPass render_pass() {
     return render_pass_;

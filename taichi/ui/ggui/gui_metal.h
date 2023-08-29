@@ -41,6 +41,8 @@ class TI_DLL_EXPORT GuiMetal final : public GuiBase {
   glm::vec3 color_edit_3(const std::string &name, glm::vec3 old_value) override;
   bool button(const std::string &text) override;
 
+  void prepare_for_next_frame() override;
+
   void draw(taichi::lang::CommandList *cmd_list);
 
   bool is_empty();

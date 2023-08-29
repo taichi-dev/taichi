@@ -35,6 +35,7 @@ DEFINE_METAL_ID_TYPE(MTLBlitCommandEncoder);
 DEFINE_METAL_ID_TYPE(MTLComputeCommandEncoder);
 DEFINE_METAL_ID_TYPE(MTLRenderCommandEncoder);
 DEFINE_METAL_ID_TYPE(CAMetalDrawable);
+DEFINE_METAL_ID_TYPE(MTLDepthStencilState);
 DEFINE_OBJC_TYPE(CAMetalLayer);
 DEFINE_OBJC_TYPE(MTLVertexDescriptor);
 DEFINE_OBJC_TYPE(MTLRenderPassDescriptor);
@@ -388,7 +389,7 @@ class MetalCommandList final : public CommandList {
   void set_line_width(float width) override;
 
   MTLCommandBuffer_id finalize();
-  MTLRenderPassDescriptor *create_render_pass_desc();
+  MTLRenderPassDescriptor *create_render_pass_desc(bool depth_write);
 
  private:
   friend class MetalStream;

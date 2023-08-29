@@ -535,9 +535,9 @@ void MetalCommandList::begin_renderpass(int x0, int y0, int x1, int y1,
 
   if (depth_attachment) {
     MetalImage depth_attach = device_->get_image(depth_attachment->alloc_id);
-    BufferFormat format = mtl2format(depth_attach.mtl_texture().pixelFormat);
-    current_renderpass_details_.depth_attach_format = format;
     depth_target_ = depth_attach.mtl_texture();
+    BufferFormat format = mtl2format(depth_target_.pixelFormat);
+    current_renderpass_details_.depth_attach_format = format;
   }
 
   for (int i = 0; i < num_color_attachments; i++) {
@@ -611,8 +611,8 @@ void MetalCommandList::bind_mtl_shader_resources(
   }
 }
 
-MTLRenderPassDescriptor *MetalCommandList::create_render_pass_desc() {
-  const RasterParams *raster_params = current_pipeline_->raster_params();
+MTLRenderPassDescriptor *
+MetalCommandList::create_render_pass_desc(bool depth_write) {
 
   MTLRenderPassDescriptor *rpd = [MTLRenderPassDescriptor new];
   auto *clear_cols = &clear_colors_;
@@ -627,7 +627,7 @@ MTLRenderPassDescriptor *MetalCommandList::create_render_pass_desc() {
     i++;
   }
 
-  if (raster_params->depth_write) {
+  if (depth_write) {
     rpd.depthAttachment.texture = depth_target_;
     rpd.depthAttachment.loadAction = current_renderpass_details_.clear_depth
                                          ? MTLLoadActionClear
@@ -640,10 +640,11 @@ MTLRenderPassDescriptor *MetalCommandList::create_render_pass_desc() {
 }
 
 MTLRenderCommandEncoder_id MetalCommandList::pre_draw_setup() {
-  MTLRenderPassDescriptor *rpd = create_render_pass_desc();
-  RHI_ASSERT(current_pipeline_);
-
   const RasterParams *raster_params = current_pipeline_->raster_params();
+
+  MTLRenderPassDescriptor *rpd =
+      create_render_pass_desc(raster_params->depth_write);
+  RHI_ASSERT(current_pipeline_);
 
   MTLRenderCommandEncoder_id rce =
       [cmdbuf_ renderCommandEncoderWithDescriptor:rpd];
@@ -664,6 +665,14 @@ MTLRenderCommandEncoder_id MetalCommandList::pre_draw_setup() {
     cull_mode = MTLCullModeFront;
   }
   [rce setCullMode:cull_mode];
+
+  // Set depth state
+  MTLDepthStencilDescriptor *depthDescriptor = [MTLDepthStencilDescriptor new];
+  depthDescriptor.depthCompareFunction = MTLCompareFunctionLessEqual;
+  depthDescriptor.depthWriteEnabled = raster_params->depth_write;
+  MTLDepthStencilState_id depthState = [device_->mtl_device()
+      newDepthStencilStateWithDescriptor:depthDescriptor];
+  [rce setDepthStencilState:depthState];
 
   // Bind vertex stage input buffers
   for (auto &[binding, buffer] : current_raster_resources_->vertex_buffers) {

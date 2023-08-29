@@ -4,6 +4,7 @@
 #include "taichi/rhi/vulkan/vulkan_device_creator.h"
 #include "taichi/rhi/vulkan/vulkan_loader.h"
 #include "taichi/rhi/vulkan/vulkan_device.h"
+#include "taichi/rhi/metal/metal_device.h"
 #include "taichi/ui/ggui/swap_chain.h"
 #ifdef ANDROID
 #include <android/native_window.h>
@@ -25,7 +26,12 @@ namespace vulkan {
 
 class TI_DLL_EXPORT AppContext {
  public:
-  void init(lang::Program *prog, TaichiWindow *window, const AppConfig &config);
+  void init_with_vulkan(lang::Program *prog,
+                        TaichiWindow *window,
+                        const AppConfig &config);
+  void init_with_metal(lang::Program *prog,
+                       TaichiWindow *window,
+                       const AppConfig &config);
   ~AppContext();
 
   TaichiWindow *taichi_window() const;

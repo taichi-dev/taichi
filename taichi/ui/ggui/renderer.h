@@ -33,6 +33,8 @@
 #include "renderables/lines.h"
 #include "renderables/scene_lines.h"
 
+#include "nswindow_adapter.h"
+
 namespace taichi::lang {
 class Program;
 }  // namespace taichi::lang

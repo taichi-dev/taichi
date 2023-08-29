@@ -26,6 +26,7 @@ class GuiBase {
   virtual glm::vec3 color_edit_3(const std::string &name,
                                  glm::vec3 old_value) = 0;
   virtual bool button(const std::string &text) = 0;
+  virtual void prepare_for_next_frame() = 0;
   virtual ~GuiBase() = default;
 };
 

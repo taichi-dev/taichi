@@ -25,7 +25,7 @@ if(NOT ANDROID)
 endif()
 
 if (${CMAKE_SYSTEM_NAME} MATCHES "Darwin")
-  target_sources(taichi_ui_ggui PRIVATE gui_metal.mm)
+  target_sources(taichi_ui_ggui PRIVATE gui_metal.mm nswindow_adapter.mm)
 endif()
 
 target_include_directories(taichi_ui_ggui

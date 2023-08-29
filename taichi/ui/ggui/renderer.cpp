@@ -15,8 +15,26 @@ using namespace taichi::lang::metal;
 void Renderer::init(Program *prog,
                     TaichiWindow *window,
                     const AppConfig &config) {
-  app_context_.init(prog, window, config);
+  switch (config.ggui_arch) {
+    case Arch::vulkan:
+      app_context_.init_with_vulkan(prog, window, config);
+      break;
+    case Arch::metal:
+      app_context_.init_with_metal(prog, window, config);
+      break;
+    default:
+      throw std::runtime_error("Incorrect arch for GGUI");
+  }
+
   swap_chain_.init(&app_context_);
+
+  if (config.ggui_arch == Arch::metal) {
+    MetalSurface *mtl_surf =
+        dynamic_cast<MetalSurface *>(&(swap_chain_.surface()));
+
+    NSWindowAdapter nswin_adapter;
+    nswin_adapter.set_content_view(window, mtl_surf);
+  }
 }
 
 template <typename T>
@@ -255,7 +273,7 @@ void Renderer::draw_frame(GuiBase *gui_base) {
 
     MTLRenderPassDescriptor *pass =
         static_cast<MetalCommandList *>(cmd_list.get())
-            ->create_render_pass_desc();
+            ->create_render_pass_desc(false);
 
     gui->init_render_resources(pass);
     gui->draw(cmd_list.get());

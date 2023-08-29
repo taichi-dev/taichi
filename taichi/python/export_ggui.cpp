@@ -521,6 +521,19 @@ struct PyWindow {
            double fps_limit,
            std::string package_path,
            Arch ti_arch) {
+    Arch ggui_arch = Arch::vulkan;
+
+    if (ti_arch == Arch::metal) {
+      ggui_arch = Arch::metal;
+    }
+
+    if (ggui_arch == Arch::vulkan) {
+      // Verify vulkan available
+      if (!lang::vulkan::is_vulkan_api_available()) {
+        throw std::runtime_error("Vulkan must be available for GGUI");
+      }
+    }
+
     AppConfig config = {name,
                         res[0].cast<int>(),
                         res[1].cast<int>(),
@@ -530,10 +543,9 @@ struct PyWindow {
                         show_window,
                         fps_limit,
                         package_path,
-                        ti_arch};
-    if (!lang::vulkan::is_vulkan_api_available()) {
-      throw std::runtime_error("Vulkan must be available for GGUI");
-    }
+                        ti_arch,
+                        ggui_arch};
+
     window = std::make_unique<vulkan::Window>(prog, config);
   }
 

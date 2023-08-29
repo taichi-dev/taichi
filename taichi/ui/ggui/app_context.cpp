@@ -64,9 +64,9 @@ std::vector<std::string> get_required_device_extensions() {
 }
 }  // namespace
 
-void AppContext::init(Program *prog,
-                      TaichiWindow *window,
-                      const AppConfig &config) {
+void AppContext::init_with_vulkan(Program *prog,
+                                  TaichiWindow *window,
+                                  const AppConfig &config) {
   taichi_window_ = window;
   prog_ = prog;
   this->config = config;
@@ -118,18 +118,27 @@ void AppContext::init(Program *prog,
   }
 }
 
-taichi::lang::GraphicsDevice &AppContext::device() {
-  if (graphics_device_) {
-    return *graphics_device_;
+void AppContext::init_with_metal(Program *prog,
+                                 TaichiWindow *window,
+                                 const AppConfig &config) {
+  taichi_window_ = window;
+  prog_ = prog;
+  this->config = config;
+
+  if (prog == nullptr) {
+    graphics_device_ = metal::MetalDevice::create();
+  } else {
+    graphics_device_ = static_cast<taichi::lang::GraphicsDevice *>(
+        prog->get_graphics_device());
   }
-  return *(embedded_vulkan_device_->device());
+}
+
+taichi::lang::GraphicsDevice &AppContext::device() {
+  return *graphics_device_;
 }
 
 const taichi::lang::GraphicsDevice &AppContext::device() const {
-  if (graphics_device_) {
-    return *graphics_device_;
-  }
-  return *(embedded_vulkan_device_->device());
+  return *graphics_device_;
 }
 
 AppContext::~AppContext() {

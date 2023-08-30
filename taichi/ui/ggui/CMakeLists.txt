@@ -45,7 +45,7 @@ target_include_directories(taichi_ui_ggui
 
 target_link_libraries(taichi_ui_ggui PRIVATE taichi_common)
 target_link_libraries(taichi_ui_ggui PRIVATE imgui)
-target_link_libraries(taichi_ui_ggui PRIVATE ti_device_api)
+target_link_libraries(taichi_ui_ggui PUBLIC ti_device_api)
 if (${CMAKE_SYSTEM_NAME} MATCHES "Darwin")
   target_link_libraries(taichi_ui_ggui PRIVATE "-framework QuartzCore")
 endif()

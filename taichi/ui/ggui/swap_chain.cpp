@@ -1,6 +1,6 @@
 #include "taichi/ui/utils/utils.h"
-#include "taichi/ui/backends/vulkan/app_context.h"
-#include "taichi/ui/backends/vulkan/swap_chain.h"
+#include "taichi/ui/ggui/app_context.h"
+#include "taichi/ui/ggui/swap_chain.h"
 #include "taichi/util/image_io.h"
 
 namespace taichi::ui {
@@ -22,6 +22,7 @@ void SwapChain::init(class AppContext *app_context) {
   curr_width_ = w;
   curr_height_ = h;
   create_depth_resources();
+  create_image_resources();
 }
 
 void SwapChain::create_depth_resources() {
@@ -35,6 +36,26 @@ void SwapChain::create_depth_resources() {
   params.usage = ImageAllocUsage::Attachment | ImageAllocUsage::Sampled;
 
   depth_allocation_ = app_context_->device().create_image_unique(params);
+
+  auto [w, h] = surface_->get_size();
+  size_t size_bytes = size_t(w * h) * sizeof(float);
+  Device::AllocParams params_buff{size_bytes, /*host_wrtie*/ false,
+                                  /*host_read*/ true, /*export_sharing*/ false,
+                                  AllocUsage::Uniform};
+  auto [buf, res] = app_context_->device().allocate_memory_unique(params_buff);
+  RHI_ASSERT(res == RhiResult::success);
+  depth_buffer_ = std::move(buf);
+}
+
+void SwapChain::create_image_resources() {
+  auto [w, h] = surface_->get_size();
+  size_t size_bytes = size_t(w * h) * sizeof(uint8_t) * 4;
+  Device::AllocParams params{size_bytes, /*host_wrtie*/ false,
+                             /*host_read*/ true, /*export_sharing*/ false,
+                             AllocUsage::Uniform};
+  auto [buf, res] = app_context_->device().allocate_memory_unique(params);
+  RHI_ASSERT(res == RhiResult::success);
+  screenshot_buffer_ = std::move(buf);
 }
 
 void SwapChain::resize(uint32_t width, uint32_t height) {
@@ -87,16 +108,28 @@ bool SwapChain::copy_depth_buffer_to_ndarray(
     Device::memcpy_direct(arr_dev_ptr, depth_staging_buffer->get_ptr(),
                           copy_size);
   } else if (memcpy_cap == Device::MemcpyCapability::RequiresStagingBuffer) {
-    DeviceAllocation depth_buffer =
-        surface_->get_depth_data(*depth_allocation_);
+    BufferImageCopyParams copy_params;
+    copy_params.image_extent.x = w;
+    copy_params.image_extent.y = h;
+    copy_params.image_aspect_flag = VK_IMAGE_ASPECT_DEPTH_BIT;
+    auto [cmd_list, res] = stream->new_command_list_unique();
+    assert(res == RhiResult::success && "Failed to allocate command list");
+    cmd_list->image_transition(*depth_allocation_,
+                               ImageLayout::depth_attachment,
+                               ImageLayout::transfer_src);
+    cmd_list->image_to_buffer(depth_buffer_->get_ptr(), *depth_allocation_,
+                              ImageLayout::transfer_src, copy_params);
+    cmd_list->image_transition(*depth_allocation_, ImageLayout::transfer_src,
+                               ImageLayout::depth_attachment);
+    stream->submit_synced(cmd_list.get());
     DeviceAllocation field_buffer(arr_dev_ptr);
     void *src_ptr{nullptr}, *dst_ptr{nullptr};
-    TI_ASSERT(app_context_->device().map(depth_buffer, &src_ptr) ==
+    TI_ASSERT(app_context_->device().map(*depth_buffer_, &src_ptr) ==
               RhiResult::success);
     TI_ASSERT(arr_dev_ptr.device->map(field_buffer, &dst_ptr) ==
               RhiResult::success);
     memcpy(dst_ptr, src_ptr, copy_size);
-    app_context_->device().unmap(depth_buffer);
+    app_context_->device().unmap(*depth_buffer_);
     arr_dev_ptr.device->unmap(field_buffer);
   } else {
     TI_NOT_IMPLEMENTED;
@@ -123,18 +156,39 @@ taichi::lang::Surface &SwapChain::surface() {
 }
 
 std::vector<uint32_t> &SwapChain::dump_image_buffer() {
-  app_context_->device().wait_idle();
+  auto &device = app_context_->device();
+
+  device.wait_idle();
 
   TI_INFO("Dumping image buffer...");
+
+  auto *stream = device.get_graphics_stream();
 
   auto [w, h] = surface_->get_size();
   curr_width_ = w;
   curr_height_ = h;
   image_buffer_data_.clear();
   image_buffer_data_.resize(w * h);
-  DeviceAllocation img_buffer = surface_->get_image_data();
+  DeviceAllocation img_alloc = surface_->get_target_image();
+
+  BufferImageCopyParams copy_params;
+  copy_params.image_extent.x = w;
+  copy_params.image_extent.y = h;
+  copy_params.image_aspect_flag = VK_IMAGE_ASPECT_COLOR_BIT;
+  auto [cmd_list, res] = stream->new_command_list_unique();
+  assert(res == RhiResult::success && "Failed to allocate command list");
+  cmd_list->image_transition(img_alloc, ImageLayout::present_src,
+                             ImageLayout::transfer_src);
+  // TODO: directly map the image to cpu memory
+  cmd_list->image_to_buffer(screenshot_buffer_->get_ptr(), img_alloc,
+                            ImageLayout::transfer_src, copy_params);
+  cmd_list->image_transition(img_alloc, ImageLayout::transfer_src,
+                             ImageLayout::present_src);
+  stream->submit_synced(cmd_list.get());
+
   void *ptr{nullptr};
-  TI_ASSERT(app_context_->device().map(img_buffer, &ptr) == RhiResult::success);
+  TI_ASSERT(app_context_->device().map(*screenshot_buffer_, &ptr) ==
+            RhiResult::success);
   auto format = surface_->image_format();
   uint32_t *u32ptr = (uint32_t *)ptr;
   if (format == BufferFormat::bgra8 || format == BufferFormat::bgra8srgb) {
@@ -156,7 +210,7 @@ std::vector<uint32_t> &SwapChain::dump_image_buffer() {
       }
     }
   }
-  app_context_->device().unmap(img_buffer);
+  app_context_->device().unmap(*screenshot_buffer_);
   return image_buffer_data_;
 }
 

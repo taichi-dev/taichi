@@ -490,9 +490,6 @@ class VulkanSurface : public Surface {
   BufferFormat image_format() override;
   void resize(uint32_t width, uint32_t height) override;
 
-  DeviceAllocation get_depth_data(DeviceAllocation &depth_alloc) override;
-  DeviceAllocation get_image_data() override;
-
  private:
   void create_swap_chain();
   void destroy_swap_chain();
@@ -511,10 +508,6 @@ class VulkanSurface : public Surface {
   uint32_t height_{0};
 
   std::vector<DeviceAllocation> swapchain_images_;
-
-  // DeviceAllocation screenshot_image_{kDeviceNullAllocation};
-  DeviceAllocationUnique depth_buffer_{nullptr};
-  DeviceAllocationUnique screenshot_buffer_{nullptr};
 };
 
 struct DescPool {

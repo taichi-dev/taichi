@@ -10,12 +10,31 @@ namespace vulkan {
 
 using namespace taichi::lang;
 using namespace taichi::lang::vulkan;
+using namespace taichi::lang::metal;
 
 void Renderer::init(Program *prog,
                     TaichiWindow *window,
                     const AppConfig &config) {
-  app_context_.init(prog, window, config);
+  switch (config.ggui_arch) {
+    case Arch::vulkan:
+      app_context_.init_with_vulkan(prog, window, config);
+      break;
+    case Arch::metal:
+      app_context_.init_with_metal(prog, window, config);
+      break;
+    default:
+      throw std::runtime_error("Incorrect arch for GGUI");
+  }
+
   swap_chain_.init(&app_context_);
+
+  if (config.ggui_arch == Arch::metal) {
+    MetalSurface *mtl_surf =
+        dynamic_cast<MetalSurface *>(&(swap_chain_.surface()));
+
+    NSWindowAdapter nswin_adapter;
+    nswin_adapter.set_content_view(window, mtl_surf);
+  }
 }
 
 template <typename T>
@@ -208,7 +227,7 @@ Renderer::~Renderer() {
 void Renderer::prepare_for_next_frame() {
 }
 
-void Renderer::draw_frame(Gui *gui) {
+void Renderer::draw_frame(GuiBase *gui_base) {
   auto stream = app_context_.device().get_graphics_stream();
   auto [cmd_list, res] = stream->new_command_list_unique();
   assert(res == RhiResult::success && "Failed to allocate command list");
@@ -236,18 +255,30 @@ void Renderer::draw_frame(Gui *gui) {
     renderable->record_this_frame_commands(cmd_list.get());
   }
 
-  VkRenderPass pass = static_cast<VulkanCommandList *>(cmd_list.get())
-                          ->current_renderpass()
-                          ->renderpass;
+  if (app_context_.config.ggui_arch == Arch::vulkan) {
+    Gui *gui = static_cast<Gui *>(gui_base);
+    VkRenderPass pass = static_cast<VulkanCommandList *>(cmd_list.get())
+                            ->current_renderpass()
+                            ->renderpass;
 
-  if (gui->render_pass() == VK_NULL_HANDLE) {
+    if (gui->render_pass() == VK_NULL_HANDLE) {
+      gui->init_render_resources(pass);
+    } else if (gui->render_pass() != pass) {
+      gui->cleanup_render_resources();
+      gui->init_render_resources(pass);
+    }
+    gui->draw(cmd_list.get());
+  } else if (app_context_.config.ggui_arch == Arch::metal) {
+    GuiMetal *gui = static_cast<GuiMetal *>(gui_base);
+
+    MTLRenderPassDescriptor *pass =
+        static_cast<MetalCommandList *>(cmd_list.get())
+            ->create_render_pass_desc(false);
+
     gui->init_render_resources(pass);
-  } else if (gui->render_pass() != pass) {
-    gui->cleanup_render_resources();
-    gui->init_render_resources(pass);
+    gui->draw(cmd_list.get());
   }
 
-  gui->draw(cmd_list.get());
   cmd_list->end_renderpass();
 
   std::vector<StreamSemaphore> wait_semaphores;

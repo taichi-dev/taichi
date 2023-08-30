@@ -104,7 +104,7 @@ class SampleApp : public App {
     {
       constexpr uint32_t tex_size = 256;
 
-      // Just a little 8 bit, 256x256 voronoi texture
+      // Just a little 8 bit, 256x256 worley texture
       std::vector<std::pair<double, double>> random_points;
       for (int i = 0; i < 100; i++) {
         double x = tex_size * static_cast<double>(std::rand()) / RAND_MAX;

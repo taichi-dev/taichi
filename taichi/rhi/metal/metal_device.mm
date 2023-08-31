@@ -524,12 +524,9 @@ void MetalCommandList::begin_renderpass(int x0, int y0, int x1, int y1,
                                         std::vector<float> *clear_colors,
                                         DeviceAllocation *depth_attachment,
                                         bool depth_clear) {
-  current_viewport_.x = x0;
-  current_viewport_.y = y0;
-  current_viewport_.width = x1 - x0;
-  current_viewport_.height = y1 - y0;
-
   current_renderpass_details_.clear_depth = depth_clear;
+
+  int rendertarget_height = 0;
 
   RHI_ASSERT(render_targets_.empty() && "Renderpass already started");
 
@@ -539,17 +536,26 @@ void MetalCommandList::begin_renderpass(int x0, int y0, int x1, int y1,
     RHI_ASSERT(depth_target_ != nil && "Invalid depth attachment");
     BufferFormat format = mtl2format(depth_target_.pixelFormat);
     current_renderpass_details_.depth_attach_format = format;
+    rendertarget_height = depth_target_.height;
   }
 
   for (int i = 0; i < num_color_attachments; i++) {
     const MetalImage &col_attach = device_->get_image(color_attachments[i].alloc_id);
-    RHI_ASSERT(col_attach.mtl_texture() != nil && "Invalid color attachment");
-    BufferFormat format = mtl2format(col_attach.mtl_texture().pixelFormat);
+    MTLTexture_id col_attach_mtl = col_attach.mtl_texture();
+    RHI_ASSERT(col_attach_mtl != nil && "Invalid color attachment");
+    BufferFormat format = mtl2format(col_attach_mtl.pixelFormat);
     bool clear = color_clear[i];
     current_renderpass_details_.color_attachments.emplace_back(format, clear);
-    render_targets_.push_back(col_attach.mtl_texture());
+    render_targets_.push_back(col_attach_mtl);
+    rendertarget_height = col_attach_mtl.height;
   }
   clear_colors_ = *clear_colors;
+
+  // Flip framebuffer Y
+  current_viewport_.x = x0;
+  current_viewport_.y = rendertarget_height - y0;
+  current_viewport_.width = x1 - x0;
+  current_viewport_.height = y0 - y1;
 }
 
 void MetalCommandList::end_renderpass() {

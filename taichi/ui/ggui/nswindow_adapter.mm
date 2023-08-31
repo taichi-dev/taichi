@@ -1,5 +1,7 @@
 #include "nswindow_adapter.h"
 
+#ifdef TI_WITH_METAL
+
 namespace taichi::ui {
 
 namespace vulkan {
@@ -18,3 +20,5 @@ void NSWindowAdapter::set_content_view(GLFWwindow *glfw_window,
 } // namespace vulkan
 
 } // namespace taichi::ui
+
+#endif

@@ -73,7 +73,7 @@ class MetalCommandList;
 class MetalStream;
 class MetalDevice;
 
-struct MetalMemory {
+struct MetalMemory : public rhi_impl::NonAssignable {
  public:
   // `mtl_buffer` should be already retained.
   explicit MetalMemory(MTLBuffer_id mtl_buffer, bool host_access);
@@ -91,7 +91,7 @@ struct MetalMemory {
   bool dont_destroy_{false};
 };
 
-struct MetalImage {
+struct MetalImage : public rhi_impl::NonAssignable {
  public:
   // `mtl_texture` should be already retained.
   explicit MetalImage(MTLTexture_id mtl_texture);
@@ -106,17 +106,21 @@ struct MetalImage {
   bool dont_destroy_{false};
 };
 
-struct MetalSampler {
+struct MetalSampler : public rhi_impl::NonAssignable {
  public:
   // `mtl_texture` should be already retained.
   explicit MetalSampler(MTLSamplerState_id mtl_sampler_state);
   ~MetalSampler();
+
+  // No copy constructor
+  MetalSampler(MetalSampler &other) = delete;
 
   MTLSamplerState_id mtl_sampler_state() const;
 
  private:
   MTLSamplerState_id mtl_sampler_state_;
 };
+
 struct MetalRenderPassTargetDetails {
   std::vector<std::pair<BufferFormat, bool>> color_attachments;
   BufferFormat depth_attach_format{BufferFormat::unknown};
@@ -149,18 +153,21 @@ struct MetalWorkgroupSize {
   uint32_t y{0};
   uint32_t z{0};
 };
+
 struct MetalRasterLibraries {
   MTLLibrary_id vertex;
   MTLLibrary_id fragment;
 
   void destroy();
 };
+
 struct MetalRasterFunctions {
   MTLFunction_id vertex;
   MTLFunction_id fragment;
 
   void destroy();
 };
+
 struct MetalShaderBindingMapping {
   // Map GLSL binding to MSL index (buffer/texture index, sampler index)
   std::unordered_map<int, std::pair<int, int>> vertex;
@@ -172,6 +179,7 @@ struct MetalShaderBindingMapping {
   // buffers.
   int max_vert_buffer_index{-1};
 };
+
 class MetalPipeline final : public Pipeline {
  public:
   // `mtl_library`, `mtl_function`, `mtl_compute_pipeline_state` should be
@@ -389,7 +397,9 @@ class MetalCommandList final : public CommandList {
   void set_line_width(float width) override;
 
   MTLCommandBuffer_id finalize();
-  MTLRenderPassDescriptor *create_render_pass_desc(bool depth_write);
+  // If noclear is false, ignore whatever is set in details
+  // This may be used to "resume" the current renderpass
+  MTLRenderPassDescriptor *create_render_pass_desc(bool depth_write, bool noclear = false);
 
  private:
   friend class MetalStream;
@@ -410,6 +420,10 @@ class MetalCommandList final : public CommandList {
   std::vector<float> clear_colors_;
   std::vector<MTLTexture_id> render_targets_;
   MTLTexture_id depth_target_;
+
+  // For renderpass resuming, track whether a renderpass has been started
+  // Used to override LoadAction, to prevent uninteded clearing when resuming
+  bool is_renderpass_active_{false};
 };
 
 class MetalStream final : public Stream {

@@ -179,5 +179,14 @@ inline void hash_combine(std::size_t &seed, const T &v) {
   seed ^= hasher(v) + 0x9e3779b9 + (seed << 6) + (seed >> 2);
 }
 
+// A helper to remove copy constructor
+class NonAssignable {
+private:
+    NonAssignable(NonAssignable const&);
+    NonAssignable& operator=(NonAssignable const&);
+public:
+    NonAssignable() {}
+};
+
 }  // namespace rhi_impl
 }  // namespace taichi::lang

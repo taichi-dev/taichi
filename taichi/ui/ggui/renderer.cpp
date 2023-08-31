@@ -273,7 +273,7 @@ void Renderer::draw_frame(GuiBase *gui_base) {
 
     MTLRenderPassDescriptor *pass =
         static_cast<MetalCommandList *>(cmd_list.get())
-            ->create_render_pass_desc(false);
+            ->create_render_pass_desc(false, true);
 
     gui->init_render_resources(pass);
     gui->draw(cmd_list.get());

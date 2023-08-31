@@ -529,19 +529,21 @@ void MetalCommandList::begin_renderpass(int x0, int y0, int x1, int y1,
   current_viewport_.width = x1 - x0;
   current_viewport_.height = y1 - y0;
 
-  current_renderpass_details_.color_attachments.clear();
   current_renderpass_details_.clear_depth = depth_clear;
-  render_targets_.clear();
+
+  RHI_ASSERT(render_targets_.empty() && "Renderpass already started");
 
   if (depth_attachment) {
-    MetalImage depth_attach = device_->get_image(depth_attachment->alloc_id);
+    const MetalImage &depth_attach = device_->get_image(depth_attachment->alloc_id);
     depth_target_ = depth_attach.mtl_texture();
+    RHI_ASSERT(depth_target_ != nil && "Invalid depth attachment");
     BufferFormat format = mtl2format(depth_target_.pixelFormat);
     current_renderpass_details_.depth_attach_format = format;
   }
 
   for (int i = 0; i < num_color_attachments; i++) {
-    MetalImage col_attach = device_->get_image(color_attachments[i].alloc_id);
+    const MetalImage &col_attach = device_->get_image(color_attachments[i].alloc_id);
+    RHI_ASSERT(col_attach.mtl_texture() != nil && "Invalid color attachment");
     BufferFormat format = mtl2format(col_attach.mtl_texture().pixelFormat);
     bool clear = color_clear[i];
     current_renderpass_details_.color_attachments.emplace_back(format, clear);
@@ -549,7 +551,14 @@ void MetalCommandList::begin_renderpass(int x0, int y0, int x1, int y1,
   }
   clear_colors_ = *clear_colors;
 }
-void MetalCommandList::end_renderpass() {}
+
+void MetalCommandList::end_renderpass() {
+  depth_target_ = nil;
+  render_targets_.clear();
+  current_renderpass_details_.color_attachments.clear();
+  clear_colors_.clear();
+  is_renderpass_active_ = false;
+}
 
 void MetalCommandList::bind_mtl_shader_resources(
     MetalShaderResourceSet *resource_set, MTLRenderCommandEncoder_id rce,
@@ -612,7 +621,7 @@ void MetalCommandList::bind_mtl_shader_resources(
 }
 
 MTLRenderPassDescriptor *
-MetalCommandList::create_render_pass_desc(bool depth_write) {
+MetalCommandList::create_render_pass_desc(bool depth_write, bool noclear) {
 
   MTLRenderPassDescriptor *rpd = [MTLRenderPassDescriptor new];
   auto *clear_cols = &clear_colors_;
@@ -620,7 +629,7 @@ MetalCommandList::create_render_pass_desc(bool depth_write) {
   for (auto &pair : current_renderpass_details_.color_attachments) {
     rpd.colorAttachments[i].texture = render_targets_[i];
     rpd.colorAttachments[i].loadAction =
-        pair.second ? MTLLoadActionClear : MTLLoadActionLoad;
+        (pair.second && !noclear) ? MTLLoadActionClear : MTLLoadActionLoad;
     rpd.colorAttachments[i].storeAction = MTLStoreActionStore;
     rpd.colorAttachments[i].clearColor = MTLClearColorMake(
         clear_cols[i][0], clear_cols[i][1], clear_cols[i][2], clear_cols[i][3]);
@@ -643,7 +652,7 @@ MTLRenderCommandEncoder_id MetalCommandList::pre_draw_setup() {
   const RasterParams *raster_params = current_pipeline_->raster_params();
 
   MTLRenderPassDescriptor *rpd =
-      create_render_pass_desc(raster_params->depth_write);
+      create_render_pass_desc(raster_params->depth_write, is_renderpass_active_);
   RHI_ASSERT(current_pipeline_);
 
   MTLRenderCommandEncoder_id rce =
@@ -688,6 +697,8 @@ MTLRenderCommandEncoder_id MetalCommandList::pre_draw_setup() {
     bind_mtl_shader_resources(current_shader_resource_set_.get(), rce,
                               current_pipeline_->bind_map());
   }
+
+  is_renderpass_active_ = true;
 
   return rce;
 }

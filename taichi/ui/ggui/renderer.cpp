@@ -275,7 +275,11 @@ void Renderer::draw_frame(GuiBase *gui_base) {
         static_cast<MetalCommandList *>(cmd_list.get())
             ->create_render_pass_desc(false, true);
 
-    gui->init_render_resources(pass);
+    if (!gui->initialized()) {
+      gui->init_render_resources(pass);
+    } else {
+      gui->set_render_pass(pass);
+    }
     gui->draw(cmd_list.get());
   }
 

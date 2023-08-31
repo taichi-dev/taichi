@@ -46,6 +46,9 @@ class TI_DLL_EXPORT GuiMetal final : public GuiBase {
   void draw(taichi::lang::CommandList *cmd_list);
 
   bool is_empty();
+  bool initialized();
+
+  void set_render_pass(void *rpd);
 
  private:
   bool is_empty_;
@@ -59,8 +62,6 @@ class TI_DLL_EXPORT GuiMetal final : public GuiBase {
   float abs_x(float x);
 
   float abs_y(float y);
-
-  bool initialized();
 };
 
 }  // namespace vulkan

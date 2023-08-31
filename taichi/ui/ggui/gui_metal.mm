@@ -38,7 +38,12 @@ void GuiMetal::init_render_resources(void *rpd) {
   prepare_for_next_frame();
 }
 
+void GuiMetal::set_render_pass(void *rpd) {
+  current_rpd_ = (__bridge MTLRenderPassDescriptor *)rpd;
+}
 void GuiMetal::prepare_for_next_frame() {
+  if (!initialized())
+    return;
   ImGui_ImplMetal_NewFrame(current_rpd_);
   if (app_context_->config.show_window) {
     ImGui_ImplGlfw_NewFrame();
@@ -131,32 +136,33 @@ void GuiMetal::draw(taichi::lang::CommandList *cmd_list) {
     MTLCommandBuffer_id buffer =
         static_cast<MetalCommandList *>(cmd_list)->finalize();
 
-    MTLRenderCommandEncoder_id rce =
-        [buffer renderCommandEncoderWithDescriptor:current_rpd_];
+    @autoreleasepool {
 
-    ImGui_ImplMetal_RenderDrawData(ImGui::GetDrawData(), buffer, rce);
-    [rce endEncoding];
+      MTLRenderCommandEncoder_id rce =
+          [buffer renderCommandEncoderWithDescriptor:current_rpd_];
+      ImGui_ImplMetal_RenderDrawData(ImGui::GetDrawData(), buffer, rce);
+      [rce endEncoding];
+    }
   }
-}
 
-void GuiMetal::cleanup_render_resources() {
-  if (initialized()) {
-    ImGui_ImplMetal_Shutdown();
+  void GuiMetal::cleanup_render_resources() {
+    if (initialized()) {
+      ImGui_ImplMetal_Shutdown();
+    }
+    current_rpd_ = nullptr;
   }
-  current_rpd_ = nullptr;
-}
 
-GuiMetal::~GuiMetal() {
-  if (app_context_->config.show_window) {
-    ImGui_ImplGlfw_Shutdown();
+  GuiMetal::~GuiMetal() {
+    if (app_context_->config.show_window) {
+      ImGui_ImplGlfw_Shutdown();
+    }
+    cleanup_render_resources();
+    ImGui::DestroyContext(imgui_context_);
   }
-  cleanup_render_resources();
-  ImGui::DestroyContext(imgui_context_);
-}
 
-bool GuiMetal::initialized() { return current_rpd_ != nullptr; }
+  bool GuiMetal::initialized() { return current_rpd_ != nullptr; }
 
-bool GuiMetal::is_empty() { return is_empty_; }
+  bool GuiMetal::is_empty() { return is_empty_; }
 
 } // namespace vulkan
 

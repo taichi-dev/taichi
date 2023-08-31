@@ -181,11 +181,13 @@ inline void hash_combine(std::size_t &seed, const T &v) {
 
 // A helper to remove copy constructor
 class NonAssignable {
-private:
-    NonAssignable(NonAssignable const&);
-    NonAssignable& operator=(NonAssignable const&);
-public:
-    NonAssignable() {}
+ private:
+  NonAssignable(NonAssignable const &);
+  NonAssignable &operator=(NonAssignable const &);
+
+ public:
+  NonAssignable() {
+  }
 };
 
 }  // namespace rhi_impl

@@ -53,11 +53,9 @@ MTLSamplerState_id MetalSampler::mtl_sampler_state() const {
   return mtl_sampler_state_;
 }
 
-MetalRasterLibraries::MetalRasterLibraries()
-  : vertex(nil), fragment(nil) {}
+MetalRasterLibraries::MetalRasterLibraries() : vertex(nil), fragment(nil) {}
 
-MetalRasterFunctions::MetalRasterFunctions()
-  : vertex(nil), fragment(nil) {}
+MetalRasterFunctions::MetalRasterFunctions() : vertex(nil), fragment(nil) {}
 
 void MetalRasterLibraries::destroy() {
   [vertex release];
@@ -85,7 +83,7 @@ MetalPipeline::MetalPipeline(const MetalDevice &device,
                              MTLVertexDescriptor *vertex_descriptor,
                              const MetalShaderBindingMapping &mapping,
                              const RasterParams &raster_params)
-: MetalPipeline(device, nil, nil, nil, MetalWorkgroupSize{0, 0, 0}) {
+    : MetalPipeline(device, nil, nil, nil, MetalWorkgroupSize{0, 0, 0}) {
   mtl_raster_libraries_ = std::move(mtl_libraries);
   mtl_raster_functions_ = std::move(mtl_functions);
   vertex_descriptor_ = vertex_descriptor;
@@ -102,7 +100,7 @@ MetalPipeline::~MetalPipeline() {
   for (auto &pipe : built_pipelines_) {
     [pipe.second release];
   }
-  
+
   mtl_raster_libraries_.destroy();
   mtl_raster_functions_.destroy();
 }
@@ -560,7 +558,8 @@ void MetalCommandList::begin_renderpass(int x0, int y0, int x1, int y1,
     current_renderpass_details_.color_attachments.emplace_back(format, clear);
     std::array<float, 4> clear_color{0.0, 0.0, 0.0, 0.0};
     if (clear) {
-      clear_color = {clear_colors[i][0], clear_colors[i][1], clear_colors[i][2], clear_colors[i][3]};
+      clear_color = {clear_colors[i][0], clear_colors[i][1], clear_colors[i][2],
+                     clear_colors[i][3]};
     }
     clear_colors_.push_back(clear_color);
     render_targets_.push_back(col_attach_mtl);
@@ -652,7 +651,9 @@ MetalCommandList::create_render_pass_desc(bool depth_write, bool noclear) {
     rpd.colorAttachments[i].loadAction =
         (pair.second && !noclear) ? MTLLoadActionClear : MTLLoadActionLoad;
     rpd.colorAttachments[i].storeAction = MTLStoreActionStore;
-    rpd.colorAttachments[i].clearColor = MTLClearColorMake(clear_colors_[i][0], clear_colors_[i][1], clear_colors_[i][2], clear_colors_[i][3]);
+    rpd.colorAttachments[i].clearColor =
+        MTLClearColorMake(clear_colors_[i][0], clear_colors_[i][1],
+                          clear_colors_[i][2], clear_colors_[i][3]);
     i++;
   }
 
@@ -675,9 +676,7 @@ bool MetalCommandList::is_renderpass_active() const {
   return is_renderpass_active_;
 }
 
-void MetalCommandList::set_renderpass_active() {
-  is_renderpass_active_ = true;
-}
+void MetalCommandList::set_renderpass_active() { is_renderpass_active_ = true; }
 
 MTLRenderCommandEncoder_id MetalCommandList::pre_draw_setup() {
   const RasterParams *raster_params = current_pipeline_->raster_params();
@@ -1421,9 +1420,10 @@ std::unique_ptr<Pipeline> MetalDevice::create_raster_pipeline(
 
   // Get the MTLFunctions
   MetalRasterFunctions mtl_functions;
-  mtl_functions.vertex = get_mtl_function(raster_libs.vertex, std::string(kMetalVertFunctionName)),
-  mtl_functions.fragment = get_mtl_function(raster_libs.fragment,
-                       std::string(kMetalFragFunctionName));
+  mtl_functions.vertex =
+      get_mtl_function(raster_libs.vertex, std::string(kMetalVertFunctionName)),
+  mtl_functions.fragment = get_mtl_function(
+      raster_libs.fragment, std::string(kMetalFragFunctionName));
 
   // Set vertex descriptor
   MTLVertexDescriptor *vd = [MTLVertexDescriptor new];
@@ -1444,7 +1444,7 @@ std::unique_ptr<Pipeline> MetalDevice::create_raster_pipeline(
   }
 
   // Create the pipeline object
-  return std::make_unique<MetalPipeline>(*this, raster_libs,                                                                      mtl_functions, vd,
+  return std::make_unique<MetalPipeline>(*this, raster_libs, mtl_functions, vd,
                                          mapping, raster_params);
 }
 

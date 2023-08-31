@@ -29,12 +29,14 @@ void Window::init(Program *prog, const AppConfig &config) {
       gui_ = std::make_unique<Gui>(&renderer_->app_context(),
                                    &renderer_->swap_chain(), glfw_window_);
       break;
+#ifdef TI_WITH_METAL
     case Arch::metal:
       gui_ =
           std::make_unique<GuiMetal>(&renderer_->app_context(), glfw_window_);
       break;
+#endif
     default:
-      break;
+      TI_NOT_IMPLEMENTED;
   }
 
   fps_limit_ = config.fps_limit;

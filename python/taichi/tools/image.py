@@ -5,6 +5,7 @@ import taichi as ti
 
 import ctypes
 
+
 def cook_image_to_bytes(img):
     """
     Takes a NumPy array or Taichi field of any type.
@@ -17,7 +18,7 @@ def cook_image_to_bytes(img):
     if img.dtype in [np.uint16, np.uint32, np.uint64]:
         img = (img // (np.iinfo(img.dtype).max // 256)).astype(np.uint8)
     elif img.dtype in [np.float32, np.float64]:
-        img = (np.clip(img, 0, 1) * 255.0 ).astype(np.uint8)
+        img = (np.clip(img, 0, 1) * 255.0).astype(np.uint8)
     elif img.dtype != np.uint8:
         raise ValueError(f"Data type {img.dtype} not supported in ti.tools.imwrite")
 
@@ -82,9 +83,9 @@ def imread(filename, channels=0):
         np.ndarray : An output image loaded from given filename.
     """
     ptr, resx, resy, comp = _ti_core.imread(filename, channels)
-    img = np.copy(np.ctypeslib.as_array(
-        (ctypes.c_uint8 * resx * resy * comp).from_address(ptr)
-    )).reshape(resy, resx, comp)
+    img = np.copy(np.ctypeslib.as_array((ctypes.c_uint8 * resx * resy * comp).from_address(ptr))).reshape(
+        resy, resx, comp
+    )
     _ti_core.imfree(ptr)
     return img.swapaxes(0, 1)[:, ::-1, :]
 

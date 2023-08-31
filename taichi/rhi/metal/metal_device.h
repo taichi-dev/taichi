@@ -156,7 +156,7 @@ struct MetalWorkgroupSize {
 
 struct MetalRasterLibraries {
   MetalRasterLibraries();
-  
+
   MTLLibrary_id vertex;
   MTLLibrary_id fragment;
 
@@ -400,8 +400,9 @@ class MetalCommandList final : public CommandList {
   MTLCommandBuffer_id finalize();
   // If noclear is false, ignore whatever is set in details
   // This may be used to "resume" the current renderpass
-  MTLRenderPassDescriptor *create_render_pass_desc(bool depth_write, bool noclear = false);
-  
+  MTLRenderPassDescriptor *create_render_pass_desc(bool depth_write,
+                                                   bool noclear = false);
+
   bool is_renderpass_active() const;
   void set_renderpass_active();
 

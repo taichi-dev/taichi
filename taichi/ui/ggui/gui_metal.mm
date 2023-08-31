@@ -61,9 +61,7 @@ void GuiMetal::begin(const std::string &name, float x, float y, float width,
   ImGui::Begin(name.c_str());
   is_empty_ = false;
 }
-void GuiMetal::end() {
-  ImGui::End();
-}
+void GuiMetal::end() { ImGui::End(); }
 void GuiMetal::text(const std::string &text) {
   ImGui::Text("%s", text.c_str());
 }

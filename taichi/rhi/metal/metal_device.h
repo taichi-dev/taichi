@@ -155,6 +155,8 @@ struct MetalWorkgroupSize {
 };
 
 struct MetalRasterLibraries {
+  MetalRasterLibraries();
+  
   MTLLibrary_id vertex;
   MTLLibrary_id fragment;
 
@@ -162,6 +164,8 @@ struct MetalRasterLibraries {
 };
 
 struct MetalRasterFunctions {
+  MetalRasterFunctions();
+
   MTLFunction_id vertex;
   MTLFunction_id fragment;
 
@@ -180,7 +184,7 @@ struct MetalShaderBindingMapping {
   int max_vert_buffer_index{-1};
 };
 
-class MetalPipeline final : public Pipeline {
+class MetalPipeline final : public Pipeline, public rhi_impl::NonAssignable {
  public:
   // `mtl_library`, `mtl_function`, `mtl_compute_pipeline_state` should be
   // already retained.
@@ -191,11 +195,11 @@ class MetalPipeline final : public Pipeline {
                          MetalWorkgroupSize workgroup_size);
 
   explicit MetalPipeline(const MetalDevice &device,
-                         const MetalRasterLibraries &mtl_libraries,
-                         const MetalRasterFunctions &mtl_functions,
+                         MetalRasterLibraries &mtl_libraries,
+                         MetalRasterFunctions &mtl_functions,
                          MTLVertexDescriptor *vertex_descriptor,
                          const MetalShaderBindingMapping &mapping,
-                         const RasterParams raster_params);
+                         const RasterParams &raster_params);
   ~MetalPipeline() final;
 
   static MetalPipeline *create_compute_pipeline(const MetalDevice &device,
@@ -205,7 +209,6 @@ class MetalPipeline final : public Pipeline {
 
   MTLRenderPipelineState_id build_mtl_render_pipeline(
       const MetalRenderPassTargetDetails &renderpass_details);
-  void destroy();
 
   inline MTLComputePipelineState_id mtl_compute_pipeline_state() const {
     return mtl_compute_pipeline_state_;
@@ -233,8 +236,6 @@ class MetalPipeline final : public Pipeline {
  private:
   const MetalDevice *device_;
 
-  bool is_destroyed_{false};
-
   // Compute variables
   MTLLibrary_id mtl_compute_library_;
   MTLFunction_id mtl_compute_function_;
@@ -246,7 +247,7 @@ class MetalPipeline final : public Pipeline {
   MetalRasterFunctions mtl_raster_functions_;
   MTLVertexDescriptor *vertex_descriptor_;
   MetalShaderBindingMapping binding_mapping_;
-  const RasterParams raster_params_;
+  RasterParams raster_params_;
 
   bool is_raster_pipeline_{false};
 };

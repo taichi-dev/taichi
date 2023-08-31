@@ -34,12 +34,9 @@ GuiMetal::GuiMetal(AppContext *app_context, TaichiWindow *window) {
 
 void GuiMetal::init_render_resources(void *rpd) {
   current_rpd_ = (__bridge MTLRenderPassDescriptor *)rpd;
-
-  prepare_for_next_frame();
 }
 
 void GuiMetal::prepare_for_next_frame() {
-  ImGui_ImplMetal_NewFrame(current_rpd_);
   if (app_context_->config.show_window) {
     ImGui_ImplGlfw_NewFrame();
   } else {
@@ -124,6 +121,8 @@ bool GuiMetal::button(const std::string &text) {
 }
 
 void GuiMetal::draw(taichi::lang::CommandList *cmd_list) {
+  ImGui_ImplMetal_NewFrame(current_rpd_);
+
   // Rendering
   ImGui::Render();
 

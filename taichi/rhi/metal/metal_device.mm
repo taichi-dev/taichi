@@ -53,10 +53,17 @@ MTLSamplerState_id MetalSampler::mtl_sampler_state() const {
   return mtl_sampler_state_;
 }
 
+MetalRasterLibraries::MetalRasterLibraries()
+  : vertex(nil), fragment(nil) {}
+
+MetalRasterFunctions::MetalRasterFunctions()
+  : vertex(nil), fragment(nil) {}
+
 void MetalRasterLibraries::destroy() {
   [vertex release];
   [fragment release];
 }
+
 void MetalRasterFunctions::destroy() {
   [vertex release];
   [fragment release];
@@ -71,17 +78,35 @@ MetalPipeline::MetalPipeline(
       mtl_compute_function_(mtl_function),
       mtl_compute_pipeline_state_(mtl_compute_pipeline_state),
       workgroup_size_(workgroup_size) {}
+
 MetalPipeline::MetalPipeline(const MetalDevice &device,
-                             const MetalRasterLibraries &mtl_libraries,
-                             const MetalRasterFunctions &mtl_functions,
+                             MetalRasterLibraries &mtl_libraries,
+                             MetalRasterFunctions &mtl_functions,
                              MTLVertexDescriptor *vertex_descriptor,
                              const MetalShaderBindingMapping &mapping,
-                             const RasterParams raster_params)
-    : device_(&device), mtl_raster_libraries_(mtl_libraries),
-      mtl_raster_functions_(mtl_functions),
-      vertex_descriptor_(vertex_descriptor), binding_mapping_(mapping),
-      raster_params_(raster_params), is_raster_pipeline_(true) {}
-MetalPipeline::~MetalPipeline() { destroy(); }
+                             const RasterParams &raster_params)
+: MetalPipeline(device, nil, nil, nil, MetalWorkgroupSize{0, 0, 0}) {
+  mtl_raster_libraries_ = std::move(mtl_libraries);
+  mtl_raster_functions_ = std::move(mtl_functions);
+  vertex_descriptor_ = vertex_descriptor;
+  binding_mapping_ = mapping;
+  raster_params_ = raster_params;
+  is_raster_pipeline_ = true;
+}
+
+MetalPipeline::~MetalPipeline() {
+  [mtl_compute_pipeline_state_ release];
+  [mtl_compute_function_ release];
+  [mtl_compute_library_ release];
+
+  for (auto &pipe : built_pipelines_) {
+    [pipe.second release];
+  }
+  
+  mtl_raster_libraries_.destroy();
+  mtl_raster_functions_.destroy();
+}
+
 MetalPipeline *MetalPipeline::create_compute_pipeline(const MetalDevice &device,
                                                       const uint32_t *spv_data,
                                                       size_t spv_size,
@@ -213,21 +238,6 @@ MTLRenderPipelineState_id MetalPipeline::build_mtl_render_pipeline(
   }
 
   return rps;
-}
-
-void MetalPipeline::destroy() {
-  if (!is_destroyed_) {
-    [mtl_compute_pipeline_state_ release];
-    [mtl_compute_function_ release];
-    [mtl_compute_library_ release];
-
-    for (auto &pipe : built_pipelines_) {
-      [pipe.second release];
-    }
-    mtl_raster_libraries_.destroy();
-    mtl_raster_functions_.destroy();
-    is_destroyed_ = true;
-  }
 }
 
 MetalShaderResourceSet::MetalShaderResourceSet(const MetalDevice &device)
@@ -1388,14 +1398,15 @@ std::unique_ptr<Pipeline> MetalDevice::create_raster_pipeline(
   }
 
   // Compile MSL source to MTLLibrary
-  MetalRasterLibraries raster_libs = MetalRasterLibraries{
-      get_mtl_library(msl_vert_source), get_mtl_library(msl_frag_source)};
+  MetalRasterLibraries raster_libs;
+  raster_libs.vertex = get_mtl_library(msl_vert_source);
+  raster_libs.fragment = get_mtl_library(msl_frag_source);
 
   // Get the MTLFunctions
-  MetalRasterFunctions mtl_functions = MetalRasterFunctions{
-      get_mtl_function(raster_libs.vertex, std::string(kMetalVertFunctionName)),
-      get_mtl_function(raster_libs.fragment,
-                       std::string(kMetalFragFunctionName))};
+  MetalRasterFunctions mtl_functions;
+  mtl_functions.vertex = get_mtl_function(raster_libs.vertex, std::string(kMetalVertFunctionName)),
+  mtl_functions.fragment = get_mtl_function(raster_libs.fragment,
+                       std::string(kMetalFragFunctionName));
 
   // Set vertex descriptor
   MTLVertexDescriptor *vd = [MTLVertexDescriptor new];
@@ -1416,7 +1427,7 @@ std::unique_ptr<Pipeline> MetalDevice::create_raster_pipeline(
   }
 
   // Create the pipeline object
-  return std::make_unique<MetalPipeline>(*this, raster_libs, mtl_functions, vd,
+  return std::make_unique<MetalPipeline>(*this, raster_libs,                                                                      mtl_functions, vd,
                                          mapping, raster_params);
 }
 

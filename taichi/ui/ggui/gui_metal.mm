@@ -56,67 +56,40 @@ float GuiMetal::abs_y(float y) { return y * heightBeforeDPIScale; }
 
 void GuiMetal::begin(const std::string &name, float x, float y, float width,
                      float height) {
-  if (!initialized()) {
-    return;
-  }
   ImGui::SetNextWindowPos(ImVec2(abs_x(x), abs_y(y)), ImGuiCond_Once);
   ImGui::SetNextWindowSize(ImVec2(abs_x(width), abs_y(height)), ImGuiCond_Once);
   ImGui::Begin(name.c_str());
   is_empty_ = false;
 }
 void GuiMetal::end() {
-  if (!initialized()) {
-    return;
-  }
   ImGui::End();
 }
 void GuiMetal::text(const std::string &text) {
-  if (!initialized()) {
-    return;
-  }
   ImGui::Text("%s", text.c_str());
 }
 void GuiMetal::text(const std::string &text, glm::vec3 color) {
-  if (!initialized()) {
-    return;
-  }
   ImGui::TextColored(ImVec4(color[0], color[1], color[2], 1.0f), "%s",
                      text.c_str());
 }
 bool GuiMetal::checkbox(const std::string &name, bool old_value) {
-  if (!initialized()) {
-    return old_value;
-  }
   ImGui::Checkbox(name.c_str(), &old_value);
   return old_value;
 }
 int GuiMetal::slider_int(const std::string &name, int old_value, int minimum,
                          int maximum) {
-  if (!initialized()) {
-    return old_value;
-  }
   ImGui::SliderInt(name.c_str(), &old_value, minimum, maximum);
   return old_value;
 }
 float GuiMetal::slider_float(const std::string &name, float old_value,
                              float minimum, float maximum) {
-  if (!initialized()) {
-    return old_value;
-  }
   ImGui::SliderFloat(name.c_str(), &old_value, minimum, maximum);
   return old_value;
 }
 glm::vec3 GuiMetal::color_edit_3(const std::string &name, glm::vec3 old_value) {
-  if (!initialized()) {
-    return old_value;
-  }
   ImGui::ColorEdit3(name.c_str(), (float *)&old_value);
   return old_value;
 }
 bool GuiMetal::button(const std::string &text) {
-  if (!initialized()) {
-    return false;
-  }
   return ImGui::Button(text.c_str());
 }
 
@@ -132,16 +105,12 @@ void GuiMetal::draw(taichi::lang::CommandList *cmd_list) {
 
     MTLRenderCommandEncoder_id rce =
         [buffer renderCommandEncoderWithDescriptor:current_rpd_];
-
     ImGui_ImplMetal_RenderDrawData(ImGui::GetDrawData(), buffer, rce);
     [rce endEncoding];
   }
 }
-
 void GuiMetal::cleanup_render_resources() {
-  if (initialized()) {
-    ImGui_ImplMetal_Shutdown();
-  }
+  ImGui_ImplMetal_Shutdown();
   current_rpd_ = nullptr;
 }
 
@@ -152,8 +121,6 @@ GuiMetal::~GuiMetal() {
   cleanup_render_resources();
   ImGui::DestroyContext(imgui_context_);
 }
-
-bool GuiMetal::initialized() { return current_rpd_ != nullptr; }
 
 bool GuiMetal::is_empty() { return is_empty_; }
 

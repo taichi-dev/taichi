@@ -195,7 +195,7 @@ MTLRenderPipelineState_id MetalPipeline::build_mtl_render_pipeline(
   rpd.vertexDescriptor = vertex_descriptor_;
 
   rpd.depthAttachmentPixelFormat =
-    format2mtl(renderpass_details.depth_attach_format);
+      format2mtl(renderpass_details.depth_attach_format);
 
   for (int i = 0; i < renderpass_details.color_attachments.size(); i++) {
     MTLPixelFormat format =
@@ -539,7 +539,8 @@ void MetalCommandList::begin_renderpass(int x0, int y0, int x1, int y1,
   RHI_ASSERT(render_targets_.empty() && "Renderpass already started");
 
   if (depth_attachment) {
-    const MetalImage &depth_attach = device_->get_image(depth_attachment->alloc_id);
+    const MetalImage &depth_attach =
+        device_->get_image(depth_attachment->alloc_id);
     depth_target_ = depth_attach.mtl_texture();
     RHI_ASSERT(depth_target_ != nil && "Invalid depth attachment");
     BufferFormat format = mtl2format(depth_target_.pixelFormat);
@@ -550,7 +551,8 @@ void MetalCommandList::begin_renderpass(int x0, int y0, int x1, int y1,
   }
 
   for (int i = 0; i < num_color_attachments; i++) {
-    const MetalImage &col_attach = device_->get_image(color_attachments[i].alloc_id);
+    const MetalImage &col_attach =
+        device_->get_image(color_attachments[i].alloc_id);
     MTLTexture_id col_attach_mtl = col_attach.mtl_texture();
     RHI_ASSERT(col_attach_mtl != nil && "Invalid color attachment");
     BufferFormat format = mtl2format(col_attach_mtl.pixelFormat);
@@ -652,12 +654,15 @@ MetalCommandList::create_render_pass_desc(bool depth_write, bool noclear) {
     i++;
   }
 
-  if (current_renderpass_details_.depth_attach_format != BufferFormat::unknown) {
+  if (current_renderpass_details_.depth_attach_format !=
+      BufferFormat::unknown) {
     rpd.depthAttachment.texture = depth_target_;
-    rpd.depthAttachment.loadAction = (current_renderpass_details_.clear_depth && !noclear)
-                                         ? MTLLoadActionClear
-                                         : MTLLoadActionLoad;
-    rpd.depthAttachment.storeAction = depth_write ? MTLStoreActionStore : MTLStoreActionDontCare;
+    rpd.depthAttachment.loadAction =
+        (current_renderpass_details_.clear_depth && !noclear)
+            ? MTLLoadActionClear
+            : MTLLoadActionLoad;
+    rpd.depthAttachment.storeAction =
+        depth_write ? MTLStoreActionStore : MTLStoreActionDontCare;
     rpd.depthAttachment.clearDepth = 0.0;
   }
 
@@ -667,8 +672,8 @@ MetalCommandList::create_render_pass_desc(bool depth_write, bool noclear) {
 MTLRenderCommandEncoder_id MetalCommandList::pre_draw_setup() {
   const RasterParams *raster_params = current_pipeline_->raster_params();
 
-  MTLRenderPassDescriptor *rpd =
-      create_render_pass_desc(raster_params->depth_write, is_renderpass_active_);
+  MTLRenderPassDescriptor *rpd = create_render_pass_desc(
+      raster_params->depth_write, is_renderpass_active_);
   RHI_ASSERT(current_pipeline_);
 
   MTLRenderCommandEncoder_id rce =
@@ -693,7 +698,9 @@ MTLRenderCommandEncoder_id MetalCommandList::pre_draw_setup() {
 
   // Set depth state
   MTLDepthStencilDescriptor *depthDescriptor = [MTLDepthStencilDescriptor new];
-  depthDescriptor.depthCompareFunction = raster_params->depth_test ? MTLCompareFunctionGreaterEqual : MTLCompareFunctionAlways;
+  depthDescriptor.depthCompareFunction = raster_params->depth_test
+                                             ? MTLCompareFunctionGreaterEqual
+                                             : MTLCompareFunctionAlways;
   depthDescriptor.depthWriteEnabled = raster_params->depth_write;
   MTLDepthStencilState_id depthState = [device_->mtl_device()
       newDepthStencilStateWithDescriptor:depthDescriptor];

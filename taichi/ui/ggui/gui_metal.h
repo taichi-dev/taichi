@@ -59,8 +59,6 @@ class TI_DLL_EXPORT GuiMetal final : public GuiBase {
   float abs_x(float x);
 
   float abs_y(float y);
-
-  bool initialized();
 };
 
 }  // namespace vulkan

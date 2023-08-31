@@ -127,13 +127,16 @@ void GuiMetal::draw(taichi::lang::CommandList *cmd_list) {
   // Rendering
   ImGui::Render();
 
-  MTLCommandBuffer_id buffer =
-      static_cast<MetalCommandList *>(cmd_list)->finalize();
+  @autoreleasepool {
+    MTLCommandBuffer_id buffer =
+        static_cast<MetalCommandList *>(cmd_list)->finalize();
 
-  MTLRenderCommandEncoder_id rce =
-      [buffer renderCommandEncoderWithDescriptor:current_rpd_];
-  ImGui_ImplMetal_RenderDrawData(ImGui::GetDrawData(), buffer, rce);
-  [rce endEncoding];
+    MTLRenderCommandEncoder_id rce =
+        [buffer renderCommandEncoderWithDescriptor:current_rpd_];
+
+    ImGui_ImplMetal_RenderDrawData(ImGui::GetDrawData(), buffer, rce);
+    [rce endEncoding];
+  }
 }
 
 void GuiMetal::cleanup_render_resources() {

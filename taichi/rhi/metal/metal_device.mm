@@ -169,10 +169,8 @@ MTLRenderPipelineState_id MetalPipeline::build_mtl_render_pipeline(
   rpd.inputPrimitiveTopology = topotype2mtl(raster_params_.prim_topology);
   rpd.vertexDescriptor = vertex_descriptor_;
 
-  if (renderpass_details.depth_attach_format != BufferFormat::unknown) {
-    rpd.depthAttachmentPixelFormat =
-        format2mtl(renderpass_details.depth_attach_format);
-  }
+  rpd.depthAttachmentPixelFormat =
+    format2mtl(renderpass_details.depth_attach_format);
 
   for (int i = 0; i < renderpass_details.color_attachments.size(); i++) {
     MTLPixelFormat format =
@@ -537,6 +535,8 @@ void MetalCommandList::begin_renderpass(int x0, int y0, int x1, int y1,
     BufferFormat format = mtl2format(depth_target_.pixelFormat);
     current_renderpass_details_.depth_attach_format = format;
     rendertarget_height = depth_target_.height;
+  } else {
+    current_renderpass_details_.depth_attach_format = BufferFormat::unknown;
   }
 
   for (int i = 0; i < num_color_attachments; i++) {
@@ -642,12 +642,12 @@ MetalCommandList::create_render_pass_desc(bool depth_write, bool noclear) {
     i++;
   }
 
-  if (depth_write) {
+  if (current_renderpass_details_.depth_attach_format != BufferFormat::unknown) {
     rpd.depthAttachment.texture = depth_target_;
     rpd.depthAttachment.loadAction = (current_renderpass_details_.clear_depth && !noclear)
                                          ? MTLLoadActionClear
                                          : MTLLoadActionLoad;
-    rpd.depthAttachment.storeAction = MTLStoreActionStore;
+    rpd.depthAttachment.storeAction = depth_write ? MTLStoreActionStore : MTLStoreActionDontCare;
     rpd.depthAttachment.clearDepth = 0.0;
   }
 

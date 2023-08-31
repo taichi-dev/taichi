@@ -121,6 +121,7 @@ void AppContext::init_with_vulkan(Program *prog,
 void AppContext::init_with_metal(Program *prog,
                                  TaichiWindow *window,
                                  const AppConfig &config) {
+#ifdef TI_WITH_METAL
   taichi_window_ = window;
   prog_ = prog;
   this->config = config;
@@ -131,6 +132,9 @@ void AppContext::init_with_metal(Program *prog,
     graphics_device_ = static_cast<taichi::lang::GraphicsDevice *>(
         prog->get_graphics_device());
   }
+#else
+  TI_NOT_IMPLEMENTED;
+#endif
 }
 
 taichi::lang::GraphicsDevice &AppContext::device() {

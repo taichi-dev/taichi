@@ -4,7 +4,9 @@
 #include "taichi/rhi/vulkan/vulkan_device_creator.h"
 #include "taichi/rhi/vulkan/vulkan_loader.h"
 #include "taichi/rhi/vulkan/vulkan_device.h"
+#ifdef TI_WITH_METAL
 #include "taichi/rhi/metal/metal_device.h"
+#endif
 #include "taichi/ui/ggui/swap_chain.h"
 #ifdef ANDROID
 #include <android/native_window.h>

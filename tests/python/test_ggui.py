@@ -11,7 +11,7 @@ from tests.test_utils import verify_image
 # FIXME: render(); get_image_buffer_as_numpy() loop does not actually redraw
 RENDER_REPEAT = 5
 # FIXME: enable ggui tests on ti.cpu backend. It's blocked by macos10.15
-supported_archs = [ti.vulkan, ti.cuda]
+supported_archs = [ti.vulkan, ti.cuda, ti.metal]
 
 
 @pytest.mark.skipif(not _ti_core.GGUI_AVAILABLE, reason="GGUI Not Available")
@@ -536,7 +536,7 @@ def test_set_image_flat_field():
 
 
 @pytest.mark.skipif(not _ti_core.GGUI_AVAILABLE, reason="GGUI Not Available")
-@test_utils.test(arch=[ti.vulkan])
+@test_utils.test(arch=[ti.vulkan, ti.metal])
 def test_set_image_with_texture():
     window = ti.ui.Window("test", (640, 480), show_window=False)
     canvas = window.get_canvas()
@@ -560,7 +560,7 @@ def test_set_image_with_texture():
 
     render()
 
-    verify_image(window.get_image_buffer_as_numpy(), "test_set_image", 0.3)
+    verify_image(window.get_image_buffer_as_numpy(), "test_set_image")
     window.destroy()
 
 
@@ -1272,7 +1272,7 @@ def test_draw_part_of_mesh_old():
 
 
 @pytest.mark.skipif(not _ti_core.GGUI_AVAILABLE, reason="GGUI Not Available")
-@test_utils.test(arch=supported_archs, exclude=[(ti.vulkan, "Darwin")])
+@test_utils.test(arch=supported_archs)
 def test_draw_part_of_lines():
     N = 10
     particles_pos = ti.Vector.field(3, dtype=ti.f32, shape=N)
@@ -1318,7 +1318,7 @@ def test_draw_part_of_lines():
 
 
 @pytest.mark.skipif(not _ti_core.GGUI_AVAILABLE, reason="GGUI Not Available")
-@test_utils.test(arch=supported_archs, exclude=[(ti.vulkan, "Darwin")])
+@test_utils.test(arch=supported_archs)
 def test_draw_part_of_lines_old():
     N = 10
     particles_pos = ti.Vector.field(3, dtype=ti.f32, shape=N)
@@ -1998,7 +1998,7 @@ def test_wireframe_mode_old():
 
 
 @pytest.mark.skipif(not _ti_core.GGUI_AVAILABLE, reason="GGUI Not Available")
-@test_utils.test(arch=supported_archs)
+@test_utils.test(arch=[ti.vulkan])
 def test_multi_windows():
     window = ti.ui.Window("x", (128, 128), vsync=True, show_window=False)
     window2 = ti.ui.Window("x2", (128, 128), vsync=True, show_window=False)

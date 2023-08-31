@@ -401,6 +401,9 @@ class MetalCommandList final : public CommandList {
   // If noclear is false, ignore whatever is set in details
   // This may be used to "resume" the current renderpass
   MTLRenderPassDescriptor *create_render_pass_desc(bool depth_write, bool noclear = false);
+  
+  bool is_renderpass_active() const;
+  void set_renderpass_active();
 
  private:
   friend class MetalStream;
@@ -418,7 +421,7 @@ class MetalCommandList final : public CommandList {
   std::unique_ptr<MetalRasterResources> current_raster_resources_{nullptr};
   MetalRenderPassTargetDetails current_renderpass_details_;
   ViewportBounds current_viewport_;
-  std::vector<float> clear_colors_;
+  std::vector<std::array<float, 4>> clear_colors_;
   std::vector<MTLTexture_id> render_targets_;
   MTLTexture_id depth_target_;
 

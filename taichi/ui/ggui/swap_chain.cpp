@@ -64,6 +64,7 @@ void SwapChain::resize(uint32_t width, uint32_t height) {
   curr_width_ = w;
   curr_height_ = h;
   create_depth_resources();
+  create_image_resources();
 }
 
 bool SwapChain::copy_depth_buffer_to_ndarray(

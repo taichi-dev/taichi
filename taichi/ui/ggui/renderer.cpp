@@ -270,10 +270,11 @@ void Renderer::draw_frame(GuiBase *gui_base) {
     gui->draw(cmd_list.get());
   } else if (app_context_.config.ggui_arch == Arch::metal) {
     GuiMetal *gui = static_cast<GuiMetal *>(gui_base);
+    
+    auto mtl_cmd_list = static_cast<MetalCommandList *>(cmd_list.get());
 
-    MTLRenderPassDescriptor *pass =
-        static_cast<MetalCommandList *>(cmd_list.get())
-            ->create_render_pass_desc(false, true);
+    MTLRenderPassDescriptor *pass = mtl_cmd_list->create_render_pass_desc(false, mtl_cmd_list->is_renderpass_active());
+    mtl_cmd_list->set_renderpass_active();
 
     gui->init_render_resources(pass);
     gui->draw(cmd_list.get());

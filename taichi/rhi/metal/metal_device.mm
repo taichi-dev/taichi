@@ -558,10 +558,14 @@ void MetalCommandList::begin_renderpass(int x0, int y0, int x1, int y1,
     BufferFormat format = mtl2format(col_attach_mtl.pixelFormat);
     bool clear = color_clear[i];
     current_renderpass_details_.color_attachments.emplace_back(format, clear);
+    std::array<float, 4> clear_color{0.0, 0.0, 0.0, 0.0};
+    if (clear) {
+      clear_color = {clear_colors[i][0], clear_colors[i][1], clear_colors[i][2], clear_colors[i][3]};
+    }
+    clear_colors_.push_back(clear_color);
     render_targets_.push_back(col_attach_mtl);
     rendertarget_height = col_attach_mtl.height;
   }
-  clear_colors_ = *clear_colors;
 
   // Flip framebuffer Y
   current_viewport_.x = x0;
@@ -642,15 +646,13 @@ MTLRenderPassDescriptor *
 MetalCommandList::create_render_pass_desc(bool depth_write, bool noclear) {
 
   MTLRenderPassDescriptor *rpd = [MTLRenderPassDescriptor new];
-  auto *clear_cols = &clear_colors_;
   int i = 0;
   for (auto &pair : current_renderpass_details_.color_attachments) {
     rpd.colorAttachments[i].texture = render_targets_[i];
     rpd.colorAttachments[i].loadAction =
         (pair.second && !noclear) ? MTLLoadActionClear : MTLLoadActionLoad;
     rpd.colorAttachments[i].storeAction = MTLStoreActionStore;
-    rpd.colorAttachments[i].clearColor = MTLClearColorMake(
-        clear_cols[i][0], clear_cols[i][1], clear_cols[i][2], clear_cols[i][3]);
+    rpd.colorAttachments[i].clearColor = MTLClearColorMake(clear_colors_[i][0], clear_colors_[i][1], clear_colors_[i][2], clear_colors_[i][3]);
     i++;
   }
 
@@ -667,6 +669,14 @@ MetalCommandList::create_render_pass_desc(bool depth_write, bool noclear) {
   }
 
   return rpd;
+}
+
+bool MetalCommandList::is_renderpass_active() const {
+  return is_renderpass_active_;
+}
+
+void MetalCommandList::set_renderpass_active() {
+  is_renderpass_active_ = true;
 }
 
 MTLRenderCommandEncoder_id MetalCommandList::pre_draw_setup() {

@@ -28,6 +28,7 @@ void Renderer::init(Program *prog,
 
   swap_chain_.init(&app_context_);
 
+#ifdef TI_WITH_METAL
   if (config.ggui_arch == Arch::metal) {
     MetalSurface *mtl_surf =
         dynamic_cast<MetalSurface *>(&(swap_chain_.surface()));
@@ -35,6 +36,7 @@ void Renderer::init(Program *prog,
     NSWindowAdapter nswin_adapter;
     nswin_adapter.set_content_view(window, mtl_surf);
   }
+#endif
 }
 
 template <typename T>
@@ -268,7 +270,9 @@ void Renderer::draw_frame(GuiBase *gui_base) {
       gui->init_render_resources(pass);
     }
     gui->draw(cmd_list.get());
-  } else if (app_context_.config.ggui_arch == Arch::metal) {
+  }
+#ifdef TI_WITH_METAL
+  else if (app_context_.config.ggui_arch == Arch::metal) {
     GuiMetal *gui = static_cast<GuiMetal *>(gui_base);
 
     auto mtl_cmd_list = static_cast<MetalCommandList *>(cmd_list.get());
@@ -279,6 +283,10 @@ void Renderer::draw_frame(GuiBase *gui_base) {
 
     gui->init_render_resources(pass);
     gui->draw(cmd_list.get());
+  }
+#endif
+  else {
+    TI_NOT_IMPLEMENTED;
   }
 
   cmd_list->end_renderpass();

@@ -644,11 +644,11 @@ MetalCommandList::create_render_pass_desc(bool depth_write, bool noclear) {
 
   if (depth_write) {
     rpd.depthAttachment.texture = depth_target_;
-    rpd.depthAttachment.loadAction = current_renderpass_details_.clear_depth
+    rpd.depthAttachment.loadAction = (current_renderpass_details_.clear_depth && !noclear)
                                          ? MTLLoadActionClear
                                          : MTLLoadActionLoad;
     rpd.depthAttachment.storeAction = MTLStoreActionStore;
-    rpd.depthAttachment.clearDepth = 1.0;
+    rpd.depthAttachment.clearDepth = 0.0;
   }
 
   return rpd;
@@ -683,7 +683,7 @@ MTLRenderCommandEncoder_id MetalCommandList::pre_draw_setup() {
 
   // Set depth state
   MTLDepthStencilDescriptor *depthDescriptor = [MTLDepthStencilDescriptor new];
-  depthDescriptor.depthCompareFunction = MTLCompareFunctionLessEqual;
+  depthDescriptor.depthCompareFunction = raster_params->depth_test ? MTLCompareFunctionGreaterEqual : MTLCompareFunctionAlways;
   depthDescriptor.depthWriteEnabled = raster_params->depth_write;
   MTLDepthStencilState_id depthState = [device_->mtl_device()
       newDepthStencilStateWithDescriptor:depthDescriptor];

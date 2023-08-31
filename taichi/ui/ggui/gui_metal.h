@@ -2,10 +2,13 @@
 
 #include "taichi/ui/utils/utils.h"
 
+#include "taichi/ui/common/gui_base.h"
+#include "taichi/ui/ggui/app_context.h"
+
+#ifdef TI_WITH_METAL
+
 #include <imgui.h>
 #include <imgui_impl_glfw.h>
-#include "taichi/ui/ggui/app_context.h"
-#include "taichi/ui/common/gui_base.h"
 #include "taichi/rhi/metal/metal_device.h"
 
 namespace taichi::ui {
@@ -64,3 +67,5 @@ class TI_DLL_EXPORT GuiMetal final : public GuiBase {
 }  // namespace vulkan
 
 }  // namespace taichi::ui
+
+#endif

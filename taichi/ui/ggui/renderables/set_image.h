@@ -29,6 +29,8 @@ namespace vulkan {
 class SetImage final : public Renderable {
  public:
   struct UniformBufferObject {
+    glm::vec2 lower_bound;
+    glm::vec2 upper_bound;
     // in non_packed_mode,
     // the actual image is only a corner of the whole image
     float x_factor{1.0};

@@ -541,10 +541,10 @@ def test_set_image_with_texture():
     window = ti.ui.Window("test", (640, 480), show_window=False)
     canvas = window.get_canvas()
 
-    img = ti.Texture(ti.Format.rgba32f, (512, 512))
+    img = ti.Texture(ti.Format.rgba8, (512, 512))
 
     @ti.kernel
-    def init_img(img: ti.types.rw_texture(num_dimensions=2, fmt=ti.Format.rgba32f, lod=0)):
+    def init_img(img: ti.types.rw_texture(num_dimensions=2, fmt=ti.Format.rgba8, lod=0)):
         for i, j in ti.ndrange(512, 512):
             img.store(ti.Vector([i, j]), ti.Vector([i, j, 0, 512], dt=ti.f32) / 512)
 
@@ -560,7 +560,9 @@ def test_set_image_with_texture():
 
     render()
 
-    verify_image(window.get_image_buffer_as_numpy(), "test_set_image")
+    # Relaxed error because texture sampler differences
+    # Note: the error is measured from a 0..255 range image
+    verify_image(window.get_image_buffer_as_numpy(), "test_set_image", 0.3)
     window.destroy()
 
 

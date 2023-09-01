@@ -33,7 +33,9 @@
 #include "renderables/lines.h"
 #include "renderables/scene_lines.h"
 
+#ifdef TI_WITH_METAL
 #include "nswindow_adapter.h"
+#endif
 
 namespace taichi::lang {
 class Program;

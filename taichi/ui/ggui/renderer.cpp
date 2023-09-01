@@ -10,8 +10,9 @@ namespace vulkan {
 
 using namespace taichi::lang;
 using namespace taichi::lang::vulkan;
+#ifdef TI_WITH_METAL
 using namespace taichi::lang::metal;
-
+#endif
 void Renderer::init(Program *prog,
                     TaichiWindow *window,
                     const AppConfig &config) {

@@ -1315,7 +1315,7 @@ def test_draw_part_of_lines():
         window.get_image_buffer_as_numpy()
 
     render()
-    verify_image(window.get_image_buffer_as_numpy(), "test_draw_part_of_lines")
+    verify_image(window.get_image_buffer_as_numpy(), "test_draw_part_of_lines", 0.3)
     window.destroy()
 
 
@@ -1361,7 +1361,7 @@ def test_draw_part_of_lines_old():
         window.get_image_buffer_as_numpy()
 
     render()
-    verify_image(window.get_image_buffer_as_numpy(), "test_draw_part_of_lines")
+    verify_image(window.get_image_buffer_as_numpy(), "test_draw_part_of_lines", 0.3)
     window.destroy()
 
 

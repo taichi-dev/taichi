@@ -1,6 +1,6 @@
 #pragma once
 #include "taichi/ui/common/scene_base.h"
-#include "taichi/ui/ggui/renderer.h"
+#include "taichi/ui/backends/vulkan/renderer.h"
 
 namespace taichi::ui {
 

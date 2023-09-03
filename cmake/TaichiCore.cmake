@@ -349,6 +349,7 @@ if(TI_WITH_PYTHON)
     # This requires refactoring on the python/export_*.cpp as well as better
     # error message on the Python side.
     add_subdirectory(taichi/ui)
+    target_link_libraries(taichi_ui PUBLIC ${CORE_LIBRARY_NAME})
 
     message("PYTHON_LIBRARIES: " ${PYTHON_LIBRARIES})
     set(CORE_WITH_PYBIND_LIBRARY_NAME taichi_python)
@@ -382,6 +383,7 @@ if(TI_WITH_PYTHON)
 
     if(TI_WITH_GGUI)
         target_compile_definitions(${CORE_WITH_PYBIND_LIBRARY_NAME} PRIVATE -DTI_WITH_GGUI)
+        target_link_libraries(${CORE_WITH_PYBIND_LIBRARY_NAME} PRIVATE taichi_ui_vulkan)
     endif()
 
     target_link_libraries(${CORE_WITH_PYBIND_LIBRARY_NAME} PRIVATE taichi_ui)

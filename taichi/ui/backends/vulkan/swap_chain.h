@@ -26,15 +26,11 @@ class TI_DLL_EXPORT SwapChain {
 
  private:
   void create_depth_resources();
-  void create_image_resources();
 
   std::unique_ptr<taichi::lang::Surface> surface_{nullptr};
   taichi::lang::DeviceImageUnique depth_allocation_{nullptr};
 
   std::vector<uint32_t> image_buffer_data_;
-
-  taichi::lang::DeviceAllocationUnique depth_buffer_{nullptr};
-  taichi::lang::DeviceAllocationUnique screenshot_buffer_{nullptr};
 
   class AppContext *app_context_;
 

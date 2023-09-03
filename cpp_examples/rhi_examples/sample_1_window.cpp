@@ -1,10 +1,5 @@
-#ifdef RHI_EXAMPLE_BACKEND_VULKAN
 #include "common_vulkan.h"
-#endif  // RHI_EXAMPLE_BACKEND_VULKAN
-
-#ifdef RHI_EXAMPLE_BACKEND_METAL
-#include "common_metal.h"
-#endif
+// #include "common_metal.h"
 
 class SampleApp : public App {
  public:

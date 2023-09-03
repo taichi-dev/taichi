@@ -1,5 +1,4 @@
 #include "taichi/ui/common/window_base.h"
-#include "taichi/rhi/common/window_system.h"
 
 namespace taichi::ui {
 

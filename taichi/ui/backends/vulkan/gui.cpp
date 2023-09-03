@@ -1,6 +1,6 @@
 #include "gui.h"
-#include "taichi/ui/ggui/swap_chain.h"
-#include "taichi/ui/ggui/app_context.h"
+#include "taichi/ui/backends/vulkan/swap_chain.h"
+#include "taichi/ui/backends/vulkan/app_context.h"
 
 using namespace taichi::lang::vulkan;
 using namespace taichi::lang;
@@ -46,8 +46,7 @@ void Gui::init_render_resources(VkRenderPass render_pass) {
   ImGui_ImplVulkan_LoadFunctions(
       load_vk_function_for_gui);  // this is because we're using volk.
 
-  auto &device =
-      static_cast<taichi::lang::vulkan::VulkanDevice &>(app_context_->device());
+  auto &device = app_context_->device();
 
   ImGui_ImplVulkan_InitInfo init_info = {};
   init_info.Instance = device.vk_instance();
@@ -78,7 +77,6 @@ void Gui::init_render_resources(VkRenderPass render_pass) {
     stream->submit_synced(cmd_list.get());
     ImGui_ImplVulkan_DestroyFontUploadObjects();
   }
-
   prepare_for_next_frame();
 }
 
@@ -101,10 +99,9 @@ void Gui::create_descriptor_pool() {
   pool_info.maxSets = 1000 * IM_ARRAYSIZE(pool_sizes);
   pool_info.poolSizeCount = (uint32_t)IM_ARRAYSIZE(pool_sizes);
   pool_info.pPoolSizes = pool_sizes;
-  [[maybe_unused]] VkResult err = vkCreateDescriptorPool(
-      static_cast<taichi::lang::vulkan::VulkanDevice &>(app_context_->device())
-          .vk_device(),
-      &pool_info, VK_NULL_HANDLE, &descriptor_pool_);
+  [[maybe_unused]] VkResult err =
+      vkCreateDescriptorPool(app_context_->device().vk_device(), &pool_info,
+                             VK_NULL_HANDLE, &descriptor_pool_);
 }
 
 void Gui::prepare_for_next_frame() {
@@ -226,10 +223,8 @@ void Gui::draw(taichi::lang::CommandList *cmd_list) {
 }
 
 void Gui::cleanup_render_resources() {
-  vkDestroyDescriptorPool(
-      static_cast<taichi::lang::vulkan::VulkanDevice &>(app_context_->device())
-          .vk_device(),
-      descriptor_pool_, nullptr);
+  vkDestroyDescriptorPool(app_context_->device().vk_device(), descriptor_pool_,
+                          nullptr);
 
   if (initialized()) {
     ImGui_ImplVulkan_Shutdown();

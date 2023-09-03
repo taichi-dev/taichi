@@ -1,6 +1,6 @@
 # ./taichi/ui/CMakeLists.txt
 
-add_library(taichi_ui
+add_library(taichi_ui OBJECT
     gui/gui.cpp
     gui/android.cpp
     gui/cocoa.cpp
@@ -24,6 +24,7 @@ target_include_directories(taichi_ui
     ${PROJECT_SOURCE_DIR}/external/glm
   )
 
+target_link_libraries(taichi_ui PRIVATE taichi_core)
 target_link_libraries(taichi_ui PRIVATE taichi_common)
 
 
@@ -41,27 +42,20 @@ if(TI_WITH_GGUI)
     ${IMGUI_DIR}/imgui_tables.cpp
     ${IMGUI_DIR}/imgui_widgets.cpp
   )
-  if (${CMAKE_SYSTEM_NAME} MATCHES "Darwin")
-    list(APPEND TAICHI_IMGUI_SOURCE ${IMGUI_DIR}/backends/imgui_impl_metal.mm)
-    add_compile_options(-fobjc-arc)
-  endif()
   if(ANDROID)
-    list(APPEND TAICHI_IMGUI_SOURCE ${IMGUI_DIR}/backends/imgui_impl_android.cpp)
-    add_library(imgui ${TAICHI_IMGUI_SOURCE})
+      list(APPEND TAICHI_IMGUI_SOURCE ${IMGUI_DIR}/backends/imgui_impl_android.cpp)
+      add_library(imgui ${TAICHI_IMGUI_SOURCE})
   else()
-    list(APPEND TAICHI_IMGUI_SOURCE ${IMGUI_DIR}/backends/imgui_impl_glfw.cpp)
-    add_library(imgui ${TAICHI_IMGUI_SOURCE})
-    target_include_directories(imgui PRIVATE ${PROJECT_SOURCE_DIR}/external/glfw/include)
+      list(APPEND TAICHI_IMGUI_SOURCE ${IMGUI_DIR}/backends/imgui_impl_glfw.cpp)
+      add_library(imgui ${TAICHI_IMGUI_SOURCE})
+      target_include_directories(imgui PRIVATE ${PROJECT_SOURCE_DIR}/external/glfw/include)
   endif()
 
   target_include_directories(imgui PUBLIC ${IMGUI_DIR} ${IMGUI_DIR}/backends ..)
   target_include_directories(imgui PUBLIC ${PROJECT_SOURCE_DIR}/external/Vulkan-Headers/include)
 
   target_link_libraries(taichi_ui PRIVATE imgui)
-  if (${CMAKE_SYSTEM_NAME} MATCHES "Darwin")
-    target_link_libraries(taichi_ui PRIVATE "-framework QuartzCore")
-  endif()
 
-  add_subdirectory(ggui)
-  target_link_libraries(taichi_ui PUBLIC taichi_ui_ggui)
+  add_subdirectory(backends/vulkan)
+  target_link_libraries(taichi_ui PUBLIC taichi_ui_vulkan)
 endif()

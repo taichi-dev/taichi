@@ -1,10 +1,5 @@
-#ifdef RHI_EXAMPLE_BACKEND_VULKAN
-#include "common_vulkan.h"
-#endif  // RHI_EXAMPLE_BACKEND_VULKAN
-
-#ifdef RHI_EXAMPLE_BACKEND_METAL
+// #include "common_vulkan.h"
 #include "common_metal.h"
-#endif
 
 std::vector<uint32_t> frag_spv =
 #include "shaders/3_triangle.frag.spv.h"
@@ -109,7 +104,7 @@ class SampleApp : public App {
     {
       constexpr uint32_t tex_size = 256;
 
-      // Just a little 8 bit, 256x256 worley texture
+      // Just a little 8 bit, 256x256 voronoi texture
       std::vector<std::pair<double, double>> random_points;
       for (int i = 0; i < 100; i++) {
         double x = tex_size * static_cast<double>(std::rand()) / RAND_MAX;

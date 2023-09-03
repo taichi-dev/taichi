@@ -15,15 +15,14 @@
 #include <memory>
 
 #include "taichi/ui/utils/utils.h"
-#include "taichi/ui/ggui/vertex.h"
-#include "taichi/ui/ggui/scene.h"
-#include "taichi/ui/ggui/app_context.h"
-#include "taichi/ui/ggui/swap_chain.h"
-#include "taichi/ui/ggui/renderable.h"
+#include "taichi/ui/backends/vulkan/vertex.h"
+#include "taichi/ui/backends/vulkan/scene.h"
+#include "taichi/ui/backends/vulkan/app_context.h"
+#include "taichi/ui/backends/vulkan/swap_chain.h"
+#include "taichi/ui/backends/vulkan/renderable.h"
 #include "taichi/ui/common/canvas_base.h"
 
 #include "gui.h"
-#include "gui_metal.h"
 
 #include "renderables/set_image.h"
 #include "renderables/triangles.h"
@@ -32,10 +31,6 @@
 #include "renderables/circles.h"
 #include "renderables/lines.h"
 #include "renderables/scene_lines.h"
-
-#ifdef TI_WITH_METAL
-#include "nswindow_adapter.h"
-#endif
 
 namespace taichi::lang {
 class Program;
@@ -74,7 +69,7 @@ class TI_DLL_EXPORT Renderer {
 
   void scene_v2(SceneBase *scene);
 
-  void draw_frame(GuiBase *gui);
+  void draw_frame(Gui *gui);
 
   const AppContext &app_context() const;
   AppContext &app_context();

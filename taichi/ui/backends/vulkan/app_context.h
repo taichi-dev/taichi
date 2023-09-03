@@ -4,10 +4,7 @@
 #include "taichi/rhi/vulkan/vulkan_device_creator.h"
 #include "taichi/rhi/vulkan/vulkan_loader.h"
 #include "taichi/rhi/vulkan/vulkan_device.h"
-#ifdef TI_WITH_METAL
-#include "taichi/rhi/metal/metal_device.h"
-#endif
-#include "taichi/ui/ggui/swap_chain.h"
+#include "taichi/ui/backends/vulkan/swap_chain.h"
 #ifdef ANDROID
 #include <android/native_window.h>
 #endif
@@ -28,19 +25,14 @@ namespace vulkan {
 
 class TI_DLL_EXPORT AppContext {
  public:
-  void init_with_vulkan(lang::Program *prog,
-                        TaichiWindow *window,
-                        const AppConfig &config);
-  void init_with_metal(lang::Program *prog,
-                       TaichiWindow *window,
-                       const AppConfig &config);
+  void init(lang::Program *prog, TaichiWindow *window, const AppConfig &config);
   ~AppContext();
 
   TaichiWindow *taichi_window() const;
   lang::Program *prog() const;
 
-  taichi::lang::GraphicsDevice &device();
-  const taichi::lang::GraphicsDevice &device() const;
+  taichi::lang::vulkan::VulkanDevice &device();
+  const taichi::lang::vulkan::VulkanDevice &device() const;
   bool requires_export_sharing() const;
 
   AppConfig config;
@@ -89,7 +81,7 @@ class TI_DLL_EXPORT AppContext {
   std::unordered_map<std::string, taichi::lang::UPipeline> pipelines_;
 
   // not owned
-  taichi::lang::GraphicsDevice *graphics_device_{nullptr};
+  taichi::lang::vulkan::VulkanDevice *vulkan_device_{nullptr};
 
   TaichiWindow *taichi_window_{nullptr};
 

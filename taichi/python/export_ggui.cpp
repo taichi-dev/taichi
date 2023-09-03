@@ -13,11 +13,11 @@ namespace py = pybind11;
 
 #include "taichi/ui/utils/utils.h"
 #include "taichi/ui/common/window_base.h"
-#include "taichi/ui/ggui/window.h"
+#include "taichi/ui/backends/vulkan/window.h"
 #include "taichi/ui/common/canvas_base.h"
 #include "taichi/ui/common/camera.h"
-#include "taichi/ui/ggui/canvas.h"
-#include "taichi/ui/ggui/scene.h"
+#include "taichi/ui/backends/vulkan/canvas.h"
+#include "taichi/ui/backends/vulkan/scene.h"
 #include "taichi/rhi/vulkan/vulkan_loader.h"
 #include "taichi/rhi/arch.h"
 #include "taichi/program/field_info.h"
@@ -521,19 +521,6 @@ struct PyWindow {
            double fps_limit,
            std::string package_path,
            Arch ti_arch) {
-    Arch ggui_arch = Arch::vulkan;
-
-    if (ti_arch == Arch::metal) {
-      ggui_arch = Arch::metal;
-    }
-
-    if (ggui_arch == Arch::vulkan) {
-      // Verify vulkan available
-      if (!lang::vulkan::is_vulkan_api_available()) {
-        throw std::runtime_error("Vulkan must be available for GGUI");
-      }
-    }
-
     AppConfig config = {name,
                         res[0].cast<int>(),
                         res[1].cast<int>(),
@@ -543,9 +530,10 @@ struct PyWindow {
                         show_window,
                         fps_limit,
                         package_path,
-                        ti_arch,
-                        ggui_arch};
-
+                        ti_arch};
+    if (!lang::vulkan::is_vulkan_api_available()) {
+      throw std::runtime_error("Vulkan must be available for GGUI");
+    }
     window = std::make_unique<vulkan::Window>(prog, config);
   }
 

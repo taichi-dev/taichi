@@ -11,6 +11,5 @@ void imwrite(const std::string &filename,
              int resy,
              int comp);
 std::vector<size_t> imread(const std::string &filename, int comp);
-void imfree(size_t ptr);
 
 }  // namespace taichi

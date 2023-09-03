@@ -1,4 +1,4 @@
-#include "taichi/ui/ggui/window.h"
+#include "taichi/ui/backends/vulkan/window.h"
 #include "taichi/program/callable.h"
 
 #include "taichi/program/program.h"
@@ -24,21 +24,8 @@ void Window::init(Program *prog, const AppConfig &config) {
   renderer_->init(prog, glfw_window_, config);
   canvas_ = std::make_unique<Canvas>(renderer_.get());
   scene_ = std::make_unique<SceneV2>(renderer_.get());
-  switch (config.ggui_arch) {
-    case Arch::vulkan:
-      gui_ = std::make_unique<Gui>(&renderer_->app_context(),
-                                   &renderer_->swap_chain(), glfw_window_);
-      break;
-#ifdef TI_WITH_METAL
-    case Arch::metal:
-      gui_ =
-          std::make_unique<GuiMetal>(&renderer_->app_context(), glfw_window_);
-      break;
-#endif
-    default:
-      TI_NOT_IMPLEMENTED;
-  }
-
+  gui_ = std::make_unique<Gui>(&renderer_->app_context(),
+                               &renderer_->swap_chain(), glfw_window_);
   fps_limit_ = config.fps_limit;
 
   if (config_.show_window) {

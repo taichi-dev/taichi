@@ -2,25 +2,31 @@
 
 #include "taichi/ui/utils/utils.h"
 
-#include "taichi/ui/common/gui_base.h"
-#include "taichi/ui/ggui/app_context.h"
-
-#ifdef TI_WITH_METAL
+#ifndef IMGUI_IMPL_VULKAN_NO_PROTOTYPES
+#define IMGUI_IMPL_VULKAN_NO_PROTOTYPES
+#endif
 
 #include <imgui.h>
+#ifdef ANDROID
+#include <imgui_impl_android.h>
+#else
 #include <imgui_impl_glfw.h>
-#include "taichi/rhi/metal/metal_device.h"
+#endif
+#include <imgui_impl_vulkan.h>
+#include "taichi/ui/backends/vulkan/app_context.h"
+#include "taichi/ui/common/gui_base.h"
+#include "taichi/rhi/vulkan/vulkan_device.h"
 
 namespace taichi::ui {
 
 namespace vulkan {
 
-class TI_DLL_EXPORT GuiMetal final : public GuiBase {
+class TI_DLL_EXPORT Gui final : public GuiBase {
  public:
-  GuiMetal(AppContext *app_context, TaichiWindow *window);
-  ~GuiMetal() override;
+  Gui(AppContext *app_context, SwapChain *swap_chain, TaichiWindow *window);
+  ~Gui() override;
 
-  void init_render_resources(void *rpd);
+  void init_render_resources(VkRenderPass render_pass);
   void cleanup_render_resources();
 
   void begin(const std::string &name,
@@ -44,28 +50,37 @@ class TI_DLL_EXPORT GuiMetal final : public GuiBase {
   glm::vec3 color_edit_3(const std::string &name, glm::vec3 old_value) override;
   bool button(const std::string &text) override;
 
-  void prepare_for_next_frame() override;
-
   void draw(taichi::lang::CommandList *cmd_list);
+
+  void prepare_for_next_frame();
+
+  VkRenderPass render_pass() {
+    return render_pass_;
+  }
 
   bool is_empty();
 
  private:
   bool is_empty_;
   AppContext *app_context_{nullptr};
+  SwapChain *swap_chain_{nullptr};
   ImGuiContext *imgui_context_{nullptr};
   int widthBeforeDPIScale{0};
   int heightBeforeDPIScale{0};
 
-  MTLRenderPassDescriptor *current_rpd_{nullptr};
+  VkRenderPass render_pass_{VK_NULL_HANDLE};
+
+  VkDescriptorPool descriptor_pool_;
+
+  void create_descriptor_pool();
 
   float abs_x(float x);
 
   float abs_y(float y);
+
+  bool initialized();
 };
 
 }  // namespace vulkan
 
 }  // namespace taichi::ui
-
-#endif

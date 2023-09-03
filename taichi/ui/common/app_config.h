@@ -18,7 +18,6 @@ struct AppConfig {
   double fps_limit{1000.0};
   std::string package_path;
   Arch ti_arch;
-  Arch ggui_arch{Arch::vulkan};
 };
 
 }  // namespace ui

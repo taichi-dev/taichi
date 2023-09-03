@@ -35,10 +35,8 @@ DEFINE_METAL_ID_TYPE(MTLBlitCommandEncoder);
 DEFINE_METAL_ID_TYPE(MTLComputeCommandEncoder);
 DEFINE_METAL_ID_TYPE(MTLRenderCommandEncoder);
 DEFINE_METAL_ID_TYPE(CAMetalDrawable);
-DEFINE_METAL_ID_TYPE(MTLDepthStencilState);
 DEFINE_OBJC_TYPE(CAMetalLayer);
 DEFINE_OBJC_TYPE(MTLVertexDescriptor);
-DEFINE_OBJC_TYPE(MTLRenderPassDescriptor);
 
 #undef DEFINE_METAL_ID_TYPE
 #undef DEFINE_OBJC_TYPE
@@ -55,11 +53,6 @@ TODO LIST:
       the encoders alive for as long as possible, and when a non-render command
       is called, end the current RenderEncoder's encoding and the next draw call
       will create a new one.
-    - This has implications in the ImGUI part of GGUI though, since that
-      requires a render encoder to be passed to ImGUI. Right now it just creates
-      a new render encoder for each ImGUI draw call too, but with this
-      optimization it would get the current render encoder or create a new one
-      if there is none.
 */
 
 namespace taichi::lang {
@@ -73,7 +66,7 @@ class MetalCommandList;
 class MetalStream;
 class MetalDevice;
 
-struct MetalMemory : public rhi_impl::NonAssignable {
+struct MetalMemory {
  public:
   // `mtl_buffer` should be already retained.
   explicit MetalMemory(MTLBuffer_id mtl_buffer, bool host_access);
@@ -91,7 +84,7 @@ struct MetalMemory : public rhi_impl::NonAssignable {
   bool dont_destroy_{false};
 };
 
-struct MetalImage : public rhi_impl::NonAssignable {
+struct MetalImage {
  public:
   // `mtl_texture` should be already retained.
   explicit MetalImage(MTLTexture_id mtl_texture);
@@ -106,21 +99,17 @@ struct MetalImage : public rhi_impl::NonAssignable {
   bool dont_destroy_{false};
 };
 
-struct MetalSampler : public rhi_impl::NonAssignable {
+struct MetalSampler {
  public:
   // `mtl_texture` should be already retained.
   explicit MetalSampler(MTLSamplerState_id mtl_sampler_state);
   ~MetalSampler();
-
-  // No copy constructor
-  MetalSampler(MetalSampler &other) = delete;
 
   MTLSamplerState_id mtl_sampler_state() const;
 
  private:
   MTLSamplerState_id mtl_sampler_state_;
 };
-
 struct MetalRenderPassTargetDetails {
   std::vector<std::pair<BufferFormat, bool>> color_attachments;
   BufferFormat depth_attach_format{BufferFormat::unknown};
@@ -153,25 +142,18 @@ struct MetalWorkgroupSize {
   uint32_t y{0};
   uint32_t z{0};
 };
-
 struct MetalRasterLibraries {
-  MetalRasterLibraries();
-
   MTLLibrary_id vertex;
   MTLLibrary_id fragment;
 
   void destroy();
 };
-
 struct MetalRasterFunctions {
-  MetalRasterFunctions();
-
   MTLFunction_id vertex;
   MTLFunction_id fragment;
 
   void destroy();
 };
-
 struct MetalShaderBindingMapping {
   // Map GLSL binding to MSL index (buffer/texture index, sampler index)
   std::unordered_map<int, std::pair<int, int>> vertex;
@@ -183,8 +165,7 @@ struct MetalShaderBindingMapping {
   // buffers.
   int max_vert_buffer_index{-1};
 };
-
-class MetalPipeline final : public Pipeline, public rhi_impl::NonAssignable {
+class MetalPipeline final : public Pipeline {
  public:
   // `mtl_library`, `mtl_function`, `mtl_compute_pipeline_state` should be
   // already retained.
@@ -195,11 +176,11 @@ class MetalPipeline final : public Pipeline, public rhi_impl::NonAssignable {
                          MetalWorkgroupSize workgroup_size);
 
   explicit MetalPipeline(const MetalDevice &device,
-                         MetalRasterLibraries &mtl_libraries,
-                         MetalRasterFunctions &mtl_functions,
+                         const MetalRasterLibraries &mtl_libraries,
+                         const MetalRasterFunctions &mtl_functions,
                          MTLVertexDescriptor *vertex_descriptor,
                          const MetalShaderBindingMapping &mapping,
-                         const RasterParams &raster_params);
+                         const RasterParams raster_params);
   ~MetalPipeline() final;
 
   static MetalPipeline *create_compute_pipeline(const MetalDevice &device,
@@ -209,6 +190,7 @@ class MetalPipeline final : public Pipeline, public rhi_impl::NonAssignable {
 
   MTLRenderPipelineState_id build_mtl_render_pipeline(
       const MetalRenderPassTargetDetails &renderpass_details);
+  void destroy();
 
   inline MTLComputePipelineState_id mtl_compute_pipeline_state() const {
     return mtl_compute_pipeline_state_;
@@ -236,6 +218,8 @@ class MetalPipeline final : public Pipeline, public rhi_impl::NonAssignable {
  private:
   const MetalDevice *device_;
 
+  bool is_destroyed_{false};
+
   // Compute variables
   MTLLibrary_id mtl_compute_library_;
   MTLFunction_id mtl_compute_function_;
@@ -247,7 +231,7 @@ class MetalPipeline final : public Pipeline, public rhi_impl::NonAssignable {
   MetalRasterFunctions mtl_raster_functions_;
   MTLVertexDescriptor *vertex_descriptor_;
   MetalShaderBindingMapping binding_mapping_;
-  RasterParams raster_params_;
+  const RasterParams raster_params_;
 
   bool is_raster_pipeline_{false};
 };
@@ -398,13 +382,6 @@ class MetalCommandList final : public CommandList {
   void set_line_width(float width) override;
 
   MTLCommandBuffer_id finalize();
-  // If noclear is false, ignore whatever is set in details
-  // This may be used to "resume" the current renderpass
-  MTLRenderPassDescriptor *create_render_pass_desc(bool depth_write,
-                                                   bool noclear = false);
-
-  bool is_renderpass_active() const;
-  void set_renderpass_active();
 
  private:
   friend class MetalStream;
@@ -422,13 +399,9 @@ class MetalCommandList final : public CommandList {
   std::unique_ptr<MetalRasterResources> current_raster_resources_{nullptr};
   MetalRenderPassTargetDetails current_renderpass_details_;
   ViewportBounds current_viewport_;
-  std::vector<std::array<float, 4>> clear_colors_;
+  std::vector<float> clear_colors_;
   std::vector<MTLTexture_id> render_targets_;
   MTLTexture_id depth_target_;
-
-  // For renderpass resuming, track whether a renderpass has been started
-  // Used to override LoadAction, to prevent uninteded clearing when resuming
-  bool is_renderpass_active_{false};
 };
 
 class MetalStream final : public Stream {
@@ -480,6 +453,13 @@ class MetalSurface final : public Surface {
   int get_image_count() override;
   BufferFormat image_format() override;
   void resize(uint32_t width, uint32_t height) override;
+
+  DeviceAllocation get_depth_data(DeviceAllocation &depth_alloc) override {
+    TI_NOT_IMPLEMENTED;
+  }
+  DeviceAllocation get_image_data() override {
+    TI_NOT_IMPLEMENTED;
+  }
 
  private:
   void destroy_swap_chain();

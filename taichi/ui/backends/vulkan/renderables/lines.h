@@ -13,25 +13,25 @@
 #include <optional>
 #include <set>
 #include "taichi/ui/utils/utils.h"
-#include "taichi/ui/ggui/vertex.h"
+#include "taichi/ui/backends/vulkan/vertex.h"
 
-#include "taichi/ui/ggui/app_context.h"
-#include "taichi/ui/ggui/swap_chain.h"
-#include "taichi/ui/ggui/renderable.h"
+#include "taichi/ui/backends/vulkan/app_context.h"
+#include "taichi/ui/backends/vulkan/swap_chain.h"
+#include "taichi/ui/backends/vulkan/renderable.h"
 #include "taichi/program/field_info.h"
-#include "taichi/ui/ggui/scene.h"
+#include "taichi/ui/common/canvas_base.h"
 
 namespace taichi::ui {
 
 namespace vulkan {
 
-class SceneLines final : public Renderable {
+class Lines final : public Renderable {
  public:
-  SceneLines(AppContext *app_context, VertexAttributes vbo_attrs);
+  Lines(AppContext *app_context, VertexAttributes vbo_attrs);
 
-  void update_data(const SceneLinesInfo &info);
+  void update_data(const LinesInfo &info);
 
-  void update_scene_data(DevicePtr ssbo_ptr, DevicePtr ubo_ptr) override;
+  void create_graphics_pipeline() final;
 
   void record_prepass_this_frame_commands(
       taichi::lang::CommandList *command_list) override;
@@ -40,10 +40,7 @@ class SceneLines final : public Renderable {
       taichi::lang::CommandList *command_list) override;
 
  private:
-  DevicePtr lights_ssbo_ptr;
-  DevicePtr scene_ubo_ptr;
-
-  struct UBORenderable {
+  struct UniformBufferObject {
     alignas(16) glm::vec3 color;
     float line_width;
     int per_vertex_color_offset;
@@ -52,9 +49,8 @@ class SceneLines final : public Renderable {
     int start_index;
     int num_vertices;
     int is_indexed;
+    float aspect_ratio;
   };
-
-  void create_graphics_pipeline() final;
 
   uint64_t lines_count_{0};
 

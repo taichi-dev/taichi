@@ -13,13 +13,13 @@
 #include <optional>
 #include <set>
 #include "taichi/ui/utils/utils.h"
-#include "taichi/ui/ggui/vertex.h"
+#include "taichi/ui/backends/vulkan/vertex.h"
 
-#include "taichi/ui/ggui/app_context.h"
-#include "taichi/ui/ggui/swap_chain.h"
-#include "taichi/ui/ggui/renderable.h"
+#include "taichi/ui/backends/vulkan/app_context.h"
+#include "taichi/ui/backends/vulkan/swap_chain.h"
+#include "taichi/ui/backends/vulkan/renderable.h"
 #include "taichi/program/field_info.h"
-#include "taichi/ui/ggui/scene.h"
+#include "taichi/ui/backends/vulkan/scene.h"
 
 namespace taichi::ui {
 

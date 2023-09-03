@@ -1,5 +1,10 @@
-// #include "common_vulkan.h"
+#ifdef RHI_EXAMPLE_BACKEND_VULKAN
+#include "common_vulkan.h"
+#endif  // RHI_EXAMPLE_BACKEND_VULKAN
+
+#ifdef RHI_EXAMPLE_BACKEND_METAL
 #include "common_metal.h"
+#endif
 
 std::vector<uint32_t> frag_spv =
 #include "shaders/2_triangle.frag.spv.h"

@@ -1,7 +1,7 @@
-# ./taichi/ui/backends/vulkan/CMakeLists.txt
+# ./taichi/ui/ggui/CMakeLists.txt
 
-add_library(taichi_ui_vulkan OBJECT)
-target_sources(taichi_ui_vulkan
+add_library(taichi_ui_ggui OBJECT)
+target_sources(taichi_ui_ggui
   PRIVATE
     app_context.cpp
     canvas.cpp
@@ -21,10 +21,14 @@ target_sources(taichi_ui_vulkan
   )
 
 if(NOT ANDROID)
-  target_sources(taichi_ui_vulkan PRIVATE window.cpp)
+  target_sources(taichi_ui_ggui PRIVATE window.cpp)
 endif()
 
-target_include_directories(taichi_ui_vulkan
+if (${CMAKE_SYSTEM_NAME} MATCHES "Darwin")
+  target_sources(taichi_ui_ggui PRIVATE gui_metal.mm nswindow_adapter.mm)
+endif()
+
+target_include_directories(taichi_ui_ggui
   PRIVATE
     ${PROJECT_SOURCE_DIR}
     ${PROJECT_SOURCE_DIR}/external/glm
@@ -39,7 +43,9 @@ target_include_directories(taichi_ui_vulkan
     ${PROJECT_SOURCE_DIR}/external/glfw/include
   )
 
-target_link_libraries(taichi_ui_vulkan PRIVATE taichi_core)
-target_link_libraries(taichi_ui_vulkan PRIVATE taichi_common)
-target_link_libraries(taichi_ui_vulkan PRIVATE imgui)
-target_link_libraries(taichi_ui_vulkan PRIVATE ti_device_api)
+target_link_libraries(taichi_ui_ggui PRIVATE taichi_common)
+target_link_libraries(taichi_ui_ggui PRIVATE imgui)
+target_link_libraries(taichi_ui_ggui PUBLIC ti_device_api)
+if (${CMAKE_SYSTEM_NAME} MATCHES "Darwin")
+  target_link_libraries(taichi_ui_ggui PRIVATE "-framework QuartzCore")
+endif()

@@ -53,10 +53,15 @@ MTLSamplerState_id MetalSampler::mtl_sampler_state() const {
   return mtl_sampler_state_;
 }
 
+MetalRasterLibraries::MetalRasterLibraries() : vertex(nil), fragment(nil) {}
+
+MetalRasterFunctions::MetalRasterFunctions() : vertex(nil), fragment(nil) {}
+
 void MetalRasterLibraries::destroy() {
   [vertex release];
   [fragment release];
 }
+
 void MetalRasterFunctions::destroy() {
   [vertex release];
   [fragment release];
@@ -71,17 +76,35 @@ MetalPipeline::MetalPipeline(
       mtl_compute_function_(mtl_function),
       mtl_compute_pipeline_state_(mtl_compute_pipeline_state),
       workgroup_size_(workgroup_size) {}
+
 MetalPipeline::MetalPipeline(const MetalDevice &device,
-                             const MetalRasterLibraries &mtl_libraries,
-                             const MetalRasterFunctions &mtl_functions,
+                             MetalRasterLibraries &mtl_libraries,
+                             MetalRasterFunctions &mtl_functions,
                              MTLVertexDescriptor *vertex_descriptor,
                              const MetalShaderBindingMapping &mapping,
-                             const RasterParams raster_params)
-    : device_(&device), mtl_raster_libraries_(mtl_libraries),
-      mtl_raster_functions_(mtl_functions),
-      vertex_descriptor_(vertex_descriptor), binding_mapping_(mapping),
-      raster_params_(raster_params), is_raster_pipeline_(true) {}
-MetalPipeline::~MetalPipeline() { destroy(); }
+                             const RasterParams &raster_params)
+    : MetalPipeline(device, nil, nil, nil, MetalWorkgroupSize{0, 0, 0}) {
+  mtl_raster_libraries_ = std::move(mtl_libraries);
+  mtl_raster_functions_ = std::move(mtl_functions);
+  vertex_descriptor_ = vertex_descriptor;
+  binding_mapping_ = mapping;
+  raster_params_ = raster_params;
+  is_raster_pipeline_ = true;
+}
+
+MetalPipeline::~MetalPipeline() {
+  [mtl_compute_pipeline_state_ release];
+  [mtl_compute_function_ release];
+  [mtl_compute_library_ release];
+
+  for (auto &pipe : built_pipelines_) {
+    [pipe.second release];
+  }
+
+  mtl_raster_libraries_.destroy();
+  mtl_raster_functions_.destroy();
+}
+
 MetalPipeline *MetalPipeline::create_compute_pipeline(const MetalDevice &device,
                                                       const uint32_t *spv_data,
                                                       size_t spv_size,
@@ -169,10 +192,8 @@ MTLRenderPipelineState_id MetalPipeline::build_mtl_render_pipeline(
   rpd.inputPrimitiveTopology = topotype2mtl(raster_params_.prim_topology);
   rpd.vertexDescriptor = vertex_descriptor_;
 
-  if (renderpass_details.depth_attach_format != BufferFormat::unknown) {
-    rpd.depthAttachmentPixelFormat =
-        format2mtl(renderpass_details.depth_attach_format);
-  }
+  rpd.depthAttachmentPixelFormat =
+      format2mtl(renderpass_details.depth_attach_format);
 
   for (int i = 0; i < renderpass_details.color_attachments.size(); i++) {
     MTLPixelFormat format =
@@ -215,21 +236,6 @@ MTLRenderPipelineState_id MetalPipeline::build_mtl_render_pipeline(
   }
 
   return rps;
-}
-
-void MetalPipeline::destroy() {
-  if (!is_destroyed_) {
-    [mtl_compute_pipeline_state_ release];
-    [mtl_compute_function_ release];
-    [mtl_compute_library_ release];
-
-    for (auto &pipe : built_pipelines_) {
-      [pipe.second release];
-    }
-    mtl_raster_libraries_.destroy();
-    mtl_raster_functions_.destroy();
-    is_destroyed_ = true;
-  }
 }
 
 MetalShaderResourceSet::MetalShaderResourceSet(const MetalDevice &device)
@@ -524,32 +530,56 @@ void MetalCommandList::begin_renderpass(int x0, int y0, int x1, int y1,
                                         std::vector<float> *clear_colors,
                                         DeviceAllocation *depth_attachment,
                                         bool depth_clear) {
-  current_viewport_.x = x0;
-  current_viewport_.y = y0;
-  current_viewport_.width = x1 - x0;
-  current_viewport_.height = y1 - y0;
-
-  current_renderpass_details_.color_attachments.clear();
   current_renderpass_details_.clear_depth = depth_clear;
-  render_targets_.clear();
+
+  int rendertarget_height = 0;
+
+  RHI_ASSERT(render_targets_.empty() && "Renderpass already started");
 
   if (depth_attachment) {
-    MetalImage depth_attach = device_->get_image(depth_attachment->alloc_id);
-    BufferFormat format = mtl2format(depth_attach.mtl_texture().pixelFormat);
-    current_renderpass_details_.depth_attach_format = format;
+    const MetalImage &depth_attach =
+        device_->get_image(depth_attachment->alloc_id);
     depth_target_ = depth_attach.mtl_texture();
+    RHI_ASSERT(depth_target_ != nil && "Invalid depth attachment");
+    BufferFormat format = mtl2format(depth_target_.pixelFormat);
+    current_renderpass_details_.depth_attach_format = format;
+    rendertarget_height = depth_target_.height;
+  } else {
+    current_renderpass_details_.depth_attach_format = BufferFormat::unknown;
   }
 
   for (int i = 0; i < num_color_attachments; i++) {
-    MetalImage col_attach = device_->get_image(color_attachments[i].alloc_id);
-    BufferFormat format = mtl2format(col_attach.mtl_texture().pixelFormat);
+    const MetalImage &col_attach =
+        device_->get_image(color_attachments[i].alloc_id);
+    MTLTexture_id col_attach_mtl = col_attach.mtl_texture();
+    RHI_ASSERT(col_attach_mtl != nil && "Invalid color attachment");
+    BufferFormat format = mtl2format(col_attach_mtl.pixelFormat);
     bool clear = color_clear[i];
     current_renderpass_details_.color_attachments.emplace_back(format, clear);
-    render_targets_.push_back(col_attach.mtl_texture());
+    std::array<float, 4> clear_color{0.0, 0.0, 0.0, 0.0};
+    if (clear) {
+      clear_color = {clear_colors[i][0], clear_colors[i][1], clear_colors[i][2],
+                     clear_colors[i][3]};
+    }
+    clear_colors_.push_back(clear_color);
+    render_targets_.push_back(col_attach_mtl);
+    rendertarget_height = col_attach_mtl.height;
   }
-  clear_colors_ = *clear_colors;
+
+  // Flip framebuffer Y
+  current_viewport_.x = x0;
+  current_viewport_.y = rendertarget_height - y0;
+  current_viewport_.width = x1 - x0;
+  current_viewport_.height = y0 - y1;
 }
-void MetalCommandList::end_renderpass() {}
+
+void MetalCommandList::end_renderpass() {
+  depth_target_ = nil;
+  render_targets_.clear();
+  current_renderpass_details_.color_attachments.clear();
+  clear_colors_.clear();
+  is_renderpass_active_ = false;
+}
 
 void MetalCommandList::bind_mtl_shader_resources(
     MetalShaderResourceSet *resource_set, MTLRenderCommandEncoder_id rce,
@@ -611,35 +641,53 @@ void MetalCommandList::bind_mtl_shader_resources(
   }
 }
 
-MTLRenderCommandEncoder_id MetalCommandList::pre_draw_setup() {
-  const RasterParams *raster_params = current_pipeline_->raster_params();
+MTLRenderPassDescriptor *
+MetalCommandList::create_render_pass_desc(bool depth_write, bool noclear) {
 
   MTLRenderPassDescriptor *rpd = [MTLRenderPassDescriptor new];
-  auto *clear_cols = &clear_colors_;
   int i = 0;
   for (auto &pair : current_renderpass_details_.color_attachments) {
     rpd.colorAttachments[i].texture = render_targets_[i];
     rpd.colorAttachments[i].loadAction =
-        pair.second ? MTLLoadActionClear : MTLLoadActionLoad;
+        (pair.second && !noclear) ? MTLLoadActionClear : MTLLoadActionLoad;
     rpd.colorAttachments[i].storeAction = MTLStoreActionStore;
-    rpd.colorAttachments[i].clearColor = MTLClearColorMake(
-        clear_cols[i][0], clear_cols[i][1], clear_cols[i][2], clear_cols[i][3]);
+    rpd.colorAttachments[i].clearColor =
+        MTLClearColorMake(clear_colors_[i][0], clear_colors_[i][1],
+                          clear_colors_[i][2], clear_colors_[i][3]);
     i++;
   }
 
-  if (raster_params->depth_write) {
+  if (current_renderpass_details_.depth_attach_format !=
+      BufferFormat::unknown) {
     rpd.depthAttachment.texture = depth_target_;
-    rpd.depthAttachment.loadAction = current_renderpass_details_.clear_depth
-                                         ? MTLLoadActionClear
-                                         : MTLLoadActionLoad;
-    rpd.depthAttachment.storeAction = MTLStoreActionStore;
-    rpd.depthAttachment.clearDepth = 1.0;
+    rpd.depthAttachment.loadAction =
+        (current_renderpass_details_.clear_depth && !noclear)
+            ? MTLLoadActionClear
+            : MTLLoadActionLoad;
+    rpd.depthAttachment.storeAction =
+        depth_write ? MTLStoreActionStore : MTLStoreActionDontCare;
+    rpd.depthAttachment.clearDepth = 0.0;
   }
 
+  return rpd;
+}
+
+bool MetalCommandList::is_renderpass_active() const {
+  return is_renderpass_active_;
+}
+
+void MetalCommandList::set_renderpass_active() { is_renderpass_active_ = true; }
+
+MTLRenderCommandEncoder_id MetalCommandList::pre_draw_setup() {
+  const RasterParams *raster_params = current_pipeline_->raster_params();
+
+  MTLRenderPassDescriptor *rpd = create_render_pass_desc(
+      raster_params->depth_write, is_renderpass_active_);
   RHI_ASSERT(current_pipeline_);
 
   MTLRenderCommandEncoder_id rce =
       [cmdbuf_ renderCommandEncoderWithDescriptor:rpd];
+  [rpd release];
   [rce setRenderPipelineState:current_pipeline_->built_pipelines_.at(
                                   current_renderpass_details_)];
 
@@ -657,6 +705,16 @@ MTLRenderCommandEncoder_id MetalCommandList::pre_draw_setup() {
   }
   [rce setCullMode:cull_mode];
 
+  // Set depth state
+  MTLDepthStencilDescriptor *depthDescriptor = [MTLDepthStencilDescriptor new];
+  depthDescriptor.depthCompareFunction = raster_params->depth_test
+                                             ? MTLCompareFunctionGreaterEqual
+                                             : MTLCompareFunctionAlways;
+  depthDescriptor.depthWriteEnabled = raster_params->depth_write;
+  MTLDepthStencilState_id depthState = [device_->mtl_device()
+      newDepthStencilStateWithDescriptor:depthDescriptor];
+  [rce setDepthStencilState:depthState];
+
   // Bind vertex stage input buffers
   for (auto &[binding, buffer] : current_raster_resources_->vertex_buffers) {
     int mapped_index =
@@ -671,6 +729,8 @@ MTLRenderCommandEncoder_id MetalCommandList::pre_draw_setup() {
     bind_mtl_shader_resources(current_shader_resource_set_.get(), rce,
                               current_pipeline_->bind_map());
   }
+
+  is_renderpass_active_ = true;
 
   return rce;
 }
@@ -1354,14 +1414,16 @@ std::unique_ptr<Pipeline> MetalDevice::create_raster_pipeline(
   }
 
   // Compile MSL source to MTLLibrary
-  MetalRasterLibraries raster_libs = MetalRasterLibraries{
-      get_mtl_library(msl_vert_source), get_mtl_library(msl_frag_source)};
+  MetalRasterLibraries raster_libs;
+  raster_libs.vertex = get_mtl_library(msl_vert_source);
+  raster_libs.fragment = get_mtl_library(msl_frag_source);
 
   // Get the MTLFunctions
-  MetalRasterFunctions mtl_functions = MetalRasterFunctions{
+  MetalRasterFunctions mtl_functions;
+  mtl_functions.vertex =
       get_mtl_function(raster_libs.vertex, std::string(kMetalVertFunctionName)),
-      get_mtl_function(raster_libs.fragment,
-                       std::string(kMetalFragFunctionName))};
+  mtl_functions.fragment = get_mtl_function(
+      raster_libs.fragment, std::string(kMetalFragFunctionName));
 
   // Set vertex descriptor
   MTLVertexDescriptor *vd = [MTLVertexDescriptor new];

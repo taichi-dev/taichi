@@ -886,10 +886,6 @@ class RHI_DLL_EXPORT Surface {
   virtual int get_image_count() = 0;
   virtual BufferFormat image_format() = 0;
   virtual void resize(uint32_t width, uint32_t height) = 0;
-  virtual DeviceAllocation get_depth_data(DeviceAllocation &depth_alloc) = 0;
-  virtual DeviceAllocation get_image_data() {
-    RHI_NOT_IMPLEMENTED
-  }
 };
 
 struct VertexInputBinding {

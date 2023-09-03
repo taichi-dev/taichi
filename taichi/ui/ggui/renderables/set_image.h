@@ -13,11 +13,11 @@
 #include <optional>
 #include <set>
 #include "taichi/ui/utils/utils.h"
-#include "taichi/ui/backends/vulkan/vertex.h"
+#include "taichi/ui/ggui/vertex.h"
 
-#include "taichi/ui/backends/vulkan/app_context.h"
-#include "taichi/ui/backends/vulkan/swap_chain.h"
-#include "taichi/ui/backends/vulkan/renderable.h"
+#include "taichi/ui/ggui/app_context.h"
+#include "taichi/ui/ggui/swap_chain.h"
+#include "taichi/ui/ggui/renderable.h"
 #include "taichi/program/field_info.h"
 #include "taichi/ui/common/canvas_base.h"
 #include "taichi/rhi/device.h"
@@ -29,6 +29,8 @@ namespace vulkan {
 class SetImage final : public Renderable {
  public:
   struct UniformBufferObject {
+    glm::vec2 lower_bound;
+    glm::vec2 upper_bound;
     // in non_packed_mode,
     // the actual image is only a corner of the whole image
     float x_factor{1.0};

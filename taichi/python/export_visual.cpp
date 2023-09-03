@@ -110,10 +110,7 @@ void export_visual(py::module &m) {
            py::return_value_policy::reference);
   m.def("imwrite", &imwrite);
   m.def("imread", &imread);
-  // TODO(archibate): See misc/image.py
-  m.def("C_memcpy", [](size_t dst, size_t src, size_t size) {
-    std::memcpy((void *)dst, (void *)src, size);
-  });
+  m.def("imfree", &imfree);
 }
 
 }  // namespace taichi

@@ -13,33 +13,37 @@
 #include <optional>
 #include <set>
 #include "taichi/ui/utils/utils.h"
-#include "taichi/ui/backends/vulkan/vertex.h"
+#include "taichi/ui/ggui/vertex.h"
 
-#include "taichi/ui/backends/vulkan/app_context.h"
-#include "taichi/ui/backends/vulkan/swap_chain.h"
-#include "taichi/ui/backends/vulkan/renderable.h"
+#include "taichi/ui/ggui/app_context.h"
+#include "taichi/ui/ggui/swap_chain.h"
+#include "taichi/ui/ggui/renderable.h"
 #include "taichi/program/field_info.h"
-#include "taichi/ui/common/canvas_base.h"
+#include "taichi/ui/ggui/scene.h"
 
 namespace taichi::ui {
 
 namespace vulkan {
 
-class Circles final : public Renderable {
+class Particles final : public Renderable {
  public:
-  Circles(AppContext *app_context, VertexAttributes vbo_attrs);
-  void update_data(const CirclesInfo &info);
+  Particles(AppContext *app_context, VertexAttributes vbo_attrs);
+
+  void update_data(const ParticlesInfo &info);
+
+  void update_scene_data(DevicePtr ssbo_ptr, DevicePtr ubo_ptr) override;
 
   void record_this_frame_commands(lang::CommandList *command_list) override;
 
  private:
-  struct UniformBufferObject {
+  DevicePtr lights_ssbo_ptr;
+  DevicePtr scene_ubo_ptr;
+
+  struct UBORenderable {
     alignas(16) glm::vec3 color;
     int use_per_vertex_color;
     int use_per_vertex_radius;
     float radius;
-    float window_width;
-    float window_height;
   };
 };
 

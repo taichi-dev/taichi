@@ -14,9 +14,9 @@
 #include <vector>
 
 #include "taichi/rhi/vulkan/vulkan_device.h"
-#include "taichi/ui/backends/vulkan/app_context.h"
-#include "taichi/ui/backends/vulkan/swap_chain.h"
-#include "taichi/ui/backends/vulkan/vertex.h"
+#include "taichi/ui/ggui/app_context.h"
+#include "taichi/ui/ggui/swap_chain.h"
+#include "taichi/ui/ggui/vertex.h"
 #include "taichi/ui/common/renderable_info.h"
 #include "taichi/ui/utils/utils.h"
 

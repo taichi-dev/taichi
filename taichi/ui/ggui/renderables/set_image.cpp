@@ -14,7 +14,11 @@ using namespace taichi::lang;
 using namespace taichi::lang::vulkan;
 
 void SetImage::update_ubo(float x_factor, float y_factor, bool transpose) {
-  UniformBufferObject ubo = {x_factor, y_factor, int(transpose)};
+  glm::vec2 pixel_size = glm::vec2(1.0f / width_, 1.0f / height_);
+  glm::vec2 lower_bound = pixel_size * 0.5f;
+  glm::vec2 upper_bound = glm::vec2(1.0f, 1.0f) - pixel_size * 0.5f;
+  UniformBufferObject ubo = {lower_bound, upper_bound, x_factor, y_factor,
+                             int(transpose)};
   void *mapped{nullptr};
   RHI_VERIFY(app_context_->device().map(uniform_buffer_renderable_->get_ptr(0),
                                         &mapped));

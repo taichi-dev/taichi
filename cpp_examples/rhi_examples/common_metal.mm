@@ -1,7 +1,6 @@
 #include "common_metal.h"
 
 #include <assert.h>
-#import <simd/simd.h>
 #include <stdio.h>
 #include <stdlib.h>
 

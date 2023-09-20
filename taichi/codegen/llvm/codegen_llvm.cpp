@@ -1066,9 +1066,15 @@ void TaskCodeGenLLVM::visit(WhileControlStmt *stmt) {
 
   BasicBlock *after_break =
       BasicBlock::Create(*llvm_context, "after_break", func);
-  TI_ASSERT(current_while_after_loop);
-  auto *cond = builder->CreateIsNull(llvm_val[stmt->cond]);
-  builder->CreateCondBr(cond, current_while_after_loop, after_break);
+  if (!stmt->is_for_loop_) {
+    TI_ASSERT(current_while_after_loop);
+    auto *cond = builder->CreateIsNull(llvm_val[stmt->cond]);
+    builder->CreateCondBr(cond, current_while_after_loop, after_break);
+  } else {
+    TI_ASSERT(current_for_after_loop);
+    auto *cond = builder->CreateIsNotNull(llvm_val[stmt->cond]);
+    builder->CreateCondBr(cond, current_for_after_loop, after_break);
+  }
   builder->SetInsertPoint(after_break);
 }
 
@@ -1157,6 +1163,7 @@ void TaskCodeGenLLVM::create_naive_range_for(RangeForStmt *for_stmt) {
   BasicBlock *loop_inc =
       BasicBlock::Create(*llvm_context, "for_loop_inc", func);
   BasicBlock *after_loop = BasicBlock::Create(*llvm_context, "after_for", func);
+  current_for_after_loop = after_loop;
   BasicBlock *loop_test =
       BasicBlock::Create(*llvm_context, "for_loop_test", func);
 
@@ -2004,6 +2011,7 @@ std::string TaskCodeGenLLVM::init_offloaded_task_function(OffloadedStmt *stmt,
                                                           std::string suffix) {
   current_loop_reentry = nullptr;
   current_while_after_loop = nullptr;
+  current_for_after_loop = nullptr;
 
   task_function_type =
       llvm::FunctionType::get(llvm::Type::getVoidTy(*llvm_context),

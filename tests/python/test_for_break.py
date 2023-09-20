@@ -130,3 +130,23 @@ def test_write_after_break():
     foo()
 
     assert a[4] == -1
+
+
+@test_utils.test()
+def test_break_in_for_loop():
+    @ti.kernel
+    def bar(src: ti.types.ndarray(dtype=ti.i32)) -> ti.i32:
+        for _ in range(1):
+            for i in range(100):
+                if i >= 0:
+                    break
+                src[0] = 10
+
+        return 233
+
+    foo = ti.ndarray(dtype=ti.i32, shape=(100))
+    foo[0] = 1
+
+    bar(foo)
+
+    assert foo[0] == 1

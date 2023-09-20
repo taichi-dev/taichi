@@ -70,7 +70,9 @@ class WhileControlStmt : public Stmt {
  public:
   Stmt *mask;
   Stmt *cond;
-  WhileControlStmt(Stmt *mask, Stmt *cond) : mask(mask), cond(cond) {
+  bool is_for_loop_;
+  WhileControlStmt(Stmt *mask, Stmt *cond, bool is_for_loop = false)
+      : mask(mask), cond(cond), is_for_loop_(is_for_loop) {
     TI_STMT_REG_FIELDS;
   }
 

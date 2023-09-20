@@ -146,10 +146,19 @@ class LowerAST : public IRVisitor {
   }
 
   void visit(FrontendBreakStmt *stmt) override {
-    auto while_stmt = capturing_loop_->as<WhileStmt>();
     VecStatement stmts;
+
     auto const_true = stmts.push_back<ConstStmt>(TypedConstant((int32)0));
-    stmts.push_back<WhileControlStmt>(while_stmt->mask, const_true);
+    auto mask = stmts.push_back<AllocaStmt>(PrimitiveType::i32);
+    auto const_stmt =
+        stmts.push_back<ConstStmt>(TypedConstant((int32)0xFFFFFFFF));
+    stmts.push_back<LocalStoreStmt>(mask, const_stmt);
+
+    if (capturing_loop_->is<WhileStmt>()) {
+      stmts.push_back<WhileControlStmt>(mask, const_true, false);
+    } else {
+      stmts.push_back<WhileControlStmt>(mask, const_true, true);
+    }
     stmt->parent->replace_with(stmt, std::move(stmts));
   }
 

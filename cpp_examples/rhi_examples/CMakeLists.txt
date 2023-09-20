@@ -1,8 +1,12 @@
-macro(make_sample executable_name src_file)
+macro(make_sample executable_name src_file flags)
 add_executable(${executable_name})
 set_property(TARGET ${executable_name} PROPERTY CXX_STANDARD 17)
 set_property(TARGET ${executable_name} PROPERTY C_STANDARD 17)
-target_sources(${executable_name} PRIVATE ${src_file} "common.h")
+if (${CMAKE_SYSTEM_NAME} MATCHES "Darwin")
+  target_sources(${executable_name} PRIVATE ${src_file} "common_vulkan.h" "common_metal.mm")
+else()
+  target_sources(${executable_name} PRIVATE ${src_file} "common_vulkan.h")
+endif()
 target_include_directories(${executable_name}
 PRIVATE
   ${PROJECT_SOURCE_DIR}
@@ -25,7 +29,18 @@ target_include_directories(${executable_name} SYSTEM
     ${PROJECT_SOURCE_DIR}/external/VulkanMemoryAllocator/include
   )
 target_link_libraries(${executable_name} taichi_core glfw)
+if (${CMAKE_SYSTEM_NAME} MATCHES "Darwin")
+  target_link_libraries(${executable_name} "-framework QuartzCore")
+endif()
+target_compile_definitions(${executable_name} PRIVATE ${flags})
 endmacro()
 
-make_sample(sample_1_window sample_1_window.cpp)
-make_sample(sample_2_triangle sample_2_triangle.cpp)
+if (CMAKE_SYSTEM_NAME MATCHES "Darwin")
+  set(RHI_EXAMPLE_FLAGS "RHI_EXAMPLE_BACKEND_METAL")
+else()
+  set(RHI_EXAMPLE_FLAGS "RHI_EXAMPLE_BACKEND_VULKAN")
+endif()
+
+make_sample(sample_1_window sample_1_window.cpp ${RHI_EXAMPLE_FLAGS})
+make_sample(sample_2_triangle sample_2_triangle.cpp ${RHI_EXAMPLE_FLAGS})
+make_sample(sample_3_textured_triangle sample_3_textured_triangle.cpp ${RHI_EXAMPLE_FLAGS})

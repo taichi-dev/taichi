@@ -45,4 +45,8 @@ std::vector<size_t> imread(const std::string &filename, int comp) {
   return ret;
 }
 
+void imfree(size_t ptr) {
+  stbi_image_free((void *)ptr);
+}
+
 }  // namespace taichi

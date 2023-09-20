@@ -16,6 +16,8 @@
 #include "taichi/ui/common/app_config.h"
 #include "taichi/program/ndarray.h"
 
+struct GLFWwindow;
+
 namespace taichi::ui {
 
 class WindowBase {

@@ -247,12 +247,12 @@ void ti_set_last_error(TiError error, const char *message) {
 TiRuntime ti_create_runtime(TiArch arch, uint32_t device_index) {
   TiRuntime out = TI_NULL_HANDLE;
   TI_CAPI_TRY_CATCH_BEGIN();
-  // FIXME: (penguinliong) Support device selection.
-  TI_CAPI_NOT_SUPPORTED_IF_RV(device_index != 0);
   TI_INFO("Taichi Runtime C-API version is: {}", TI_C_API_VERSION);
   switch (arch) {
 #ifdef TI_WITH_VULKAN
     case TI_ARCH_VULKAN: {
+      taichi::lang::vulkan::set_vulkan_visible_device(
+          std::to_string(device_index));
       VulkanRuntimeOwned *vulkan_runtime;
       if (is_ci()) {
         auto param = make_vulkan_runtime_creator_params();
@@ -267,22 +267,26 @@ TiRuntime ti_create_runtime(TiArch arch, uint32_t device_index) {
 #endif  // TI_WITH_VULKAN
 #ifdef TI_WITH_OPENGL
     case TI_ARCH_OPENGL: {
+      TI_CAPI_NOT_SUPPORTED_IF_RV(device_index != 0);
       out = (TiRuntime)(static_cast<Runtime *>(new OpenglRuntime));
       break;
     }
 #endif  // TI_WITH_OPENGL
 #ifdef TI_WITH_LLVM
     case TI_ARCH_X64: {
+      TI_CAPI_NOT_SUPPORTED_IF_RV(device_index != 0);
       out = (TiRuntime)(static_cast<Runtime *>(
           new capi::LlvmRuntime(taichi::Arch::x64)));
       break;
     }
     case TI_ARCH_ARM64: {
+      TI_CAPI_NOT_SUPPORTED_IF_RV(device_index != 0);
       out = (TiRuntime)(static_cast<Runtime *>(
           new capi::LlvmRuntime(taichi::Arch::arm64)));
       break;
     }
     case TI_ARCH_CUDA: {
+      TI_CAPI_NOT_SUPPORTED_IF_RV(device_index != 0);
       out = (TiRuntime)(static_cast<Runtime *>(
           new capi::LlvmRuntime(taichi::Arch::cuda)));
       break;
@@ -290,6 +294,7 @@ TiRuntime ti_create_runtime(TiArch arch, uint32_t device_index) {
 #endif  // TI_WITH_LLVM
 #ifdef TI_WITH_METAL
     case TI_ARCH_METAL: {
+      TI_CAPI_NOT_SUPPORTED_IF_RV(device_index != 0);
       out = (TiRuntime)(static_cast<Runtime *>(new capi::MetalRuntime()));
       break;
     }

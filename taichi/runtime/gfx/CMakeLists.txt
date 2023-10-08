@@ -21,3 +21,4 @@ target_include_directories(gfx_runtime
     ${PROJECT_SOURCE_DIR}/external/spdlog/include
         ${LLVM_INCLUDE_DIRS}
   )
+target_link_libraries(gfx_runtime PRIVATE taichi_common)

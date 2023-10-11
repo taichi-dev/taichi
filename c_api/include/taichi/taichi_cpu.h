@@ -20,6 +20,10 @@ ti_export_cpu_memory(TiRuntime runtime,
                      TiMemory memory,
                      TiCpuMemoryInteropInfo *interop_info);
 
+TI_DLL_EXPORT TiMemory TI_API_CALL ti_import_cpu_memory(TiRuntime runtime,
+                                                        void *ptr,
+                                                        size_t memory_size);
+
 #ifdef __cplusplus
 }  // extern "C"
 #endif  // __cplusplus

@@ -4,6 +4,7 @@
 #include "gtest/gtest.h"
 #include "c_api_test_utils.h"
 #include "taichi/cpp/taichi.hpp"
+#include "taichi/taichi_cpu.h"
 #include "c_api/tests/gtest_fixture.h"
 
 TEST_F(CapiTest, TestBehaviorCreateRuntime) {

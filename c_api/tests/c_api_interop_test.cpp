@@ -86,4 +86,37 @@ TEST_F(CapiTest, AotTestVulkanTextureInterop) {
   }
 }
 
+TEST_F(CapiTest, TestCPUImport) {
+  TiArch arch = TiArch::TI_ARCH_X64;
+  ti::Runtime runtime(arch);
+
+  float data_x[4] = {1.0, 2.0, 3.0, 4.0};
+
+  auto memory = ti_import_cpu_memory(runtime, &data_x[0], sizeof(float) * 4);
+
+  int dim_count = 1;
+  int element_count = 4;
+  auto elem_type = TI_DATA_TYPE_F32;
+
+  // prepare tiNdArray
+  TiNdArray tiNdArray;
+  tiNdArray.memory = memory;
+  tiNdArray.shape.dim_count = dim_count;
+  tiNdArray.shape.dims[0] = element_count;
+  tiNdArray.elem_shape.dim_count = 0;
+  tiNdArray.elem_type = elem_type;
+
+  auto ti_memory = ti::Memory(runtime, memory, sizeof(float) * 4, false);
+  // prepare ndarray
+  auto ndarray = ti::NdArray<float>(std::move(ti_memory), tiNdArray);
+
+  std::vector<float> data_out(4);
+  ndarray.read(data_out);
+
+  std::cout << data_out[0] << std::endl;
+  std::cout << data_out[1] << std::endl;
+  std::cout << data_out[2] << std::endl;
+  std::cout << data_out[3] << std::endl;
+}
+
 #endif  // TI_WITH_VULKAN

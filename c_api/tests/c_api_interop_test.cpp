@@ -128,7 +128,7 @@ TEST_F(CapiTest, TestCUDAImport) {
   void *device_array;
   size_t device_array_size = sizeof(data_x);
   capi::utils::cudaMalloc(&device_array, device_array_size);
-  capi::utils::cudaMemcpy(device_array, data_x, device_array_size);
+  capi::utils::cudaMemcpyHostToDevice(device_array, data_x, device_array_size);
 
   auto memory = ti_import_cuda_memory(runtime, device_array, device_array_size);
 

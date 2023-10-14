@@ -20,6 +20,10 @@ ti_export_cuda_memory(TiRuntime runtime,
                       TiMemory memory,
                       TiCudaMemoryInteropInfo *interop_info);
 
+TI_DLL_EXPORT TiMemory TI_API_CALL ti_import_cuda_memory(TiRuntime runtime,
+                                                         void * ptr,
+                                                         size_t memory_size);
+
 #ifdef __cplusplus
 }  // extern "C"
 #endif  // __cplusplus

@@ -12,5 +12,8 @@ TI_DLL_EXPORT bool TI_API_CALL check_cuda_value(void *ptr, double value);
 TI_DLL_EXPORT uint16_t to_float16(float in);
 TI_DLL_EXPORT float to_float32(uint16_t in);
 
+TI_DLL_EXPORT void TI_API_CALL cudaMalloc(void **ptr, size_t size);
+TI_DLL_EXPORT void TI_API_CALL cudaMemcpy(void *ptr, void *data, size_t size);
+
 }  // namespace utils
 }  // namespace capi

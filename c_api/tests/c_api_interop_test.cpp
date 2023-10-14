@@ -122,7 +122,7 @@ TEST_F(CapiTest, TestCPUImport) {
 TEST_F(CapiTest, TestCUDAImport) {
   TiArch arch = TiArch::TI_ARCH_CUDA;
   ti::Runtime runtime(arch);
-  
+
   float data_x[4] = {1.0, 2.0, 3.0, 4.0};
 
   void *device_array;
@@ -158,5 +158,3 @@ TEST_F(CapiTest, TestCUDAImport) {
 }
 
 #endif  // TI_WITH_VULKAN
-
-

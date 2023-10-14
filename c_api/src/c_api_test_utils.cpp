@@ -36,7 +36,8 @@ void cudaMalloc(void **ptr, size_t size) {
 
 void cudaMemcpyHostToDevice(void *ptr, void *data, size_t size) {
 #ifdef TI_WITH_CUDA
-  taichi::lang::CUDADriver::get_instance().memcpy_host_to_device(ptr, data, size);
+  taichi::lang::CUDADriver::get_instance().memcpy_host_to_device(ptr, data,
+                                                                 size);
 #endif
 }
 

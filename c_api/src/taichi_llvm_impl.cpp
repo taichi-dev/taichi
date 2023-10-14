@@ -188,9 +188,9 @@ TI_DLL_EXPORT TiMemory TI_API_CALL ti_import_cpu_memory(TiRuntime runtime,
 TI_DLL_EXPORT TiMemory TI_API_CALL ti_import_cuda_memory(TiRuntime runtime,
                                                          void *ptr,
                                                          size_t memory_size) {
-  capi::LlvmRuntime *llvm_runtime = 
+  capi::LlvmRuntime *llvm_runtime =
       static_cast<capi::LlvmRuntime *>((Runtime *)runtime);
-  
+
   auto &device = llvm_runtime->get();
   auto &cuda_device = static_cast<taichi::lang::cuda::CudaDevice &>(device);
 

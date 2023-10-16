@@ -113,10 +113,10 @@ TEST_F(CapiTest, TestCPUImport) {
   std::vector<float> data_out(4);
   ndarray.read(data_out);
 
-  std::cout << data_out[0] << std::endl;
-  std::cout << data_out[1] << std::endl;
-  std::cout << data_out[2] << std::endl;
-  std::cout << data_out[3] << std::endl;
+  EXPECT_TRUE(data_out[0], 1.0);
+  EXPECT_TRUE(data_out[1], 2.0);
+  EXPECT_TRUE(data_out[2], 3.0);
+  EXPECT_TRUE(data_out[3], 4.0);
 }
 
 TEST_F(CapiTest, TestCUDAImport) {
@@ -127,8 +127,8 @@ TEST_F(CapiTest, TestCUDAImport) {
 
   void *device_array;
   size_t device_array_size = sizeof(data_x);
-  capi::utils::cudaMalloc(&device_array, device_array_size);
-  capi::utils::cudaMemcpyHostToDevice(device_array, data_x, device_array_size);
+  capi::utils::cuda_malloc(&device_array, device_array_size);
+  capi::utils::cuda_memcpy_host_to_device(device_array, data_x, device_array_size);
 
   auto memory = ti_import_cuda_memory(runtime, device_array, device_array_size);
 
@@ -151,10 +151,10 @@ TEST_F(CapiTest, TestCUDAImport) {
   std::vector<float> data_out(4);
   ndarray.read(data_out);
 
-  std::cout << data_out[0] << std::endl;
-  std::cout << data_out[1] << std::endl;
-  std::cout << data_out[2] << std::endl;
-  std::cout << data_out[3] << std::endl;
+  EXPECT_TRUE(data_out[0], 1.0);
+  EXPECT_TRUE(data_out[1], 2.0);
+  EXPECT_TRUE(data_out[2], 3.0);
+  EXPECT_TRUE(data_out[3], 4.0);
 }
 
 #endif  // TI_WITH_VULKAN

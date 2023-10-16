@@ -113,10 +113,10 @@ TEST_F(CapiTest, TestCPUImport) {
   std::vector<float> data_out(4);
   ndarray.read(data_out);
 
-  EXPECT_TRUE(data_out[0], 1.0);
-  EXPECT_TRUE(data_out[1], 2.0);
-  EXPECT_TRUE(data_out[2], 3.0);
-  EXPECT_TRUE(data_out[3], 4.0);
+  EXPECT_EQ(data_out[0], 1.0);
+  EXPECT_EQ(data_out[1], 2.0);
+  EXPECT_EQ(data_out[2], 3.0);
+  EXPECT_EQ(data_out[3], 4.0);
 }
 
 TEST_F(CapiTest, TestCUDAImport) {
@@ -152,10 +152,10 @@ TEST_F(CapiTest, TestCUDAImport) {
   std::vector<float> data_out(4);
   ndarray.read(data_out);
 
-  EXPECT_TRUE(data_out[0], 1.0);
-  EXPECT_TRUE(data_out[1], 2.0);
-  EXPECT_TRUE(data_out[2], 3.0);
-  EXPECT_TRUE(data_out[3], 4.0);
+  EXPECT_EQ(data_out[0], 1.0);
+  EXPECT_EQ(data_out[1], 2.0);
+  EXPECT_EQ(data_out[2], 3.0);
+  EXPECT_EQ(data_out[3], 4.0);
 }
 
 #endif  // TI_WITH_VULKAN

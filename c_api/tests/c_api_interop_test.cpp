@@ -86,4 +86,77 @@ TEST_F(CapiTest, AotTestVulkanTextureInterop) {
   }
 }
 
+TEST_F(CapiTest, TestCPUImport) {
+  TiArch arch = TiArch::TI_ARCH_X64;
+  ti::Runtime runtime(arch);
+
+  float data_x[4] = {1.0, 2.0, 3.0, 4.0};
+
+  auto memory = ti_import_cpu_memory(runtime, &data_x[0], sizeof(float) * 4);
+
+  int dim_count = 1;
+  int element_count = 4;
+  auto elem_type = TI_DATA_TYPE_F32;
+
+  // prepare tiNdArray
+  TiNdArray tiNdArray;
+  tiNdArray.memory = memory;
+  tiNdArray.shape.dim_count = dim_count;
+  tiNdArray.shape.dims[0] = element_count;
+  tiNdArray.elem_shape.dim_count = 0;
+  tiNdArray.elem_type = elem_type;
+
+  auto ti_memory = ti::Memory(runtime, memory, sizeof(float) * 4, false);
+  // prepare ndarray
+  auto ndarray = ti::NdArray<float>(std::move(ti_memory), tiNdArray);
+
+  std::vector<float> data_out(4);
+  ndarray.read(data_out);
+
+  EXPECT_EQ(data_out[0], 1.0);
+  EXPECT_EQ(data_out[1], 2.0);
+  EXPECT_EQ(data_out[2], 3.0);
+  EXPECT_EQ(data_out[3], 4.0);
+}
 #endif  // TI_WITH_VULKAN
+
+#ifdef TI_WITH_CUDA
+TEST_F(CapiTest, TestCUDAImport) {
+  TiArch arch = TiArch::TI_ARCH_CUDA;
+  ti::Runtime runtime(arch);
+
+  float data_x[4] = {1.0, 2.0, 3.0, 4.0};
+
+  void *device_array;
+  size_t device_array_size = sizeof(data_x);
+  capi::utils::cuda_malloc(&device_array, device_array_size);
+  capi::utils::cuda_memcpy_host_to_device(device_array, data_x,
+                                          device_array_size);
+
+  auto memory = ti_import_cuda_memory(runtime, device_array, device_array_size);
+
+  int dim_count = 1;
+  int element_count = 4;
+  auto elem_type = TI_DATA_TYPE_F32;
+
+  // prepare tiNdArray
+  TiNdArray tiNdArray;
+  tiNdArray.memory = memory;
+  tiNdArray.shape.dim_count = dim_count;
+  tiNdArray.shape.dims[0] = element_count;
+  tiNdArray.elem_shape.dim_count = 0;
+  tiNdArray.elem_type = elem_type;
+
+  auto ti_memory = ti::Memory(runtime, memory, sizeof(float) * 4, false);
+  // prepare ndarray
+  auto ndarray = ti::NdArray<float>(std::move(ti_memory), tiNdArray);
+
+  std::vector<float> data_out(4);
+  ndarray.read(data_out);
+
+  EXPECT_EQ(data_out[0], 1.0);
+  EXPECT_EQ(data_out[1], 2.0);
+  EXPECT_EQ(data_out[2], 3.0);
+  EXPECT_EQ(data_out[3], 4.0);
+}
+#endif  // TI_WITH_CUDA

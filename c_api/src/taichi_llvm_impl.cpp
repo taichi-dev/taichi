@@ -190,7 +190,6 @@ TI_DLL_EXPORT TiMemory TI_API_CALL ti_import_cpu_memory(TiRuntime runtime,
 #endif  // TI_WITH_LLVM
 }
 
-
 // function.export_cuda_runtime
 void ti_export_cuda_memory(TiRuntime runtime,
                            TiMemory memory,

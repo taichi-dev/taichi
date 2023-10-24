@@ -167,9 +167,11 @@ void ti_export_cpu_memory(TiRuntime runtime,
 #endif  // TI_WITH_LLVM
 }
 
+// function.import_cpu_runtime
 TI_DLL_EXPORT TiMemory TI_API_CALL ti_import_cpu_memory(TiRuntime runtime,
                                                         void *ptr,
                                                         size_t memory_size) {
+#ifdef TI_WITH_LLVM
   capi::LlvmRuntime *llvm_runtime =
       static_cast<capi::LlvmRuntime *>((Runtime *)runtime);
 
@@ -183,25 +185,11 @@ TI_DLL_EXPORT TiMemory TI_API_CALL ti_import_cpu_memory(TiRuntime runtime,
   TiMemory memory = devalloc2devmem(*llvm_runtime, device_alloc);
 
   return memory;
+#else
+  TI_NOT_IMPLEMENTED;
+#endif  // TI_WITH_LLVM
 }
 
-TI_DLL_EXPORT TiMemory TI_API_CALL ti_import_cuda_memory(TiRuntime runtime,
-                                                         void *ptr,
-                                                         size_t memory_size) {
-  capi::LlvmRuntime *llvm_runtime =
-      static_cast<capi::LlvmRuntime *>((Runtime *)runtime);
-
-  auto &device = llvm_runtime->get();
-  auto &cuda_device = static_cast<taichi::lang::cuda::CudaDevice &>(device);
-
-  taichi::lang::DeviceAllocation device_alloc =
-      cuda_device.import_memory(ptr, memory_size);
-
-  // prepare memory object
-  TiMemory memory = devalloc2devmem(*llvm_runtime, device_alloc);
-
-  return memory;
-}
 
 // function.export_cuda_runtime
 void ti_export_cuda_memory(TiRuntime runtime,
@@ -227,6 +215,29 @@ void ti_export_cuda_memory(TiRuntime runtime,
 
   interop_info->ptr = cuda_info.ptr;
   interop_info->size = cuda_info.size;
+#else
+  TI_NOT_IMPLEMENTED;
+#endif
+}
+
+// function.import_cuda_runtime
+TI_DLL_EXPORT TiMemory TI_API_CALL ti_import_cuda_memory(TiRuntime runtime,
+                                                         void *ptr,
+                                                         size_t memory_size) {
+#ifdef TI_WITH_CUDA
+  capi::LlvmRuntime *llvm_runtime =
+      static_cast<capi::LlvmRuntime *>((Runtime *)runtime);
+
+  auto &device = llvm_runtime->get();
+  auto &cuda_device = static_cast<taichi::lang::cuda::CudaDevice &>(device);
+
+  taichi::lang::DeviceAllocation device_alloc =
+      cuda_device.import_memory(ptr, memory_size);
+
+  // prepare memory object
+  TiMemory memory = devalloc2devmem(*llvm_runtime, device_alloc);
+
+  return memory;
 #else
   TI_NOT_IMPLEMENTED;
 #endif

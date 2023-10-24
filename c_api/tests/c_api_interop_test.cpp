@@ -160,5 +160,3 @@ TEST_F(CapiTest, TestCUDAImport) {
   EXPECT_EQ(data_out[3], 4.0);
 }
 #endif  // TI_WITH_CUDA
-
-

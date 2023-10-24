@@ -118,7 +118,9 @@ TEST_F(CapiTest, TestCPUImport) {
   EXPECT_EQ(data_out[2], 3.0);
   EXPECT_EQ(data_out[3], 4.0);
 }
+#endif  // TI_WITH_VULKAN
 
+#ifdef TI_WITH_CUDA
 TEST_F(CapiTest, TestCUDAImport) {
   TiArch arch = TiArch::TI_ARCH_CUDA;
   ti::Runtime runtime(arch);
@@ -157,5 +159,6 @@ TEST_F(CapiTest, TestCUDAImport) {
   EXPECT_EQ(data_out[2], 3.0);
   EXPECT_EQ(data_out[3], 4.0);
 }
+#endif  // TI_WITH_CUDA
 
-#endif  // TI_WITH_VULKAN
+

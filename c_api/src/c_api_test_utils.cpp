@@ -28,22 +28,23 @@ bool check_cuda_value_impl(void *ptr, T value) {
   return false;
 }
 
-void cudaMalloc(void **ptr, size_t size) {
+void cuda_malloc(void **ptr, size_t size) {
 #ifdef TI_WITH_CUDA
   taichi::lang::CUDADriver::get_instance().malloc(ptr, size);
 #endif
 }
 
-void cudaMemcpyHostToDevice(void *ptr, void *data, size_t size) {
+void cuda_memcpy_host_to_device(void *ptr, void *data, size_t size) {
 #ifdef TI_WITH_CUDA
   taichi::lang::CUDADriver::get_instance().memcpy_host_to_device(ptr, data,
                                                                  size);
 #endif
 }
 
-void cudaMemcpyDeviceToHost(void *ptr, void *data, size_t size) {
+void cuda_memcpy_device_to_host(void *ptr, void *data, size_t size) {
 #ifdef TI_WITH_CUDA
-  taichi::lang::CUDADriver::get_instance().memcpy_device_to_host(ptr, data, size);
+  taichi::lang::CUDADriver::get_instance().memcpy_device_to_host(ptr, data,
+                                                                 size);
 #endif
 }
 

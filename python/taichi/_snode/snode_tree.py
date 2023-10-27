@@ -16,7 +16,7 @@ class SNodeTree:
     def destroy(self):
         if self.destroyed:
             raise TaichiRuntimeError("SNode tree has been destroyed")
-        if not impl.get_runtime().prog or self.prog != impl.get_runtime().prog:
+        if self.prog != impl.get_runtime().prog:
             return
         self.ptr.destroy_snode_tree(impl.get_runtime().prog)
 

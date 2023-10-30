@@ -158,10 +158,10 @@ def test_casts_int_uint():
 def test_negative_exp():
     @ti.dataclass
     class Particle:
-        epsilon: ti.f64
+        epsilon: ti.f32
 
     @ti.kernel
-    def test()->ti.f64:
+    def test()->ti.f32:
         p1 = Particle()
         p1.epsilon = 1.
         e = p1.epsilon

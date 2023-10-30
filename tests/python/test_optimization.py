@@ -154,6 +154,7 @@ def test_casts_int_uint():
 
     assert my_cast(-1) == 4294967295
 
+
 @test_utils.test()
 def test_negative_exp():
     @ti.dataclass
@@ -161,10 +162,10 @@ def test_negative_exp():
         epsilon: ti.f32
 
     @ti.kernel
-    def test()->ti.f32:
+    def test() -> ti.f32:
         p1 = Particle()
-        p1.epsilon = 1.
+        p1.epsilon = 1.0
         e = p1.epsilon
-        return e ** -1
+        return e**-1
 
-    assert test() == 1.
+    assert test() == 1.0

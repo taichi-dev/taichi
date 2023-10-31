@@ -198,6 +198,7 @@ user_api[ti] = [
     "random",
     "raw_div",
     "raw_mod",
+    "real_func",
     "ref",
     "rescale_index",
     "reset",

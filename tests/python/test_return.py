@@ -215,7 +215,7 @@ def test_struct_ret_with_matrix():
 def test_real_func_tuple_ret_39():
     s0 = ti.types.struct(a=ti.math.vec3, b=ti.i16)
 
-    @ti.experimental.real_func
+    @ti.real_func
     def foo() -> tuple[ti.f32, s0]:
         return 1, s0(a=ti.math.vec3([100, 0.2, 3]), b=65537)
 
@@ -235,7 +235,7 @@ def test_real_func_tuple_ret_39():
 def test_real_func_tuple_ret_typing_tuple():
     s0 = ti.types.struct(a=ti.math.vec3, b=ti.i16)
 
-    @ti.experimental.real_func
+    @ti.real_func
     def foo() -> Tuple[ti.f32, s0]:
         return 1, s0(a=ti.math.vec3([100, 0.2, 3]), b=65537)
 
@@ -255,7 +255,7 @@ def test_real_func_tuple_ret_typing_tuple():
 def test_real_func_tuple_ret():
     s0 = ti.types.struct(a=ti.math.vec3, b=ti.i16)
 
-    @ti.experimental.real_func
+    @ti.real_func
     def foo() -> (ti.f32, s0):
         return 1, s0(a=ti.math.vec3([100, 0.2, 3]), b=65537)
 

@@ -30,7 +30,7 @@ tail = ti.field(int, shape=())
 sample_count = ti.field(int, shape=())
 
 
-@ti.experimental.real_func
+@ti.real_func
 def coord_to_index(p: tm.vec2) -> tm.ivec2:
     return (p * tm.vec2(grid_n)).cast(int)
 
@@ -52,7 +52,7 @@ def refresh_scene():
         img[i, j] = tm.vec3(1)
 
 
-@ti.experimental.real_func
+@ti.real_func
 def find_nearest_point(p: tm.vec2) -> typing.Tuple[float, tm.vec2]:
     x, y = coord_to_index(p)
     dmin = 1e5
@@ -90,12 +90,12 @@ def poisson_disk_sample(num_samples: int) -> int:
     return tail[None]
 
 
-@ti.experimental.real_func
+@ti.real_func
 def hash21(p: tm.vec2) -> float:
     return tm.fract(tm.sin(tm.dot(p, tm.vec2(127.619, 157.583))) * 43758.5453)
 
 
-@ti.experimental.real_func
+@ti.real_func
 def sample_dist(uv_: tm.vec2) -> tm.vec4:
     uv = uv_ * iResolution
     x, y = tm.clamp(0, iResolution - 1, uv).cast(int)

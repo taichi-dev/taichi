@@ -240,7 +240,7 @@ def test_struct_arg_with_matrix_real_func():
     s0 = ti.types.struct(a=mat, b=ti.f32)
     s1 = ti.types.struct(a=ti.i32, b=s0)
 
-    @ti.experimental.real_func
+    @ti.real_func
     def foo(a: s1) -> ti.i32:
         ret = a.a + a.b.b
         for i in range(3):

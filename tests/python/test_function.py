@@ -8,7 +8,7 @@ from tests import test_utils
 def test_function_without_return():
     x = ti.field(ti.i32, shape=())
 
-    @ti.experimental.real_func
+    @ti.real_func
     def foo(val: ti.i32):
         x[None] += val
 
@@ -26,7 +26,7 @@ def test_function_without_return():
 def test_function_with_return():
     x = ti.field(ti.i32, shape=())
 
-    @ti.experimental.real_func
+    @ti.real_func
     def foo(val: ti.i32) -> ti.i32:
         x[None] += val
         return val
@@ -46,7 +46,7 @@ def test_function_with_return():
 def test_call_expressions():
     x = ti.field(ti.i32, shape=())
 
-    @ti.experimental.real_func
+    @ti.real_func
     def foo(val: ti.i32) -> ti.i32:
         if x[None] > 10:
             x[None] += 1
@@ -150,7 +150,7 @@ def test_experimental_templates():
         assert x[None] == 11
         assert y[None] == 21
 
-    @ti.experimental.real_func
+    @ti.real_func
     def inc(x: ti.template()):
         x[None] += 1
 
@@ -182,7 +182,7 @@ def test_experimental_templates():
 def test_missing_arg_annotation():
     with pytest.raises(ti.TaichiSyntaxError, match="must be type annotated"):
 
-        @ti.experimental.real_func
+        @ti.real_func
         def add(a, b: ti.i32) -> ti.i32:
             return a + b
 
@@ -191,7 +191,7 @@ def test_missing_arg_annotation():
 def test_missing_return_annotation():
     with pytest.raises(ti.TaichiCompilationError, match="return value must be annotated"):
 
-        @ti.experimental.real_func
+        @ti.real_func
         def add(a: ti.i32, b: ti.i32):
             return a + b
 
@@ -204,7 +204,7 @@ def test_missing_return_annotation():
 
 @test_utils.test(arch=[ti.cpu, ti.cuda])
 def test_different_argument_type():
-    @ti.experimental.real_func
+    @ti.real_func
     def add(a: ti.f32, b: ti.f32) -> ti.f32:
         return a + b
 
@@ -218,7 +218,7 @@ def test_different_argument_type():
 @pytest.mark.run_in_serial
 @test_utils.test(arch=[ti.cpu, ti.cuda], cuda_stack_limit=8192)
 def test_recursion():
-    @ti.experimental.real_func
+    @ti.real_func
     def sum(f: ti.template(), l: ti.i32, r: ti.i32) -> ti.i32:
         if l == r:
             return f[l]
@@ -239,7 +239,7 @@ def test_recursion():
 @pytest.mark.run_in_serial
 @test_utils.test(arch=[ti.cpu, ti.cuda], cuda_stack_limit=32768)
 def test_deep_recursion():
-    @ti.experimental.real_func
+    @ti.real_func
     def sum_func(n: ti.i32) -> ti.i32:
         if n == 0:
             return 0
@@ -256,7 +256,7 @@ def test_deep_recursion():
 def test_multiple_return():
     x = ti.field(ti.i32, shape=())
 
-    @ti.experimental.real_func
+    @ti.real_func
     def foo(val: ti.i32) -> ti.i32:
         if x[None] > 10:
             if x[None] > 20:
@@ -278,7 +278,7 @@ def test_multiple_return():
 
 @test_utils.test(arch=[ti.cpu, ti.cuda])
 def test_return_in_for():
-    @ti.experimental.real_func
+    @ti.real_func
     def foo() -> ti.i32:
         for i in range(10):
             return 42
@@ -292,7 +292,7 @@ def test_return_in_for():
 
 @test_utils.test(arch=[ti.cpu, ti.cuda])
 def test_return_in_while():
-    @ti.experimental.real_func
+    @ti.real_func
     def foo() -> ti.i32:
         i = 1
         while i:
@@ -307,7 +307,7 @@ def test_return_in_while():
 
 @test_utils.test(arch=[ti.cpu, ti.cuda])
 def test_return_in_if_in_for():
-    @ti.experimental.real_func
+    @ti.real_func
     def foo(a: ti.i32) -> ti.i32:
         s = 0
         for i in range(100):
@@ -326,7 +326,7 @@ def test_return_in_if_in_for():
 
 @test_utils.test(arch=[ti.cpu, ti.cuda], debug=True)
 def test_ref():
-    @ti.experimental.real_func
+    @ti.real_func
     def foo(a: ti.ref(ti.f32)):
         a = 7
 
@@ -349,7 +349,7 @@ def test_ref_atomic():
             "Skip this test on Pascal (and potentially older) architecture, ask turbo0628/Proton for more information"
         )
 
-    @ti.experimental.real_func
+    @ti.real_func
     def foo(a: ti.ref(ti.f32)):
         a += a
 
@@ -448,7 +448,7 @@ def test_func_struct_arg():
 
 @test_utils.test(arch=[ti.cpu, ti.cuda])
 def test_real_func_matrix_arg():
-    @ti.experimental.real_func
+    @ti.real_func
     def mat_arg(a: ti.math.mat2, b: ti.math.vec2) -> float:
         return a[0, 0] + a[0, 1] + a[1, 0] + a[1, 1] + b[0] + b[1]
 
@@ -466,7 +466,7 @@ def test_real_func_matrix_arg():
 
 @test_utils.test(arch=[ti.cpu, ti.cuda])
 def test_real_func_matrix_return():
-    @ti.experimental.real_func
+    @ti.real_func
     def mat_ret() -> ti.math.mat2:
         return ti.math.mat2(1, 2, 3, 4)
 
@@ -481,7 +481,7 @@ def test_real_func_matrix_return():
 def test_real_func_struct_ret():
     s = ti.types.struct(a=ti.i16, b=ti.f64)
 
-    @ti.experimental.real_func
+    @ti.real_func
     def bar() -> s:
         return s(a=123, b=ti.f64(1.2345e300))
 
@@ -498,7 +498,7 @@ def test_real_func_struct_ret_with_matrix():
     s0 = ti.types.struct(a=ti.math.vec3, b=ti.i16)
     s1 = ti.types.struct(a=ti.f32, b=s0)
 
-    @ti.experimental.real_func
+    @ti.real_func
     def bar() -> s1:
         return s1(a=1, b=s0(a=ti.Vector([100, 0.2, 3], dt=ti.f32), b=65537))
 
@@ -512,7 +512,7 @@ def test_real_func_struct_ret_with_matrix():
 
 @test_utils.test(arch=[ti.cpu, ti.cuda])
 def test_break_in_real_func():
-    @ti.experimental.real_func
+    @ti.real_func
     def bar() -> int:
         a = 0
         for i in range(10):
@@ -530,7 +530,7 @@ def test_break_in_real_func():
 
 @test_utils.test(arch=[ti.cpu, ti.cuda])
 def test_continue_in_real_func():
-    @ti.experimental.real_func
+    @ti.real_func
     def bar() -> int:
         a = 0
         for i in range(10):

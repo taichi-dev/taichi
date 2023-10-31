@@ -477,7 +477,7 @@ def test_offline_cache_for_kernels_calling_real_func(curr_arch):
         return cache_files_cnt() - count_of_cache_file
 
     def helper1():
-        @ti.experimental.real_func
+        @ti.real_func
         def sum(l: ti.i32, r: ti.i32) -> ti.i32:
             if l == r:
                 return l
@@ -491,7 +491,7 @@ def test_offline_cache_for_kernels_calling_real_func(curr_arch):
         assert get_sum() == 99 * 50
 
     def helper2():
-        @ti.experimental.real_func
+        @ti.real_func
         def sum(l: ti.i32, r: ti.i32) -> ti.i32:
             if l == r:
                 return l

@@ -48,7 +48,7 @@ objects[7] = SDFObject(
 )
 
 
-@ti.experimental.real_func
+@ti.real_func
 def rotate(a: vec3) -> mat3:
     s, c = sin(a), cos(a)
     return (
@@ -58,14 +58,14 @@ def rotate(a: vec3) -> mat3:
     )
 
 
-@ti.experimental.real_func
+@ti.real_func
 def signed_distance(obj: SDFObject, pos: vec3) -> float:
     p = obj.transform.matrix @ (pos - obj.transform.position)
     q = abs(p) - obj.transform.scale
     return length(max(q, 0)) + min(max(q.x, max(q.y, q.z)), 0)
 
 
-@ti.experimental.real_func
+@ti.real_func
 def nearest_object(p: vec3) -> (int, float):
     index, min_dis = 0, 1e32
     for i in ti.static(range(8)):
@@ -75,7 +75,7 @@ def nearest_object(p: vec3) -> (int, float):
     return index, min_dis
 
 
-@ti.experimental.real_func
+@ti.real_func
 def calc_normal(obj: SDFObject, p: vec3) -> vec3:
     e = vec2(1, -1) * 0.5773 * 0.005
     return normalize(
@@ -86,7 +86,7 @@ def calc_normal(obj: SDFObject, p: vec3) -> vec3:
     )
 
 
-@ti.experimental.real_func
+@ti.real_func
 def raycast(ray: Ray) -> (SDFObject, vec3, bool):
     w, s, d, cerr = 1.6, 0.0, 0.0, 1e32
     index, t, position, hit = 0, 0.005, vec3(0), False
@@ -113,7 +113,7 @@ def raycast(ray: Ray) -> (SDFObject, vec3, bool):
     return objects[index], position, hit
 
 
-@ti.experimental.real_func
+@ti.real_func
 def hemispheric_sampling(normal: vec3) -> vec3:
     z = 2.0 * ti.random() - 1.0
     a = ti.random() * 2.0 * pi
@@ -121,7 +121,7 @@ def hemispheric_sampling(normal: vec3) -> vec3:
     return normalize(normal + vec3(xy, z))
 
 
-@ti.experimental.real_func
+@ti.real_func
 def raytrace(ray: Ray) -> Ray:
     for _ in range(3):
         object, position, hit = raycast(ray)

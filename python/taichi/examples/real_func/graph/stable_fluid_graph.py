@@ -40,17 +40,17 @@ def sample_impl(qf: ti.template(), u: int, v: int):
     return qf[I]
 
 
-@ti.experimental.real_func
+@ti.real_func
 def sample2(qf: ti.types.ndarray(ndim=2), u: int, v: int) -> vec2:
     return sample_impl(qf, u, v)
 
 
-@ti.experimental.real_func
+@ti.real_func
 def sample3(qf: ti.types.ndarray(ndim=2), u: int, v: int) -> vec3:
     return sample_impl(qf, u, v)
 
 
-@ti.experimental.real_func
+@ti.real_func
 def sample0(qf: ti.types.ndarray(ndim=2), u: int, v: int) -> float:
     return sample_impl(qf, u, v)
 
@@ -86,12 +86,12 @@ def bilerp_impl(vf: ti.template(), p):
     return lerp(lerp(a, b, fu), lerp(c, d, fu), fv)
 
 
-@ti.experimental.real_func
+@ti.real_func
 def bilerp2(vf: ti.types.ndarray(ndim=2), p: vec2) -> vec2:
     return bilerp_impl(vf, p)
 
 
-@ti.experimental.real_func
+@ti.real_func
 def bilerp3(vf: ti.types.ndarray(ndim=2), p: vec2) -> vec3:
     return bilerp_impl(vf, p)
 
@@ -105,7 +105,7 @@ def bilerp(vf: ti.template(), p):
 
 
 # 3rd order Runge-Kutta
-@ti.experimental.real_func
+@ti.real_func
 def backtrace(vf: ti.types.ndarray(ndim=2), p: vec2, dt_: float) -> vec2:
     v1 = bilerp(vf, p)
     p1 = p - 0.5 * dt_ * v1

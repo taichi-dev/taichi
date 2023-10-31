@@ -7,7 +7,9 @@ sidebar_position: 1
 Taichi and Python share a similar syntax, but they are not identical. To distinguish Taichi code from native Python code, we utilize two decorators, `@ti.kernel` and `@ti.func`:
 
 - Functions decorated with `@ti.kernel` are known as *Taichi kernels* or simply *kernels*. These functions are the entry points where Taichi's runtime takes over the tasks, and they *must* be directly invoked by Python code. You can use native Python to prepare tasks, such as reading data from disk and pre-processing, before calling the kernel to offload computation-intensive tasks to Taichi.
-- Functions decorated with `@ti.func` are known as *Taichi functions*. These functions are building blocks of kernels and can only be invoked by another Taichi function or a kernel. Like normal Python functions, you can divide your tasks into multiple Taichi functions to enhance readability and reuse them across different kernels.
+- Functions decorated with `@ti.func` or `@ti.real_func` are known as *Taichi functions*. These functions are building blocks of kernels and can only be invoked by another Taichi function or a kernel. Like normal Python functions, you can divide your tasks into multiple Taichi functions to enhance readability and reuse them across different kernels.
+  - Taichi functions decorated with `@ti.func` are *Taichi inline functions*. These functions are inlined into the kernels that call them. Runtime recursion of Taichi inline functions are not allowed.
+  - Taichi functions decorated with `@ti.real_func` are *Taichi real functions*. These functions are compiled into separate functions (like the device functions in CUDA) and can be called recursively. Taichi real functions are only supported on the LLVM-based backends (CPU and CUDA backends).
 
 In the following example, `inv_square()` is decorated with `@ti.func` and is a Taichi function. `partial_sum()` is decorated with `@ti.kernel` and is a kernel. The former (`inv_square()`) is called by the latter (`partial_sum()`). The arguments and return value in `partial_sum()` are type hinted, while those in the Taichi function `inv_square()` are not.
 
@@ -91,7 +93,7 @@ Kernels in Taichi can be called either directly or from inside a native Python f
 ### Arguments
 
 
-A kernel can accept multiple arguments. However, it's important to note that you can't pass arbitrary Python objects to a kernel. This is because Python objects can be dynamic and may contain data that the Taichi compiler cannot recognize.
+A kernel can accept multiple arguments, and you must write the type hint of each argument. However, it's important to note that you can't pass arbitrary Python objects to a kernel. This is because Python objects can be dynamic and may contain data that the Taichi compiler cannot recognize.
 
 The kernel can accept various argument types, including scalars, `ti.types.matrix()`, `ti.types.vector()`, `ti.types.struct()`, `ti.types.ndarray()`, and `ti.template()`. These argument types make it easy to pass data from the Python scope to the Taichi scope. You can find the supported types in the `ti.types` module. For more information on this, see the [Type System](../type_system/type.md).
 
@@ -150,10 +152,10 @@ print(x)  # Prints [5, 7, 9]
 
 ### Return value
 
-In Taichi, a kernel is allowed to have a maximum of one return value, which could either be a scalar, `ti.types.matrix()`, or `ti.types.vector()`.
-Moreover, in the LLVM-based backends (CPU and CUDA backends), a return value could also be a `ti.types.struct()`.
+In Taichi, a kernel can have multiple return values, and the return values can either be a scalar, `ti.types.matrix()`, or `ti.types.vector()`.
+Moreover, in the LLVM-based backends (CPU and CUDA backends), a return value can also be a `ti.types.struct()`.
 
-Here is an example of a kernel that returns a ti.Struct:
+Here is an example of a kernel that returns a struct:
 
 ```python
 s0 = ti.types.struct(a=ti.math.vec3, b=ti.i16)
@@ -166,12 +168,21 @@ def foo() -> s1:
 print(foo())  # {'a': 1.0, 'b': {'a': [100.0, 0.2, 3.0], 'b': 1}}
 ```
 
+Here is an example of a kernel that returns an integer and a float:
+
+```python
+@ti.kernel
+def return_tuple() -> (ti.i32, ti.f32):  # The return type can also be typing.Tuple[ti.i32, ti.f32] or tuple[ti.i32, ti.f32]
+    return 1, 2.0
+
+a, b = return_tuple()
+print(a, b)  # 1 2.0
+```
+
 When defining the return value of a kernel in Taichi, it is important to follow these rules:
 
 - Use type hint to specify the return value of a kernel.
-- Make sure that you have at most one return value in a kernel.
 - Make sure that you have at most one return statement in a kernel.
-- If the return value is a vector or matrix, please ensure that it contains no more than 32 elements. In case it contains more than 32 elements, the kernel will still compile, but a warning will be raised.
 
 #### At most one return value
 
@@ -253,45 +264,17 @@ Here, `kernel_1` and `kernel_2` both access the global variable `a`. The first c
 
 On the other hand, `kernel_2` is compiled after `a` is updated, so it takes in the current value of `a` and prints 2.
 
-## Taichi function
-
-Taichi functions are fundamental units of a kernel and can only be called from within a kernel or another Taichi function.
-
-In the code snippet below, Taichi will raise an error because the function `foo_1()` is called from the Python scope, not the Taichi scope:
-
-```python
-# A normal Python function
-def foo_py():
-    print("This is a Python function.")
-
-@ti.func
-def foo_1():
-    print("This is a Taichi function to be called by another Taichi function, foo_2().")
-
-@ti.func
-def foo_2():
-    print("This is a Taichi function to be called by a kernel.")
-    foo_1()
-
-@ti.kernel
-def foo_kernel():
-    print("This is a kernel calling a Taichi function, foo_2().")
-    foo_2()
-
-foo_py()
-# foo_1() # You cannot call a Taichi function from the Python scope
-foo_kernel()
-```
+## Taichi inline function
 
 :::caution WARNING
 
-All Taichi functions are force-inlined. This means that if you call a Taichi function from another Taichi function, the calling function is fully expanded, or inlined, into the called function at compile time. This process continues until there are no more function calls to inline, resulting in a single, large function. This means that runtime recursion is *not allowed* in Taichi, because it would cause an infinite expansion of the function call stack at compile time.
+All Taichi inline functions are force-inlined. This means that if you call a Taichi function from another Taichi function, the calling function is fully expanded, or inlined, into the called function at compile time. This process continues until there are no more function calls to inline, resulting in a single, large function. This means that runtime recursion is *not allowed*, because it would cause an infinite expansion of the function call stack at compile time.
 
 :::
 
 ### Arguments
 
-A Taichi function can accept multiple arguments, which may include scalar, `ti.types.matrix()`, `ti.types.vector()`, `ti.types.struct()`, `ti.types.ndarray()`, `ti.field()`, and `ti.template()` types. Note that some of the restrictions on kernel arguments do not apply to Taichi functions:
+A Taichi inline function can accept multiple arguments, which may include scalar, `ti.types.matrix()`, `ti.types.vector()`, `ti.types.struct()`, `ti.types.ndarray()`, `ti.field()`, and `ti.template()` types. Note that some of the restrictions on kernel arguments do not apply to Taichi functions:
 
 - It is not strictly required to type hint the function arguments (but it is still recommended).
 - You can pass an unlimited number of elements in the function arguments.
@@ -299,22 +282,38 @@ A Taichi function can accept multiple arguments, which may include scalar, `ti.t
 
 ### Return values
 
-Return values of a Taichi function can be scalars, `ti.types.matrix()`, `ti.types.vector()`, `ti.types.struct()`, or other types. Note the following:
+Return values of a Taichi inline function can be scalars, `ti.types.matrix()`, `ti.types.vector()`, `ti.types.struct()`, or other types. Note the following:
 
-- Unlike a kernel, a Taichi function can have multiple return values.
 - It is *not* required (but recommended) to type hint the return values of a Taichi function.
 - A Taichi function *cannot* have more than one `return` statement.
 
-## A recap: Taichi kernel vs. Taichi function
+## Taichi real function
 
-|                                                       | **Kernel**                                                                                                        | **Taichi Function**                                          |
-| ----------------------------------------------------- |-------------------------------------------------------------------------------------------------------------------| ------------------------------------------------------------ |
-| Call scope                                            | Python scope                                                                                                      | Taichi scope                                                 |
-| Type hint arguments                                   | Mandatory                                                                                                         | Recommended                                                  |
-| Type hint return values                               | Mandatory                                                                                                         | Recommended                                                  |
-| Return type                                           | <ul><li>Scalar</li><li>`ti.types.matrix()`</li><li>`ti.types.vector()`</li><li>`ti.types.struct()`(Only on LLVM-based backends)</li></ul> | <ul><li>Scalar</li><li>`ti.types.matrix()`</li><li>`ti.types.vector()`</li><li>`ti.types.struct()`</li><li>...</li></ul> |
-| Maximum number of elements in arguments               | <ul><li>32 (OpenGL)</li><li>64 (otherwise)</li></ul>                                                              | Unlimited                                                    |
-| Maximum number of return values in a return statement | 1                                                                                                                 | Unlimited                                                    |
+### Arguments
+
+A Taichi real function can accept multiple arguments, which may include scalar, `ti.types.matrix()`, `ti.types.vector()`, `ti.types.struct()`, `ti.types.ndarray()`, `ti.field()`, and `ti.template()` types. Note that some of the restrictions on kernel arguments do not apply to Taichi functions:
+
+- You must type hint the function arguments.
+- You can pass an unlimited number of elements in the function arguments.
+
+### Return values
+
+Return values of a Taichi inline function can be scalars, `ti.types.matrix()`, `ti.types.vector()`, `ti.types.struct()`, or other types. Note the following:
+
+- You must type hint the return values of a Taichi real function.
+- A Taichi real function *can* have more than one `return` statement.
+
+
+## A recap: Taichi kernel vs. Taichi inline function vs. Taichi real function
+
+|                                                       | **Kernel**                                                                                                                                | **Taichi Function**                                          | ** Taichi Real Function**                                    |
+| ----------------------------------------------------- |-------------------------------------------------------------------------------------------------------------------------------------------| ------------------------------------------------------------ | ------------------------------------------------------------ |
+| Call scope                                            | Python scope                                                                                                                              | Taichi scope                                                 | Taichi scope                                                 |
+| Type hint arguments                                   | Mandatory                                                                                                                                 | Recommended                                                  | Mandatory                                                    |
+| Type hint return values                               | Mandatory                                                                                                                                 | Recommended                                                  | Mandatory                                                    |
+| Return type                                           | <ul><li>Scalar</li><li>`ti.types.matrix()`</li><li>`ti.types.vector()`</li><li>`ti.types.struct()`(Only on LLVM-based backends)</li></ul> | <ul><li>Scalar</li><li>`ti.types.matrix()`</li><li>`ti.types.vector()`</li><li>`ti.types.struct()`</li><li>...</li></ul> | <ul><li>Scalar</li><li>`ti.types.matrix()`</li><li>`ti.types.vector()`</li><li>`ti.types.struct()`</li><li>...</li></ul> |
+| Maximum number of elements in arguments               | <ul><li>Unlimited (CPU and CUDA)</li><li>32 (OpenGL)</li><li>64 (otherwise)</li></ul>                                                     | Unlimited                                                    | Unlimited                                                    |
+| Maximum number of return statements                   | 1                                                                                                                                         | 1                                                            | Unlimited                                                    |
 
 
 ## Key terms

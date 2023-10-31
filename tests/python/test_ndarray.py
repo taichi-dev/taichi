@@ -1032,7 +1032,7 @@ def test_pass_ndarray_to_func():
 
 @test_utils.test(arch=[ti.cpu, ti.cuda])
 def test_pass_ndarray_to_real_func():
-    @ti.experimental.real_func
+    @ti.real_func
     def bar(weight: ti.types.ndarray(ti.f32, ndim=3)) -> ti.f32:
         return weight[1, 1, 1]
 
@@ -1049,7 +1049,7 @@ def test_pass_ndarray_to_real_func():
 def test_pass_ndarray_outside_kernel_to_real_func():
     weight = ti.ndarray(dtype=ti.f32, shape=(2, 2, 2))
 
-    @ti.experimental.real_func
+    @ti.real_func
     def bar(weight: ti.types.ndarray(ti.f32, ndim=3)) -> ti.f32:
         return weight[1, 1, 1]
 
@@ -1131,7 +1131,7 @@ def test_ndarray_arg_builtin_float_type():
 
 @test_utils.test(arch=[ti.cpu, ti.cuda])
 def test_real_func_vector_ndarray_arg():
-    @ti.experimental.real_func
+    @ti.real_func
     def foo(x: ti.types.ndarray(ndim=1)) -> vec3:
         return x[0]
 
@@ -1146,7 +1146,7 @@ def test_real_func_vector_ndarray_arg():
 
 @test_utils.test(arch=[ti.cpu, ti.cuda])
 def test_real_func_write_ndarray_cfg():
-    @ti.experimental.real_func
+    @ti.real_func
     def bar(a: ti.types.ndarray(ndim=1)):
         a[0] = vec3(1)
 

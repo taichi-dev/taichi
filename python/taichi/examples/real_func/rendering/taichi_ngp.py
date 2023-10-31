@@ -63,12 +63,12 @@ PRETRAINED_MODEL_URL = "https://github.com/Linyou/taichi-ngp-renderer/releases/d
 
 
 # <----------------- hash table util code ----------------->
-@ti.experimental.real_func
+@ti.real_func
 def calc_dt(t: data_type, exp_step_factor: data_type, grid_size: int, scale: data_type) -> data_type:
     return ti.math.clamp(t * exp_step_factor, SQRT3_MAX_SAMPLES, SQRT3_2 * scale / grid_size)
 
 
-@ti.experimental.real_func
+@ti.real_func
 def __expand_bits(v_: uvec3) -> uvec3:
     v = (v_ * ti.uint32(0x00010001)) & ti.uint32(0xFF0000FF)
     v = (v * ti.uint32(0x00000101)) & ti.uint32(0x0F00F00F)
@@ -77,13 +77,13 @@ def __expand_bits(v_: uvec3) -> uvec3:
     return v
 
 
-@ti.experimental.real_func
+@ti.real_func
 def __morton3D(xyz_: uvec3) -> ti.u32:
     xyz = __expand_bits(xyz_)
     return xyz[0] | (xyz[1] << 1) | (xyz[2] << 2)
 
 
-@ti.experimental.real_func
+@ti.real_func
 def fast_hash(pos_grid_local: uvec3) -> ti.u32:
     result = ti.uint32(0)
     primes = uvec3(ti.uint32(1), ti.uint32(2654435761), ti.uint32(805459861))
@@ -92,7 +92,7 @@ def fast_hash(pos_grid_local: uvec3) -> ti.u32:
     return result
 
 
-@ti.experimental.real_func
+@ti.real_func
 def under_hash(pos_grid_local: uvec3, resolution: ti.u32) -> ti.u32:
     result = ti.uint32(0)
     stride = ti.uint32(1)
@@ -102,7 +102,7 @@ def under_hash(pos_grid_local: uvec3, resolution: ti.u32) -> ti.u32:
     return result
 
 
-@ti.experimental.real_func
+@ti.real_func
 def grid_pos2hash_index(indicator: ti.i32, pos_grid_local: uvec3, resolution: ti.u32, map_size: ti.u32) -> ti.u32:
     hash_result = ti.uint32(0)
     if indicator == 1:
@@ -116,20 +116,20 @@ def grid_pos2hash_index(indicator: ti.i32, pos_grid_local: uvec3, resolution: ti
 # <----------------- hash table util code ----------------->
 
 
-@ti.experimental.real_func
+@ti.real_func
 def random_in_unit_disk() -> tf_vec2:
     theta = 2.0 * np.pi * ti.random()
     return ti.Vector([ti.sin(theta), ti.cos(theta)])
 
 
-@ti.experimental.real_func
+@ti.real_func
 def random_normal() -> tf_vec2:
     x = ti.random() * 2.0 - 1.0
     y = ti.random() * 2.0 - 1.0
     return tf_vec2(x, y)
 
 
-@ti.experimental.real_func
+@ti.real_func
 def dir_encode_func(dir_: tf_vec3) -> tf_vec32:
     out_feat = tf_vec32(0.0)
     dir_n = dir_ / dir_.norm()
@@ -341,7 +341,7 @@ class NGP_fw:
         for i, j in ti.ndrange(self.N_rays, 2):
             self.alive_indices[i * 2 + j] = i
 
-    @ti.experimental.real_func
+    @ti.real_func
     def _ray_aabb_intersec(self, ray_o: tf_vec3, ray_d: tf_vec3) -> tf_vec2:
         inv_d = 1.0 / ray_d
 

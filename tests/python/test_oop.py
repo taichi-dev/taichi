@@ -46,11 +46,11 @@ def test_class_real_func():
             self.m = m
             self.val = ti.field(ti.f32, shape=(n, m))
 
-        @ti.experimental.real_func
+        @ti.real_func
         def inc(self, i: ti.i32, j: ti.i32):
             self.val[i, j] += i * j
 
-        @ti.experimental.real_func
+        @ti.real_func
         def mul(self, i: ti.i32, j: ti.i32) -> ti.i32:
             return i * j
 

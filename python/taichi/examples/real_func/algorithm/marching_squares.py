@@ -48,14 +48,14 @@ ti.root.dynamic(ti.i, 1024, chunk_size=32).place(edges)
 iTime = ti.field(float, shape=())
 
 
-@ti.experimental.real_func
+@ti.real_func
 def hash22(p_: tm.vec2) -> tm.vec2:
     n = tm.sin(tm.dot(p_, tm.vec2(41, 289)))
     p = tm.fract(tm.vec2(262144, 32768) * n)
     return tm.sin(p * 6.28 + iTime[None])
 
 
-@ti.experimental.real_func
+@ti.real_func
 def noise(p_: tm.vec2) -> float:
     ip = tm.floor(p_)
     p = p_ - ip
@@ -69,17 +69,17 @@ def noise(p_: tm.vec2) -> float:
     return tm.mix(tm.mix(v.x, v.y, p.x), tm.mix(v.z, v.w, p.x), p.y)
 
 
-@ti.experimental.real_func
+@ti.real_func
 def isofunc(p: tm.vec2) -> float:
     return noise(p / 4 + 1)
 
 
-@ti.experimental.real_func
+@ti.real_func
 def interp(p1: tm.vec2, p2: tm.vec2, v1: float, v2: float, isovalue: float) -> tm.vec2:
     return tm.mix(p1, p2, (isovalue - v1) / (v2 - v1))
 
 
-@ti.experimental.real_func
+@ti.real_func
 def get_vertex(vertex_id: int, values: tm.vec4, isovalue: float) -> tm.vec2:
     v = tm.vec2(0)
     square = [tm.vec2(0), tm.vec2(1, 0), tm.vec2(1, 1), tm.vec2(0, 1)]
@@ -133,7 +133,7 @@ def march_squares() -> int:
     return edges.length()
 
 
-@ti.experimental.real_func
+@ti.real_func
 def dseg(p_: tm.vec2, a: tm.vec2, b_: tm.vec2) -> ti.f32:
     p = p_ - a
     b = b_ - a

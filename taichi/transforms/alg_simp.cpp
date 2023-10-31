@@ -279,11 +279,13 @@ class AlgSimp : public BasicStmtVisitor {
 
     cast_to_result_type(one, stmt);
     auto new_exponent = Stmt::make<UnaryOpStmt>(UnaryOpType::neg, stmt->rhs);
+    new_exponent->ret_type = stmt->rhs->ret_type;
     auto a_to_n = Stmt::make<BinaryOpStmt>(BinaryOpType::pow, stmt->lhs,
                                            new_exponent.get());
     a_to_n->ret_type = stmt->ret_type;
     auto result =
         Stmt::make<BinaryOpStmt>(BinaryOpType::div, one, a_to_n.get());
+    result->ret_type = stmt->ret_type;
     stmt->replace_usages_with(result.get());
     modifier.insert_before(stmt, std::move(new_exponent));
     modifier.insert_before(stmt, std::move(a_to_n));

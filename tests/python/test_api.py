@@ -288,6 +288,7 @@ user_api[ti.math] = [
     "cinv",
     "clamp",
     "clog",
+    "clz",
     "cmul",
     "cos",
     "cpow",

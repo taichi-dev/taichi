@@ -812,12 +812,18 @@ def popcnt(x):
     return ops.popcnt(x)
 
 
+@func
+def clz(x):
+    return ops.clz(x)
+
+
 __all__ = [
     "acos",
     "asin",
     "atan2",
     "ceil",
     "clamp",
+    "clz",
     "cos",
     "cross",
     "degrees",

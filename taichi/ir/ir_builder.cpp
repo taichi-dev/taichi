@@ -278,6 +278,10 @@ UnaryOpStmt *IRBuilder::create_popcnt(Stmt *value) {
   return insert(Stmt::make_typed<UnaryOpStmt>(UnaryOpType::popcnt, value));
 }
 
+UnaryOpStmt *IRBuilder::create_clz(Stmt *value) {
+  return insert(Stmt::make_typed<UnaryOpStmt>(UnaryOpType::clz, value));
+}
+
 BinaryOpStmt *IRBuilder::create_add(Stmt *l, Stmt *r) {
   return insert(Stmt::make_typed<BinaryOpStmt>(BinaryOpType::add, l, r));
 }

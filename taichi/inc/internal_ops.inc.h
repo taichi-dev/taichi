@@ -46,6 +46,9 @@ PER_INTERNAL_OP(subgroupInclusiveXor)
 
 // CUDA
 PER_INTERNAL_OP(block_barrier)
+PER_INTERNAL_OP(block_barrier_and_i32)
+PER_INTERNAL_OP(block_barrier_or_i32)
+PER_INTERNAL_OP(block_barrier_count_i32)
 PER_INTERNAL_OP(grid_memfence)
 PER_INTERNAL_OP(cuda_all_sync_i32)
 PER_INTERNAL_OP(cuda_any_sync_i32)

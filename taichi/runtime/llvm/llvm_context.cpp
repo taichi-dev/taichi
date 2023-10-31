@@ -432,6 +432,9 @@ std::unique_ptr<llvm::Module> TaichiLLVMContext::module_from_file(
       patch_intrinsic("block_dim", Intrinsic::nvvm_read_ptx_sreg_ntid_x);
       patch_intrinsic("grid_dim", Intrinsic::nvvm_read_ptx_sreg_nctaid_x);
       patch_intrinsic("block_barrier", Intrinsic::nvvm_barrier0, false);
+      patch_intrinsic("block_barrier_and_i32", Intrinsic::nvvm_barrier0_and);
+      patch_intrinsic("block_barrier_or_i32", Intrinsic::nvvm_barrier0_or);
+      patch_intrinsic("block_barrier_count_i32", Intrinsic::nvvm_barrier0_popc);
       patch_intrinsic("warp_barrier", Intrinsic::nvvm_bar_warp_sync, false);
       patch_intrinsic("block_memfence", Intrinsic::nvvm_membar_cta, false);
       patch_intrinsic("grid_memfence", Intrinsic::nvvm_membar_gl, false);

@@ -17,6 +17,27 @@ def sync():
     raise ValueError(f"ti.block.shared_array is not supported for arch {arch}")
 
 
+def sync_all_nonzero(predicate):
+    arch = impl.get_runtime().prog.config().arch
+    if arch == _ti_core.cuda:
+        return impl.call_internal("block_barrier_and_i32", predicate, with_runtime_context=False)
+    raise ValueError(f"ti.block.sync_all_nonzero is not supported for arch {arch}")
+
+
+def sync_any_nonzero(predicate):
+    arch = impl.get_runtime().prog.config().arch
+    if arch == _ti_core.cuda:
+        return impl.call_internal("block_barrier_or_i32", predicate, with_runtime_context=False)
+    raise ValueError(f"ti.block.sync_any_nonzero is not supported for arch {arch}")
+
+
+def sync_count_nonzero(predicate):
+    arch = impl.get_runtime().prog.config().arch
+    if arch == _ti_core.cuda:
+        return impl.call_internal("block_barrier_count_i32", predicate, with_runtime_context=False)
+    raise ValueError(f"ti.block.sync_count_nonzero is not supported for arch {arch}")
+
+
 def mem_sync():
     arch = impl.get_runtime().prog.config().arch
     if arch == _ti_core.cuda:

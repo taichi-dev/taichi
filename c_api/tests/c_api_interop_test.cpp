@@ -60,31 +60,6 @@ TEST_F(CapiTest, AotTestCudaBufferInterop) {
     }
   }
 }
-#endif
-
-#if TI_WITH_VULKAN
-
-static void texture_interop_test(TiArch arch) {
-  ti::Runtime runtime(arch);
-
-  ti::Texture tex_0 =
-      runtime.allocate_texture2d(128, 128, TI_FORMAT_RGBA8, TI_NULL_HANDLE);
-
-  TiVulkanImageInteropInfo viii{};
-  ti_export_vulkan_image(runtime, tex_0.image(), &viii);
-  ti_import_vulkan_image(runtime, &viii, VK_IMAGE_VIEW_TYPE_2D,
-                         VK_IMAGE_LAYOUT_UNDEFINED);
-
-  ti_track_image_ext(runtime, tex_0.image(), TI_IMAGE_LAYOUT_SHADER_READ_WRITE);
-  runtime.wait();
-}
-
-TEST_F(CapiTest, AotTestVulkanTextureInterop) {
-  if (ti::is_arch_available(TI_ARCH_VULKAN)) {
-    TiArch arch = TiArch::TI_ARCH_VULKAN;
-    texture_interop_test(arch);
-  }
-}
 
 TEST_F(CapiTest, TestCPUImport) {
   TiArch arch = TiArch::TI_ARCH_X64;
@@ -117,6 +92,31 @@ TEST_F(CapiTest, TestCPUImport) {
   EXPECT_EQ(data_out[1], 2.0);
   EXPECT_EQ(data_out[2], 3.0);
   EXPECT_EQ(data_out[3], 4.0);
+}
+#endif  // TI_WITH_LLVM
+
+#if TI_WITH_VULKAN
+
+static void texture_interop_test(TiArch arch) {
+  ti::Runtime runtime(arch);
+
+  ti::Texture tex_0 =
+      runtime.allocate_texture2d(128, 128, TI_FORMAT_RGBA8, TI_NULL_HANDLE);
+
+  TiVulkanImageInteropInfo viii{};
+  ti_export_vulkan_image(runtime, tex_0.image(), &viii);
+  ti_import_vulkan_image(runtime, &viii, VK_IMAGE_VIEW_TYPE_2D,
+                         VK_IMAGE_LAYOUT_UNDEFINED);
+
+  ti_track_image_ext(runtime, tex_0.image(), TI_IMAGE_LAYOUT_SHADER_READ_WRITE);
+  runtime.wait();
+}
+
+TEST_F(CapiTest, AotTestVulkanTextureInterop) {
+  if (ti::is_arch_available(TI_ARCH_VULKAN)) {
+    TiArch arch = TiArch::TI_ARCH_VULKAN;
+    texture_interop_test(arch);
+  }
 }
 #endif  // TI_WITH_VULKAN
 

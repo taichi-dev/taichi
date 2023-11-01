@@ -36,10 +36,16 @@ Here comes a significant difference between Python and Taichi - *type hinting*:
 - Type hinting in Python is recommended, but not compulsory.
 - You must type hint each argument and return value of a Taichi kernel.
 
+## Taichi Scope and Python Scope
+Let's introduce two important concepts: *Taichi scope* and *Python scope*.
+
+- The code inside a kernel or a Taichi function is part of the *Taichi scope*. Taichi's runtime compiles and executes this code in parallel on multi-core CPU or GPU devices for high-performance computation. The Taichi scope corresponds to the device side in CUDA.
+
+- Code outside of the Taichi scope belongs to the *Python scope*. The code in the Python scope is written in native Python and executed by Python's virtual machine, not by Taichi's runtime. The Python scope corresponds to the host side in CUDA.
 
 :::caution WARNING
 
-Calling a Taichi function from within the native Python code (the Python scope) results in a syntax error raised by Taichi. For example:
+Calling a Taichi function from the Python scope results in a syntax error raised by Taichi. For example:
 
 ```python skip-ci:NotRunnable
 import taichi as ti
@@ -52,14 +58,9 @@ def inv_square(x):
 print(inv_square(1.0))  # Syntax error
 ```
 
-You must call Taichi functions from within the Taichi scope, a concept as opposed to the *Python scope*.
+You must call Taichi functions from within the Taichi scope.
 :::
 
-Let's introduce two important concepts: *Taichi scope* and *Python scope*.
-
-- The code inside a kernel or a Taichi function is part of the *Taichi scope*. Taichi's runtime compiles and executes this code in parallel on multi-core CPU or GPU devices for high-performance computation. The Taichi scope corresponds to the device side in CUDA.
-
-- Code outside of the Taichi scope belongs to the *Python scope*. This code is written in native Python and executed by Python's virtual machine, not by Taichi's runtime. The Python scope corresponds to the host side in CUDA.
 
 It is important to distinguish between kernels and Taichi functions as they have slightly different syntax. The following sections explain their respective usages.
 
@@ -85,7 +86,7 @@ Multiple kernels can be defined in a single Taichi program. These kernels are *i
 
 :::caution WARNING
 
-Kernels in Taichi can be called either directly or from inside a native Python function. However, calling a kernel from inside another kernel or from inside a Taichi function is not allowed. In other words, kernels can only be called from the Python scope.
+Kernels in Taichi can only be called from the Python scope, and calling a kernel from another kernel or a Taichi function is not allowed.
 
 :::
 

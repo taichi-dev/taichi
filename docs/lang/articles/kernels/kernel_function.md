@@ -4,7 +4,7 @@ sidebar_position: 1
 
 # Kernels and Functions
 
-Taichi and Python share a similar syntax, but they are not identical. To distinguish Taichi code from native Python code, we utilize two decorators, `@ti.kernel` and `@ti.func`:
+Taichi and Python share a similar syntax, but they are not identical. To distinguish Taichi code from native Python code, we utilize three decorators: `@ti.kernel`, `@ti.func`, and `@ti.real_func`:
 
 - Functions decorated with `@ti.kernel` are known as *Taichi kernels* or simply *kernels*. These functions are the entry points where Taichi's runtime takes over the tasks, and they *must* be directly invoked by Python code. You can use native Python to prepare tasks, such as reading data from disk and pre-processing, before calling the kernel to offload computation-intensive tasks to Taichi.
 - Functions decorated with `@ti.func` or `@ti.real_func` are known as *Taichi functions*. These functions are building blocks of kernels and can only be invoked by another Taichi function or a kernel. Like normal Python functions, you can divide your tasks into multiple Taichi functions to enhance readability and reuse them across different kernels.
@@ -34,7 +34,7 @@ partial_sum(1000)
 Here comes a significant difference between Python and Taichi - *type hinting*:
 
 - Type hinting in Python is recommended, but not compulsory.
-- Taichi mandates that the arguments and return value of a kernel are type hinted, unless it has neither an argument nor a return statement.
+- You must type hint each argument and return value of a Taichi kernel.
 
 
 :::caution WARNING
@@ -93,7 +93,7 @@ Kernels in Taichi can be called either directly or from inside a native Python f
 ### Arguments
 
 
-A kernel can accept multiple arguments, and you must write the type hint of each argument. However, it's important to note that you can't pass arbitrary Python objects to a kernel. This is because Python objects can be dynamic and may contain data that the Taichi compiler cannot recognize.
+A kernel can accept multiple arguments. However, it's important to note that you can't pass arbitrary Python objects to a kernel. This is because Python objects can be dynamic and may contain data that the Taichi compiler cannot recognize.
 
 The kernel can accept various argument types, including scalars, `ti.types.matrix()`, `ti.types.vector()`, `ti.types.struct()`, `ti.types.ndarray()`, and `ti.template()`. These argument types make it easy to pass data from the Python scope to the Taichi scope. You can find the supported types in the `ti.types` module. For more information on this, see the [Type System](../type_system/type.md).
 
@@ -149,6 +149,9 @@ my_kernel(x, y)
 print(x)  # Prints [5, 7, 9]
 ```
 
+You can also use argument packs if you want to pass many arguments to a kernel. See [Taichi Argument Pack](../advanced/argument_pack.md) for more information.
+
+When defining the arguments of a kernel in Taichi, please make sure that each of the arguments has type hint.
 
 ### Return value
 
@@ -183,20 +186,6 @@ When defining the return value of a kernel in Taichi, it is important to follow 
 
 - Use type hint to specify the return value of a kernel.
 - Make sure that you have at most one return statement in a kernel.
-
-#### At most one return value
-
-In this code snippet, the `test()` kernel cannot have more than one return value:
-
-
-```python skip-ci:ToyDemo
-vec2 = ti.math.vec2
-
-@ti.kernel
-def test(x: float, y: float) -> vec2: # Return value must be type hinted
-    # Return x, y  # Compilation error: Only one return value is allowed
-    return vec2(x, y)  # Fine
-```
 
 #### Automatic type cast
 
@@ -268,7 +257,7 @@ On the other hand, `kernel_2` is compiled after `a` is updated, so it takes in t
 
 :::caution WARNING
 
-All Taichi inline functions are force-inlined. This means that if you call a Taichi function from another Taichi function, the calling function is fully expanded, or inlined, into the called function at compile time. This process continues until there are no more function calls to inline, resulting in a single, large function. This means that runtime recursion is *not allowed*, because it would cause an infinite expansion of the function call stack at compile time.
+All Taichi inline functions are force-inlined. This means that if you call a Taichi function from another Taichi function, the callee is fully expanded (inlined) into the caller at compile time. This process continues until there are no more function calls to inline, resulting in a single, large function. This means that runtime recursion of Taichi inline function is *not allowed*, because it would cause an infinite expansion of the function call stack at compile time. If you want to use runtime recursion, please use Taichi real functions instead.
 
 :::
 
@@ -291,7 +280,7 @@ Return values of a Taichi inline function can be scalars, `ti.types.matrix()`, `
 
 ### Arguments
 
-A Taichi real function can accept multiple arguments, which may include scalar, `ti.types.matrix()`, `ti.types.vector()`, `ti.types.struct()`, `ti.types.ndarray()`, `ti.field()`, and `ti.template()` types. Note that some of the restrictions on kernel arguments do not apply to Taichi functions:
+A Taichi real function can accept multiple arguments, which may include scalar, `ti.types.matrix()`, `ti.types.vector()`, `ti.types.struct()`, `ti.types.ndarray()`, `ti.field()`, and `ti.template()` types. Note the following:
 
 - You must type hint the function arguments.
 - You can pass an unlimited number of elements in the function arguments.

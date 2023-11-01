@@ -45,7 +45,7 @@ Let's introduce two important concepts: *Taichi scope* and *Python scope*.
 
 :::caution WARNING
 
-Calling a Taichi function from the Python scope results in a syntax error raised by Taichi. For example:
+Calling a Taichi function in the Python scope results in a syntax error raised by Taichi. For example:
 
 ```python skip-ci:NotRunnable
 import taichi as ti
@@ -58,7 +58,7 @@ def inv_square(x):
 print(inv_square(1.0))  # Syntax error
 ```
 
-You must call Taichi functions from within the Taichi scope.
+You must call Taichi functions in the Taichi scope.
 :::
 
 
@@ -66,9 +66,9 @@ It is important to distinguish between kernels and Taichi functions as they have
 
 ## Kernel
 
-A kernel is the basic unit of execution in Taichi, and serves as the entry point for Taichi's runtime, which takes over from Python's virtual machine. Kernels are called in the same way as Python functions, and allow for switching between Taichi's runtime and Python's virtual machine.
+A kernel is the basic unit of execution in Taichi, and it serves as the entry point for Taichi's runtime which takes over from Python's virtual machine. Kernels are called in the same way as Python functions, and allow for switching between Taichi's runtime and Python's virtual machine.
 
-For instance, the `partial_sum()` kernel can be called from within a Python function:
+For instance, the `partial_sum()` kernel can be called inside a Python function:
 
 ```python skip-ci:ToyDemo
 @ti.kernel
@@ -86,7 +86,7 @@ Multiple kernels can be defined in a single Taichi program. These kernels are *i
 
 :::caution WARNING
 
-Kernels in Taichi can only be called from the Python scope, and calling a kernel from another kernel or a Taichi function is not allowed.
+Kernels in Taichi can only be called in the Python scope, and calling a kernel inside another kernel or a Taichi function is not allowed.
 
 :::
 
@@ -334,9 +334,9 @@ Type hinting is a formal solution to statically indicate the type of value withi
 
 ## FAQ
 
-#### Can I call a kernel from within a Taichi function?
+#### Can I call a kernel inside a Taichi function?
 
-No. Keep in mind that a kernel is the smallest unit for Taichi's runtime execution. You cannot call a kernel from within a Taichi function (in the Taichi scope). You can *only* call a kernel from the Python scope.
+No. Keep in mind that a kernel is the smallest unit for Taichi's runtime execution. You cannot call a kernel inside a Taichi function (in the Taichi scope). You can *only* call a kernel in the Python scope.
 
 #### Can I specify different backends for each kernel separately?
 

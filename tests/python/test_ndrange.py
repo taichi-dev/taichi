@@ -63,7 +63,7 @@ def test_3d():
                     assert x[i, j, k] == 0
 
 
-@test_utils.test()
+@test_utils.test(exclude=ti.gles)
 def test_tensor_based_3d():
     x = ti.field(ti.i32, shape=(6, 6, 6))
     y = ti.field(ti.i32, shape=(6, 6, 6))

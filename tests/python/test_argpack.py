@@ -24,6 +24,33 @@ def test_argpack_basic():
 
 
 @test_utils.test()
+def test_argpack_with_struct():
+    struct_type = ti.types.struct(a=ti.i32, c=ti.f32)
+    pack_type = ti.types.argpack(d=ti.f32, element=struct_type)
+
+    @ti.kernel
+    def foo(pack: pack_type) -> ti.f32:
+        tmp = pack.element.a + pack.element.c
+        return tmp + pack.d
+
+    pack = pack_type(d=2.1, element=struct_type(a=2, c=2.1))
+    assert foo(pack) == test_utils.approx(2 + 2.1 + 2.1, rel=1e-3)
+
+
+@test_utils.test()
+def test_argpack_with_vector():
+    pack_type = ti.types.argpack(a=ti.i32, b=ti.types.vector(3, ti.f32), c=ti.f32)
+    pack = pack_type(a=1, b=[1.0, 2.0, 3.0], c=2.1)
+
+    @ti.kernel
+    def foo(pack: pack_type) -> ti.f32:
+        tmp = pack.a * pack.c
+        return tmp + pack.b[1]
+
+    assert foo(pack) == test_utils.approx(1 * 2.1 + 2.0, rel=1e-3)
+
+
+@test_utils.test()
 def test_argpack_multiple():
     arr = ti.ndarray(dtype=ti.math.vec3, shape=(4, 4))
     arr.fill([1.0, 2.0, 3.0])

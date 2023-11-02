@@ -206,7 +206,7 @@ size_t ArgPackType::get_element_offset(const std::vector<int> &indices) const {
       type_now = tensor_type->get_element_type();
     } else if (auto struct_type = type_now->cast<StructType>()) {
       std::vector<int> indices_for_struct;
-      indices_for_struct.assign(++it, indices.end());
+      indices_for_struct.assign(it, indices.end());
       offset += struct_type->get_element_offset(indices_for_struct);
       return offset;
     } else {

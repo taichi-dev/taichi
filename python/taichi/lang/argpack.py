@@ -9,7 +9,7 @@ from taichi.lang.exception import (
     TaichiSyntaxError,
 )
 from taichi.lang.matrix import MatrixType
-from taichi.lang.struct import StructType
+from taichi.lang.struct import StructType, Struct
 from taichi.lang.util import cook_dtype
 from taichi.types import (
     ndarray_type,
@@ -340,7 +340,7 @@ class ArgPackType(CompoundType):
 
             # If dtype is CompoundType and data is a scalar, it cannot be
             # casted in the self.cast call later. We need an initialization here.
-            if isinstance(dtype, CompoundType) and not isinstance(data, (dict, ArgPack)):
+            if isinstance(dtype, CompoundType) and not isinstance(data, (dict, ArgPack, Struct)):
                 data = dtype(data)
 
             d[name] = data

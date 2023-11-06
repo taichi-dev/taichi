@@ -72,12 +72,19 @@ elseif (WIN32)
   )
   list(APPEND _cmake_import_check_files_for_taichi_c_api "${_IMPORT_PREFIX}/bin/taichi_c_api.dll" )
 elseif (UNIX)
+  # Check if the .so file exists in the lib directory
+  if(EXISTS "${_IMPORT_PREFIX}/lib/libtaichi_c_api.so")
+    set(TAICHI_SO_LOCATION "${_IMPORT_PREFIX}/lib/libtaichi_c_api.so")
+  else()
+    set(TAICHI_SO_LOCATION "${_IMPORT_PREFIX}/lib64/libtaichi_c_api.so")
+  endif()
+
   set_target_properties(taichi_c_api PROPERTIES
-    IMPORTED_LOCATION "${_IMPORT_PREFIX}/lib/libtaichi_c_api.so"
+    IMPORTED_LOCATION "${TAICHI_SO_LOCATION}"
     IMPORTED_SONAME "libtaichi_c_api.so"
     INTERFACE_INCLUDE_DIRECTORIES "${_IMPORT_PREFIX}/include"
   )
-  list(APPEND _cmake_import_check_files_for_taichi_c_api "${_IMPORT_PREFIX}/lib/libtaichi_c_api.so" )
+  list(APPEND _cmake_import_check_files_for_taichi_c_api "${TAICHI_SO_LOCATION}" )
 endif()
 
 # ------------------------------------------------------------------------------

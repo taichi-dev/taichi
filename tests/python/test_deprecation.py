@@ -100,7 +100,9 @@ def test_deprecate_experimental_real_func():
     with pytest.warns(
         DeprecationWarning,
         match="ti.experimental.real_func is deprecated because it is no longer experimental. "
-            "Use ti.real_func instead."):
+        "Use ti.real_func instead.",
+    ):
+
         @ti.experimental.real_func
         def foo(a: ti.i32) -> ti.i32:
             s = 0

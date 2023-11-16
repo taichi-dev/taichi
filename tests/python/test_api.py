@@ -129,6 +129,7 @@ user_api[ti] = [
     "dx12",
     "eig",
     "exp",
+    "experimental",
     "extension",
     "f16",
     "f32",

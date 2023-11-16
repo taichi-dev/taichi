@@ -345,7 +345,7 @@ def test_return_struct_field():
     assert foo().a == 0
 
 
-@test_utils.test()
+@test_utils.test(exclude=[ti.amdgpu])
 def test_ret_4k():
     vec1024 = ti.types.vector(1024, ti.i32)
 

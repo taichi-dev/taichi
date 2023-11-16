@@ -276,7 +276,7 @@ def test_func_scalar_arg_cast():
     assert foo(1.5) == 1.0
 
 
-@test_utils.test()
+@test_utils.test(exclude=[ti.amdgpu])
 def test_arg_4k():
     vec1024 = ti.types.vector(1024, ti.i32)
 

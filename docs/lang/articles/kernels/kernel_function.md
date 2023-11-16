@@ -156,8 +156,8 @@ When defining the arguments of a kernel in Taichi, please make sure that each of
 
 :::caution WARNING
 
-We have removed the limit on the size of the argument in Taichi v1.7.0. 
-However, please keep in mind that the size of arguments in a kernel should be small. 
+We have removed the limit on the size of the argument in Taichi v1.7.0.
+However, please keep in mind that the size of arguments in a kernel should be small.
 When you pass a large argument to a kernel, the compile time will increase significantly.
 If you find yourself passing a large argument to a kernel, you may want to consider using a `ti.field()` or a `ti.types.ndarray()` instead.
 
@@ -284,7 +284,7 @@ All Taichi inline functions are force-inlined. This means that if you call a Tai
 
 ### Arguments
 
-A Taichi inline function can accept multiple arguments, which may include scalar, `ti.types.matrix()`, `ti.types.vector()`, `ti.types.struct()`, `ti.types.ndarray()`, `ti.field()`, and `ti.template()` types. 
+A Taichi inline function can accept multiple arguments, which may include scalar, `ti.types.matrix()`, `ti.types.vector()`, `ti.types.struct()`, `ti.types.ndarray()`, `ti.field()`, and `ti.template()` types.
 Note that unlike Taichi kernels, it is not strictly required to type hint the function arguments (but it is still recommended).
 
 ### Return values
@@ -298,7 +298,7 @@ Return values of a Taichi inline function can be scalars, `ti.types.matrix()`, `
 
 ### Arguments
 
-A Taichi real function can accept multiple arguments, which may include scalar, `ti.types.matrix()`, `ti.types.vector()`, `ti.types.struct()`, `ti.types.ndarray()`, `ti.field()`, and `ti.template()` types. 
+A Taichi real function can accept multiple arguments, which may include scalar, `ti.types.matrix()`, `ti.types.vector()`, `ti.types.struct()`, `ti.types.ndarray()`, `ti.field()`, and `ti.template()` types.
 Note that you must type hint the function arguments.
 
 ### Return values

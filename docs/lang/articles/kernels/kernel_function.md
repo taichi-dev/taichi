@@ -202,7 +202,7 @@ When defining the return value of a kernel in Taichi, it is important to follow 
 
 We have removed the limit on the size of the return values in Taichi v1.7.0.
 However, please keep in mind that the size of return values in a kernel should be small.
-When you pass a large argument to a kernel, the compile time will increase significantly.
+When the return value of the kernel is very large, the compile time will increase significantly.
 If you find your return value is very large, you may want to consider using a `ti.field()` or a `ti.types.ndarray()` instead.
 
 We have not tested return values with a very large size (>4KB), and we do not guarantee that it will work properly.

@@ -350,7 +350,7 @@ def test_ret_4k():
     vec1024 = ti.types.vector(1024, ti.i32)
 
     @ti.kernel
-    def foo()->vec1024:
+    def foo() -> vec1024:
         ret = vec1024(0)
         for i in range(1024):
             ret[i] = i

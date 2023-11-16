@@ -281,7 +281,7 @@ def test_arg_4k():
     vec1024 = ti.types.vector(1024, ti.i32)
 
     @ti.kernel
-    def bar(a: vec1024)->ti.i32:
+    def bar(a: vec1024) -> ti.i32:
         ret = 0
         for i in range(1024):
             ret += a[i]

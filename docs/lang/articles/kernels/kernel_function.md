@@ -154,6 +154,16 @@ You can also use argument packs if you want to pass many arguments to a kernel. 
 
 When defining the arguments of a kernel in Taichi, please make sure that each of the arguments has type hint.
 
+:::caution WARNING
+
+We have removed the limit on the size of the argument in Taichi v1.7.0. 
+However, please keep in mind that the size of arguments in a kernel should be small. 
+When you pass a large argument to a kernel, the compile time will increase significantly.
+If you find yourself passing a large argument to a kernel, you may want to consider using a `ti.field()` or a `ti.types.ndarray()` instead.
+
+We have not tested arguments with a very large size (>4KB), and we do not guarantee that it will work properly.
+:::
+
 ### Return value
 
 In Taichi, a kernel can have multiple return values, and the return values can either be a scalar, `ti.types.matrix()`, or `ti.types.vector()`.
@@ -187,6 +197,16 @@ When defining the return value of a kernel in Taichi, it is important to follow 
 
 - Use type hint to specify the return value of a kernel.
 - Make sure that you have at most one return statement in a kernel.
+
+:::caution WARNING
+
+We have removed the limit on the size of the return values in Taichi v1.7.0.
+However, please keep in mind that the size of return values in a kernel should be small.
+When you pass a large argument to a kernel, the compile time will increase significantly.
+If you find your return value is very large, you may want to consider using a `ti.field()` or a `ti.types.ndarray()` instead.
+
+We have not tested return values with a very large size (>4KB), and we do not guarantee that it will work properly.
+:::
 
 #### Automatic type cast
 
@@ -264,11 +284,8 @@ All Taichi inline functions are force-inlined. This means that if you call a Tai
 
 ### Arguments
 
-A Taichi inline function can accept multiple arguments, which may include scalar, `ti.types.matrix()`, `ti.types.vector()`, `ti.types.struct()`, `ti.types.ndarray()`, `ti.field()`, and `ti.template()` types. Note that some of the restrictions on kernel arguments do not apply to Taichi functions:
-
-- It is not strictly required to type hint the function arguments (but it is still recommended).
-- You can pass an unlimited number of elements in the function arguments.
-
+A Taichi inline function can accept multiple arguments, which may include scalar, `ti.types.matrix()`, `ti.types.vector()`, `ti.types.struct()`, `ti.types.ndarray()`, `ti.field()`, and `ti.template()` types. 
+Note that unlike Taichi kernels, it is not strictly required to type hint the function arguments (but it is still recommended).
 
 ### Return values
 
@@ -281,10 +298,8 @@ Return values of a Taichi inline function can be scalars, `ti.types.matrix()`, `
 
 ### Arguments
 
-A Taichi real function can accept multiple arguments, which may include scalar, `ti.types.matrix()`, `ti.types.vector()`, `ti.types.struct()`, `ti.types.ndarray()`, `ti.field()`, and `ti.template()` types. Note the following:
-
-- You must type hint the function arguments.
-- You can pass an unlimited number of elements in the function arguments.
+A Taichi real function can accept multiple arguments, which may include scalar, `ti.types.matrix()`, `ti.types.vector()`, `ti.types.struct()`, `ti.types.ndarray()`, `ti.field()`, and `ti.template()` types. 
+Note that you must type hint the function arguments.
 
 ### Return values
 
@@ -302,7 +317,6 @@ Return values of a Taichi inline function can be scalars, `ti.types.matrix()`, `
 | Type hint arguments                                   | Mandatory                                                                                                                                 | Recommended                                                  | Mandatory                                                    |
 | Type hint return values                               | Mandatory                                                                                                                                 | Recommended                                                  | Mandatory                                                    |
 | Return type                                           | <ul><li>Scalar</li><li>`ti.types.matrix()`</li><li>`ti.types.vector()`</li><li>`ti.types.struct()`(Only on LLVM-based backends)</li></ul> | <ul><li>Scalar</li><li>`ti.types.matrix()`</li><li>`ti.types.vector()`</li><li>`ti.types.struct()`</li><li>...</li></ul> | <ul><li>Scalar</li><li>`ti.types.matrix()`</li><li>`ti.types.vector()`</li><li>`ti.types.struct()`</li><li>...</li></ul> |
-| Maximum number of elements in arguments               | <ul><li>Unlimited (CPU and CUDA)</li><li>32 (OpenGL)</li><li>64 (otherwise)</li></ul>                                                     | Unlimited                                                    | Unlimited                                                    |
 | Maximum number of return statements                   | 1                                                                                                                                         | 1                                                            | Unlimited                                                    |
 
 

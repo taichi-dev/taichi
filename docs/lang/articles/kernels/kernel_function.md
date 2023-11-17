@@ -346,7 +346,7 @@ Return values of a Taichi real function can be scalars, `ti.types.matrix()`, `ti
 
 The example below calls the real function `sum_func` recursively to calculate the sum of `1` to `n`.
 Inside the real function, there are two `return` statements, and the recursion depth is not a constant number.
-The cuda stack limit is set to `32768` to allow deep runtime recursion.
+The cuda stack limit is set to 32kB to allow deep runtime recursion.
 
 ```python skip-ci:ToyDemo
 ti.init(arch=ti.cuda, cuda_stack_limit=32768)

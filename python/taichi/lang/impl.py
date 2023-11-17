@@ -1148,7 +1148,7 @@ def grouped(x):
         prints 0, 1, 2, 3, 4, 5
 
         >>> # with ti.grouped
-        >>> for I in ti.grouped(ndrange(2, 3)):
+        >>> for I in ti.grouped(ti.ndrange(2, 3)):
         >>>     print(I)
         prints [0, 0], [0, 1], [0, 2], [1, 0], [1, 1], [1, 2]
     """

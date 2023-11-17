@@ -274,3 +274,19 @@ def test_func_scalar_arg_cast():
         return bar(a)
 
     assert foo(1.5) == 1.0
+
+
+@test_utils.test(exclude=[ti.amdgpu])
+def test_arg_4k():
+    vec1024 = ti.types.vector(1024, ti.i32)
+
+    @ti.kernel
+    def bar(a: vec1024) -> ti.i32:
+        ret = 0
+        for i in range(1024):
+            ret += a[i]
+
+        return ret
+
+    a = vec1024([i for i in range(1024)])
+    assert bar(a) == 523776

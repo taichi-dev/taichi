@@ -360,6 +360,8 @@ print(sum(100))  # 5050
 
 ```
 
+You can find more examples of the real function in the [repository](https://github.com/taichi-dev/taichi/tree/master/python/taichi/examples/real_func).
+
 ## A recap: Taichi kernel vs. Taichi inline function vs. Taichi real function
 
 |                                                       | **Kernel**                                                                                                                                | **Taichi Function**                                          | ** Taichi Real Function**                                    |

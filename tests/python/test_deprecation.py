@@ -67,7 +67,7 @@ def test_remove_texture_ndim():
 @test_utils.test()
 def test_remove_rwtexture_ndim():
     with pytest.raises(
-            ti.TaichiRuntimeError,
+        ti.TaichiRuntimeError,
         match=r"The shape argument for texture is deprecated in v1.6.0, and it is removed in v1.7.0. "
         r"Please use ndim instead. \(Note that you no longer need the exact texture size.\)",
     ):

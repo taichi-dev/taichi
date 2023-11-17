@@ -300,6 +300,8 @@ Taichi real functions are Taichi functions that are compiled into separate funct
 The code inside the Taichi real function are executed serially, which means that you cannot write parallel loop inside it.
 However, if the real function is called inside a parallel loop, the real function will be executed in parallel along with other parts of the parallel loop.
 
+If you want to do deep runtime recursion on CUDA, you may need to increase the stack size by passing `cuda_stack_limit` to `ti.init()`.
+
 Taichi real functions are only supported on the LLVM-based backends (CPU and CUDA backends).
 
 ### Arguments
@@ -344,8 +346,11 @@ Return values of a Taichi real function can be scalars, `ti.types.matrix()`, `ti
 
 The example below calls the real function `sum_func` recursively to calculate the sum of `1` to `n`.
 Inside the real function, there are two `return` statements, and the recursion depth is not a constant number.
+The cuda stack limit is set to `32768` to allow deep runtime recursion.
 
-```python
+```python skip-ci:ToyDemo
+ti.init(arch=ti.cuda, cuda_stack_limit=32768)
+
 @ti.real_func
 def sum_func(n: ti.i32) -> ti.i32:
     if n == 0:
@@ -357,7 +362,6 @@ def sum(n: ti.i32) -> ti.i32:
     return sum_func(n)
 
 print(sum(100))  # 5050
-
 ```
 
 You can find more examples of the real function in the [repository](https://github.com/taichi-dev/taichi/tree/master/python/taichi/examples/real_func).

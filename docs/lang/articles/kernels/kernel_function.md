@@ -296,8 +296,8 @@ Return values of a Taichi inline function can be scalars, `ti.types.matrix()`, `
 
 ## Taichi real function
 
-Taichi real functions are Taichi functions that are compiled into separate functions (like the device functions in CUDA) and can be called recursively at runtime. 
-The code inside the Taichi real function are executed serially, which means that you cannot write parallel loop inside it. 
+Taichi real functions are Taichi functions that are compiled into separate functions (like the device functions in CUDA) and can be called recursively at runtime.
+The code inside the Taichi real function are executed serially, which means that you cannot write parallel loop inside it.
 However, if the real function is called inside a parallel loop, the real function will be executed in parallel along with other parts of the parallel loop.
 
 Taichi real functions are only supported on the LLVM-based backends (CPU and CUDA backends).
@@ -330,7 +330,7 @@ foo()  # Prints 2
 
 :::caution WARNING
 
-Passing scalars by reference may be buggy on NVIDIA GPUs with Pascal or older architecture (for example GTX 1080 Ti). 
+Passing scalars by reference may be buggy on NVIDIA GPUs with Pascal or older architecture (for example GTX 1080 Ti).
 We recommend using the latest NVIDIA GPUs (at least 20-series) if you want to pass a scalar by reference.
 
 :::

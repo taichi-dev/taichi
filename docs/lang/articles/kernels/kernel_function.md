@@ -296,18 +296,69 @@ Return values of a Taichi inline function can be scalars, `ti.types.matrix()`, `
 
 ## Taichi real function
 
+Taichi real functions are Taichi functions that are compiled into separate functions (like the device functions in CUDA) and can be called recursively at runtime. 
+The code inside the Taichi real function are executed serially, which means that you cannot write parallel loop inside it. 
+However, if the real function is called inside a parallel loop, the real function will be executed in parallel along with other parts of the parallel loop.
+
+Taichi real functions are only supported on the LLVM-based backends (CPU and CUDA backends).
+
 ### Arguments
 
 A Taichi real function can accept multiple arguments, which may include scalar, `ti.types.matrix()`, `ti.types.vector()`, `ti.types.struct()`, `ti.types.ndarray()`, `ti.field()`, and `ti.template()` types.
+The scalar, `ti.types.matrix()`, `ti.types.vector()`, and `ti.types.struct()` arguments are passed by value, while the `ti.types.ndarray()`, `ti.field()`, and `ti.template()` arguments are passed by reference.
+
 Note that you must type hint the function arguments.
+
+#### Passing a scalar by reference
+The Taichi real function also supports passing a scalar by reference. To do this, you need to wrap the type hint with `ti.ref()`.
+
+Here is an example of passing an integer by reference:
+
+```python
+@ti.real_func
+def add_one(a: ti.ref(ti.i32)):
+  a += 1
+
+@ti.kernel
+def foo():
+  a = 1
+  add_one(a)
+  print(a)
+
+foo()  # Prints 2
+```
+
+:::caution WARNING
+
+Passing scalars by reference may be buggy on NVIDIA GPUs with Pascal or older architecture (for example GTX 1080 Ti). 
+We recommend using the latest NVIDIA GPUs (at least 20-series) if you want to pass a scalar by reference.
+
+:::
 
 ### Return values
 
-Return values of a Taichi inline function can be scalars, `ti.types.matrix()`, `ti.types.vector()`, `ti.types.struct()`, or other types. Note the following:
+Return values of a Taichi real function can be scalars, `ti.types.matrix()`, `ti.types.vector()`, `ti.types.struct()`, or other types. Note the following:
 
 - You must type hint the return values of a Taichi real function.
 - A Taichi real function *can* have more than one `return` statement.
 
+The example below calls the real function `sum_func` recursively to calculate the sum of `1` to `n`.
+Inside the real function, there are two `return` statements, and the recursion depth is not a constant number.
+
+```python
+@ti.real_func
+def sum_func(n: ti.i32) -> ti.i32:
+    if n == 0:
+        return 0
+    return sum_func(n - 1) + n
+
+@ti.kernel
+def sum(n: ti.i32) -> ti.i32:
+    return sum_func(n)
+
+print(sum(100))  # 5050
+
+```
 
 ## A recap: Taichi kernel vs. Taichi inline function vs. Taichi real function
 

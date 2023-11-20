@@ -373,16 +373,13 @@ def test_texture():
     _rw_tex = ti.graph.Arg(
         ti.graph.ArgKind.RWTEXTURE,
         "rw_tex",
-        channel_format=ti.f32,
-        shape=(128, 128),
-        num_channels=1,
+        ndim=2,
+        fmt=ti.Format.r32f,
     )
     _tex = ti.graph.Arg(
         ti.graph.ArgKind.TEXTURE,
         "tex",
-        channel_format=ti.f32,
-        shape=(128, 128),
-        num_channels=1,
+        ndim=2,
     )
 
     g_builder = ti.graph.GraphBuilder()
@@ -452,9 +449,8 @@ def test_texture_struct_for():
     sym_tex = ti.graph.Arg(
         ti.graph.ArgKind.RWTEXTURE,
         "tex",
-        channel_format=ti.f32,
-        shape=res,
-        num_channels=1,
+        fmt=ti.Format.r32f,
+        ndim=2,
     )
     sym_arr = ti.graph.Arg(ti.graph.ArgKind.NDARRAY, "arr", ti.f32, ndim=2)
 

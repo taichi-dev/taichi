@@ -6,13 +6,13 @@ export TI_CI=1
 
 # IF YOU PIN THIS TO A COMMIT/BRANCH, YOU'RE RESPONSIBLE TO REVERT IT BACK TO MASTER ONCE MERGED.
 export TAICHI_AOT_DEMO_URL=https://github.com/taichi-dev/taichi-aot-demo
-export TAICHI_AOT_DEMO_BRANCH=master
+export TAICHI_AOT_DEMO_BRANCH=update_cgraph_api
 
 export TAICHI_UNITY2_URL=https://github.com/taichi-dev/taichi-unity2
 export TAICHI_UNITY2_BRANCH=main
 
 export TAICHI_UNITY_EXAMPLE_URL=https://github.com/taichi-dev/Taichi-UnityExample
-export TAICHI_UNITY_EXAMPLE_BRANCH=main
+export TAICHI_UNITY_EXAMPLE_BRANCH=update_cgraph_api
 
 . $(dirname $0)/common-utils.sh
 

@@ -36,7 +36,7 @@ def setup_clang(as_compiler=True) -> None:
             return
 
     elif (u.system, u.machine) == ("Windows", "AMD64"):
-        out = get_cache_home() / "clang-14"
+        out = get_cache_home() / "clang-14-v2"
         url = "https://github.com/taichi-dev/taichi_assets/releases/download/llvm15/clang-14.0.6-win-complete.zip"
         download_dep(url, out, force=True)
         clang = str(out / "bin" / "clang++.exe").replace("\\", "\\\\")

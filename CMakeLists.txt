@@ -197,14 +197,6 @@ if (TI_WITH_LLVM)
 
     check_clang_version()
 
-    if(${CLANG_VERSION_MAJOR} STREQUAL "")
-        # Do nothing
-    else()
-        if (${CLANG_VERSION_MAJOR} VERSION_GREATER ${CLANG_HIGHEST_VERSION})
-          message(FATAL_ERROR "${CLANG_EXECUTABLE} version: ${CLANG_VERSION}, required: <=${CLANG_HIGHEST_VERSION}. Consider passing -DCLANG_EXECUTABLE=/path/to/clang to cmake to use a specific clang.")
-        endif()
-    endif()
-
     add_subdirectory(taichi/runtime/llvm/runtime_module)
 endif()
 

@@ -78,7 +78,7 @@ def setup_basic_build_env():
         setup_msvc()
     else:
         # Use Clang on all other platforms
-        setup_clang()
+        setup_clang(as_compiler=True, use_env=False)
 
     setup_llvm()
     setup_vulkan()

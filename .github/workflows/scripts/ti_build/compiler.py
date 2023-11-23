@@ -19,7 +19,7 @@ from .tinysh import powershell
 
 # -- code --
 @banner("Setup Clang")
-def setup_clang(as_compiler=True) -> None:
+def setup_clang(as_compiler=True, use_env=True) -> None:
     """
     Setup Clang.
     """
@@ -49,12 +49,12 @@ def setup_clang(as_compiler=True) -> None:
     if as_compiler:
         cc = os.environ.get("CC")
         cxx = os.environ.get("CXX")
-        if cc:
+        if cc and use_env:
             warn(f"Explicitly specified compiler via environment variable CC={cc}, not configuring clang.")
         else:
             cmake_args["CMAKE_C_COMPILER"] = clang
 
-        if cxx:
+        if cxx and use_env:
             warn(f"Explicitly specified compiler via environment variable CXX={cxx}, not configuring clang++.")
         else:
             cmake_args["CMAKE_CXX_COMPILER"] = clangpp

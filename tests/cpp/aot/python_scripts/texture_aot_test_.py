@@ -44,30 +44,24 @@ def compile_aot(arch, is_graph):
         _tex0 = ti.graph.Arg(
             ti.graph.ArgKind.TEXTURE,
             "tex0",
-            channel_format=ti.f32,
-            shape=(128, 128),
-            num_channels=1,
+            ndim=2,
         )
         _rw_tex0 = ti.graph.Arg(
             ti.graph.ArgKind.RWTEXTURE,
             "rw_tex0",
-            channel_format=ti.f32,
-            shape=(128, 128),
-            num_channels=1,
+            ndim=2,
+            fmt=ti.Format.r32f,
         )
         _tex1 = ti.graph.Arg(
             ti.graph.ArgKind.TEXTURE,
             "tex1",
-            channel_format=ti.f32,
-            shape=(128, 128),
-            num_channels=1,
+            ndim=2,
         )
         _rw_tex1 = ti.graph.Arg(
             ti.graph.ArgKind.RWTEXTURE,
             "rw_tex1",
-            channel_format=ti.f32,
-            shape=(128, 128),
-            num_channels=1,
+            ndim=2,
+            fmt=ti.Format.r32f,
         )
         _arr = ti.graph.Arg(ti.graph.ArgKind.NDARRAY, "arr", dtype=ti.f32, ndim=2)
 

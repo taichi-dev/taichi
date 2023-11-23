@@ -247,7 +247,7 @@ void ti_set_last_error(TiError error, const char *message) {
 TiRuntime ti_create_runtime(TiArch arch, uint32_t device_index) {
   TiRuntime out = TI_NULL_HANDLE;
   TI_CAPI_TRY_CATCH_BEGIN();
-  TI_INFO("Taichi Runtime C-API version is: {}", TI_C_API_VERSION);
+  // TI_INFO("Taichi Runtime C-API version is: {}", TI_C_API_VERSION);
   switch (arch) {
 #ifdef TI_WITH_VULKAN
     case TI_ARCH_VULKAN: {

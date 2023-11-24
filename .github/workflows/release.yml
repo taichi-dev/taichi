@@ -19,7 +19,7 @@ env:
   METADATA_URL: ${{ secrets.METADATA_URL }}
   RELEASE_VERSION: ${{ github.event.inputs.version }}
   NIGHTLY: ${{ !github.event.inputs.version && '--nightly' || '' }}
-  CI_IMAGE_VERSION: '202305261112'
+  CI_IMAGE_VERSION: '202311231829'
   TI_CI: "1"
   TI_SKIP_VERSION_CHECK: 'ON'
   TI_USE_GIT_CACHE: ${{ vars.TI_USE_GIT_CACHE }}

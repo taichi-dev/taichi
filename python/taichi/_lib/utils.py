@@ -169,7 +169,8 @@ def _print_taichi_header():
     print(header)
 
 
-_print_taichi_header()
+if os.environ.get("ENABLE_TAICHI_HEADER_PRINT", True):
+    _print_taichi_header()
 
 
 def try_get_wheel_tag(module):

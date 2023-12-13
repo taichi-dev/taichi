@@ -58,7 +58,8 @@ void main() {
   gl_Position.y *= -1.0;
   frag_texcoord = in_texcoord;
   frag_pos = in_position;
-  frag_normal = in_normal;
+  mat3 normal_matrix = transpose(inverse(mat3(model)));
+  frag_normal = normalize(normal_matrix * in_normal);
 
   if (ubo_renderable.use_per_vertex_color == 0) {
     selected_color = vec4(ubo_renderable.color, 1.0);

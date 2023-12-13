@@ -57,8 +57,9 @@ void main() {
   gl_Position = ubo_scene.scene.projection * ubo_scene.scene.view * model * vec4(in_position, 1.0);
   gl_Position.y *= -1.0;
   frag_texcoord = in_texcoord;
-  frag_pos = in_position;
-  frag_normal = in_normal;
+  frag_pos = (model * vec4(in_position, 1.0)).xyz;
+  mat3 normal_matrx = transpose(inverse(mat3(model)));
+  frag_normal = normal_matrx * in_normal;
 
   if (ubo_renderable.use_per_vertex_color == 0) {
     selected_color = vec4(ubo_renderable.color, 1.0);

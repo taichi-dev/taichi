@@ -166,3 +166,19 @@ def test_shared_array_tensor_type():
 
     test()
     assert (y.to_numpy()[0] == [4.0, 8.0, 12.0, 16.0]).all()
+
+
+@test_utils.test(arch=[ti.cuda], debug=True)
+def test_shared_array_matrix():
+    @ti.kernel
+    def foo():
+        for x in range(10):
+            shared = ti.simt.block.SharedArray((10,), dtype=ti.math.vec3)
+            shared[x] = ti.Vector([x + 1, x + 2, x + 3])
+            assert shared[x].z == x + 3
+            assert (shared[x] == ti.Vector([x + 1, x + 2, x + 3])).all()
+
+            print(shared[x].z)
+            print(shared[x])
+
+    foo()

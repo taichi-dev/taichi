@@ -384,6 +384,9 @@ void CFGNode::reaching_definition_analysis(bool after_lower_access) {
       if (after_lower_access &&
           !((data_source_ptr->is<MatrixPtrStmt>() &&
              data_source_ptr->as<MatrixPtrStmt>()->origin->is<AllocaStmt>()) ||
+            (data_source_ptr->is<MatrixPtrStmt>() &&
+             data_source_ptr->as<MatrixPtrStmt>()
+                 ->origin->is<MatrixPtrStmt>()) ||
             data_source_ptr->is<AllocaStmt>())) {
         // After lower_access, we only analyze local variables.
         continue;
@@ -555,6 +558,8 @@ void CFGNode::live_variable_analysis(bool after_lower_access) {
       if (!after_lower_access ||
           (load_ptr->is<MatrixPtrStmt>() &&
            load_ptr->as<MatrixPtrStmt>()->origin->is<AllocaStmt>()) ||
+          (load_ptr->is<MatrixPtrStmt>() &&
+           load_ptr->as<MatrixPtrStmt>()->origin->is<MatrixPtrStmt>()) ||
           (load_ptr->is<AllocaStmt>() || load_ptr->is<AdStackAllocaStmt>())) {
         // After lower_access, we only analyze local variables and stacks.
         if (!contain_variable(live_kill, load_ptr)) {
@@ -581,11 +586,64 @@ void CFGNode::live_variable_analysis(bool after_lower_access) {
       if (!after_lower_access ||
           (store_ptr->is<MatrixPtrStmt>() &&
            store_ptr->as<MatrixPtrStmt>()->origin->is<AllocaStmt>()) ||
+          (store_ptr->is<MatrixPtrStmt>() &&
+           store_ptr->as<MatrixPtrStmt>()->origin->is<MatrixPtrStmt>()) ||
           (store_ptr->is<AllocaStmt>() || store_ptr->is<AdStackAllocaStmt>())) {
         // After lower_access, we only analyze local variables and stacks.
         live_kill.insert(store_ptr);
       }
     }
+  }
+}
+
+static void recursive_update_aliased_elements(
+    const std::unordered_map<Stmt *, std::vector<Stmt *>>
+        &tensor_to_matrix_ptrs_map,
+    std::unordered_map<Stmt *, CFGNode::UseDefineStatus> &container,
+    Stmt *key,
+    bool to_erase) {
+  if (tensor_to_matrix_ptrs_map.find(key) != tensor_to_matrix_ptrs_map.end()) {
+    const auto &elements_address = tensor_to_matrix_ptrs_map.at(key);
+    // Update aliased MatrixPtrStmt for TensorType<>*
+    for (const auto &element_address : elements_address) {
+      if (to_erase) {
+        if (container.find(element_address) != container.end()) {
+          container.erase(element_address);
+        }
+      } else {
+        container[element_address] = CFGNode::UseDefineStatus::NONE;
+        if (element_address->ret_type.ptr_removed()->is<TensorType>()) {
+          container[element_address] = CFGNode::UseDefineStatus::FULL;
+        }
+      }
+
+      // Recursively update aliased addresses
+      recursive_update_aliased_elements(tensor_to_matrix_ptrs_map, container,
+                                        element_address, to_erase);
+    }
+  }
+}
+
+static void recursive_update_aliased_parent(
+    const std::unordered_map<Stmt *, Stmt *> &matrix_ptr_to_tensor_map,
+    std::unordered_map<Stmt *, CFGNode::UseDefineStatus> &container,
+    Stmt *key,
+    bool to_erase) {
+  if (matrix_ptr_to_tensor_map.find(key) != matrix_ptr_to_tensor_map.end()) {
+    const auto &tensor_address = matrix_ptr_to_tensor_map.at(key);
+    // no matter to_erase or not, the tensor_address is only partially defined
+    // or used
+    if (to_erase) {
+      if (container.find(tensor_address) != container.end()) {
+        container[tensor_address] = CFGNode::UseDefineStatus::PARTIAL;
+      }
+    } else {
+      container[tensor_address] = CFGNode::UseDefineStatus::PARTIAL;
+    }
+
+    // Recursively update aliased addresses
+    recursive_update_aliased_parent(matrix_ptr_to_tensor_map, container,
+                                    tensor_address, to_erase);
   }
 }
 
@@ -596,35 +654,13 @@ static void update_aliased_stmts(
     std::unordered_map<Stmt *, CFGNode::UseDefineStatus> &container,
     Stmt *key,
     bool to_erase) {
-  if (tensor_to_matrix_ptrs_map.find(key) != tensor_to_matrix_ptrs_map.end()) {
-    auto scalars_address = tensor_to_matrix_ptrs_map.at(key);
-    // Update aliased MatrixPtrStmt for TensorType<>*
-    for (auto scalar_address : scalars_address) {
-      if (to_erase) {
-        if (container.find(scalar_address) != container.end()) {
-          TI_ASSERT(container[scalar_address] ==
-                    CFGNode::UseDefineStatus::NONE);
-          container.erase(scalar_address);
-        }
-      } else {
-        container[scalar_address] = CFGNode::UseDefineStatus::NONE;
-      }
-    }
-  }
+  // Update aliased MatrixPtrStmt for TensorType<>*
+  recursive_update_aliased_elements(tensor_to_matrix_ptrs_map, container, key,
+                                    to_erase);
 
   // Update aliased TensorType<>* for MatrixPtrStmt
-  if (matrix_ptr_to_tensor_map.find(key) != matrix_ptr_to_tensor_map.end()) {
-    auto tensor_address = matrix_ptr_to_tensor_map.at(key);
-    // no matter to_erase or not, the tensor_address is only partially defined
-    // or used
-    if (to_erase) {
-      if (container.find(tensor_address) != container.end()) {
-        container[tensor_address] = CFGNode::UseDefineStatus::PARTIAL;
-      }
-    } else {
-      container[tensor_address] = CFGNode::UseDefineStatus::PARTIAL;
-    }
-  }
+  recursive_update_aliased_parent(matrix_ptr_to_tensor_map, container, key,
+                                  to_erase);
 }
 
 // Insert or erase "key" to "container".
@@ -648,6 +684,7 @@ static void update_container_with_alias(
   } else {
     container[key] = CFGNode::UseDefineStatus::NONE;
   }
+  // Recursively update aliased addresses
   update_aliased_stmts(tensor_to_matrix_ptrs_map, matrix_ptr_to_tensor_map,
                        container, key, to_erase);
 }
@@ -715,6 +752,8 @@ bool CFGNode::dead_store_elimination(bool after_lower_access) {
       if (!after_lower_access ||
           (store_ptr->is<MatrixPtrStmt>() &&
            store_ptr->as<MatrixPtrStmt>()->origin->is<AllocaStmt>()) ||
+          (store_ptr->is<MatrixPtrStmt>() &&
+           store_ptr->as<MatrixPtrStmt>()->origin->is<MatrixPtrStmt>()) ||
           (store_ptr->is<AllocaStmt>() || store_ptr->is<AdStackAllocaStmt>())) {
         // !may_contain_variable(live_in_this_node, store_ptr): address is not
         //      loaded after this store
@@ -816,6 +855,8 @@ bool CFGNode::dead_store_elimination(bool after_lower_access) {
       if (!after_lower_access ||
           (load_ptr->is<MatrixPtrStmt>() &&
            load_ptr->as<MatrixPtrStmt>()->origin->is<AllocaStmt>()) ||
+          (load_ptr->is<MatrixPtrStmt>() &&
+           load_ptr->as<MatrixPtrStmt>()->origin->is<MatrixPtrStmt>()) ||
           (load_ptr->is<AllocaStmt>() || load_ptr->is<AdStackAllocaStmt>())) {
         // live_load_in_this_node[addr]: tracks the
         //        next load to the same address
@@ -844,6 +885,8 @@ bool CFGNode::dead_store_elimination(bool after_lower_access) {
       if (!after_lower_access ||
           (load_ptr->is<MatrixPtrStmt>() &&
            load_ptr->as<MatrixPtrStmt>()->origin->is<AllocaStmt>()) ||
+          (load_ptr->is<MatrixPtrStmt>() &&
+           load_ptr->as<MatrixPtrStmt>()->origin->is<MatrixPtrStmt>()) ||
           (load_ptr->is<AllocaStmt>() || load_ptr->is<AdStackAllocaStmt>())) {
         // Addr is used in this node, so it's live in this node
         update_container_with_alias(tensor_to_matrix_ptrs_map,
@@ -976,6 +1019,8 @@ void ControlFlowGraph::reaching_definition_analysis(bool after_lower_access) {
       auto stmt = nodes[i]->block->statements[j].get();
       if ((stmt->is<MatrixPtrStmt>() &&
            stmt->as<MatrixPtrStmt>()->origin->is<AllocaStmt>()) ||
+          (stmt->is<MatrixPtrStmt>() &&
+           stmt->as<MatrixPtrStmt>()->origin->is<MatrixPtrStmt>()) ||
           (!after_lower_access &&
            (stmt->is<GlobalPtrStmt>() || stmt->is<ExternalPtrStmt>() ||
             stmt->is<BlockLocalPtrStmt>() || stmt->is<ThreadLocalPtrStmt>() ||

@@ -843,12 +843,11 @@ bool IndexExpression::is_local() const {
 }
 
 bool IndexExpression::is_global() const {
-  // Special case: Indexing into TensorType-element of ExternalPtrStmt
-  // or GlobalPtrStmt should be treated as global ptrs
   if (var.is<IndexExpression>()) {
-    TI_ASSERT(var.cast<IndexExpression>()->is_matrix_field() ||
-              var.cast<IndexExpression>()->is_ndarray());
-    return true;
+    // Special case: Pointer chasing. For example, if we are indexing into
+    // tensor elements of fields / ndarrays, this index expr should be treated
+    // as global.
+    return var.cast<IndexExpression>()->is_global();
   }
 
   // Only Ndarray and Field comes outside from a kernel

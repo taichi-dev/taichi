@@ -765,7 +765,9 @@ class Kernel:
 
                     if v.requires_grad:
                         if not isinstance(v.grad, torch.Tensor):
-                            raise ValueError(f"Expecting torch.Tensor for gradient tensor, but getting {v.grad.__class__.__name__} instead")
+                            raise ValueError(
+                                f"Expecting torch.Tensor for gradient tensor, but getting {v.grad.__class__.__name__} instead"
+                            )
                         if not v.grad.is_contiguous():
                             raise ValueError(
                                 "Non contiguous gradient tensors are not supported, please call tensor.grad.contiguous() before passing it into taichi kernel."

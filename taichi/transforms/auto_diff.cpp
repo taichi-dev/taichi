@@ -643,10 +643,11 @@ class RegulateTensorTypedStatements : public BasicStmtVisitor {
 
         auto matrix_index = Stmt::make<MatrixInitStmt>(index_values);
         matrix_index->ret_type = index_tensor_type;
-
+        auto cmp_tensor_type = TypeFactory::get_instance().get_tensor_type(
+            tensor_shape, PrimitiveType::u1);
         auto matrix_eq = Stmt::make<BinaryOpStmt>(
             BinaryOpType::cmp_eq, matrix_offset.get(), matrix_index.get());
-        matrix_eq->ret_type = index_tensor_type;
+        matrix_eq->ret_type = cmp_tensor_type;
 
         auto orig_value = Stmt::make<Load>(orig_stmt);
         orig_value->ret_type = tensor_type;
@@ -843,9 +844,11 @@ class ReplaceLocalVarWithStacks : public BasicStmtVisitor {
           auto matrix_index = Stmt::make<MatrixInitStmt>(index_values);
           matrix_index->ret_type = index_tensor_type;
 
+          auto cmp_tensor_type = TypeFactory::get_instance().get_tensor_type(
+              tensor_shape, PrimitiveType::u1);
           auto matrix_eq = Stmt::make<BinaryOpStmt>(
               BinaryOpType::cmp_eq, matrix_offset.get(), matrix_index.get());
-          matrix_eq->ret_type = index_tensor_type;
+          matrix_eq->ret_type = cmp_tensor_type;
 
           auto matrix_alloca_value =
               Stmt::make<AdStackLoadTopStmt>(stack_top_stmt->stack);
@@ -1817,11 +1820,12 @@ class MakeAdjoint : public ADTransform {
 
       auto offset_matrix_init_stmt = insert<MatrixInitStmt>(offset_values);
       offset_matrix_init_stmt->ret_type = index_tensor_type;
-
+      auto cmp_tensor_type = TypeFactory::get_instance().get_tensor_type(
+          tensor_shape, PrimitiveType::u1);
       auto bin_eq_stmt =
           insert<BinaryOpStmt>(BinaryOpType::cmp_eq, offset_matrix_init_stmt,
                                indices_matrix_init_stmt);
-      bin_eq_stmt->ret_type = index_tensor_type;
+      bin_eq_stmt->ret_type = cmp_tensor_type;
 
       auto select_stmt = insert<TernaryOpStmt>(
           TernaryOpType::select, bin_eq_stmt, stmt_adj_matrix_init_stmt,

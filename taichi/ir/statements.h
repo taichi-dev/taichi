@@ -1551,23 +1551,6 @@ class LoopLinearIndexStmt : public Stmt {
 };
 
 /**
- * global thread index, i.e. thread_idx() + block_idx() * block_dim()
- */
-class GlobalThreadIndexStmt : public Stmt {
- public:
-  explicit GlobalThreadIndexStmt() {
-    TI_STMT_REG_FIELDS;
-  }
-
-  bool has_global_side_effect() const override {
-    return false;
-  }
-
-  TI_STMT_DEF_FIELDS(ret_type);
-  TI_DEFINE_ACCEPT_AND_CLONE
-};
-
-/**
  * The lowest |index|-th index of the |loop| among the iterations iterated by
  * the block.
  */
@@ -1667,6 +1650,11 @@ class ClearListStmt : public Stmt {
 // Checks if the task represented by |stmt| contains a single ClearListStmt.
 bool is_clear_list_task(const OffloadedStmt *stmt);
 
+/**
+ * @brief Statement for calling an internal function.
+ * @note with_runtime_context is used to indicate whether the function uses the
+ * LLVM runtime context. (Which is a pointer to the global runtime object)
+ */
 class InternalFuncStmt : public Stmt {
  public:
   std::string func_name;
@@ -1694,6 +1682,10 @@ class InternalFuncStmt : public Stmt {
 
 class Texture;
 
+/**
+ * @brief A pointer to a texture.
+ * @note This derives a TexturePtr from an argument load statement.
+ */
 class TexturePtrStmt : public Stmt {
  public:
   Stmt *arg_load_stmt{nullptr};
@@ -1733,6 +1725,12 @@ class TexturePtrStmt : public Stmt {
   TI_DEFINE_ACCEPT_AND_CLONE
 };
 
+/**
+ * @brief Texture operation statement.
+ *
+ * @note If texture_ptr->is_storage, the statement can be a load / store.
+ *      Otherwise, it can be a sample / texel fetch.
+ */
 class TextureOpStmt : public Stmt {
  public:
   TextureOpType op;

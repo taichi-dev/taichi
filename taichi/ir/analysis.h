@@ -70,7 +70,8 @@ namespace analysis {
  *   The second statement to check.
  *
  * @return
- *   The analyzed result.
+ *   The result of the alias analysis, which could be AliasResult::uncertain,
+ * AliasResult::different, or AliasResult::same.
  */
 AliasResult alias_analysis(Stmt *var1, Stmt *var2);
 

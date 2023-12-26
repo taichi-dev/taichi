@@ -126,13 +126,6 @@ class BasicBlockSimplify : public IRVisitor {
     set_done(stmt);
   }
 
-  void visit(IntegerOffsetStmt *stmt) override {
-    if (stmt->offset == 0) {
-      stmt->replace_usages_with(stmt->input);
-      modifier.erase(stmt);
-    }
-  }
-
   template <typename T>
   static bool identical_vectors(const std::vector<T> &a,
                                 const std::vector<T> &b) {
@@ -148,19 +141,6 @@ class BasicBlockSimplify : public IRVisitor {
   }
 
   void visit(LinearizeStmt *stmt) override {
-    if (!stmt->inputs.empty() && stmt->inputs.back()->is<IntegerOffsetStmt>()) {
-      auto previous_offset = stmt->inputs.back()->as<IntegerOffsetStmt>();
-      // push forward offset
-      auto offset_stmt =
-          Stmt::make<IntegerOffsetStmt>(stmt, previous_offset->offset);
-
-      stmt->inputs.back() = previous_offset->input;
-      stmt->replace_usages_with(offset_stmt.get());
-      offset_stmt->as<IntegerOffsetStmt>()->input = stmt;
-      modifier.insert_after(stmt, std::move(offset_stmt));
-      return;
-    }
-
     // Lower into a series of adds and muls.
     auto sum = Stmt::make<ConstStmt>(TypedConstant(0));
     auto stride_product = 1;
@@ -213,51 +193,12 @@ class BasicBlockSimplify : public IRVisitor {
     if (is_done(stmt))
       return;
 
-    if (stmt->input_index->is<IntegerOffsetStmt>()) {
-      auto previous_offset = stmt->input_index->as<IntegerOffsetStmt>();
-      // push forward offset
-
-      auto snode = stmt->snode;
-      // compute offset...
-      for (int i = 0; i < (int)snode->ch.size(); i++) {
-        TI_ASSERT(snode->ch[i]->type == SNodeType::place);
-        TI_ASSERT(snode->ch[i]->dt->is_primitive(PrimitiveTypeID::i32) ||
-                  snode->ch[i]->dt->is_primitive(PrimitiveTypeID::f32));
-      }
-
-      auto offset_stmt = Stmt::make<IntegerOffsetStmt>(
-          stmt, previous_offset->offset * sizeof(int32) * (snode->ch.size()));
-
-      stmt->input_index = previous_offset->input;
-      stmt->replace_usages_with(offset_stmt.get());
-      offset_stmt->as<IntegerOffsetStmt>()->input = stmt;
-      modifier.insert_after(stmt, std::move(offset_stmt));
-      return;
-    }
-
     set_done(stmt);
   }
 
   void visit(GetChStmt *stmt) override {
     if (is_done(stmt))
       return;
-
-    if (stmt->input_ptr->is<IntegerOffsetStmt>()) {
-      auto previous_offset = stmt->input_ptr->as<IntegerOffsetStmt>();
-      // push forward offset
-
-      // auto snode = stmt->input_snode;
-      auto offset_stmt = Stmt::make<IntegerOffsetStmt>(
-          stmt, stmt->chid * sizeof(int32) + previous_offset->offset);
-
-      stmt->input_ptr = previous_offset->input;
-      stmt->replace_usages_with(offset_stmt.get());
-      stmt->chid = 0;
-      stmt->output_snode = stmt->input_snode->ch[stmt->chid].get();
-      offset_stmt->as<IntegerOffsetStmt>()->input = stmt;
-      modifier.insert_after(stmt, std::move(offset_stmt));
-      return;
-    }
 
     set_done(stmt);
   }

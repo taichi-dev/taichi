@@ -1253,24 +1253,6 @@ class WhileStmt : public Stmt {
   TI_DEFINE_ACCEPT
 };
 
-// TODO: remove this (replace with input + ConstStmt(offset))
-class IntegerOffsetStmt : public Stmt {
- public:
-  Stmt *input;
-  int64 offset;
-
-  IntegerOffsetStmt(Stmt *input, int64 offset) : input(input), offset(offset) {
-    TI_STMT_REG_FIELDS;
-  }
-
-  bool has_global_side_effect() const override {
-    return false;
-  }
-
-  TI_STMT_DEF_FIELDS(ret_type, input, offset);
-  TI_DEFINE_ACCEPT_AND_CLONE
-};
-
 /**
  * All indices of an address fused together.
  */

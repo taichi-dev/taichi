@@ -316,8 +316,6 @@ class TaskCodeGenLLVM : public IRVisitor, public LLVMModuleBuilder {
 
   void visit(LinearizeStmt *stmt) override;
 
-  void visit(IntegerOffsetStmt *stmt) override;
-
   llvm::Value *create_bit_ptr(llvm::Value *byte_ptr, llvm::Value *bit_offset);
 
   std::tuple<llvm::Value *, llvm::Value *> load_bit_ptr(llvm::Value *bit_ptr);

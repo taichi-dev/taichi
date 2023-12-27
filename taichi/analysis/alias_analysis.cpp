@@ -71,7 +71,7 @@ AliasResult alias_analysis(Stmt *var1, Stmt *var2) {
         external_ptr = matrix_ptr->origin->cast<ExternalPtrStmt>();
       }
       if (!external_ptr)
-          return AliasResult::different;
+        return AliasResult::different;
     }
     // If one external pointer references the grad tensor and the other
     // references the data tensor, they are not aliased

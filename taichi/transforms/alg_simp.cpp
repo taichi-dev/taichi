@@ -351,18 +351,14 @@ class AlgSimp : public BasicStmtVisitor {
           modifier.mark_as_modified();
         }
       }
-    }
-    else if (stmt->op_type == UnaryOpType::abs) 
-    {
+    } else if (stmt->op_type == UnaryOpType::abs) {
       auto operand_type = stmt->operand->ret_type;
-      if (is_integral(operand_type) && is_unsigned(operand_type)) 
-      {
+      if (is_integral(operand_type) && is_unsigned(operand_type)) {
         // abs(u) -> u
         stmt->replace_usages_with(stmt->operand);
         modifier.erase(stmt);
       }
     }
-    
   }
 
   bool optimize_multiplication(BinaryOpStmt *stmt) {

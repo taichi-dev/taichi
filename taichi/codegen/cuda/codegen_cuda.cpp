@@ -243,13 +243,7 @@ class TaskCodeGenCUDA : public TaskCodeGenLLVM {
         llvm_val[stmt] = call("__nv_abs", input);
       } else if (input_taichi_type->is_primitive(PrimitiveTypeID::i64)) {
         llvm_val[stmt] = call("__nv_llabs", input);
-      } else if (input_taichi_type->is_primitive(PrimitiveTypeID::u32)) {
-        llvm_val[stmt] = input;
-      } else if (input_taichi_type->is_primitive(PrimitiveTypeID::u64)) {
-        llvm_val[stmt] = input;
       } else {
-        TI_INFO("abs() for type {} is not supported",
-                input_taichi_type.to_string());
         TI_NOT_IMPLEMENTED
       }
     } else if (op == UnaryOpType::sqrt) {

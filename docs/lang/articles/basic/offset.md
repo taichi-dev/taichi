@@ -19,9 +19,9 @@ In this way, the field's indices are from `(-16, 8)` to `(16, 72)` (exclusive).
 
 ```python cont
 a[-16, 8]  # lower left corner
-a[16, 8]   # lower right corner
-a[-16, 72]  # upper left corner
-a[16, 72]   # upper right corner
+a[15, 8]   # lower right corner
+a[-16, 71]  # upper left corner
+a[15, 71]   # upper right corner
 ```
 
 :::note

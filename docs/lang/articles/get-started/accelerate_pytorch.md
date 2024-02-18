@@ -208,7 +208,7 @@ PyTorch is efficient in handling a large proportion of computation tasks in mach
 
 As a high-performance programming language embedded in Python, Taichi features:
 
-- Eeasy readability,
+- Easy readability,
 - Optimized memory consumption,
 - Runtime performance comparable to that of CUDA,
 - Good portability that encourages reproducible code sharing among the community.

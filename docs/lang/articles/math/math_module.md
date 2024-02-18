@@ -166,7 +166,7 @@ def test():
     x = tm.vec2(1, 1)  # complex number 1+1j
     y = tm.vec2(0, 1)  # complex number 1j
     z = tm.cmul(x, y)  # vec2(-1, 1) = -1+1j
-    w = tm.cdiv(x, y)  #  vec2(2, 0) = 2+0j
+    w = tm.cdiv(x, y)  #  vec2(1, -1) = 1-1j
 ```
 
 You can also compute the power, logarithm, and exponential of a complex number:

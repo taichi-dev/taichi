@@ -1137,10 +1137,6 @@ class ADTransform : public IRVisitor {
     // do nothing
   }
 
-  void visit(IntegerOffsetStmt *stmt) override {
-    // do nothing
-  }
-
   void visit(RandStmt *stmt) override {
     TI_ERROR("RandStmt not supported in AutoDiff for now.");
   }

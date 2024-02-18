@@ -619,12 +619,6 @@ class IRPrinter : public IRVisitor {
     dbg_info_printer_(stmt);
   }
 
-  void visit(IntegerOffsetStmt *stmt) override {
-    print("{}{} = offset {} + {}", stmt->type_hint(), stmt->name(),
-          stmt->input->name(), stmt->offset);
-    dbg_info_printer_(stmt);
-  }
-
   void visit(GetRootStmt *stmt) override {
     if (stmt->root() == nullptr)
       print("{}{} = get root nullptr", stmt->type_hint(), stmt->name());

@@ -1743,8 +1743,6 @@ void TaskCodeGenLLVM::visit(LinearizeStmt *stmt) {
   llvm_val[stmt] = val;
 }
 
-void TaskCodeGenLLVM::visit(IntegerOffsetStmt *stmt){TI_NOT_IMPLEMENTED}
-
 llvm::Value *TaskCodeGenLLVM::create_bit_ptr(llvm::Value *byte_ptr,
                                              llvm::Value *bit_offset) {
   // 1. define the bit pointer struct (X=8/16/32/64)

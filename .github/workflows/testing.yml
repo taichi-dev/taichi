@@ -118,7 +118,7 @@ jobs:
       matrix:
         include:
           - os: macos-10.15
-            python: 3.7
+            python: 3.12
             with_cpp_tests: ON
             wanted_archs: 'cpu,vulkan'
     runs-on:
@@ -317,7 +317,7 @@ jobs:
     timeout-minutes: ${{ github.event.schedule != '0 18 * * *' && 90 || 120 }}
     runs-on: [self-hosted, amdgpu]
     env:
-      PY: '3.8'
+      PY: '3.12'
       PROJECT_NAME: taichi
       TI_WANTED_ARCHS: 'cpu,amdgpu'
       TI_DEVICE_MEMORY_GB: '1'
@@ -397,7 +397,7 @@ jobs:
     - ${{ matrix.extra_markers == 'sm70' && 'sm70' || 'windows' }}
     timeout-minutes: ${{ github.event.schedule != '0 18 * * *' && 90 || 180 }}
     env:
-      PY: "3.7"
+      PY: "3.12"
       TAICHI_CMAKE_ARGS: >-
         -DTI_WITH_OPENGL:BOOL=ON
         -DTI_WITH_VULKAN:BOOL=ON
@@ -424,7 +424,7 @@ jobs:
 
       - uses: actions/setup-python@v4
         with:
-          python-version: 3.7
+          python-version: 3.12
 
       - name: Build
         if: ${{ needs.check_files.outputs.run_job != 'false' }}
@@ -465,7 +465,7 @@ jobs:
       matrix:
         include:
           - os: macos-latest
-            python: 3.8
+            python: 3.12
     defaults:
       run:
         # https://github.com/actions/runner/issues/805#issuecomment-844426478
@@ -568,7 +568,7 @@ jobs:
     timeout-minutes: ${{ github.event.schedule != '0 18 * * *' && 90 || 120 }}
     runs-on: [self-hosted, Linux, cuda, vulkan, cn]
     env:
-      PY: '3.8'
+      PY: '3.12'
       PROJECT_NAME: taichi
       TI_WANTED_ARCHS: 'cpu,cuda,vulkan,opengl,gles'
       TI_DEVICE_MEMORY_GB: '1'
@@ -643,7 +643,7 @@ jobs:
       contents: read
     env:
       REDIS_HOST: 172.16.5.1
-      PY: '3.9'
+      PY: '3.12'
     steps:
       - name: Workaround checkout Needed single revision issue
         run: git submodule foreach 'git rev-parse HEAD > /dev/null 2>&1 || rm -rf $PWD' || true
@@ -722,7 +722,7 @@ jobs:
       contents: read
     env:
       REDIS_HOST: 172.16.5.1
-      PY: '3.9'
+      PY: '3.12'
     steps:
       - name: Workaround checkout Needed single revision issue
         run: git submodule foreach 'git rev-parse HEAD > /dev/null 2>&1 || rm -rf $PWD' || true
@@ -800,7 +800,7 @@ jobs:
       contents: read
     env:
       REDIS_HOST: 172.16.5.1
-      PY: '3.9'
+      PY: '3.12'
     steps:
       - name: Workaround checkout Needed single revision issue
         run: git submodule foreach 'git rev-parse HEAD > /dev/null 2>&1 || rm -rf $PWD' || true
@@ -891,7 +891,7 @@ jobs:
           - [self-hosted, cuda, vulkan, cn, driver470]
           - [self-hosted, cuda, vulkan, cn, driver510]
     env:
-      PY: '3.8'
+      PY: '3.12'
       PROJECT_NAME: taichi
       TAICHI_CMAKE_ARGS: >-
         -DTI_WITH_OPENGL:BOOL=ON

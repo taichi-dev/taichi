@@ -57,7 +57,7 @@ jobs:
     with:
       build_id: ${{ needs.preparation.outputs.build_id }}
       nightly: false
-      python: '["3.9", "3.10", "3.11"]'
+      python: '["3.9", "3.10", "3.11", "3.12"]'
     secrets:
       BOT_MINIO_ACCESS_KEY: ${{ secrets.BOT_MINIO_ACCESS_KEY }}
       BOT_MINIO_SECRET_KEY: ${{ secrets.BOT_MINIO_SECRET_KEY }}

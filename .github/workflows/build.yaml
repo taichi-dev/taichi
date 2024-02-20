@@ -330,7 +330,7 @@ jobs:
         python: ${{ fromJSON(inputs.python) }}
         _designated: ['']
         exclude:
-        - python: "3.7"
+        - python: "3.12"
         include:
         - _designated: ''
           designated: designated

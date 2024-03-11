@@ -4,129 +4,111 @@ sidebar_position: 1
 
 # Metaprogramming
 
-Taichi provides metaprogramming infrastructures. There are many benefits of metaprogramming in Taichi:
 
-- Enabling the development of dimensionality-independent code, e.g., code which is
-  adaptive for both 2D/3D physical simulations.
-- Improving runtime performance by moving computations from runtime to compile time.
+## What is metaprogramming?
+
+> Metaprogramming is a programming technique in which computer programs have the ability to treat other programs as their data. It means that a program can be designed to read, generate, analyze or transform other programs, and even modify itself while running.
+>
+> Cited from Wikipedia: <https://en.wikipedia.org/wiki/Metaprogramming>.
+
+In short, a metaprogram is a program that writes or modifies programs.
+
+That sounds good, but you might wonder, code writes code, who needs that? Why don't I write all the code myself? Let's take a practical example to illustrate its use.
+
+In simulations and graphics, a 4D vector `v` is composed by 4 components `x`, `y`, `z`, `w`. One can use `v.x` to access its first component, `v.y` to access its second component, and so on. It would be very handy if we can use any combination of the letters `x`, `y`, `z`, `w` to access the components of `v`, and returns a vector that matches this pattern. This is called swizzling (for reader with some knowledge of OpenGL shading language, or have experienc in Blender's scripting mode, this should be a familiar concept). For example, we want `v.xy` to return a 2D vector `[v.x, v.y]`, `v.zyx` to return a 3D vector `[v.z, v.y, v.x]`, `v.xxxx` to return a 4D vector `[v.x, v.x, v.x, v.x]`, and so on for other patterns.
+
+But how do we implement this in a 4D vector class? There are 4 possible combinations consist of a single character, 16 combinations for two characters, 64 combinations for three characters, and 256 combinations for four characters. The total is 4 + 16 + 64 + 256 = 340! You won't want to manually list them out one by one, that would cost a lot of labor, and the code would be be too cubersome! Well, as a scripting language, Python offer great functionality for metaprogramming. It turns out you can use the magic method `__getattr__` to intercept calls to an undefined property, and use `__setattr__` to set it! In other words, that property did not exist before you called it! To be more precise, let's say we are calling the non-existent `v.xxx` property of our 4D vector class, in `__getattr__` we can parsed its name as a string "xxx", it knows that you are trying to get a 3D vector of repeated components `v.x`. Therefore, it then checks to see if it can find a property with the name "xxx", and if it cannot, it calls `__setattr__` which writes a property that constructs that query for you, define it on the 4D vector class, and finally returns the result! Now, every time you call `v.xxx` on the instance `v`, the newly defined property gets called instead of going through that whole process every time!
+
+To summarize, the benefits of metaprogramming are: It reduces repetition of the code; It makes the code more readable.
+
+
+## Metaprogramming in Taichi
+
+Taichi is a static and compile language. After Taichi's JIT finishes the compiling, all the control flow and variable types are immutable. It's not that obvious how one could do metaprogramming in Taichi. But Taichi does provide a few metaprogramming features, as listed below.
+
+- Template metaprogramming. This enables the development of dimensionality-independent code, e.g., code which is adaptive for both 2D/3D physical simulations.
+- Compile-time evaluations. This improves runtime performance by moving computations from runtime to compile time.
 - Simplifying the development of Taichi standard library.
 
-:::note
-Taichi kernels are **lazily instantiated** and large amounts of computation can be executed at **compile-time**.
-Every kernel in Taichi is a template kernel, even if it has no template arguments.
-:::
+We will discuss them in more detail in later sections.
 
 ## Template metaprogramming
 
-By using `ti.template()` as an argument type hint, a Taichi field or a python object can be passed into a kernel. Template programming also enables the code to be reused for fields with different shapes:
+Template metaprogramming is a well-known concept to C++ developers. Let's quickly review what it is.
+
+Assume you are going to write a function `sum`, which takes in an array-like object whose entries are all floating numbers, and returns the sum of all the entries. The array-like object might be a `std::vector`, `std::pair`, or even an user-defined array which you won't know the type. The best practice is not to implement the same function for all possible types. Instead, you use template programming:
+
+```C++
+<template T>
+float sum(T &arr) {
+    float result = 0.0;
+    for (int i=0; i<arr.length(); i++) result += arr[i];
+    return result;
+}
+```
+
+When this function is called in the program, maybe in different places and operates on different array-like types `T`, the compiler will generate a version of `sum` for each `T`, as long as `T` implements the `length` method to allow you get the array length, and can be intrated over through indices. In other words, with template programming, you only write the same code once and the compiler automatically generates other versions for you.
+
+Taichi has a similar functionality for template programming: By using `ti.template()` as an argument type hint, you can pass any Python object that Taichi's JIT compiler accepts into a kernel (see [../kernels/kernel_function#arguments]).
+
+Let's write a function `sum` (our old friend) to illustrate this. This `sum` function will take in a Taichi field and return the sum of all its entries.
 
 ```python {2}
 @ti.kernel
-def copy_1D(x: ti.template(), y: ti.template()):
-    for i in x:
-        y[i] = x[i]
+def sum(x: ti.template()) -> float:
+    result = 0.0
+    for i in ti.grouped(x):
+        result += x[i]
 
-a = ti.field(ti.f32, 4)
-b = ti.field(ti.f32, 4)
-c = ti.field(ti.f32, 12)
-d = ti.field(ti.f32, 12)
+f1d = ti.field(float, shape=100)
+f2d = ti.field(float, shape=(5, 5))
+f3d = ti.field(float, shape=(10, 10, 10))
+g3d = ti.field(int, shape=(10, 10, 10))
 
-# Pass field a and b as arguments of the kernel `copy_1D`:
-copy_1D(a, b)
+sum(f1d)
+sum(f2d)
+sum(f3d)
+sum(g3d)
+```
 
-# Reuse the kernel for field c and d:
-copy_1D(c, d)
+As can be seen from the code above, the function `sum` works for fields of any shape and any dtype. There's no need to bother about the shape of the field. This is very handy for physical simulations as the same function can be used in both 2D and 3D scenarios.
+
+Note the function `ti.group()` is critial to our dimensionality-independent programming: In general, you will need `d` independent indices to loop over a field of dimension `d`, with one index for each axis. Taichi's `ti.grouped` puts the `d` loop indices into a `d`-dimentional integer vector, and the `for` loop is parallelized for all such multidimensional indices.
+
+We should mention a difference between Taichi and C++ in template metaprogramming: C++ compilers will generate a version of `sum` for each different type `T`; meanwhile Taichi's compiler **recompiles** the kernel each time it finds an argument of a different type is encounted. In the example above, since the fields are of different shapes, or the same shape but of different dtypes, each of the four calls to `sum` will trigger a compilation:
+
+```python
+sum(f1d)  # Compilation
+sum(f2d)  # Recompilation
+sum(f3d)  # Recompilation
+sum(g3d)  # Recompilation
 ```
 
 :::note
-If a template parameter is not a Taichi object, it cannot be reassigned inside Taichi kernel.
+If a template parameter is not a Taichi object, it cannot be reassigned inside Taichi kernel. For example:
+
+```python
+x = [1, 2, 3]
+@ti.kernel
+def error_reassign(x: ti.template()):
+    x = ti.math.vec3(1, 2, 3)  # Error!
+```
+
 :::
 
 :::note
 The template parameters are inlined into the generated kernel after compilation.
 :::
 
-## Dimensionality-independent programming using grouped indices
-
-Taichi provides `ti.grouped` syntax which supports grouping loop indices into a `ti.Vector`.
-It enables dimensionality-independent programming, i.e., code are adaptive to scenarios of
-different dimensionalities automatically:
-
-```python {2,7,12,18}
-@ti.kernel
-def copy_1D(x: ti.template(), y: ti.template()):
-    for i in x:
-        y[i] = x[i]
-
-@ti.kernel
-def copy_2d(x: ti.template(), y: ti.template()):
-    for i, j in x:
-        y[i, j] = x[i, j]
-
-@ti.kernel
-def copy_3d(x: ti.template(), y: ti.template()):
-    for i, j, k in x:
-        y[i, j, k] = x[i, j, k]
-
-# Kernels listed above can be unified into one kernel using `ti.grouped`:
-@ti.kernel
-def copy(x: ti.template(), y: ti.template()):
-    for I in ti.grouped(y):
-        # I is a vector with dimensionality same to y
-        # If y is 0D, then I = ti.Vector([]), which is equivalent to `None` used in x[I]
-        # If y is 1D, then I = ti.Vector([i])
-        # If y is 2D, then I = ti.Vector([i, j])
-        # If y is 3D, then I = ti.Vector([i, j, k])
-        # ...
-        x[I] = y[I]
-```
-
-## Field metadata
-
-The two attributes **data type** and **shape** of fields can be accessed by `field.dtype` and  `field.shape`, in both Taichi-scope and Python-scope:
-
-```python {3,7}
-x = ti.field(dtype=ti.f32, shape=(3, 3))
-
-# Print field metadata in Python-scope
-print("Field dimensionality is ", x.shape)
-print("Field data type is ", x.dtype)
-
-# Print field metadata in Taichi-scope
-@ti.kernel
-def print_field_metadata(x: ti.template()):
-    print("Field dimensionality is ", len(x.shape))
-    for i in ti.static(range(len(x.shape))):
-        print("Size along dimension ", i, "is", x.shape[i])
-    ti.static_print("Field data type is ", x.dtype)
-```
-
-:::note
-For sparse fields, the full domain shape will be returned.
-:::
-
-## Matrix & vector metadata
-
-For matrices, `matrix.m` and `matrix.n` returns the number of columns and rows, respectively.
-For vectors, they are treated as matrices with one column in Taichi, where `vector.n` is the number of elements of the vector.
-
-```python {4-5,7-8}
-@ti.kernel
-def foo():
-    matrix = ti.Matrix([[1, 2], [3, 4], [5, 6]])
-    print(matrix.n)  # number of row: 3
-    print(matrix.m)  # number of column: 2
-    vector = ti.Vector([7, 8, 9])
-    print(vector.n)  # number of elements: 3
-    print(vector.m)  # always equals to 1 for a vector
-```
 
 ## Compile-time evaluations
 
+
 Using compile-time evaluation allows for some computation to be executed when kernels are instantiated. This helps the compiler to conduct optimization and reduce
-computational overhead at runtime:
+computational overhead at runtime. Or in other words, we do more at compile time to save effort for runime.
 
 ### Static Scope
+
 `ti.static` is a function which receives one argument. It is a hint for the compiler to evaluate the argument at compile time.
 The scope of the argument of `ti.static` is called static-scope.
 
@@ -166,6 +148,18 @@ def func():
   print(3)
 ```
 
+### When to use `ti.static` with for loops
+
+The main reason to use `ti.static` with for loops is to unroll the loop to improve runtime performance (see [Compile-time evaluations](#compile-time-evaluations)).
+
+An unrolling verison is often faster because it reduces branch overhead:
+
+1. It saves the instructions for incrementing the loop counter and checking the end-of-loop condition.
+2. It provides more instructions for the compiler to schedule across the whole iterations.
+
+This performance improvement does not come for free: it also costs longer complie time and generates larger binaries. Especially when the number of iterations is large or the loop body is complex.
+
+
 :::note
 Before v1.4.0, indices for accessing Taichi matrices/vectors must be compile-time constants.
 Therefore, if the indices come from a loop, the loop must be unrolled:
@@ -189,7 +183,7 @@ That said, unrolling it will still help you reduce runtime overhead.
 
 ## Compile-time recursion of `ti.func`
 
-A compile-time recursive function is a function with recursion that can be recursively inlined at compile time. The condition which determines whether to recurse is evaluated at compile time.
+A compile-time recursive function is a function with recursion that can be recursively inlined at compile time. The condition which determines when to cease recursion is evaluated at compile time, hence must be known to the compiler.
 
 You can combine [compile-time branching](#compile-time-branching) and [template](#template-metaprogramming) to write compile-time recursive functions.
 

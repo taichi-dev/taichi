@@ -43,6 +43,7 @@ CompileConfig::CompileConfig() {
   make_block_local = true;
   detect_read_only = true;
   real_matrix_scalarize = true;
+  force_scalarize_matrix = true;
   half2_vectorization = false;
   make_cpu_multithreading_loop = true;
 

@@ -86,6 +86,10 @@ void compile_to_offloads(IRNode *ir,
     irpass::analysis::gather_meshfor_relation_types(ir);
   }
 
+  if (config.force_scalarize_matrix) {
+    irpass::scalarize(ir, false /*half2_optimization_enabled*/);
+  }
+
   if (config.debug && autodiff_mode == AutodiffMode::kCheckAutodiffValid) {
     // Check whether the kernel obeys the autodiff limitation e.g., gloabl data
     // access rule
@@ -136,8 +140,9 @@ void compile_to_offloads(IRNode *ir,
   // TODO: This pass may be redundant as cfg_optimization() is already called
   //  in full_simplify().
   if (config.opt_level > 0 && config.cfg_optimization) {
-    irpass::cfg_optimization(ir, false, /*autodiff_enabled*/ false,
-                             !config.real_matrix_scalarize);
+    irpass::cfg_optimization(
+        ir, false, /*autodiff_enabled*/ false,
+        !config.real_matrix_scalarize && !config.force_scalarize_matrix);
     print("Optimized by CFG");
     irpass::analysis::verify(ir);
   }
@@ -369,6 +374,10 @@ void compile_function(IRNode *ir,
     irpass::associate_continue_scope(ir, config);
     print("Associated continue scope");
     func->set_ir_stage(Function::IRStage::BeforeLowerAccess);
+  }
+
+  if (config.force_scalarize_matrix) {
+    irpass::scalarize(ir, false /*half2_optimization_enabled*/);
   }
 
   if (target_stage >= Function::IRStage::OptimizedIR &&

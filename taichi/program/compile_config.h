@@ -39,6 +39,7 @@ struct CompileConfig {
   bool make_block_local;
   bool detect_read_only;
   bool real_matrix_scalarize;
+  bool force_scalarize_matrix;
   bool half2_vectorization;
   bool make_cpu_multithreading_loop;
   DataType default_fp;

@@ -82,8 +82,13 @@ class IndependentBlocksJudger : public BasicStmtVisitor {
     if (is_inside_loop_)
       return;
 
-    if (stmt->dest->is<ExternalPtrStmt>()) {
-      if (stmt->dest->as<ExternalPtrStmt>()
+    Stmt *dest = stmt->dest;
+    if (dest->is<MatrixPtrStmt>()) {
+      dest = dest->as<MatrixPtrStmt>()->origin;
+    }
+
+    if (dest->is<ExternalPtrStmt>()) {
+      if (dest->as<ExternalPtrStmt>()
               ->base_ptr->as<ArgLoadStmt>()
               ->ret_type.ptr_removed()
               ->as<StructType>()
@@ -92,8 +97,8 @@ class IndependentBlocksJudger : public BasicStmtVisitor {
         qualified_glb_operations_ = true;
       }
     } else {
-      TI_ASSERT(stmt->dest->is<GlobalPtrStmt>());
-      if (stmt->dest->as<GlobalPtrStmt>()->snode->has_adjoint()) {
+      TI_ASSERT(dest->is<GlobalPtrStmt>());
+      if (dest->as<GlobalPtrStmt>()->snode->has_adjoint()) {
         qualified_glb_operations_ = true;
       }
     }
@@ -108,15 +113,21 @@ class IndependentBlocksJudger : public BasicStmtVisitor {
     // another IndependentBlocksJudger
     if (is_inside_loop_)
       return;
-    if ((stmt->src->is<ExternalPtrStmt>() &&
-         stmt->src->as<ExternalPtrStmt>()
+
+    Stmt *src = stmt->src;
+    if (src->is<MatrixPtrStmt>()) {
+      src = src->as<MatrixPtrStmt>()->origin;
+    }
+
+    if ((src->is<ExternalPtrStmt>() &&
+         src->as<ExternalPtrStmt>()
                  ->base_ptr->as<ArgLoadStmt>()
                  ->ret_type.ptr_removed()
                  ->as<StructType>()
                  ->elements()
                  .size() > TypeFactory::GRAD_PTR_POS_IN_NDARRAY) ||
-        (stmt->src->is<GlobalPtrStmt>() &&
-         stmt->src->as<GlobalPtrStmt>()->snode->has_adjoint())) {
+        (src->is<GlobalPtrStmt>() &&
+         src->as<GlobalPtrStmt>()->snode->has_adjoint())) {
       qualified_glb_operations_ = true;
     }
   }
@@ -2425,7 +2436,13 @@ class GloablDataAccessRuleChecker : public BasicStmtVisitor {
   using BasicStmtVisitor::visit;
 
   void visit(GlobalLoadStmt *stmt) override {
-    GlobalPtrStmt *src = stmt->src->as<GlobalPtrStmt>();
+    GlobalPtrStmt *src = nullptr;
+    if (stmt->src->is<GlobalPtrStmt>()) {
+      src = stmt->src->as<GlobalPtrStmt>();
+    } else {
+      TI_ASSERT(stmt->src->is<MatrixPtrStmt>());
+      src = stmt->src->as<MatrixPtrStmt>()->origin->as<GlobalPtrStmt>();
+    }
     auto snode = src->snode;
     if (!snode->has_adjoint_checkbit()) {
       return;
@@ -2466,12 +2483,24 @@ class GloablDataAccessRuleChecker : public BasicStmtVisitor {
   }
 
   void visit(GlobalStoreStmt *stmt) override {
-    GlobalPtrStmt *dest = stmt->dest->as<GlobalPtrStmt>();
+    GlobalPtrStmt *dest = nullptr;
+    if (stmt->dest->is<GlobalPtrStmt>()) {
+      dest = stmt->dest->as<GlobalPtrStmt>();
+    } else {
+      TI_ASSERT(stmt->dest->is<MatrixPtrStmt>());
+      dest = stmt->dest->as<MatrixPtrStmt>()->origin->as<GlobalPtrStmt>();
+    }
     visit_gloabl_store_stmt_and_atomic_add(stmt, dest);
   }
 
   void visit(AtomicOpStmt *stmt) override {
-    GlobalPtrStmt *dest = stmt->dest->as<GlobalPtrStmt>();
+    GlobalPtrStmt *dest = nullptr;
+    if (stmt->dest->is<GlobalPtrStmt>()) {
+      dest = stmt->dest->as<GlobalPtrStmt>();
+    } else {
+      TI_ASSERT(stmt->dest->is<MatrixPtrStmt>());
+      dest = stmt->dest->as<MatrixPtrStmt>()->origin->as<GlobalPtrStmt>();
+    }
     visit_gloabl_store_stmt_and_atomic_add(stmt, dest);
   }
 

@@ -184,8 +184,9 @@ std::string get_hashed_offline_cache_key(const CompileConfig &config,
   auto device_caps_key = get_offline_cache_key_of_device_caps(caps);
   std::string autodiff_mode =
       std::to_string(static_cast<std::size_t>(kernel->autodiff_mode));
-  // std::cout << "=============== kernel name " << kernel->name << "==================="<< std::endl;
-  // for (auto elem : kernel->parameter_list) {
+  // std::cout << "=============== kernel name " << kernel->name <<
+  // "==================="<< std::endl; for (auto elem : kernel->parameter_list)
+  // {
   //   std::cout << "kernel->parameter_list "<< elem << std::endl;
   // }
   // for (auto elem : kernel_rets_string) {

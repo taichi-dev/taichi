@@ -564,8 +564,9 @@ void full_simplify(IRNode *root,
       // Don't do this time-consuming optimization pass again if the IR is
       // not modified.
       if (config.opt_level > 0 && first_iteration && config.cfg_optimization &&
-          cfg_optimization(root, args.after_lower_access, args.autodiff_enabled,
-                           !config.real_matrix_scalarize))
+          cfg_optimization(
+              root, args.after_lower_access, args.autodiff_enabled,
+              !config.real_matrix_scalarize && !config.force_scalarize_matrix))
         modified = true;
       print("cfg_optimization");
       first_iteration = false;

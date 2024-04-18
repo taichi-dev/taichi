@@ -5,7 +5,7 @@
 namespace taichi::lang {
 
 inline bool codegen_vector_type(const CompileConfig &config) {
-  return !config.real_matrix_scalarize;
+  return !(config.real_matrix_scalarize || config.force_scalarize_matrix);
 }
 
 // Parses a C-style printf format string specifier into its constituent parts.

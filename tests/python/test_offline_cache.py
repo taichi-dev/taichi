@@ -386,6 +386,74 @@ def test_calling_many_kernels(curr_arch):
 
 @pytest.mark.parametrize("curr_arch", supported_archs_offline_cache)
 @_test_offline_cache_dec
+def test_offline_cache_with_different_snode_trees(curr_arch):
+    count_of_cache_file = cache_files_cnt()
+
+    def added_files():
+        return cache_files_cnt() - count_of_cache_file
+
+    def helper():
+        x = ti.field(float, shape=5)
+
+        @ti.kernel
+        def trigger_compile():
+            x[0] += 1
+
+        # This case is used for testing SNodeTree storeing order matters (i.e., use a ordered container such as vector instead of unordered_map or unordered_set) when generating kernel offline cache key
+        # The multiple `trigger_compile` equalivant to allocate each field to a different SNodeTree
+        # i.e.,
+        # x = ti.field(float)
+        # fb.dense(ti.i, 5).place(x)
+        # fb.finalize()
+
+        trigger_compile()
+        a = ti.field(float, shape=5)
+        trigger_compile()
+        b = ti.field(float, shape=10)
+        trigger_compile()
+        c = ti.field(float, shape=5)
+        trigger_compile()
+        d = ti.field(float, shape=10)
+        trigger_compile()
+        e = ti.field(float, shape=5)
+        trigger_compile()
+        f = ti.field(float, shape=10)
+        trigger_compile()
+        g = ti.field(float, shape=5)
+        trigger_compile()
+        h = ti.field(float, shape=10)
+
+        @ti.kernel
+        def kernel_forward():
+            for i in range(5):
+                a[i] += i
+                b[i] += i
+                c[i] += i
+                d[i] += i
+                e[i] += i
+                f[i] += i
+                g[i] += i
+                h[i] += i
+
+        kernel_forward()
+
+    assert added_files() == expected_num_cache_files(0)
+    ti.init(arch=curr_arch, enable_fallback=False, **current_thread_ext_options())
+    helper()
+
+    ti.init(arch=curr_arch, enable_fallback=False, **current_thread_ext_options())
+    assert added_files() == expected_num_cache_files(2)
+    helper()
+
+    # The number of cache file should not change
+    for _ in range(5):
+        ti.init(arch=curr_arch, enable_fallback=False, **current_thread_ext_options())
+        assert added_files() == expected_num_cache_files(2)
+        helper()
+
+
+@pytest.mark.parametrize("curr_arch", supported_archs_offline_cache)
+@_test_offline_cache_dec
 def test_offline_cache_with_changing_compile_config(curr_arch):
     count_of_cache_file = cache_files_cnt()
 

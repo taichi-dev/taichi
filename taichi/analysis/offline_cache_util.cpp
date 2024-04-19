@@ -184,27 +184,6 @@ std::string get_hashed_offline_cache_key(const CompileConfig &config,
   auto device_caps_key = get_offline_cache_key_of_device_caps(caps);
   std::string autodiff_mode =
       std::to_string(static_cast<std::size_t>(kernel->autodiff_mode));
-  // std::cout << "=============== kernel name " << kernel->name <<
-  // "==================="<< std::endl; for (auto elem : kernel->parameter_list)
-  // {
-  //   std::cout << "kernel->parameter_list "<< elem << std::endl;
-  // }
-  // for (auto elem : kernel_rets_string) {
-  //   std::cout << "kernel_rets_string "<< elem << std::endl;
-  // }
-  // for (auto elem : compile_config_key) {
-  //   std::cout << "compile_config_key "<< elem << std::endl;
-  // }
-  // for (auto elem : device_caps_key) {
-  //   std::cout << "device_caps_key "<< elem << std::endl;
-  // }
-  // for (auto elem : kernel_params_string) {
-  //   std::cout << "kernel_params_string "<< elem << std::endl;
-  // }
-  // for (auto elem : kernel_rets_string) {
-  //   std::cout << "kernel_rets_string "<< elem << std::endl;
-  // }
-  // std::cout << "kernel_body_string "<< kernel_body_string << std::endl;
   picosha2::hash256_one_by_one hasher;
   hasher.process(compile_config_key.begin(), compile_config_key.end());
   hasher.process(device_caps_key.begin(), device_caps_key.end());

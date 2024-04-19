@@ -532,7 +532,6 @@ class ASTSerializer : public IRVisitor, public ExpressionVisitor {
       emit(static_cast<std::size_t>(snode->get_snode_tree_id()));
       emit(static_cast<std::size_t>(snode->id));
       const auto *root = snode->get_root();
-      // snode_tree_roots_.insert(root);
       snode_tree_roots_.push_back(root);
     } else {
       emit(std::numeric_limits<std::size_t>::max());
@@ -655,8 +654,6 @@ class ASTSerializer : public IRVisitor, public ExpressionVisitor {
 #undef DEFINE_EMIT_ENUM
 
   std::ostream *os_{nullptr};
-  // std::unordered_set<const SNode *> snode_tree_roots_;
-  // std::unordered_map<Function *, std::size_t> real_funcs_;
   std::vector<const SNode *> snode_tree_roots_;
   std::map<Function *, std::size_t> real_funcs_;
   std::vector<char> string_pool_;

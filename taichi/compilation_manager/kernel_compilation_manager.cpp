@@ -214,8 +214,6 @@ const CompiledKernelData *KernelCompilationManager::try_load_cached_kernel(
     auto &kernels = cached_data_.kernels;
     auto iter = kernels.find(kernel_key);
 
-    TI_INFO("!!!!!KERNEL KEY {}, in kernels, is exist {}", kernel_key,
-            iter != kernels.end());
     if (iter != kernels.end()) {
       auto &k = iter->second;
       if (k.compiled_kernel_data) {

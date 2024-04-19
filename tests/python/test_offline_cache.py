@@ -437,6 +437,7 @@ def test_offline_cache_with_different_snode_trees(curr_arch):
 
         kernel_forward()
 
+    assert added_files() == expected_num_cache_files(0)
     ti.init(arch=curr_arch, enable_fallback=False, **current_thread_ext_options())
     helper()
     assert added_files() == expected_num_cache_files(2)
@@ -445,7 +446,7 @@ def test_offline_cache_with_different_snode_trees(curr_arch):
     for _ in range(5):
         ti.init(arch=curr_arch, enable_fallback=False, **current_thread_ext_options())
         helper()
-        assert added_files() == expected_num_cache_files(2)
+        assert added_files() == expected_num_cache_files(0)
 
 
 @pytest.mark.parametrize("curr_arch", supported_archs_offline_cache)

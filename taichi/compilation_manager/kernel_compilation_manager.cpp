@@ -213,7 +213,6 @@ const CompiledKernelData *KernelCompilationManager::try_load_cached_kernel(
   if (cache_mode == CacheData::MemAndDiskCache) {
     auto &kernels = cached_data_.kernels;
     auto iter = kernels.find(kernel_key);
-
     if (iter != kernels.end()) {
       auto &k = iter->second;
       if (k.compiled_kernel_data) {

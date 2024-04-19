@@ -440,13 +440,16 @@ def test_offline_cache_with_different_snode_trees(curr_arch):
     assert added_files() == expected_num_cache_files(0)
     ti.init(arch=curr_arch, enable_fallback=False, **current_thread_ext_options())
     helper()
+
+    ti.init(arch=curr_arch, enable_fallback=False, **current_thread_ext_options())
     assert added_files() == expected_num_cache_files(2)
+    helper()
 
     # The number of cache file should not change
     for _ in range(5):
         ti.init(arch=curr_arch, enable_fallback=False, **current_thread_ext_options())
-        helper()
         assert added_files() == expected_num_cache_files(0)
+        helper()
 
 
 @pytest.mark.parametrize("curr_arch", supported_archs_offline_cache)

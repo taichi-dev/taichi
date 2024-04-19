@@ -391,16 +391,17 @@ def test_offline_cache_with_different_snode_trees(curr_arch):
 
     def added_files():
         return cache_files_cnt() - count_of_cache_file
-    
+
     def helper():
         x = ti.field(float, shape=5)
+
         @ti.kernel
         def trigger_compile():
             x[0] += 1
 
         # This case is used for testing SNodeTree storeing order matters (i.e., use a ordered container such as vector instead of unordered_map or unordered_set) when generating kernel offline cache key
         # The multiple `trigger_compile` equalivant to allocate each field to a different SNodeTree
-        # i.e., 
+        # i.e.,
         # x = ti.field(float)
         # fb.dense(ti.i, 5).place(x)
         # fb.finalize()
@@ -422,7 +423,6 @@ def test_offline_cache_with_different_snode_trees(curr_arch):
         trigger_compile()
         h = ti.field(float, shape=10)
 
-
         @ti.kernel
         def kernel_forward():
             for i in range(5):
@@ -436,7 +436,7 @@ def test_offline_cache_with_different_snode_trees(curr_arch):
                 h[i] += i
 
         kernel_forward()
-    
+
     ti.init(arch=curr_arch, enable_fallback=False, **current_thread_ext_options())
     helper()
     assert added_files() == expected_num_cache_files(2)

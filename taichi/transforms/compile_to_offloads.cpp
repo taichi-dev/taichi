@@ -72,6 +72,10 @@ void compile_to_offloads(IRNode *ir,
   irpass::lower_matrix_ptr(ir);
   print("Matrix ptr lowered");
 
+  if (config.force_scalarize_matrix) {
+    irpass::scalarize(ir, false /*half2_optimization_enabled*/);
+  }
+
   irpass::full_simplify(
       ir, config,
       {false, /*autodiff_enabled*/ autodiff_mode != AutodiffMode::kNone,
@@ -84,10 +88,6 @@ void compile_to_offloads(IRNode *ir,
 
   if (is_extension_supported(config.arch, Extension::mesh)) {
     irpass::analysis::gather_meshfor_relation_types(ir);
-  }
-
-  if (config.force_scalarize_matrix) {
-    irpass::scalarize(ir, false /*half2_optimization_enabled*/);
   }
 
   if (config.debug && autodiff_mode == AutodiffMode::kCheckAutodiffValid) {

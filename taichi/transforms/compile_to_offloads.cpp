@@ -69,11 +69,14 @@ void compile_to_offloads(IRNode *ir,
   }
 
   // Removes MatrixOfMatrixPtrStmt & MatrixOfGlobalPtrStmt
-  irpass::lower_matrix_ptr(ir);
+  irpass::lower_matrix_ptr(ir, config.force_scalarize_matrix);
   print("Matrix ptr lowered");
 
   if (config.force_scalarize_matrix) {
     irpass::scalarize(ir, false /*half2_optimization_enabled*/);
+
+    irpass::die(ir);
+    print("Scalarized");
   }
 
   irpass::full_simplify(
@@ -366,7 +369,7 @@ void compile_function(IRNode *ir,
     }
 
     // Removes MatrixOfMatrixPtrStmt & MatrixOfGlobalPtrStmt
-    irpass::lower_matrix_ptr(ir);
+    irpass::lower_matrix_ptr(ir, config.force_scalarize_matrix);
     print("Matrix ptr lowered");
 
     irpass::demote_atomics(ir, config);

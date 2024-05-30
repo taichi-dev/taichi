@@ -593,13 +593,15 @@ class RemoveMatrixOfPtr : public BasicStmtVisitor {
 
 namespace irpass {
 
-void lower_matrix_ptr(IRNode *root) {
+void lower_matrix_ptr(IRNode *root, bool force_scalarize) {
   TI_AUTO_PROF;
 
-  GatherValidAOSGlobalPtrStmt gather_valid_aos_global_ptr_pass(root);
+  if (!force_scalarize) {
+    GatherValidAOSGlobalPtrStmt gather_valid_aos_global_ptr_pass(root);
 
-  LowerAOSGlobalPtrStmt lower_aos_global_ptr_stmt_pass(
-      root, gather_valid_aos_global_ptr_pass.invalid_aos_global_ptr_stmts_);
+    LowerAOSGlobalPtrStmt lower_aos_global_ptr_stmt_pass(
+        root, gather_valid_aos_global_ptr_pass.invalid_aos_global_ptr_stmts_);
+  }
 
   ScalarizeMatrixPtr scalarize_matrix_ptr_pass(root);
   LowerMatrixPtr::run(root);

@@ -69,8 +69,15 @@ void compile_to_offloads(IRNode *ir,
   }
 
   // Removes MatrixOfMatrixPtrStmt & MatrixOfGlobalPtrStmt
-  irpass::lower_matrix_ptr(ir);
+  irpass::lower_matrix_ptr(ir, config.force_scalarize_matrix);
   print("Matrix ptr lowered");
+
+  if (config.force_scalarize_matrix) {
+    irpass::scalarize(ir, false /*half2_optimization_enabled*/);
+
+    irpass::die(ir);
+    print("Scalarized");
+  }
 
   irpass::full_simplify(
       ir, config,
@@ -84,10 +91,6 @@ void compile_to_offloads(IRNode *ir,
 
   if (is_extension_supported(config.arch, Extension::mesh)) {
     irpass::analysis::gather_meshfor_relation_types(ir);
-  }
-
-  if (config.force_scalarize_matrix) {
-    irpass::scalarize(ir, false /*half2_optimization_enabled*/);
   }
 
   if (config.debug && autodiff_mode == AutodiffMode::kCheckAutodiffValid) {
@@ -366,7 +369,7 @@ void compile_function(IRNode *ir,
     }
 
     // Removes MatrixOfMatrixPtrStmt & MatrixOfGlobalPtrStmt
-    irpass::lower_matrix_ptr(ir);
+    irpass::lower_matrix_ptr(ir, config.force_scalarize_matrix);
     print("Matrix ptr lowered");
 
     irpass::demote_atomics(ir, config);

@@ -83,7 +83,7 @@ You can use these types to instantiate vectors/matrices or annotate data types f
 
 ```python
 mat2 = ti.math.mat2
-vec3 = ti.math.mat3
+vec3 = ti.math.vec3
 vec4 = ti.math.vec4
 
 m = mat2(1)  # [[1., 1.], [1., 1.]]

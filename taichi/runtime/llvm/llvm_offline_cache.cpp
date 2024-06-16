@@ -234,7 +234,7 @@ std::unique_ptr<llvm::Module> LlvmOfflineCacheFileReader::load_module(
     }
     return ret;
   }
-  TI_ERROR("Unknown LLVM format={}", format_);
+  TI_ERROR("Unknown LLVM format={}", int(format_));
   return nullptr;
 }
 

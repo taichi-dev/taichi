@@ -14,6 +14,23 @@
 
 namespace taichi::lang {
 
+const std::string rhi_result_to_string(RhiResult result) {
+  switch (result) {
+    case RhiResult::success:
+      return "success";
+    case RhiResult::error:
+      return "error";
+    case RhiResult::invalid_usage:
+      return "invalid_usage";
+    case RhiResult::not_supported:
+      return "not_supported";
+    case RhiResult::out_of_memory:
+      return "out_of_memory";
+    default:
+      return "unknown";
+  }
+}
+
 DeviceAllocationGuard::~DeviceAllocationGuard() {
   device->dealloc_memory(*this);
 }

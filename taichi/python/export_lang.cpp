@@ -677,7 +677,7 @@ void export_lang(py::module &m) {
 #include "taichi/inc/data_type_with_c_type.inc.h"
 #undef PER_C_TYPE
             default:
-              TI_ERROR("Unsupported scalar type {}", type_id);
+              TI_ERROR("Unsupported scalar type {}", expected_dtype->to_string());
           }
         };
 
@@ -744,7 +744,7 @@ void export_lang(py::module &m) {
 #include "taichi/inc/data_type_with_c_type.inc.h"
 #undef PER_C_TYPE
               default:
-                TI_ERROR("Unsupported scalar type {}", type_id);
+                TI_ERROR("Unsupported scalar type {}", arg.dtype()->to_string());
             }
           } else {
             TI_NOT_IMPLEMENTED;

@@ -253,7 +253,7 @@ inline std::vector<uint8_t> read_data_from_file(const std::string &fn) {
     return zip::read(fn);
   } else {
     // Read uncompressed file, e.g. particles.tcb
-    assert(f != nullptr);
+    TI_ASSERT(f != nullptr);
     std::size_t length = 0;
     while (true) {
       size_t limit = 1 << 8;
@@ -278,7 +278,7 @@ inline void write_data_to_file(const std::string &fn,
   if (f == nullptr) {
     TI_ERROR("Cannot open file [{}] for writing. (Does the directory exist?)",
              fn);
-    assert(f != nullptr);
+    TI_ASSERT(f != nullptr);
   }
   if (ends_with(fn, ".tcb.zip")) {
     std::fclose(f);
@@ -324,7 +324,7 @@ class BinarySerializer : public Serializer {
   void write_to_file(const std::string &fn) {
     void *ptr = c_data;
     if (!ptr) {
-      assert(!data.empty());
+      TI_ASSERT(!data.empty());
       ptr = &data[0];
     }
     write_data_to_file(fn, reinterpret_cast<uint8_t *>(ptr), head);
@@ -333,7 +333,7 @@ class BinarySerializer : public Serializer {
   void write_to_stream(std::ostream &os) {
     void *ptr = c_data;
     if (!ptr) {
-      assert(!data.empty());
+      TI_ASSERT(!data.empty());
       ptr = &data[0];
     }
     os.write(reinterpret_cast<const char *>(ptr), head);
@@ -349,7 +349,7 @@ class BinarySerializer : public Serializer {
       TI_TRACE("preserved = {}", preserved_);
       // Preserved mode
       this->preserved = preserved_;
-      assert(c_data != nullptr);
+      TI_ASSERT(c_data != nullptr);
       this->c_data = (uint8_t *)c_data;
     } else {
       // otherwise use a std::vector<uint8_t>
@@ -365,11 +365,11 @@ class BinarySerializer : public Serializer {
       void *raw_data,
       std::size_t preserved_ = std::size_t(0)) {
     if (preserved_ != 0) {
-      assert(raw_data == nullptr);
+      TI_ASSERT(raw_data == nullptr);
       data.resize(preserved_);
       c_data = &data[0];
     } else {
-      assert(raw_data != nullptr);
+      TI_ASSERT(raw_data != nullptr);
       c_data = reinterpret_cast<uint8_t *>(raw_data);
     }
     head = sizeof(std::size_t);
@@ -389,7 +389,7 @@ class BinarySerializer : public Serializer {
         *reinterpret_cast<std::size_t *>(&data[0]) = head;
       }
     } else {
-      assert(head == retrieve_length());
+      TI_ASSERT(head == retrieve_length());
     }
   }
 

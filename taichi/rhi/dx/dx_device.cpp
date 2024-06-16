@@ -406,8 +406,8 @@ HRESULT create_compute_device(ID3D11Device **out_device,
 #endif
 
     if (FAILED(hr) || device == nullptr) {
-      TI_WARN("Failed to create D3D11 device with type {}: {}\n", int(driver_type),
-              driver_type_names[attempt_idx]);
+      TI_WARN("Failed to create D3D11 device with type {}: {}\n",
+              int(driver_type), driver_type_names[attempt_idx]);
       continue;
     }
 

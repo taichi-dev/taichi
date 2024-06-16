@@ -206,7 +206,7 @@ TEST_F(CapiTest, TestBehaviorMapMemory) {
 TEST_F(CapiTest, TestBehaviorUnmapMemory) {
   auto inner = [&](TiArch arch) {
     if (!ti::is_arch_available(arch)) {
-      TI_WARN("arch {} is nor supported, so the test is skipped", arch);
+      TI_WARN("arch {} is nor supported, so the test is skipped", int(arch));
       return;
     }
 

@@ -95,7 +95,7 @@ TEST_F(CapiTest, TestBehaviorGetRuntimeCapabilities) {
 TEST_F(CapiTest, TestBehaviorAllocateMemory) {
   auto inner = [&](TiArch arch) {
     if (!ti::is_arch_available(arch)) {
-      TI_WARN("arch {} is not supported, so this test is skipped", arch);
+      TI_WARN("arch {} is not supported, so this test is skipped", int(arch));
       return;
     }
 

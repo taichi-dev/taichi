@@ -29,7 +29,7 @@ ProfilingToolkit get_toolkit_enum(std::string toolkit_name) {
 bool KernelProfilerCUDA::set_profiler_toolkit(std::string toolkit_name) {
   sync();
   ProfilingToolkit set_toolkit = get_toolkit_enum(toolkit_name);
-  TI_TRACE("profiler toolkit enum = {} >>> {}", tool_, set_toolkit);
+  TI_TRACE("profiler toolkit enum = {} >>> {}", int(tool_), int(set_toolkit));
   if (set_toolkit == tool_)
     return true;
 

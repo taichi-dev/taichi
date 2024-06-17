@@ -65,3 +65,11 @@
 [submodule "external/backward_cpp"]
 	path = external/backward_cpp
 	url = https://github.com/bombela/backward-cpp.git
+[submodule "./SPIRV-Tools"]
+	branch = main
+[submodule "./SPIRV-Cross"]
+	branch = main
+[submodule "./SPIRV-Headers"]
+	branch = main
+[submodule "./SPIRV-Reflect"]
+	branch = main

@@ -1497,7 +1497,7 @@ Value IRBuilder::get_const(const SType &dtype,
   }
 
   TI_WARN_IF(dtype.flag != TypeKind::kPrimitive,
-             "Trying to get const with dtype.flag={} , .dt={}", dtype.flag,
+             "Trying to get const with dtype.flag={} , .dt={}", int(dtype.flag),
              dtype.dt.to_string());
   Value ret = new_value(dtype, ValueKind::kConstant);
   if (dtype.dt->is_primitive(PrimitiveTypeID::u1)) {

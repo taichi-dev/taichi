@@ -85,7 +85,7 @@ void AppContext::init_with_vulkan(Program *prog,
     VkResult result = VK_SUCCESS;
     if ((result = glfwCreateWindowSurface(instance, window, nullptr,
                                           &surface)) != VK_SUCCESS) {
-      TI_WARN("Failed to create window: error {}", result);
+      TI_WARN("Failed to create window: error {}", int(result));
       return nullptr;
     }
 #endif

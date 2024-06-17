@@ -28,7 +28,7 @@ TEST_F(CapiTest, TestBehaviorDestroyRuntime) {
 TEST_F(CapiTest, TestBehaviorGetRuntimeCapabilities) {
   auto inner = [this](TiArch arch) {
     if (!ti::is_arch_available(arch)) {
-      TI_WARN("arch {} is not supported so the test is skipped", arch);
+      TI_WARN("arch {} is not supported so the test is skipped", int(arch));
       return;
     }
 
@@ -95,7 +95,7 @@ TEST_F(CapiTest, TestBehaviorGetRuntimeCapabilities) {
 TEST_F(CapiTest, TestBehaviorAllocateMemory) {
   auto inner = [&](TiArch arch) {
     if (!ti::is_arch_available(arch)) {
-      TI_WARN("arch {} is not supported, so this test is skipped", arch);
+      TI_WARN("arch {} is not supported, so this test is skipped", int(arch));
       return;
     }
 
@@ -141,7 +141,7 @@ TEST_F(CapiTest, TestBehaviorAllocateMemory) {
 TEST_F(CapiTest, TestBehaviorFreeMemory) {
   auto inner = [this](TiArch arch) {
     if (!ti::is_arch_available(arch)) {
-      TI_WARN("arch {} is not supported, so the test is skipped", arch);
+      TI_WARN("arch {} is not supported, so the test is skipped", int(arch));
       return;
     }
 
@@ -172,7 +172,7 @@ TEST_F(CapiTest, TestBehaviorFreeMemory) {
 TEST_F(CapiTest, TestBehaviorMapMemory) {
   auto inner = [this](TiArch arch) {
     if (!ti::is_arch_available(arch)) {
-      TI_WARN("arch {} is not supported, so the test is skipped", arch);
+      TI_WARN("arch {} is not supported, so the test is skipped", int(arch));
       return;
     }
 
@@ -206,7 +206,7 @@ TEST_F(CapiTest, TestBehaviorMapMemory) {
 TEST_F(CapiTest, TestBehaviorUnmapMemory) {
   auto inner = [&](TiArch arch) {
     if (!ti::is_arch_available(arch)) {
-      TI_WARN("arch {} is nor supported, so the test is skipped", arch);
+      TI_WARN("arch {} is nor supported, so the test is skipped", int(arch));
       return;
     }
 
@@ -252,7 +252,7 @@ inline TiImageAllocateInfo make_image_allocate_info() {
 TEST_F(CapiTest, TestBehaviorAllocateImage) {
   auto inner = [&](TiArch arch) {
     if (!ti::is_arch_available(arch)) {
-      TI_WARN("arch {} is not supported, so the test is skipped", arch);
+      TI_WARN("arch {} is not supported, so the test is skipped", int(arch));
       return;
     }
 
@@ -305,7 +305,7 @@ TEST_F(CapiTest, TestBehaviorFreeImage) {
   auto inner = [&](TiArch arch) {
     // Attemp to free a normal 2D image
     if (!ti::is_arch_available(arch)) {
-      TI_WARN("arch {} is not supported, so the test is skipped", arch);
+      TI_WARN("arch {} is not supported, so the test is skipped", int(arch));
       return;
     }
 
@@ -336,7 +336,7 @@ TEST_F(CapiTest, TestBehaviorFreeImage) {
 TEST_F(CapiTest, TestBehaviorCopyMemoryDTD) {
   auto inner = [&](TiArch arch) {
     if (!ti::is_arch_available(arch)) {
-      TI_WARN("arch {} is not supported, so the test is skipped", arch);
+      TI_WARN("arch {} is not supported, so the test is skipped", int(arch));
       return;
     }
 
@@ -390,7 +390,7 @@ TEST_F(CapiTest, TestBehaviorLoadAOTModuleVulkan) {
     const std::string module_path = folder_dir + std::string("/module.tcm");
 
     if (!ti::is_arch_available(arch)) {
-      TI_WARN("arch {} is not supported, so the test is skipped", arch);
+      TI_WARN("arch {} is not supported, so the test is skipped", int(arch));
       return;
     }
     ti::Runtime runtime(arch);
@@ -446,7 +446,7 @@ TEST_F(CapiTest, TestBehaviorDestroyAotModuleVulkan) {
     const auto folder_dir = getenv("TAICHI_AOT_FOLDER_PATH");
     const std::string module_path = folder_dir + std::string("/module.tcm");
     if (!ti::is_arch_available(arch)) {
-      TI_WARN("arch {} is not supported, so the test is skipped", arch);
+      TI_WARN("arch {} is not supported, so the test is skipped", int(arch));
       return;
     }
 
@@ -463,7 +463,7 @@ TEST_F(CapiTest, TestBehaviorGetCgraphVulkan) {
     const auto folder_dir = getenv("TAICHI_AOT_FOLDER_PATH");
     const std::string module_path = folder_dir;
     if (!ti::is_arch_available(arch)) {
-      TI_WARN("arch {} is not supported, so the test is skipped", arch);
+      TI_WARN("arch {} is not supported, so the test is skipped", int(arch));
       return;
     }
 

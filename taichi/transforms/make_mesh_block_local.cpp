@@ -465,7 +465,7 @@ MakeMeshBlockLocal::MakeMeshBlockLocal(OffloadedStmt *offload,
         break;  // not enough space to ensure occupacy
       }
       TI_TRACE("available = {}, x = {}, loop_index = {}, unique_access = {}",
-               available_bytes, cache.total_flags, int(cache.loop_index),
+               available_bytes, int(cache.total_flags), int(cache.loop_index),
                cache.unique_accessed);
       caches->caches.insert(std::make_pair(cache.snode, cache));
     }

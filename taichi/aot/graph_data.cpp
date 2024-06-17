@@ -137,7 +137,7 @@ void CompiledGraph::init_runtime_context(
                   mat->length() * data_type_size(mat->dtype()));
       ctx.set_arg_matrix(i, *mat);
     } else {
-      TI_ERROR("Error in compiled graph: unknown tag {}", ival.tag);
+      TI_ERROR("Error in compiled graph: unknown tag {}", int(ival.tag));
     }
   }
 }

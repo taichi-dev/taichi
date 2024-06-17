@@ -60,7 +60,7 @@ class TaichiWarning : public TaichiExceptionImpl {
   using TaichiExceptionImpl::TaichiExceptionImpl;
 
  protected:
-  static constexpr std::string_view name_;
+  static constexpr std::string_view name_ = "TaichiWarning";
 
  public:
   void emit() {

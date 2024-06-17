@@ -189,7 +189,7 @@ jobs:
         - sm70
         - not sm70
         driver:
-        - driver470
+        - driver550
         - driver510
 
     runs-on:
@@ -889,7 +889,7 @@ jobs:
     strategy:
       matrix:
         tags:
-          - [self-hosted, cuda, vulkan, cn, driver470]
+          - [self-hosted, cuda, vulkan, cn, driver550]
           - [self-hosted, cuda, vulkan, cn, driver510]
     env:
       PY: '3.8'

@@ -53,9 +53,9 @@ def restart():
         # GitHub Actions will treat the step as completed when doing os.execl in Windows,
         # since Windows does not have real execve, its behavior is emulated by spawning a new process and
         # terminating the current process. So we do not use os.execl in Windows.
-        os._exit(run(sys.executable, *sys.argv))
+        os._exit(run(sys.executable, "-S", *sys.argv))
     else:
-        os.execl(sys.executable, sys.executable, *sys.argv)
+        os.execl(sys.executable, sys.executable, "-S", *sys.argv)
 
 
 def _try_import(name: str) -> Optional[ModuleType]:
@@ -72,6 +72,16 @@ def ensure_dependencies(*deps: str):
 
     pip = _try_import("pip")
     ensurepip = _try_import("ensurepip")
+
+    if not sys.flags.no_site:
+        # First run, restart with no_site
+        if not pip and not ensurepip:
+            print(
+                "!! pip or ensurepip not found, build.py needs at least a functional pip/ensurepip to work.", flush=True
+            )
+            sys.exit(1)
+
+        restart()
 
     # Second run
     v = sys.version_info
@@ -91,20 +101,19 @@ def ensure_dependencies(*deps: str):
     py = sys.executable
     pip_install = ["-m", "pip", "install", "--no-user", f"--target={bootstrap_root}", "-U"]
 
-    if not pip:
-        if ensurepip:
-            search_path = sysconfig.get_config_var("WHEEL_PKG_DIR")
-            if search_path is None:
-                search_path = ensurepip.__path__[0]
-            wheels = Path(search_path).glob("**/*.whl")
-            wheels = os.pathsep.join(map(str, wheels))
-            if run(py, *pip_install, "pip", env={"PYTHONPATH": wheels}):
-                raise Exception("Unable to install pip! (ensurepip method)")
-        else:  # pip must exist
-            if run(py, *pip_install, "pip"):
-                raise Exception("Unable to install pip! (pip method)")
+    if ensurepip:
+        search_path = sysconfig.get_config_var("WHEEL_PKG_DIR")
+        if search_path is None:
+            search_path = ensurepip.__path__[0]
+        wheels = Path(search_path).glob("**/*.whl")
+        wheels = os.pathsep.join(map(str, wheels))
+        if run(py, "-S", *pip_install, "pip", env={"PYTHONPATH": wheels}):
+            raise Exception("Unable to install pip! (ensurepip method)")
+    else:  # pip must exist
+        if run(py, *pip_install, "pip"):
+            raise Exception("Unable to install pip! (pip method)")
 
-    if run(py, *pip_install, *deps, env={"PYTHONPATH": str(bootstrap_root)}):
+    if run(py, "-S", *pip_install, *deps, env={"PYTHONPATH": str(bootstrap_root)}):
         raise Exception("Unable to install dependencies!")
 
     restart()

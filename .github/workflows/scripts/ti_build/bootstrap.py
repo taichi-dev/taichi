@@ -101,17 +101,19 @@ def ensure_dependencies(*deps: str):
     py = sys.executable
     pip_install = ["-m", "pip", "install", "--no-user", f"--target={bootstrap_root}", "-U"]
 
-    if ensurepip:
+    if run(py, *pip_install, "pip") == 0:
+        # pip method successful
+        pass
+    elif ensurepip:
         search_path = sysconfig.get_config_var("WHEEL_PKG_DIR")
-        if search_path is None:
-            search_path = ensurepip.__path__[0]
-        wheels = Path(search_path).glob("**/*.whl")
+        wheels = list(Path(search_path).glob("**/*.whl"))
+        search_path = ensurepip.__path__[0]
+        wheels.extend(Path(search_path).glob("**/*.whl"))
         wheels = os.pathsep.join(map(str, wheels))
         if run(py, "-S", *pip_install, "pip", env={"PYTHONPATH": wheels}):
             raise Exception("Unable to install pip! (ensurepip method)")
-    else:  # pip must exist
-        if run(py, *pip_install, "pip"):
-            raise Exception("Unable to install pip! (pip method)")
+    else:
+        raise Exception("Unable to install pip!")
 
     if run(py, "-S", *pip_install, *deps, env={"PYTHONPATH": str(bootstrap_root)}):
         raise Exception("Unable to install dependencies!")

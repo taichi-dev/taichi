@@ -890,7 +890,7 @@ jobs:
       matrix:
         tags:
           - [self-hosted, cuda, vulkan, cn, driver550]
-          - [self-hosted, cuda, vulkan, cn, driver510]
+          # - [self-hosted, cuda, vulkan, cn, driver510]
     env:
       PY: '3.8'
       PROJECT_NAME: taichi

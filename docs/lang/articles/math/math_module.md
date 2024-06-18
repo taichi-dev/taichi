@@ -114,7 +114,7 @@ u = v.rraa  # vec4(1, 1, 2, 2)
 - `ti.types.vector` is a function that accepts an integer and a primitive type and returns a vector type. For example: `vec5f = ti.types.vector(5, float)`. `vec5f` can then be used to instantiate 5D vectors or annotate data types of function arguments and struct members:
     ```python
     vec5f = ti.types.vector(5, float)
-    
+
     @ti.kernel
     def test(v: vec5f):
         print(v.xyz)

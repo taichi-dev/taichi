@@ -83,7 +83,7 @@ You can use these types to instantiate vectors/matrices or annotate data types f
 
 ```python
 mat2 = ti.math.mat2
-vec3 = ti.math.mat3
+vec3 = ti.math.vec3
 vec4 = ti.math.vec4
 
 m = mat2(1)  # [[1., 1.], [1., 1.]]
@@ -113,6 +113,8 @@ u = v.rraa  # vec4(1, 1, 2, 2)
 - `ti.Vector` is a function that accepts a 1D array and returns a matrix instance that has only one column. For example, `ti.Vector([1, 2, 3, 4, 5])`.
 - `ti.types.vector` is a function that accepts an integer and a primitive type and returns a vector type. For example: `vec5f = ti.types.vector(5, float)`. `vec5f` can then be used to instantiate 5D vectors or annotate data types of function arguments and struct members:
     ```python
+    vec5f = ti.types.vector(5, float)
+
     @ti.kernel
     def test(v: vec5f):
         print(v.xyz)

@@ -5,7 +5,7 @@ self-hosted-runner:
   - OpenGL
   - vulkan
   - m1
-  - driver470
+  - driver550
   - driver510
   - benchmark
   - release

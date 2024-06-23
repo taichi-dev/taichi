@@ -501,6 +501,7 @@ jobs:
           prepare-build-cache
           brew install molten-vk
           brew install llvm@15
+          brew upgrade tesseract
           .github/workflows/scripts/build.py
         env:
           CXX: clang++

@@ -89,13 +89,13 @@ def _test_reduction_single(dtype, criterion, op):
 @pytest.mark.parametrize("op", [OP_ADD, OP_MIN, OP_MAX, OP_AND, OP_OR, OP_XOR])
 @test_utils.test()
 def test_reduction_single_i32(op):
-    _test_reduction_single(ti.i32, lambda x, y: x % 2**32 == y % 2**32, op)
+    _test_reduction_single(ti.i32, lambda x, y: int(x) % 2**32 == int(y) % 2**32, op)
 
 
 @pytest.mark.parametrize("op", [OP_ADD])
 @test_utils.test(exclude=[ti.opengl, ti.gles])
 def test_reduction_single_u32(op):
-    _test_reduction_single(ti.u32, lambda x, y: x % 2**32 == y % 2**32, op)
+    _test_reduction_single(ti.u32, lambda x, y: int(x) % 2**32 == int(y) % 2**32, op)
 
 
 @pytest.mark.parametrize("op", [OP_ADD, OP_MIN, OP_MAX])
@@ -107,13 +107,13 @@ def test_reduction_single_f32(op):
 @pytest.mark.parametrize("op", [OP_ADD])
 @test_utils.test(require=ti.extension.data64)
 def test_reduction_single_i64(op):
-    _test_reduction_single(ti.i64, lambda x, y: x % 2**64 == y % 2**64, op)
+    _test_reduction_single(ti.i64, lambda x, y: int(x) % 2**64 == int(y) % 2**64, op)
 
 
 @pytest.mark.parametrize("op", [OP_ADD])
 @test_utils.test(exclude=[ti.opengl, ti.gles], require=ti.extension.data64)
 def test_reduction_single_u64(op):
-    _test_reduction_single(ti.u64, lambda x, y: x % 2**64 == y % 2**64, op)
+    _test_reduction_single(ti.u64, lambda x, y: int(x) % 2**64 == int(y) % 2**64, op)
 
 
 @pytest.mark.parametrize("op", [OP_ADD])

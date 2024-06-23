@@ -169,7 +169,7 @@ def _print_taichi_header():
     print(header)
 
 
-if os.environ.get("ENABLE_TAICHI_HEADER_PRINT", True):
+if os.getenv("ENABLE_TAICHI_HEADER_PRINT", "True").lower() not in ("false", "0", "f"):
     _print_taichi_header()
 
 

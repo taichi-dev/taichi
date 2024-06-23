@@ -103,7 +103,7 @@ To know more about `FieldsBuilder`, please refer to [FieldsBuilder](https://docs
 
 ## Inheritance of Data-Oriented classes
 
-The Data-Oriented property is automatically carried along with the Python class inheritence. This implies that you can call a Taichi Kernel if any of its ancestor classes is decorated with `@ti.data_oriented`, which is shown in the example below:
+The Data-Oriented property is automatically carried along with the Python class inheritance. This implies that you can call a Taichi Kernel if any of its ancestor classes is decorated with `@ti.data_oriented`, which is shown in the example below:
 
 An example:
 ```python

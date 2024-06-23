@@ -178,7 +178,6 @@ def to_pytorch_type(dt):
         raise RuntimeError(f"PyTorch doesn't support {dt.to_string()} data type before version 2.3.0.")
 
     raise RuntimeError(f"PyTorch doesn't support {dt.to_string()} data type.")
-    assert False
 
 
 def to_paddle_type(dt):

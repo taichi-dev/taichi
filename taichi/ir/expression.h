@@ -64,6 +64,10 @@ class Expression {
     return stmt;
   }
 
+  std::string get_last_tb() const {
+    return dbg_info.get_last_tb();
+  }
+
   std::string const &get_tb() const {
     return dbg_info.tb;
   }

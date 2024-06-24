@@ -3,6 +3,7 @@
 #include <queue>
 #include <unordered_set>
 
+#include "taichi/common/exceptions.h"
 #include "taichi/ir/analysis.h"
 #include "taichi/ir/statements.h"
 #include "taichi/system/profiler.h"
@@ -337,8 +338,11 @@ Stmt *CFGNode::get_store_forwarding_data(Stmt *var, int position) const {
   }
   if (!result) {
     // The UD-chain is empty.
-    TI_WARN("stmt {} loaded in stmt {} before storing.", var->id,
-            block->statements[position]->id);
+    auto offending_load = block->statements[position].get();
+    ErrorEmitter(
+        TaichiIrWarning(), offending_load,
+        fmt::format("Loading variable {} before anything is stored to it.",
+                    var->id));
     return nullptr;
   }
   if (!result_visible) {

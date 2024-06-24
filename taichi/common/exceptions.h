@@ -26,6 +26,10 @@ struct DebugInfo {
   explicit DebugInfo(const char *tb_) : tb(tb_) {
   }
 
+  std::string get_last_tb() const {
+    return tb;
+  }
+
   std::string const &get_tb() const {
     return tb;
   }
@@ -141,7 +145,7 @@ struct ErrorEmitter {
       // tb here
       error.msg_ = error_msg;
     } else {
-      error.msg_ = p_dbg_info->get_tb() + error_msg;
+      error.msg_ = p_dbg_info->get_last_tb() + error_msg;
     }
 
     if constexpr (std::is_base_of_v<TaichiWarning, std::decay_t<E>>) {

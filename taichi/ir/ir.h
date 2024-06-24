@@ -235,6 +235,7 @@ class IRNode {
   virtual IRNode *get_parent() const = 0;
 
   IRNode *get_ir_root();
+  const IRNode *get_ir_root() const;
 
   virtual ~IRNode() = default;
 
@@ -440,6 +441,8 @@ class Stmt : public IRNode {
     // TI_ASSERT(0 <= i && i < (int)operands.size());
     return *operands[i];
   }
+
+  std::string get_last_tb() const;
 
   TI_FORCE_INLINE std::string const &get_tb() const {
     return dbg_info.tb;

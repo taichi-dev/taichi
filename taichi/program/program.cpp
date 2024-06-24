@@ -310,6 +310,7 @@ Kernel &Program::get_snode_writer(SNode *snode) {
     ASTBuilder &builder = kernel->context->builder();
     auto expr =
         builder.expr_subscript(Expr(snode_to_fields_.at(snode)), indices);
+    expr.type_check(&this->compile_config());
     auto argload_expr = Expr::make<ArgLoadExpression>(
         std::vector<int>{snode->num_active_indices},
         snode->dt->get_compute_type());

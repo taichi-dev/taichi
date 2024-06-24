@@ -204,12 +204,13 @@ IRNode *Stmt::get_parent() const {
 }
 
 std::string Stmt::get_last_tb() const {
-  const auto& tb = dbg_info.tb;
+  const auto &tb = dbg_info.tb;
   if (tb.empty()) {
     // If has no tb, try to find tb from the immediate previous statement
     if (parent) {
-      auto it_this = std::find_if(parent->statements.rbegin(), parent->statements.rend(),
-                                         [this](const pStmt &stmt) { return stmt.get() == this; });
+      auto it_this = std::find_if(
+          parent->statements.rbegin(), parent->statements.rend(),
+          [this](const pStmt &stmt) { return stmt.get() == this; });
 
       while (it_this != parent->statements.rend()) {
         const auto &stmt = *it_this;
@@ -223,9 +224,10 @@ std::string Stmt::get_last_tb() const {
     const auto stmt_type_name = typeid(*this).name();
     const auto callable_name = get_callable()->get_name();
 
-    return fmt::format("{}::{} of type {}\n", callable_name, name(), cpp_demangle(stmt_type_name));
+    return fmt::format("{}::{} of type {}\n", callable_name, name(),
+                       cpp_demangle(stmt_type_name));
   }
-  
+
   return tb;
 }
 

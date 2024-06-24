@@ -147,7 +147,7 @@ Callable *Stmt::get_callable() const {
   }
   irpass::print((IRNode *)this);
 
-  TI_ASSERT_INFO(false, "Stmt is not in a kernel.");
+  TI_WARN("Stmt is not in a kernel.");
   return nullptr;
 }
 
@@ -222,7 +222,8 @@ std::string Stmt::get_last_tb() const {
     }
 
     const auto stmt_type_name = typeid(*this).name();
-    const auto callable_name = get_callable()->get_name();
+    const auto *callable = get_callable();
+    const auto callable_name = callable ? callable->get_name() : "";
 
     return fmt::format("{}::{} of type {}\n", callable_name, name(),
                        cpp_demangle(stmt_type_name));

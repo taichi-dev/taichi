@@ -53,9 +53,9 @@ class IRPrinter : public IRVisitor {
     if (print_ir_dbg_info) {
       dbg_info_printer_ = [this](const Stmt *stmt) {
         auto tb = stmt->get_tb();
-        print_raw(tb.empty() ? "No DebugInfo avaliable.\n"
-                             : tb.substr(0, tb.length()),
-                  "");
+        if (!tb.empty()) {
+          this->print_raw(tb.substr(0, tb.length()), "");
+        }
       };
     }
   }

@@ -339,7 +339,10 @@ Stmt *CFGNode::get_store_forwarding_data(Stmt *var, int position) const {
   if (!result) {
     // The UD-chain is empty.
     auto offending_load = block->statements[position].get();
-    ErrorEmitter(TaichiIrWarning(), offending_load, fmt::format("Loading variable {} before anything is stored to it.", var->id));
+    ErrorEmitter(
+        TaichiIrWarning(), offending_load,
+        fmt::format("Loading variable {} before anything is stored to it.",
+                    var->id));
     return nullptr;
   }
   if (!result_visible) {

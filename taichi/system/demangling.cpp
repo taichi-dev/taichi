@@ -43,11 +43,7 @@ class Demangling : public Task {
       printf("There should be at least one parameter for demangling.\n");
     }
     for (auto p : parameters) {
-#if !defined(_WIN64)
       printf("Demangled C++ Identifier: %s\n", cpp_demangle(p).c_str());
-#else
-      TI_NOT_IMPLEMENTED
-#endif
     }
     return "";
   }

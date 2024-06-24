@@ -37,8 +37,8 @@ if args.exp == "implicit":
 use_sparse = args.use_sparse
 
 n_cube = np.array([5] * 3)
-n_verts = np.product(n_cube)
-n_cells = 5 * np.product(n_cube - 1)
+n_verts = np.prod(n_cube)
+n_cells = 5 * np.prod(n_cube - 1)
 dx = 1 / (n_cube.max() - 1)
 
 F_vertices = ti.Vector.field(4, dtype=ti.i32, shape=n_cells)

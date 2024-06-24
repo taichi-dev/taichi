@@ -204,6 +204,12 @@ IRNode *Stmt::get_parent() const {
 }
 
 std::string Stmt::get_last_tb() const {
+  const auto *callable = get_callable();
+  const auto callable_name = callable ? callable->get_name() : "";
+
+  std::string prefix =
+      !callable_name.empty() ? "While compiling `" + callable_name + "`, " : "";
+
   const auto &tb = dbg_info.tb;
   if (tb.empty()) {
     // If has no tb, try to find tb from the immediate previous statement
@@ -215,21 +221,19 @@ std::string Stmt::get_last_tb() const {
       while (it_this != parent->statements.rend()) {
         const auto &stmt = *it_this;
         if (!stmt->get_tb().empty()) {
-          return stmt->get_tb();
+          return prefix + stmt->get_tb();
         }
         ++it_this;
       }
     }
 
     const auto stmt_type_name = typeid(*this).name();
-    const auto *callable = get_callable();
-    const auto callable_name = callable ? callable->get_name() : "";
 
-    return fmt::format("{}::{} of type {}\n", callable_name, name(),
+    return fmt::format("{}Statement {} (type={});\n", prefix, name(),
                        cpp_demangle(stmt_type_name));
   }
 
-  return tb;
+  return prefix + tb;
 }
 
 std::vector<Stmt *> Stmt::get_operands() const {

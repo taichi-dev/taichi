@@ -200,7 +200,7 @@ jobs:
     - ${{ matrix.driver }}
     - ${{ matrix.extra_markers == 'sm70' && 'sm70' || 'Linux' }}
     env:
-      PY: '3.11'
+      PY: '3.12'
       PROJECT_NAME: taichi
       TAICHI_CMAKE_ARGS: >-
         -DTI_WITH_OPENGL:BOOL=ON

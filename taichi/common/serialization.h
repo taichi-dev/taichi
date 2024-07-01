@@ -193,9 +193,10 @@ class Serializer {
   template <typename T>
   struct has_io {
     template <typename T_>
-    static constexpr auto helper(T_ *) -> std::is_same<
-        decltype((std::declval<T_>().io(std::declval<Serializer &>()))),
-        void>;
+    static constexpr auto helper(T_ *)
+        -> std::is_same<
+            decltype((std::declval<T_>().io(std::declval<Serializer &>()))),
+            void>;
 
     template <typename>
     static constexpr auto helper(...) -> std::false_type;

@@ -88,12 +88,13 @@ using remove_cvref_t = typename remove_cvref<T>::type;
 template <typename T>
 struct has_ptr_serde {
   template <typename T_>
-  static constexpr auto helper(T_ *) -> std::is_same<
-      decltype((T_::jsonserde_ptr_io(std::declval<const T_ *&>(),
-                                     std::declval<JsonValue &>(),
-                                     std::declval<bool>(),
-                                     std::declval<bool>()))),
-      void>;
+  static constexpr auto helper(T_ *)
+      -> std::is_same<
+          decltype((T_::jsonserde_ptr_io(std::declval<const T_ *&>(),
+                                         std::declval<JsonValue &>(),
+                                         std::declval<bool>(),
+                                         std::declval<bool>()))),
+          void>;
 
   template <typename>
   static constexpr auto helper(...) -> std::false_type;

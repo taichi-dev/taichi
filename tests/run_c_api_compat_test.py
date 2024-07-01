@@ -2,6 +2,7 @@
 Ensure AOT modules compiled by old versions of Taichi is compatible with the
 latest Taichi Runtime.
 """
+
 import glob
 import os
 import subprocess

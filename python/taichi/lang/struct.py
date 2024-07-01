@@ -210,11 +210,11 @@ _
             Dict: The result dictionary.
         """
         res_dict = {
-            k: v.to_dict(include_methods=include_methods, include_ndim=include_ndim)
-            if isinstance(v, Struct)
-            else v.to_list()
-            if isinstance(v, Matrix)
-            else v
+            k: (
+                v.to_dict(include_methods=include_methods, include_ndim=include_ndim)
+                if isinstance(v, Struct)
+                else v.to_list() if isinstance(v, Matrix) else v
+            )
             for k, v in self.__entries.items()
         }
         if include_methods:

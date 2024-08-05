@@ -111,6 +111,7 @@ std::tuple<std::unordered_map<const SNode *, GlobalPtrStmt *>,
                               hashing::Hasher<std::vector<int>>>,
            std::unordered_set<MatrixPtrStmt *>>
 gather_uniquely_accessed_pointers(IRNode *root);
+std::unordered_set<Stmt *> gather_dynamically_indexed_pointers(IRNode *root);
 
 std::unique_ptr<std::unordered_set<AtomicOpStmt *>> gather_used_atomics(
     IRNode *root);

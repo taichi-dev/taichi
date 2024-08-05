@@ -26,6 +26,8 @@ class CacheLoopInvariantGlobalVars : public LoopInvariantDetector {
       loop_unique_arr_ptr_;
   std::unordered_set<MatrixPtrStmt *> loop_unique_matrix_ptr_;
 
+  std::unordered_set<Stmt *> dynamic_indexed_ptrs_;
+
   OffloadedStmt *current_offloaded;
 
   explicit CacheLoopInvariantGlobalVars(const CompileConfig &config)
@@ -44,6 +46,9 @@ class CacheLoopInvariantGlobalVars : public LoopInvariantDetector {
           std::move(std::get<2>(uniquely_accessed_pointers));
     }
     current_offloaded = stmt;
+    dynamic_indexed_ptrs_ =
+        irpass::analysis::gather_dynamically_indexed_pointers(stmt);
+
     // We don't need to visit TLS/BLS prologues/epilogues.
     if (stmt->body) {
       if (stmt->task_type == OffloadedStmt::TaskType::range_for ||
@@ -54,6 +59,28 @@ class CacheLoopInvariantGlobalVars : public LoopInvariantDetector {
         stmt->body->accept(this);
     }
     current_offloaded = nullptr;
+  }
+
+  bool is_dynamically_indexed(Stmt *stmt) {
+    // Handle GlobalPtrStmt
+    Stmt *ptr_stmt = nullptr;
+    if (stmt->is<GlobalPtrStmt>()) {
+      ptr_stmt = stmt->as<GlobalPtrStmt>();
+    } else if (stmt->is<MatrixPtrStmt>() &&
+               stmt->as<MatrixPtrStmt>()->origin->is<GlobalPtrStmt>()) {
+      ptr_stmt = stmt->as<MatrixPtrStmt>()->origin->as<GlobalPtrStmt>();
+    } else if (stmt->is<ExternalPtrStmt>()) {
+      ptr_stmt = stmt->as<ExternalPtrStmt>();
+    } else if (stmt->is<MatrixPtrStmt>() &&
+               stmt->as<MatrixPtrStmt>()->origin->is<ExternalPtrStmt>()) {
+      ptr_stmt = stmt->as<MatrixPtrStmt>()->origin->as<ExternalPtrStmt>();
+    }
+
+    if (ptr_stmt && dynamic_indexed_ptrs_.count(ptr_stmt)) {
+      return true;
+    }
+
+    return false;
   }
 
   bool is_offload_unique(Stmt *stmt) {
@@ -174,6 +201,9 @@ class CacheLoopInvariantGlobalVars : public LoopInvariantDetector {
 
   std::optional<int> find_cache_depth_if_cacheable(Stmt *operand,
                                                    Block *current_scope) {
+    if (is_dynamically_indexed(operand)) {
+      return std::nullopt;
+    }
     if (!is_offload_unique(operand)) {
       return std::nullopt;
     }

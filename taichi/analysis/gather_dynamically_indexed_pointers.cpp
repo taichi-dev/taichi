@@ -22,15 +22,51 @@ bool is_leaf_nodes_on_same_branch(SNode *snode0, SNode *snode1) {
 }
 
 class DynamicIndexingAnalyzer : public BasicStmtVisitor {
+  void record_dynamic_indexed_ptr(ExternalPtrStmt *extern_ptr) {
+    dynamically_indexed_ptrs_.insert(extern_ptr);
+    // Find aliased ExternPtrStmt
+    for (auto *other_extern_ptr : extern_ptrs_) {
+      if (other_extern_ptr != extern_ptr &&
+          other_extern_ptr->base_ptr == extern_ptr->base_ptr) {
+        // Aliased ExternalPtrStmt, with same base_ptr and outter index
+        dynamically_indexed_ptrs_.insert(other_extern_ptr);
+      }
+    }
+  }
+
+  void record_dynamic_indexed_ptr(GlobalPtrStmt *global_ptr) {
+    dynamically_indexed_ptrs_.insert(global_ptr);
+    // Find aliased GlobalPtrStmt
+    for (auto *other_global_ptr : global_ptrs_) {
+      if (other_global_ptr != global_ptr &&
+          is_leaf_nodes_on_same_branch(other_global_ptr->snode,
+                                       global_ptr->snode)) {
+        dynamically_indexed_ptrs_.insert(other_global_ptr);
+      }
+    }
+  }
+
  public:
   explicit DynamicIndexingAnalyzer(IRNode *node) {
   }
 
   void visit(GlobalPtrStmt *stmt) override {
+    for (auto *index_stmt : stmt->indices) {
+      if (!index_stmt->is<ConstStmt>() && !index_stmt->is<LoopIndexStmt>()) {
+        record_dynamic_indexed_ptr(stmt);
+      }
+    }
+
     global_ptrs_.insert(stmt);
   }
 
   void visit(ExternalPtrStmt *stmt) override {
+    for (auto *index_stmt : stmt->indices) {
+      if (!index_stmt->is<ConstStmt>() && !index_stmt->is<LoopIndexStmt>()) {
+        record_dynamic_indexed_ptr(stmt);
+      }
+    }
+
     extern_ptrs_.insert(stmt);
   }
 
@@ -52,29 +88,11 @@ class DynamicIndexingAnalyzer : public BasicStmtVisitor {
     }
 
     if (global_ptr) {
-      dynamically_indexed_ptrs_.insert(global_ptr);
-      // Find aliased GlobalPtrStmt
-      for (auto *other_global_ptr : global_ptrs_) {
-        if (other_global_ptr != global_ptr &&
-            other_global_ptr->indices == global_ptr->indices &&
-            is_leaf_nodes_on_same_branch(other_global_ptr->snode,
-                                         global_ptr->snode)) {
-          dynamically_indexed_ptrs_.insert(other_global_ptr);
-        }
-      }
+      record_dynamic_indexed_ptr(global_ptr);
     }
 
     if (extern_ptr) {
-      dynamically_indexed_ptrs_.insert(extern_ptr);
-      // Find aliased ExternPtrStmt
-      for (auto *other_extern_ptr : extern_ptrs_) {
-        if (other_extern_ptr != extern_ptr &&
-            other_extern_ptr->base_ptr == extern_ptr->base_ptr &&
-            other_extern_ptr->indices == extern_ptr->indices) {
-          // Aliased ExternalPtrStmt, with same base_ptr and outter index
-          dynamically_indexed_ptrs_.insert(other_extern_ptr);
-        }
-      }
+      record_dynamic_indexed_ptr(extern_ptr);
     }
   }
 
@@ -93,9 +111,13 @@ namespace irpass::analysis {
 
 std::unordered_set<Stmt *> gather_dynamically_indexed_pointers(IRNode *root) {
   DynamicIndexingAnalyzer pass(root);
+
+  // This pass is intended to run twice
+  root->accept(&pass);
   root->accept(&pass);
 
-  return pass.get_dynamically_indexed_ptrs();
+  auto dynamically_indexed_ptrs = pass.get_dynamically_indexed_ptrs();
+  return dynamically_indexed_ptrs;
 }
 
 }  // namespace irpass::analysis

@@ -36,7 +36,7 @@ install_taichi_wheel() {
     python3 -m pip uninstall -y taichi taichi-nightly || true
     python3 -m pip install dist/*.whl
     if [ -z "$GPU_TEST" ]; then
-        python3 -m pip install -r requirements_test.txt
+        python3 -m pip install --force-reinstall -r requirements_test.txt
         python3 -m pip install "torch>1.12.0; python_version < '3.10'"
         # Paddle's develop package doesn't support CI's MACOS machine at present
         if [[ $OSTYPE == "linux-"* ]]; then
@@ -46,7 +46,7 @@ install_taichi_wheel() {
         ## Only GPU machine uses system python.
         export PATH=$PATH:$HOME/.local/bin
         # pip will skip packages if already installed
-        python3 -m pip install -r requirements_test.txt
+        python3 -m pip install --force-reinstall -r requirements_test.txt
         # Import Paddle's develop GPU package will occur error `Illegal Instruction`.
 
         # Log hardware info for the current CI-bot

@@ -16,4 +16,3 @@ marko
 PyYAML
 pyevtk
 wget
-urllib3<2.0

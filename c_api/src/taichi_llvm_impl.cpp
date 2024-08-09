@@ -14,6 +14,7 @@
 
 #ifdef TI_WITH_CUDA
 #include "taichi/rhi/cuda/cuda_device.h"
+#include "taichi/rhi/cuda/cuda_context.h"
 #include "taichi/runtime/cuda/kernel_launcher.h"
 #endif
 
@@ -240,6 +241,12 @@ TI_DLL_EXPORT TiMemory TI_API_CALL ti_import_cuda_memory(TiRuntime runtime,
 #else
   TI_NOT_IMPLEMENTED;
 #endif
+}
+
+// function.set_cuda_stream
+TI_DLL_EXPORT void TI_API_CALL ti_set_cuda_stream(void *stream) {
+#ifdef TI_WITH_CUDA
+    CUDAContext::get_instance().set_stream(stream);
 }
 
 #endif  // TI_WITH_LLVM

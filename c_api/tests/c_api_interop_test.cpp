@@ -160,3 +160,18 @@ TEST_F(CapiTest, TestCUDAImport) {
   EXPECT_EQ(data_out[3], 4.0);
 }
 #endif  // TI_WITH_CUDA
+
+#ifdef TI_WITH_CUDA
+TEST_F(CapiTest, TestCUDAStreamSet) {
+  EXPECT_EQ(ti_get_cuda_stream(), nullptr);
+  
+  void *stream1 = reinterpret_cast<void *>(0x12345678);
+  void *stream2 = reinterpret_cast<void *>(0x87654321);
+
+  ti_set_cuda_stream(stream1);
+  EXPECT_EQ(ti_get_cuda_stream(), stream1);
+
+  ti_set_cuda_stream(stream2);
+  EXPECT_EQ(ti_get_cuda_stream(), stream2);
+}
+#endif

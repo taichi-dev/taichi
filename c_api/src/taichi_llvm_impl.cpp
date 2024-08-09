@@ -246,7 +246,7 @@ TI_DLL_EXPORT TiMemory TI_API_CALL ti_import_cuda_memory(TiRuntime runtime,
 // function.set_cuda_stream
 TI_DLL_EXPORT void TI_API_CALL ti_set_cuda_stream(void *stream) {
 #ifdef TI_WITH_CUDA
-  CUDAContext::get_instance().set_stream(stream);
+  taichi::lang::CUDAContext::get_instance().set_stream(stream);
 
 #else
   TI_NOT_IMPLEMENTED;
@@ -256,7 +256,7 @@ TI_DLL_EXPORT void TI_API_CALL ti_set_cuda_stream(void *stream) {
 // function.get_cuda_stream
 TI_DLL_EXPORT void TI_API_CALL *ti_get_cuda_stream() {
 #ifdef TI_WITH_CUDA
-  return CUDAContext::get_instance().get_stream();
+  return taichi::lang::CUDAContext::get_instance().get_stream();
 #else
   TI_NOT_IMPLEMENTED;
 

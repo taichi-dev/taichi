@@ -190,7 +190,6 @@ jobs:
         - not sm70
         driver:
         - driver550
-        - driver510
 
     runs-on:
     - self-hosted
@@ -840,12 +839,10 @@ jobs:
     name: AOT Build and Test (GPU)
     needs: check_files
     timeout-minutes: ${{ github.event.schedule != '0 18 * * *' && 90 || 120 }}
-    # TODO(proton): do we need to test both drivers?
     strategy:
       matrix:
         tags:
           - [self-hosted, cuda, vulkan, cn, driver550]
-          # - [self-hosted, cuda, vulkan, cn, driver510]
     env:
       PY: '3.8'
       PROJECT_NAME: taichi

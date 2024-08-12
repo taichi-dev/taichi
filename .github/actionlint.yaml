@@ -6,7 +6,6 @@ self-hosted-runner:
   - vulkan
   - m1
   - driver550
-  - driver510
   - benchmark
   - release
   - build

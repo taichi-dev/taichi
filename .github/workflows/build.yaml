@@ -156,49 +156,6 @@ jobs:
           destination_dir: built-wheels/${{ inputs.build_id }}/${{ !matrix.designated && 'matrix/' || '' }}
           endpoint: http://botmaster.tgr:9000
 
-  build_manylinux2014:
-    name: Build manylinux2014
-    timeout-minutes: 30
-    runs-on: [self-hosted, online, Linux, build]
-    strategy:
-      fail-fast: false
-      matrix:
-        python: ${{ fromJSON(inputs.python) }}
-        _designated: ['']
-        include:
-        - _designated: ''
-          designated: designated
-    env:
-      TAICHI_CMAKE_ARGS: >-
-        -DTI_WITH_OPENGL:BOOL=OFF
-        -DTI_WITH_VULKAN:BOOL=OFF
-        -DTI_BUILD_TESTS:BOOL=ON
-
-    steps:
-      - uses: actions/checkout@v3
-        with:
-          submodules: 'recursive'
-          fetch-depth: '0'
-
-      - name: Build
-        run: |
-          . .github/workflows/scripts/common-utils.sh
-
-          ci-docker-run-gpu \
-            -v $(pwd):/home/dev/taichi \
-            registry.botmaster.tgr/taichi-build-manylinux2014-cuda:${{ env.CI_IMAGE_VERSION }} \
-            /home/dev/taichi/build.py ${NIGHTLY:+--nightly} --python=${{ matrix.python }} ${SHOULD_TAG_CONFIG:+--tag-config}
-
-      - name: Upload Built Wheel
-        uses: shallwefootball/s3-upload-action@v1.3.3
-        with:
-          aws_key_id: ${{ secrets.BOT_MINIO_ACCESS_KEY }}
-          aws_secret_access_key: ${{ secrets.BOT_MINIO_SECRET_KEY }}
-          aws_bucket: built-wheels
-          source_dir: dist
-          destination_dir: built-wheels/${{ inputs.build_id }}/${{ !matrix.designated && 'matrix/' || '' }}
-          endpoint: http://botmaster.tgr:9000
-
   build_amdgpu_linux:
     name: Build AMDGPU
     timeout-minutes: 30

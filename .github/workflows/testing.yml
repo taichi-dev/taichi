@@ -119,7 +119,7 @@ jobs:
       matrix:
         include:
           - os: macos-10.15
-            python: 3.7
+            python: 3.11
             with_cpp_tests: ON
             wanted_archs: 'cpu,vulkan'
     runs-on:

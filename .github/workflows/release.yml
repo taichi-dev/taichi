@@ -125,8 +125,8 @@ jobs:
     needs: matrix_prep
     strategy:
       fail-fast: false
-      matrix: ${{ fromJson(needs.matrix_prep.outputs.matrix) }}
-    runs-on: [self-hosted, macos-10.15]
+      matrix: ${{ fromJson(needs.matrix_prep.outputs.matrix_osx) }}
+    runs-on: [self-hosted, macos-11]
     env:
       PY: ${{ matrix.python }}
       CXX: clang++

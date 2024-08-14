@@ -254,9 +254,9 @@ TI_DLL_EXPORT void TI_API_CALL ti_set_cuda_stream(void *stream) {
 }
 
 // function.get_cuda_stream
-TI_DLL_EXPORT void TI_API_CALL *ti_get_cuda_stream() {
+TI_DLL_EXPORT void TI_API_CALL ti_get_cuda_stream(void **stream) {
 #ifdef TI_WITH_CUDA
-  return taichi::lang::CUDAContext::get_instance().get_stream();
+  *stream = taichi::lang::CUDAContext::get_instance().get_stream();
 #else
   TI_NOT_IMPLEMENTED;
 

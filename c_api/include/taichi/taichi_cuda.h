@@ -29,7 +29,7 @@ TI_DLL_EXPORT TiMemory TI_API_CALL ti_import_cuda_memory(TiRuntime runtime,
 TI_DLL_EXPORT void TI_API_CALL ti_set_cuda_stream(void *stream);
 
 // Function `ti_get_cuda_stream`
-TI_DLL_EXPORT void TI_API_CALL *ti_get_cuda_stream();
+TI_DLL_EXPORT void TI_API_CALL ti_get_cuda_stream(void **stream);
 
 #ifdef __cplusplus
 }  // extern "C"

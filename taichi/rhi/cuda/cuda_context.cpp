@@ -12,7 +12,9 @@
 namespace taichi::lang {
 
 CUDAContext::CUDAContext()
-    : profiler_(nullptr), driver_(CUDADriver::get_instance_without_context()) {
+    : profiler_(nullptr),
+      driver_(CUDADriver::get_instance_without_context()),
+      stream_(nullptr) {
   // CUDA initialization
   dev_count_ = 0;
   driver_.init(0);
@@ -156,14 +158,14 @@ void CUDAContext::launch(void *func,
           dynamic_shared_mem_bytes);
     }
     driver_.launch_kernel(func, grid_dim, 1, 1, block_dim, 1, 1,
-                          dynamic_shared_mem_bytes, nullptr,
+                          dynamic_shared_mem_bytes, stream_,
                           arg_pointers.data(), nullptr);
   }
   if (profiler_)
     profiler_->stop(task_handle);
 
   if (debug_) {
-    driver_.stream_synchronize(nullptr);
+    driver_.stream_synchronize(stream_);
   }
 }
 

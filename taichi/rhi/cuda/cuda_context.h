@@ -29,6 +29,7 @@ class CUDAContext {
   int max_shared_memory_bytes_;
   bool debug_;
   bool supports_mem_pool_;
+  void *stream_;
 
  public:
   CUDAContext();
@@ -108,6 +109,14 @@ class CUDAContext {
   }
 
   static CUDAContext &get_instance();
+
+  void set_stream(void *stream) {
+    stream_ = stream;
+  }
+
+  void *get_stream() const {
+    return stream_;
+  }
 };
 
 }  // namespace taichi::lang

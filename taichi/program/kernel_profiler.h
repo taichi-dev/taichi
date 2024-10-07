@@ -68,15 +68,16 @@ class KernelProfilerBase {
   }
 
   // TODO: remove start and always use start_with_handle
-  virtual void start(const std::string &kernel_name){TI_NOT_IMPLEMENTED};
+  virtual void start(const std::string &kernel_name) { TI_NOT_IMPLEMENTED };
 
-  virtual TaskHandle start_with_handle(const std::string &kernel_name){
-      TI_NOT_IMPLEMENTED};
+  virtual TaskHandle start_with_handle(const std::string &kernel_name) {
+    TI_NOT_IMPLEMENTED
+  };
 
   static void profiler_start(KernelProfilerBase *profiler,
                              const char *kernel_name);
 
-  virtual void stop(){TI_NOT_IMPLEMENTED};
+  virtual void stop() { TI_NOT_IMPLEMENTED };
 
   virtual void stop(TaskHandle){TI_NOT_IMPLEMENTED};
 

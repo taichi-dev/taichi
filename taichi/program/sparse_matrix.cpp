@@ -16,14 +16,12 @@
     matrix_.setFromTriplets(triplets->begin(), triplets->end());            \
   }
 
-#define MAKE_MATRIX(TYPE, STORAGE)                                             \
-  {                                                                            \
-    Pair("f" #TYPE, #STORAGE),                                                 \
-        [](int rows, int cols, DataType dt) -> std::unique_ptr<SparseMatrix> { \
-          using FC = Eigen::SparseMatrix<float##TYPE, Eigen::STORAGE>;         \
-          return std::make_unique<EigenSparseMatrix<FC>>(rows, cols, dt);      \
-        }                                                                      \
-  }
+#define MAKE_MATRIX(TYPE, STORAGE)                                        \
+  {Pair("f" #TYPE, #STORAGE),                                             \
+   [](int rows, int cols, DataType dt) -> std::unique_ptr<SparseMatrix> { \
+     using FC = Eigen::SparseMatrix<float##TYPE, Eigen::STORAGE>;         \
+     return std::make_unique<EigenSparseMatrix<FC>>(rows, cols, dt);      \
+   }}
 
 #define INSTANTIATE_SPMV(type, storage)                               \
   template void                                                       \

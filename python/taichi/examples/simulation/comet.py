@@ -52,7 +52,7 @@ def substep():
         color[i] *= ti.exp(-dt * color_decay)
 
         if not all(-0.1 <= x[i] <= 1.1):
-            ti.deactivate(x.snode.parent(), [i])
+            ti.deactivate(x.snode.parent(), [int(i)])
 
 
 @ti.kernel

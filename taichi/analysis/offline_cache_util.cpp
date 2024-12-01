@@ -153,15 +153,23 @@ std::string get_hashed_offline_cache_key_of_snode(const SNode *snode) {
   TI_ASSERT(snode);
 
   BinaryOutputSerializer serializer;
+
+  auto t = Time::get_time();
   serializer.initialize();
   {
-    std::unordered_set<int> visited;
+    std::unordered_set<int> visited;    
     get_offline_cache_key_of_snode_impl(snode, serializer, visited);
   }
   serializer.finalize();
+  t = Time::get_time() - t;
+  TI_TRACE("[emit_dependencies] get_hashed_offline_cache_key_of_snode cost {} ms", t * 1000);
+
 
   picosha2::hash256_one_by_one hasher;
+  t = Time::get_time();
   hasher.process(serializer.data.begin(), serializer.data.end());
+  t = Time::get_time() - t;
+  TI_TRACE("[emit_dependencies] string len {}, hasher.process cost {} ms", serializer.data.size(), t * 1000);
   hasher.finish();
 
   return picosha2::get_hash_hex_string(hasher);
@@ -177,7 +185,12 @@ std::string get_hashed_offline_cache_key(const CompileConfig &config,
         get_offline_cache_key_of_parameter_list(kernel->parameter_list);
     kernel_rets_string = get_offline_cache_key_of_rets(kernel->rets);
     std::ostringstream oss;
+
+    auto t = Time::get_time();
     gen_offline_cache_key(kernel->ir.get(), &oss);
+    t = Time::get_time() - t;
+    TI_TRACE("[{}] gen_offline_cache_key costs {} ms", kernel->name, t * 1000);
+
     kernel_body_string = oss.str();
   }
 

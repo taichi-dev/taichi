@@ -434,14 +434,12 @@ class ASTSerializer : public IRVisitor, public ExpressionVisitor {
   void emit_dependencies() {
     // Serialize dependent real-functions
     emit(real_funcs_.size());
-
     for (auto &[func, id] : real_funcs_) {
       if (auto &ast_str = func->try_get_ast_serialization_data();
           ast_str.has_value()) {
         emit_bytes(ast_str->c_str(), ast_str->size());
       }
     }
-
 
     // Serialize snode_trees(Temporary: using offline-cache-key of SNode)
     // Note: The result of serializing snode_tree_roots_ is not parsable now
@@ -454,7 +452,6 @@ class ASTSerializer : public IRVisitor, public ExpressionVisitor {
       }else{
         key = snode_key_cache_[snode];
       }
-      // key = get_hashed_offline_cache_key_of_snode(snode);
       snode_key_cache_[snode] = key;
       emit_bytes(key.c_str(), key.size());
     }
@@ -668,7 +665,6 @@ class ASTSerializer : public IRVisitor, public ExpressionVisitor {
   std::unordered_map<const SNode *, std::string> snode_key_cache_;
   std::map<Function *, std::size_t> real_funcs_;
   std::vector<char> string_pool_;
-  double emit_time_cost = 0.0;
 };
 
 }  // namespace

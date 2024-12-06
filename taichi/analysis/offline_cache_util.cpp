@@ -153,7 +153,6 @@ std::string get_hashed_offline_cache_key_of_snode(const SNode *snode) {
   TI_ASSERT(snode);
 
   BinaryOutputSerializer serializer;
-
   serializer.initialize();
   {
     std::unordered_set<int> visited;    
@@ -178,7 +177,6 @@ std::string get_hashed_offline_cache_key(const CompileConfig &config,
         get_offline_cache_key_of_parameter_list(kernel->parameter_list);
     kernel_rets_string = get_offline_cache_key_of_rets(kernel->rets);
     std::ostringstream oss;
-
     gen_offline_cache_key(kernel->ir.get(), &oss);
     kernel_body_string = oss.str();
   }

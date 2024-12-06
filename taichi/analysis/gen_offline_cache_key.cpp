@@ -65,10 +65,6 @@ class ASTSerializer : public IRVisitor, public ExpressionVisitor {
     return this->os_;
   }
 
-  void print_time_cost(){
-    TI_TRACE("Emit pod time cost {} ms", emit_time_cost * 1000);
-  }
-
   void visit(Expression *expr) override {
     this->ExpressionVisitor::visit(expr);
   }
@@ -430,16 +426,8 @@ class ASTSerializer : public IRVisitor, public ExpressionVisitor {
 
   static void run(IRNode *ast, std::ostream *os) {
     ASTSerializer serializer(os);
-    auto t = Time::get_time();
     ast->accept(&serializer);
-    t = Time::get_time() - t;
-    TI_TRACE("Traversal and emit {} ms", t * 1000);
-
-    t = Time::get_time();
     serializer.emit_dependencies();
-    t = Time::get_time() - t;
-    TI_TRACE("emit_dependencies cost {} ms", t * 1000);
-    serializer.print_time_cost();
   }
 
  private:
@@ -447,18 +435,14 @@ class ASTSerializer : public IRVisitor, public ExpressionVisitor {
     // Serialize dependent real-functions
     emit(real_funcs_.size());
 
-    auto t = Time::get_time();
     for (auto &[func, id] : real_funcs_) {
       if (auto &ast_str = func->try_get_ast_serialization_data();
           ast_str.has_value()) {
         emit_bytes(ast_str->c_str(), ast_str->size());
       }
     }
-    t = Time::get_time() - t;
-    TI_TRACE("[emit_dependencies] serialize real func cost {} ms", t * 1000);
 
 
-    t = Time::get_time();
     // Serialize snode_trees(Temporary: using offline-cache-key of SNode)
     // Note: The result of serializing snode_tree_roots_ is not parsable now
     emit(static_cast<std::size_t>(snode_tree_roots_.size()));
@@ -475,37 +459,23 @@ class ASTSerializer : public IRVisitor, public ExpressionVisitor {
       emit_bytes(key.c_str(), key.size());
     }
 
-    t = Time::get_time() - t;
-    TI_TRACE("[emit_dependencies] serialize snode tree cost {} ms", t * 1000);
-
-    t = Time::get_time();
     // Dump string-pool
     emit(static_cast<std::size_t>(string_pool_.size()));
     emit_bytes(string_pool_.data(), string_pool_.size());
-    t = Time::get_time() - t;
-    TI_TRACE("[emit_dependencies] dump string pool cost {} ms", t * 1000);
   }
 
   template <typename T>
   void emit_pod(const T &val) {
     static_assert(std::is_pod<T>::value);
     TI_ASSERT(os_);
-    auto t = Time::get_time();
     os_->write((const char *)&val, sizeof(T));
-    t = Time::get_time() - t;
-    // TI_TRACE("[{}] gen_offline_cache_key costs {} ms", kernel->name, t * 1000);
-    emit_time_cost += t;
   }
 
   void emit_bytes(const char *bytes, std::size_t len) {
     TI_ASSERT(os_);
     if (!bytes)
       return;
-    auto t = Time::get_time();
     os_->write(bytes, len);
-    t = Time::get_time() - t;
-    // TI_TRACE("[{}] gen_offline_cache_key costs {} ms", kernel->name, t * 1000);
-    emit_time_cost += t;
   }
 
   template <typename T>

@@ -155,7 +155,7 @@ std::string get_hashed_offline_cache_key_of_snode(const SNode *snode) {
   BinaryOutputSerializer serializer;
   serializer.initialize();
   {
-    std::unordered_set<int> visited;    
+    std::unordered_set<int> visited;
     get_offline_cache_key_of_snode_impl(snode, serializer, visited);
   }
   serializer.finalize();

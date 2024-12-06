@@ -446,10 +446,10 @@ class ASTSerializer : public IRVisitor, public ExpressionVisitor {
     emit(static_cast<std::size_t>(snode_tree_roots_.size()));
     for (const auto *snode : snode_tree_roots_) {
       std::string key;
-      if(snode_key_cache_.find(snode) == snode_key_cache_.end()){
+      if (snode_key_cache_.find(snode) == snode_key_cache_.end()) {
         key = get_hashed_offline_cache_key_of_snode(snode);
         snode_key_cache_[snode] = key;
-      }else{
+      } else {
         key = snode_key_cache_[snode];
       }
       snode_key_cache_[snode] = key;

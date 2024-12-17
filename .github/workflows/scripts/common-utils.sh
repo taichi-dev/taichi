@@ -9,6 +9,7 @@ function unset-git-caching-proxy {
 }
 
 function set-git-caching-proxy {
+    return  # Disable git caching proxy, modified git-cdn image is lost
     trap unset-git-caching-proxy EXIT
     echo "Setting git caching proxy"
     git config --global --add url.http://git-cdn-github.botmaster.tgr/.insteadOf https://github.com/

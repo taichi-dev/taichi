@@ -15,7 +15,7 @@ function set-git-caching-proxy {
     git config --global --add url.http://git-cdn-github.botmaster.tgr/.insteadOf https://github.com/
     git config --global --add url.http://git-cdn-github.botmaster.tgr/.insteadOf git@github.com:
     # git config --global --add url.http://git-cdn-gitlab.botmaster.tgr/.insteadOf https://gitlab.com/
-    git config --global credentials.helper store
+    git config --global credential.helper store
     echo "http://oauth2:$GITHUB_TOKEN@git-cdn-github.botmaster.tgr" > ~/.git-credentials
 }
 

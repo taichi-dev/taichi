@@ -21,6 +21,7 @@ env:
   CI_IMAGE_VERSION: '202311231829'
   # TI_USE_GIT_CACHE: ${{ vars.TI_USE_GIT_CACHE }}
   TI_USE_GIT_CACHE: '1'  # variables are also not populated on forked PRs
+  GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
 jobs:
   show_environ:

@@ -9,8 +9,8 @@ function SetGitCachingProxy {
     git config --global --add url.http://git-cdn-github.botmaster.tgr/.insteadOf https://github.com/
     git config --global --add url.http://git-cdn-github.botmaster.tgr/.insteadOf git@github.com:
     # git config --global --add url.http://git-cdn-gitlab.botmaster.tgr/.insteadOf https://gitlab.com/
-    git config --global credential.helper "store --file $env:HOME\.git-credentials"
-    "http://oauth2:${env:GITHUB_TOKEN}@git-cdn-github.botmaster.tgr" | Out-File -FilePath $env:HOME\.git-credentials
+    git config --global credential.helper "store --file $env:TEMP\.git-credentials"
+    "http://oauth2:${env:GITHUB_TOKEN}@git-cdn-github.botmaster.tgr" | Out-File -FilePath $env:TEMP\.git-credentials
 }
 
 if($env:TI_USE_GIT_CACHE) {

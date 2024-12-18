@@ -134,8 +134,11 @@ jobs:
         -DTI_WITH_C_API=ON
         -DTI_BUILD_TESTS:BOOL=${{ matrix.with_cpp_tests }}
     steps:
-      - name: Workaround checkout Needed single revision issue
-        run: git submodule foreach 'git rev-parse HEAD > /dev/null 2>&1 || rm -rf $PWD' || true
+      - name: Workaround checkout issues
+        run: |
+          . .github/workflows/scripts/common-utils.sh
+          git submodule foreach 'git rev-parse HEAD > /dev/null 2>&1 || rm -rf $PWD' || true
+          unset-git-caching-proxy
 
       - uses: actions/checkout@v3
         with:
@@ -368,10 +371,12 @@ jobs:
       TI_RUN_RELEASE_TESTS: '1'
 
     steps:
-      - name: Workaround checkout Needed single revision issue
+      - name: Workaround checkout issues
         run: |
+          . .github/workflows/scripts/common-utils.ps1
           git config --system core.longpaths true
           git submodule foreach 'git rev-parse HEAD > /dev/null 2>&1 || rm -rf $PWD'  # no '|| true' here
+          UnsetGitCachingProxy
 
       - uses: actions/checkout@v3
         with:

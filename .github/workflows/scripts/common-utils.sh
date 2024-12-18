@@ -214,6 +214,7 @@ function grab-android-bot {
             export BOT_LOCK_KEY="android-bot-lock:$bot"
             LOCKED=$(redis-cli -h $REDIS_HOST --raw setnx $BOT_LOCK_KEY $BOT_LOCK_COOKIE)
             if [ $LOCKED -eq 1 ]; then
+                trap release-android-bot EXIT
                 redis-cli -h $REDIS_HOST --raw expire android-bot-lock:$bot 300 > /dev/null
                 break
             fi
@@ -251,7 +252,6 @@ function run-android-app {
 
     /android-sdk/platform-tools/adb shell am force-stop $(echo $ACTIVITY | sed 's#/.*$##g')
     /android-sdk/platform-tools/adb disconnect
-    release-android-bot
     if [ -s logcat.log ]; then
         echo "!!!!!!!!!!!!!! Something is wrong !!!!!!!!!!!!!!"
         exit 1

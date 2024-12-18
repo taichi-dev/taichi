@@ -139,6 +139,7 @@ function ci-docker-run {
         -e SCCACHE_ROOT=/var/lib/sccache \
         -e CACHE_HOME=/var/lib/cache-home \
         -e GIT_ALTERNATE_OBJECT_DIRECTORIES=/var/lib/git-cache/objects \
+        -e GITHUB_TOKEN \
         -v $(readlink -f $CACHE_HOME):/var/lib/cache-home \
         -v $(readlink -f $CACHE_HOME/sccache):/var/lib/sccache \
         -v $(readlink -f $CACHE_HOME/git-cache):/var/lib/git-cache \

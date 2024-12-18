@@ -373,10 +373,9 @@ jobs:
     steps:
       - name: Workaround checkout issues
         run: |
-          . .github/workflows/scripts/common-utils.ps1
+          git config --global --unset-all url.http://git-cdn-github.botmaster.tgr/.insteadOf
           git config --system core.longpaths true
           git submodule foreach 'git rev-parse HEAD > /dev/null 2>&1 || rm -rf $PWD'  # no '|| true' here
-          UnsetGitCachingProxy
 
       - uses: actions/checkout@v3
         with:

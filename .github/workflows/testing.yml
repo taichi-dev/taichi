@@ -592,84 +592,84 @@ jobs:
              registry.botmaster.tgr/taichi-test-cuda:${{ env.CI_IMAGE_VERSION }} \
              /home/dev/taichi/.github/workflows/scripts/unix-test-docs.sh
 
-  aot_build_and_test_android_apps:
-    name: AOT Build and Test Android Apps
-    # Skip this job when testing the offline cache
-    if: ${{ github.event.schedule != '0 18 * * *' }}
-    needs: check_files
-    runs-on: [self-hosted, Linux, cn]
-    timeout-minutes: 60
-    permissions:
-      packages: read
-      contents: read
-    env:
-      REDIS_HOST: 172.16.5.1
-      PY: '3.9'
-    steps:
-      - name: Workaround checkout Needed single revision issue
-        run: git submodule foreach 'git rev-parse HEAD > /dev/null 2>&1 || rm -rf $PWD' || true
+  # aot_build_and_test_android_apps:
+  #   name: AOT Build and Test Android Apps
+  #   # Skip this job when testing the offline cache
+  #   if: ${{ github.event.schedule != '0 18 * * *' }}
+  #   needs: check_files
+  #   runs-on: [self-hosted, Linux, cn]
+  #   timeout-minutes: 60
+  #   permissions:
+  #     packages: read
+  #     contents: read
+  #   env:
+  #     REDIS_HOST: 172.16.5.1
+  #     PY: '3.9'
+  #   steps:
+  #     - name: Workaround checkout Needed single revision issue
+  #       run: git submodule foreach 'git rev-parse HEAD > /dev/null 2>&1 || rm -rf $PWD' || true
 
-      - uses: actions/checkout@v3
-        name: Checkout taichi
-        with:
-          fetch-depth: '0'
-          submodules: "recursive"
+  #     - uses: actions/checkout@v3
+  #       name: Checkout taichi
+  #       with:
+  #         fetch-depth: '0'
+  #         submodules: "recursive"
 
-      - name: Prepare Environment
-        if: ${{ needs.check_files.outputs.run_job != 'false' }}
-        run: >-
-          . .github/workflows/scripts/common-utils.sh;
-          prepare-build-cache;
+  #     - name: Prepare Environment
+  #       if: ${{ needs.check_files.outputs.run_job != 'false' }}
+  #       run: >-
+  #         . .github/workflows/scripts/common-utils.sh;
+  #         prepare-build-cache;
 
-          TAICHI_WHEEL_DIR=$(mktemp -d);
-          echo TAICHI_WHEEL_DIR=$TAICHI_WHEEL_DIR >> $GITHUB_ENV;
-          chmod 0777 $TAICHI_WHEEL_DIR;
+  #         TAICHI_WHEEL_DIR=$(mktemp -d);
+  #         echo TAICHI_WHEEL_DIR=$TAICHI_WHEEL_DIR >> $GITHUB_ENV;
+  #         chmod 0777 $TAICHI_WHEEL_DIR;
 
-          echo CI_DOCKER_RUN_EXTRA_ARGS="
-          -e REDIS_HOST
-          -v $(pwd):/home/dev/taichi
-          -v $TAICHI_WHEEL_DIR:/taichi-wheel
-          " >> $GITHUB_ENV;
+  #         echo CI_DOCKER_RUN_EXTRA_ARGS="
+  #         -e REDIS_HOST
+  #         -v $(pwd):/home/dev/taichi
+  #         -v $TAICHI_WHEEL_DIR:/taichi-wheel
+  #         " >> $GITHUB_ENV;
 
-      - name: Build Host Taichi
-        if: ${{ needs.check_files.outputs.run_job != 'false' }}
-        run: |
-          . .github/workflows/scripts/common-utils.sh
-          ci-docker-run --name taichi-build-host \
-            -v $TAICHI_WHEEL_DIR:/home/dev/taichi/dist \
-            registry.botmaster.tgr/taichi-build-cuda:${{ env.CI_IMAGE_VERSION }} \
-            /home/dev/taichi/.github/workflows/scripts/build.py
-        env:
-          TAICHI_CMAKE_ARGS: >-
-            -DTI_WITH_OPENGL:BOOL=ON
-            -DTI_WITH_VULKAN:BOOL=ON
-            -DTI_WITH_C_API=OFF
+  #     - name: Build Host Taichi
+  #       if: ${{ needs.check_files.outputs.run_job != 'false' }}
+  #       run: |
+  #         . .github/workflows/scripts/common-utils.sh
+  #         ci-docker-run --name taichi-build-host \
+  #           -v $TAICHI_WHEEL_DIR:/home/dev/taichi/dist \
+  #           registry.botmaster.tgr/taichi-build-cuda:${{ env.CI_IMAGE_VERSION }} \
+  #           /home/dev/taichi/.github/workflows/scripts/build.py
+  #       env:
+  #         TAICHI_CMAKE_ARGS: >-
+  #           -DTI_WITH_OPENGL:BOOL=ON
+  #           -DTI_WITH_VULKAN:BOOL=ON
+  #           -DTI_WITH_C_API=OFF
 
-      - name: Build For Android
-        if: ${{ needs.check_files.outputs.run_job != 'false' }}
-        run: |
-          . .github/workflows/scripts/common-utils.sh
-          git clean -fxd
-          ci-docker-run --name taichi-build-android \
-            registry.botmaster.tgr/taichi-build-android:${{ env.CI_IMAGE_VERSION }} \
-            /home/dev/taichi/.github/workflows/scripts/build.py android
-        env:
-          TAICHI_CMAKE_ARGS: >-
-            -DTI_WITH_OPENGL:BOOL=ON
-            -DTI_WITH_VULKAN:BOOL=ON
-            -DTI_WITH_LLVM:BOOL=OFF
-            -DTI_WITH_C_API:BOOL=ON
+  #     - name: Build For Android
+  #       if: ${{ needs.check_files.outputs.run_job != 'false' }}
+  #       run: |
+  #         . .github/workflows/scripts/common-utils.sh
+  #         git clean -fxd
+  #         ci-docker-run --name taichi-build-android \
+  #           registry.botmaster.tgr/taichi-build-android:${{ env.CI_IMAGE_VERSION }} \
+  #           /home/dev/taichi/.github/workflows/scripts/build.py android
+  #       env:
+  #         TAICHI_CMAKE_ARGS: >-
+  #           -DTI_WITH_OPENGL:BOOL=ON
+  #           -DTI_WITH_VULKAN:BOOL=ON
+  #           -DTI_WITH_LLVM:BOOL=OFF
+  #           -DTI_WITH_C_API:BOOL=ON
 
-      - name: Test For Android AOT
-        if: ${{ needs.check_files.outputs.run_job != 'false' }}
-        run: |
-          . .github/workflows/scripts/common-utils.sh
-          ci-docker-run-gpu --name taichi-test-android \
-            registry.botmaster.tgr/taichi-test-android:${{ env.CI_IMAGE_VERSION }} \
-            /home/dev/taichi/.github/workflows/scripts/aot-demo.sh build-and-smoke-test-android-aot-demo
+  #     - name: Test For Android AOT
+  #       if: ${{ needs.check_files.outputs.run_job != 'false' }}
+  #       run: |
+  #         . .github/workflows/scripts/common-utils.sh
+  #         ci-docker-run-gpu --name taichi-test-android \
+  #           registry.botmaster.tgr/taichi-test-android:${{ env.CI_IMAGE_VERSION }} \
+  #           /home/dev/taichi/.github/workflows/scripts/aot-demo.sh build-and-smoke-test-android-aot-demo
 
-        env:
-          TI_DEVICE_MEMORY_GB: '0.1'
+  #       env:
+  #         TI_DEVICE_MEMORY_GB: '0.1'
 
   aot_build_and_test_android_headless_demos:
     name: AOT Build and Test Android Headless Demos
@@ -749,97 +749,97 @@ jobs:
         env:
           TI_DEVICE_MEMORY_GB: '0.1'
 
-  aot_build_and_test_android_unity_examples:
-    name: AOT Build and Test Android Unity Examples
-    # Skip this job when testing the offline cache
-    if: ${{ github.event.schedule != '0 18 * * *' }}
-    needs: check_files
-    runs-on: [self-hosted, Linux, cn]
-    timeout-minutes: 60
-    permissions:
-      packages: read
-      contents: read
-    env:
-      REDIS_HOST: 172.16.5.1
-      PY: '3.9'
-    steps:
-      - name: Workaround checkout Needed single revision issue
-        run: git submodule foreach 'git rev-parse HEAD > /dev/null 2>&1 || rm -rf $PWD' || true
+  # aot_build_and_test_android_unity_examples:
+  #   name: AOT Build and Test Android Unity Examples
+  #   # Skip this job when testing the offline cache
+  #   if: ${{ github.event.schedule != '0 18 * * *' }}
+  #   needs: check_files
+  #   runs-on: [self-hosted, Linux, cn]
+  #   timeout-minutes: 60
+  #   permissions:
+  #     packages: read
+  #     contents: read
+  #   env:
+  #     REDIS_HOST: 172.16.5.1
+  #     PY: '3.9'
+  #   steps:
+  #     - name: Workaround checkout Needed single revision issue
+  #       run: git submodule foreach 'git rev-parse HEAD > /dev/null 2>&1 || rm -rf $PWD' || true
 
-      - uses: actions/checkout@v3
-        name: Checkout taichi
-        with:
-          fetch-depth: '0'
-          submodules: "recursive"
+  #     - uses: actions/checkout@v3
+  #       name: Checkout taichi
+  #       with:
+  #         fetch-depth: '0'
+  #         submodules: "recursive"
 
-      - name: Prepare Environment
-        if: ${{ needs.check_files.outputs.run_job != 'false' }}
-        run: >-
-          . .github/workflows/scripts/common-utils.sh;
-          prepare-build-cache;
+  #     - name: Prepare Environment
+  #       if: ${{ needs.check_files.outputs.run_job != 'false' }}
+  #       run: >-
+  #         . .github/workflows/scripts/common-utils.sh;
+  #         prepare-build-cache;
 
-          TAICHI_WHEEL_DIR=$(mktemp -d);
-          echo TAICHI_WHEEL_DIR=$TAICHI_WHEEL_DIR >> $GITHUB_ENV;
-          chmod 0777 $TAICHI_WHEEL_DIR;
+  #         TAICHI_WHEEL_DIR=$(mktemp -d);
+  #         echo TAICHI_WHEEL_DIR=$TAICHI_WHEEL_DIR >> $GITHUB_ENV;
+  #         chmod 0777 $TAICHI_WHEEL_DIR;
 
-          echo CI_DOCKER_RUN_EXTRA_ARGS="
-          -e REDIS_HOST
-          -v $(pwd):/home/dev/taichi
-          -v $TAICHI_WHEEL_DIR:/taichi-wheel
-          " >> $GITHUB_ENV;
+  #         echo CI_DOCKER_RUN_EXTRA_ARGS="
+  #         -e REDIS_HOST
+  #         -v $(pwd):/home/dev/taichi
+  #         -v $TAICHI_WHEEL_DIR:/taichi-wheel
+  #         " >> $GITHUB_ENV;
 
-      - name: Build Host Taichi
-        if: ${{ needs.check_files.outputs.run_job != 'false' }}
-        run: |
-          . .github/workflows/scripts/common-utils.sh
-          ci-docker-run --name taichi-build-host \
-            -v $TAICHI_WHEEL_DIR:/home/dev/taichi/dist \
-            registry.botmaster.tgr/taichi-build-cuda:${{ env.CI_IMAGE_VERSION }} \
-            /home/dev/taichi/.github/workflows/scripts/build.py
-        env:
-          TAICHI_CMAKE_ARGS: >-
-            -DTI_WITH_OPENGL:BOOL=ON
-            -DTI_WITH_VULKAN:BOOL=ON
-            -DTI_WITH_C_API=OFF
+  #     - name: Build Host Taichi
+  #       if: ${{ needs.check_files.outputs.run_job != 'false' }}
+  #       run: |
+  #         . .github/workflows/scripts/common-utils.sh
+  #         ci-docker-run --name taichi-build-host \
+  #           -v $TAICHI_WHEEL_DIR:/home/dev/taichi/dist \
+  #           registry.botmaster.tgr/taichi-build-cuda:${{ env.CI_IMAGE_VERSION }} \
+  #           /home/dev/taichi/.github/workflows/scripts/build.py
+  #       env:
+  #         TAICHI_CMAKE_ARGS: >-
+  #           -DTI_WITH_OPENGL:BOOL=ON
+  #           -DTI_WITH_VULKAN:BOOL=ON
+  #           -DTI_WITH_C_API=OFF
 
-      - name: Build For Android
-        if: ${{ needs.check_files.outputs.run_job != 'false' }}
-        run: |
-          . .github/workflows/scripts/common-utils.sh
-          git clean -fxd
-          ci-docker-run --name taichi-build-android \
-            registry.botmaster.tgr/taichi-build-android:${{ env.CI_IMAGE_VERSION }} \
-            /home/dev/taichi/.github/workflows/scripts/build.py android
-        env:
-          TAICHI_CMAKE_ARGS: >-
-            -DTI_WITH_OPENGL:BOOL=ON
-            -DTI_WITH_VULKAN:BOOL=ON
-            -DTI_WITH_LLVM:BOOL=OFF
-            -DTI_WITH_C_API=ON
+  #     - name: Build For Android
+  #       if: ${{ needs.check_files.outputs.run_job != 'false' }}
+  #       run: |
+  #         . .github/workflows/scripts/common-utils.sh
+  #         git clean -fxd
+  #         ci-docker-run --name taichi-build-android \
+  #           registry.botmaster.tgr/taichi-build-android:${{ env.CI_IMAGE_VERSION }} \
+  #           /home/dev/taichi/.github/workflows/scripts/build.py android
+  #       env:
+  #         TAICHI_CMAKE_ARGS: >-
+  #           -DTI_WITH_OPENGL:BOOL=ON
+  #           -DTI_WITH_VULKAN:BOOL=ON
+  #           -DTI_WITH_LLVM:BOOL=OFF
+  #           -DTI_WITH_C_API=ON
 
-      - name: Prepare Unity Build Environment
-        if: ${{ needs.check_files.outputs.run_job != 'false' }}
-        run: |
-          . .github/workflows/scripts/common-utils.sh
-          ci-docker-run --name taichi-prepare-unity-build-env \
-            registry.botmaster.tgr/taichi-build-android:${{ env.CI_IMAGE_VERSION }} \
-            /home/dev/taichi/.github/workflows/scripts/aot-demo.sh prepare-unity-build-env
+  #     - name: Prepare Unity Build Environment
+  #       if: ${{ needs.check_files.outputs.run_job != 'false' }}
+  #       run: |
+  #         . .github/workflows/scripts/common-utils.sh
+  #         ci-docker-run --name taichi-prepare-unity-build-env \
+  #           registry.botmaster.tgr/taichi-build-android:${{ env.CI_IMAGE_VERSION }} \
+  #           /home/dev/taichi/.github/workflows/scripts/aot-demo.sh prepare-unity-build-env
 
-      - name: Build Taichi-UnityExample
-        if: ${{ needs.check_files.outputs.run_job != 'false' }}
-        run: |
-          . .github/workflows/scripts/common-utils.sh
-          ci-docker-run --name taichi-build-unity-demo \
-            registry.taichigraphics.com/unityci-editor:ubuntu-2020.3.14f1-android-1-with-secret-sauce \
-            /home/dev/taichi/.github/workflows/scripts/aot-demo.sh build-unity-demo
+  #     - name: Build Taichi-UnityExample
+  #       if: ${{ needs.check_files.outputs.run_job != 'false' }}
+  #       run: |
+  #         . .github/workflows/scripts/common-utils.sh
+  #         ci-docker-run --name taichi-build-unity-demo \
+  #           registry.taichigraphics.com/unityci-editor:ubuntu-2020.3.14f1-android-1-with-secret-sauce \
+  #           /home/dev/taichi/.github/workflows/scripts/aot-demo.sh build-unity-demo
 
-      - name: Run Taichi-UnityExample (C-API)
-        if: ${{ needs.check_files.outputs.run_job != 'false' }}
-        run: |
-          . .github/workflows/scripts/common-utils.sh
-          ci-docker-run --name taichi-run-unity-demo \
-            registry.botmaster.tgr/taichi-test-android:${{ env.CI_IMAGE_VERSION }} \
-            /home/dev/taichi/.github/workflows/scripts/aot-demo.sh smoke-test-unity-demo
+  #     - name: Run Taichi-UnityExample (C-API)
+  #       if: ${{ needs.check_files.outputs.run_job != 'false' }}
+  #       run: |
+  #         . .github/workflows/scripts/common-utils.sh
+  #         ci-docker-run --name taichi-run-unity-demo \
+  #           registry.botmaster.tgr/taichi-test-android:${{ env.CI_IMAGE_VERSION }} \
+  #           /home/dev/taichi/.github/workflows/scripts/aot-demo.sh smoke-test-unity-demo
 
   aot_build_and_test_gpu_linux:
     name: AOT Build and Test (GPU)

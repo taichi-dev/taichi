@@ -122,7 +122,6 @@ function build-and-test-headless-demo {
 
     export PATH=/android-sdk/platform-tools:$PATH
     grab-android-bot
-    trap release-android-bot EXIT
     adb connect $BOT
 
     # Clear temporary test folder

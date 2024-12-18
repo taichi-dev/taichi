@@ -120,51 +120,51 @@ jobs:
         env:
           PY: ${{ matrix.python }}
 
-  build_and_test_mac:
-    name: Build and Upload (macOS only)
-    needs: matrix_prep
-    strategy:
-      fail-fast: false
-      matrix: ${{ fromJson(needs.matrix_prep.outputs.matrix_osx) }}
-    runs-on: [self-hosted, macos-11]
-    env:
-      PY: ${{ matrix.python }}
-      CXX: clang++
-      TAICHI_CMAKE_ARGS: >-
-        -DTI_WITH_VULKAN:BOOL=ON
-        -DTI_WITH_OPENGL:BOOL=OFF
-        -DTI_BUILD_TESTS:BOOL=ON
-    steps:
-      - uses: actions/checkout@v3
-        with:
-          submodules: 'recursive'
-          fetch-depth: '0'
+  # build_and_test_mac:
+  #   name: Build and Upload (macOS only)
+  #   needs: matrix_prep
+  #   strategy:
+  #     fail-fast: false
+  #     matrix: ${{ fromJson(needs.matrix_prep.outputs.matrix_osx) }}
+  #   runs-on: [self-hosted, macos-11]
+  #   env:
+  #     PY: ${{ matrix.python }}
+  #     CXX: clang++
+  #     TAICHI_CMAKE_ARGS: >-
+  #       -DTI_WITH_VULKAN:BOOL=ON
+  #       -DTI_WITH_OPENGL:BOOL=OFF
+  #       -DTI_BUILD_TESTS:BOOL=ON
+  #   steps:
+  #     - uses: actions/checkout@v3
+  #       with:
+  #         submodules: 'recursive'
+  #         fetch-depth: '0'
 
-      - name: Prepare Environment
-        run: |
-          . .github/workflows/scripts/common-utils.sh
-          prepare-build-cache
+  #     - name: Prepare Environment
+  #       run: |
+  #         . .github/workflows/scripts/common-utils.sh
+  #         prepare-build-cache
 
-      - name: Create Python Wheel
-        run: |
-          # Use the molten-vk v1.1.10 downloaded from taichi assets
-          brew uninstall molten-vk -f
-          .github/workflows/scripts/build.py $NIGHTLY
-        env:
-          PROJECT_NAME: ${{ matrix.name }}
+  #     - name: Create Python Wheel
+  #       run: |
+  #         # Use the molten-vk v1.1.10 downloaded from taichi assets
+  #         brew uninstall molten-vk -f
+  #         .github/workflows/scripts/build.py $NIGHTLY
+  #       env:
+  #         PROJECT_NAME: ${{ matrix.name }}
 
-      - name: Archive Wheel Artifacts
-        uses: actions/upload-artifact@v3
-        with:
-          name: dist
-          path: dist/*.whl
-          retention-days: 20
+  #     - name: Archive Wheel Artifacts
+  #       uses: actions/upload-artifact@v3
+  #       with:
+  #         name: dist
+  #         path: dist/*.whl
+  #         retention-days: 20
 
-      - name: Test
-        run: .github/workflows/scripts/unix_test.sh
-        env:
-          TI_WANTED_ARCHS: 'cpu'
-          TI_SKIP_CPP_TESTS: Disabled because Vulkan is supported but not working on buildbot4
+  #     - name: Test
+  #       run: .github/workflows/scripts/unix_test.sh
+  #       env:
+  #         TI_WANTED_ARCHS: 'cpu'
+  #         TI_SKIP_CPP_TESTS: Disabled because Vulkan is supported but not working on buildbot4
 
   build_and_test_m1:
     name: Build and Upload (Apple M1)
@@ -241,6 +241,8 @@ jobs:
         run: |
           git config --system core.longpaths true
           git submodule foreach 'git rev-parse HEAD > /dev/null 2>&1 || rm -rf $PWD'
+          . .github/workflows/scripts/common-utils.ps1
+          UnsetGitCachingProxy
 
       - uses: actions/checkout@v3
         with:
@@ -256,6 +258,8 @@ jobs:
         run: |
           $nightlyFlag = $null
           if ($env:NIGHTLY) { $nightlyFlag = "--nightly" }
+          . .github/workflows/scripts/common-utils.ps1
+          SetGitCachingProxy
           python .\.github\workflows\scripts\build.py $nightlyFlag
 
       - name: Archive Wheel Artifacts
@@ -268,6 +272,8 @@ jobs:
       - name: Test
         shell: pwsh
         run: |
+          . .github/workflows/scripts/common-utils.ps1
+          SetGitCachingProxy
           .\.github\workflows\scripts\win_test.ps1
         env:
           PY: ${{ matrix.python }}

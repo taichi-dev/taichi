@@ -5,7 +5,8 @@ set -x
 function unset-git-caching-proxy {
     echo "Unsetting git caching proxy"
     git config --global --unset-all url.http://git-cdn-github.botmaster.tgr/.insteadOf || true
-    git config --global --unset-all url.http://git-cdn-gitlab.botmaster.tgr/.insteadOf || true
+    # git config --global --unset-all url.http://git-cdn-gitlab.botmaster.tgr/.insteadOf || true
+    rm -f ~/.git-credentials
 }
 
 function set-git-caching-proxy {
@@ -13,7 +14,9 @@ function set-git-caching-proxy {
     echo "Setting git caching proxy"
     git config --global --add url.http://git-cdn-github.botmaster.tgr/.insteadOf https://github.com/
     git config --global --add url.http://git-cdn-github.botmaster.tgr/.insteadOf git@github.com:
-    git config --global --add url.http://git-cdn-gitlab.botmaster.tgr/.insteadOf https://gitlab.com/
+    # git config --global --add url.http://git-cdn-gitlab.botmaster.tgr/.insteadOf https://gitlab.com/
+    git config --global credential.helper store
+    echo "http://oauth2:$GITHUB_TOKEN@git-cdn-github.botmaster.tgr" > ~/.git-credentials
 }
 
 if [ ! -z "$TI_USE_GIT_CACHE" ]; then
@@ -136,6 +139,7 @@ function ci-docker-run {
         -e SCCACHE_ROOT=/var/lib/sccache \
         -e CACHE_HOME=/var/lib/cache-home \
         -e GIT_ALTERNATE_OBJECT_DIRECTORIES=/var/lib/git-cache/objects \
+        -e GITHUB_TOKEN \
         -v $(readlink -f $CACHE_HOME):/var/lib/cache-home \
         -v $(readlink -f $CACHE_HOME/sccache):/var/lib/sccache \
         -v $(readlink -f $CACHE_HOME/git-cache):/var/lib/git-cache \
@@ -210,6 +214,7 @@ function grab-android-bot {
             export BOT_LOCK_KEY="android-bot-lock:$bot"
             LOCKED=$(redis-cli -h $REDIS_HOST --raw setnx $BOT_LOCK_KEY $BOT_LOCK_COOKIE)
             if [ $LOCKED -eq 1 ]; then
+                trap release-android-bot EXIT
                 redis-cli -h $REDIS_HOST --raw expire android-bot-lock:$bot 300 > /dev/null
                 break
             fi
@@ -247,7 +252,6 @@ function run-android-app {
 
     /android-sdk/platform-tools/adb shell am force-stop $(echo $ACTIVITY | sed 's#/.*$##g')
     /android-sdk/platform-tools/adb disconnect
-    release-android-bot
     if [ -s logcat.log ]; then
         echo "!!!!!!!!!!!!!! Something is wrong !!!!!!!!!!!!!!"
         exit 1

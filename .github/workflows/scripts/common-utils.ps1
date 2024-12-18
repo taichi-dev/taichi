@@ -1,14 +1,16 @@
 function UnsetGitCachingProxy {
     Write-Host "Unsetting git caching proxy"
     git config --global --unset-all url.http://git-cdn-github.botmaster.tgr/.insteadOf
-    git config --global --unset-all url.http://git-cdn-gitlab.botmaster.tgr/.insteadOf
+    # git config --global --unset-all url.http://git-cdn-gitlab.botmaster.tgr/.insteadOf
 }
 
 function SetGitCachingProxy {
     Write-Host "Setting up git caching proxy"
     git config --global --add url.http://git-cdn-github.botmaster.tgr/.insteadOf https://github.com/
     git config --global --add url.http://git-cdn-github.botmaster.tgr/.insteadOf git@github.com:
-    git config --global --add url.http://git-cdn-gitlab.botmaster.tgr/.insteadOf https://gitlab.com/
+    # git config --global --add url.http://git-cdn-gitlab.botmaster.tgr/.insteadOf https://gitlab.com/
+    git config --global credential.helper "store --file $env:TEMP\.git-credentials"
+    "http://oauth2:${env:GITHUB_TOKEN}@git-cdn-github.botmaster.tgr" | Out-File -FilePath $env:TEMP\.git-credentials
 }
 
 if($env:TI_USE_GIT_CACHE) {
@@ -242,6 +244,7 @@ function CIDockerRun {
         -e PIP_CACHE_DIR=X:/pip-cache `
         -e GIT_ALTERNATE_OBJECT_DIRECTORIES=X:/git-cache/objects `
         -e TI_CI=1 `
+        -e GITHUB_TOKEN `
         @TiEnvs `
         -v (($env:LocalAppData -replace "\\", "/") + "/build-cache:X:") `
         @extraArgs `

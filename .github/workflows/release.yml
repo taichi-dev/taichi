@@ -241,6 +241,8 @@ jobs:
         run: |
           git config --system core.longpaths true
           git submodule foreach 'git rev-parse HEAD > /dev/null 2>&1 || rm -rf $PWD'
+          . .github/workflows/scripts/common-utils.ps1
+          UnsetGitCachingProxy
 
       - uses: actions/checkout@v3
         with:
@@ -256,6 +258,8 @@ jobs:
         run: |
           $nightlyFlag = $null
           if ($env:NIGHTLY) { $nightlyFlag = "--nightly" }
+          . .github/workflows/scripts/common-utils.ps1
+          SetGitCachingProxy
           python .\.github\workflows\scripts\build.py $nightlyFlag
 
       - name: Archive Wheel Artifacts
@@ -268,6 +272,8 @@ jobs:
       - name: Test
         shell: pwsh
         run: |
+          . .github/workflows/scripts/common-utils.ps1
+          SetGitCachingProxy
           .\.github\workflows\scripts\win_test.ps1
         env:
           PY: ${{ matrix.python }}

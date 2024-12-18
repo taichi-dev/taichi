@@ -391,6 +391,8 @@ jobs:
         if: ${{ needs.check_files.outputs.run_job != 'false' }}
         shell: cmd
         run: |
+          . .github/workflows/scripts/common-utils.ps1
+          SetGitCachingProxy
           python .\.github\workflows\scripts\build.py
 
       - name: Test
@@ -398,6 +400,8 @@ jobs:
         shell: pwsh
         if: ${{ needs.check_files.outputs.run_job != 'false' }}
         run: |
+          . .github/workflows/scripts/common-utils.ps1
+          SetGitCachingProxy
           .\.github\workflows\scripts\win_test.ps1 -libsDir "$env:LocalAppData/buildbot"
         env:
           EXTRA_TEST_MARKERS: ${{ matrix.extra_markers }}

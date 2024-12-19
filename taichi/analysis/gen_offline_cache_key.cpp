@@ -445,7 +445,14 @@ class ASTSerializer : public IRVisitor, public ExpressionVisitor {
     // Note: The result of serializing snode_tree_roots_ is not parsable now
     emit(static_cast<std::size_t>(snode_tree_roots_.size()));
     for (const auto *snode : snode_tree_roots_) {
-      auto key = get_hashed_offline_cache_key_of_snode(snode);
+      std::string key;
+      if (snode_key_cache_.find(snode) == snode_key_cache_.end()) {
+        key = get_hashed_offline_cache_key_of_snode(snode);
+        snode_key_cache_[snode] = key;
+      } else {
+        key = snode_key_cache_[snode];
+      }
+      snode_key_cache_[snode] = key;
       emit_bytes(key.c_str(), key.size());
     }
 
@@ -655,6 +662,7 @@ class ASTSerializer : public IRVisitor, public ExpressionVisitor {
 
   std::ostream *os_{nullptr};
   std::vector<const SNode *> snode_tree_roots_;
+  std::unordered_map<const SNode *, std::string> snode_key_cache_;
   std::map<Function *, std::size_t> real_funcs_;
   std::vector<char> string_pool_;
 };

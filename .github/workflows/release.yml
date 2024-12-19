@@ -241,8 +241,6 @@ jobs:
         run: |
           git config --system core.longpaths true
           git submodule foreach 'git rev-parse HEAD > /dev/null 2>&1 || rm -rf $PWD'
-          . .github/workflows/scripts/common-utils.ps1
-          UnsetGitCachingProxy
 
       - uses: actions/checkout@v3
         with:

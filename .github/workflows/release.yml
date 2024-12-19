@@ -239,6 +239,7 @@ jobs:
     steps:
       - name: Workaround checkout Needed single revision issue
         run: |
+          git config --system core.longpaths true
           git config --global --unset-all url.http://git-cdn-github.botmaster.tgr/.insteadOf
           git submodule foreach 'git rev-parse HEAD > /dev/null 2>&1 || rm -rf $PWD'
 

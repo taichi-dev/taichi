@@ -4,7 +4,7 @@ set -x
 
 function unset-git-caching-proxy {
     echo "Unsetting git caching proxy"
-    git config --global --list | grep 'url\.' | cut -d'=' -f1 | xargs -L1 git config --global --unset-all
+    git config --global --list | grep 'url\.' | cut -d'=' -f1 | xargs -L1 git config --global --unset-all || true
 }
 
 function set-git-caching-proxy {

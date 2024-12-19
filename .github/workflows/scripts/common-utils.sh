@@ -4,19 +4,14 @@ set -x
 
 function unset-git-caching-proxy {
     echo "Unsetting git caching proxy"
-    git config --global --unset-all url.http://git-cdn-github.botmaster.tgr/.insteadOf || true
-    # git config --global --unset-all url.http://git-cdn-gitlab.botmaster.tgr/.insteadOf || true
-    rm -f ~/.git-credentials
+    git config --global --list | grep 'url\.' | cut -d'=' -f1 | xargs -L1 git config --global --unset-all
 }
 
 function set-git-caching-proxy {
     trap unset-git-caching-proxy EXIT
     echo "Setting git caching proxy"
-    git config --global --add url.http://git-cdn-github.botmaster.tgr/.insteadOf https://github.com/
-    git config --global --add url.http://git-cdn-github.botmaster.tgr/.insteadOf git@github.com:
-    # git config --global --add url.http://git-cdn-gitlab.botmaster.tgr/.insteadOf https://gitlab.com/
-    git config --global credential.helper store
-    echo "http://oauth2:$GITHUB_TOKEN@git-cdn-github.botmaster.tgr" > ~/.git-credentials
+    git config --global --add url.http://oauth2:$GITHUB_TOKEN@git-cdn-github.botmaster.tgr/.insteadOf https://github.com/
+    git config --global --add url.http://oauth2:$GITHUB_TOKEN@git-cdn-github.botmaster.tgr/.insteadOf git@github.com:
 }
 
 if [ ! -z "$TI_USE_GIT_CACHE" ]; then

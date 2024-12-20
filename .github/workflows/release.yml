@@ -24,6 +24,7 @@ env:
   TI_SKIP_VERSION_CHECK: 'ON'
   # TI_USE_GIT_CACHE: ${{ vars.TI_USE_GIT_CACHE }}
   TI_USE_GIT_CACHE: '1'  # variables are also not populated on forked PRs
+  GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
 
 jobs:

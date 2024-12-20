@@ -188,8 +188,8 @@ class Dict {
   }
 
   template <typename T>
-  std::enable_if_t<std::is_reference<T>::value, std::remove_reference_t<T>>
-      &get(std::string key) const {
+  std::enable_if_t<std::is_reference<T>::value, std::remove_reference_t<T>> &
+  get(std::string key) const {
     return *get_ptr<std::remove_reference_t<T>>(key);
   }
 

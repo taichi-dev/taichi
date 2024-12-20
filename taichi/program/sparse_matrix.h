@@ -58,9 +58,9 @@ class SparseMatrixBuilder {
 
 class SparseMatrix {
  public:
-  SparseMatrix() : rows_(0), cols_(0), dtype_(PrimitiveType::f32){};
+  SparseMatrix() : rows_(0), cols_(0), dtype_(PrimitiveType::f32) {};
   SparseMatrix(int rows, int cols, DataType dt = PrimitiveType::f32)
-      : rows_{rows}, cols_(cols), dtype_(dt){};
+      : rows_{rows}, cols_(cols), dtype_(dt) {};
   SparseMatrix(SparseMatrix &sm)
       : rows_(sm.rows_), cols_(sm.cols_), dtype_(sm.dtype_) {
   }

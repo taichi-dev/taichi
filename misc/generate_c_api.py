@@ -19,12 +19,11 @@ from taichi_json import (
 
 
 def get_type_name(x: EntryBase):
-    ty = type(x)
-    if ty in [BuiltInType]:
+    if isinstance(x, (BuiltInType)):
         return x.type_name
-    elif ty in [Alias, Handle, Enumeration, Structure, Union, Callback]:
+    elif isinstance(x, (Alias, Handle, Enumeration, Structure, Union, Callback)):
         return x.name.upper_camel_case
-    elif ty in [BitField]:
+    elif isinstance(x, BitField):
         return x.name.extend("flags").upper_camel_case
     else:
         raise RuntimeError(f"'{x.id}' is not a type")
@@ -67,41 +66,40 @@ def get_declr(module: Module, x: EntryBase, with_docs=False):
     if with_docs:
         out += get_api_ref(module, x)
 
-    ty = type(x)
-    if ty is BuiltInType:
+    if isinstance(x, BuiltInType):
         out += [""]
 
-    elif ty is Alias:
+    elif isinstance(x, Alias):
         out += [f"typedef {get_type_name(x.alias_of)} {get_type_name(x)};"]
 
-    elif ty is Definition:
+    elif isinstance(x, Definition):
         out += [f"#define {x.name.screaming_snake_case} {x.value}"]
 
-    elif ty is Handle:
+    elif isinstance(x, Handle):
         out += [f"typedef struct {get_type_name(x)}_t* {get_type_name(x)};"]
 
-    elif ty is Enumeration:
+    elif isinstance(x, Enumeration):
         out += ["typedef enum " + get_type_name(x) + " {"]
         for name, value in x.cases.items():
             if with_docs:
-                out += get_api_field_ref(module, x, name)
+                out += get_api_field_ref(module, x, name.snake_case)
             name = x.name.extend(name).screaming_snake_case
             out += [f"  {name} = {value},"]
         out += [f"  {x.name.extend('max_enum').screaming_snake_case} = 0xffffffff,"]
         out += ["} " + get_type_name(x) + ";"]
 
-    elif ty is BitField:
+    elif isinstance(x, BitField):
         bit_type_name = x.name.extend("flag_bits").upper_camel_case
         out += ["typedef enum " + bit_type_name + " {"]
         for name, value in x.bits.items():
             if with_docs:
-                out += get_api_field_ref(module, x, name)
+                out += get_api_field_ref(module, x, name.snake_case)
             name = x.name.extend(name).extend("bit").screaming_snake_case
             out += [f"  {name} = 1 << {value},"]
         out += ["} " + bit_type_name + ";"]
         out += [f"typedef TiFlags {get_type_name(x)};"]
 
-    elif ty is Structure:
+    elif isinstance(x, Structure):
         out += ["typedef struct " + get_type_name(x) + " {"]
         for field in x.fields:
             if with_docs:
@@ -109,7 +107,7 @@ def get_declr(module: Module, x: EntryBase, with_docs=False):
             out += [f"  {get_field(field)};"]
         out += ["} " + get_type_name(x) + ";"]
 
-    elif ty is Union:
+    elif isinstance(x, Union):
         out += ["typedef union " + get_type_name(x) + " {"]
         for variant in x.variants:
             if with_docs:
@@ -117,7 +115,7 @@ def get_declr(module: Module, x: EntryBase, with_docs=False):
             out += [f"  {get_field(variant)};"]
         out += ["} " + get_type_name(x) + ";"]
 
-    elif ty is Callback:
+    elif isinstance(x, Callback):
         return_value_type = "void" if x.return_value_type == None else get_type_name(x.return_value_type)
         out += [f"typedef {return_value_type} (TI_API_CALL *{get_type_name(x)})("]
         if x.params:
@@ -129,7 +127,7 @@ def get_declr(module: Module, x: EntryBase, with_docs=False):
                 out += [f"  {get_field(param)}"]
         out += [");"]
 
-    elif ty is Function:
+    elif isinstance(x, Function):
         return_value_type = "void" if x.return_value_type == None else get_type_name(x.return_value_type)
         out += ["TI_DLL_EXPORT " + return_value_type + " TI_API_CALL " + x.name.snake_case + "("]
         if x.params:
@@ -211,6 +209,7 @@ def resolve_symbol_to_name(module: Module, id: str):
         pass
 
     out = module.declr_reg.resolve(id)
+    assert out is not None, f"Unable to resolve symbol {id}"
     href = None
 
     try:
@@ -300,6 +299,7 @@ def print_module_header(module: Module):
 
     for x in module.declr_reg:
         declr = module.declr_reg.resolve(x)
+        assert declr is not None, f"Unable to resolve {x}"
         out += ["", get_declr(module, declr, True)]
 
     out += [

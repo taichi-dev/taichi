@@ -139,8 +139,8 @@ struct ErrorEmitter {
                 std::string>>>
   ErrorEmitter(E &&error, T p_dbg_info, std::string &&error_msg) {
     if constexpr ((std::is_same_v<std::decay_t<T>, DebugInfo *> ||
-                   std::is_same_v<std::decay_t<T>, const DebugInfo *>)&&std::
-                      is_base_of_v<TaichiError, std::decay_t<E>>) {
+                   std::is_same_v<std::decay_t<T>, const DebugInfo *>) &&
+                  std::is_base_of_v<TaichiError, std::decay_t<E>>) {
       // Indicates a failed C++ API call from Python side, we should not print
       // tb here
       error.msg_ = error_msg;

@@ -2,6 +2,7 @@
 Structured representation of all JSON data structures following the
 GfxRuntime140.
 """
+
 from abc import ABC
 from enum import Enum
 from typing import Any, Dict, List, Optional

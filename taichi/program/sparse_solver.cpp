@@ -72,12 +72,10 @@ EIGEN_LU_SOLVER_INSTANTIATION(float64, LU, COLAMD);
 #define MAKE_EIGEN_SOLVER(dt, type, order) \
   std::make_unique<EigenSparseSolver##dt##type##order>()
 
-#define MAKE_SOLVER(dt, type, order)                              \
-  {                                                               \
-    {#dt, #type, #order}, []() -> std::unique_ptr<SparseSolver> { \
-      return MAKE_EIGEN_SOLVER(dt, type, order);                  \
-    }                                                             \
-  }
+#define MAKE_SOLVER(dt, type, order)                             \
+  {{#dt, #type, #order}, []() -> std::unique_ptr<SparseSolver> { \
+     return MAKE_EIGEN_SOLVER(dt, type, order);                  \
+   }}
 
 using Triplets = std::tuple<std::string, std::string, std::string>;
 namespace {

@@ -57,7 +57,9 @@ constexpr size_t kBufferSizeEntireSize = std::numeric_limits<size_t>::max();
   inline name operator&(name a, name b) {      \
     return static_cast<name>(int(a) & int(b)); \
   }                                            \
-  inline bool operator&&(name a, name b) { return (int(a) & int(b)) != 0; }
+  inline bool operator&&(name a, name b) {     \
+    return (int(a) & int(b)) != 0;             \
+  }
 
 enum class BlendOp : uint32_t { add, subtract, reverse_subtract, min, max };
 
@@ -264,11 +266,7 @@ enum class BufferFormat : uint32_t {
 #undef PER_BUFFER_FORMAT
 };
 
-class RHI_DLL_EXPORT Pipeline {
- public:
-  virtual ~Pipeline() {
-  }
-};
+class RHI_DLL_EXPORT Pipeline{public : virtual ~Pipeline(){}};
 
 using UPipeline = std::unique_ptr<Pipeline>;
 
@@ -556,11 +554,8 @@ enum class AllocUsage : int {
 
 MAKE_ENUM_FLAGS(AllocUsage)
 
-class RHI_DLL_EXPORT StreamSemaphoreObject {
- public:
-  virtual ~StreamSemaphoreObject() {
-  }
-};
+class RHI_DLL_EXPORT
+StreamSemaphoreObject{public : virtual ~StreamSemaphoreObject(){}};
 
 using StreamSemaphore = std::shared_ptr<StreamSemaphoreObject>;
 
@@ -622,7 +617,7 @@ class RHI_DLL_EXPORT Device {
   DeviceCapabilityConfig caps_{};
 
  public:
-  virtual ~Device(){};
+  virtual ~Device() {};
 
   struct AllocParams {
     uint64_t size{0};

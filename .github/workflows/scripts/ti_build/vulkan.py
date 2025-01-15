@@ -16,7 +16,7 @@ from .python import path_prepend
 def setup_vulkan():
     u = platform.uname()
     if u.system == "Linux":
-        url = "https://sdk.lunarg.com/sdk/download/1.3.236.0/linux/vulkansdk-linux-x86_64-1.3.236.0.tar.gz"
+        url = "https://sdk.lunarg.com/sdk/download/1.3.296.0/linux/vulkansdk-linux-x86_64-1.3.296.0.tar.xz"
         prefix = get_cache_home() / "vulkan-1.3.236.0"
         download_dep(url, prefix, strip=1)
         sdk = prefix / "x86_64"

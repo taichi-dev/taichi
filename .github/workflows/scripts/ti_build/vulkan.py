@@ -27,8 +27,8 @@ def setup_vulkan():
     # elif (u.system, u.machine) == ("Darwin", "arm64"):
     # elif (u.system, u.machine) == ("Darwin", "x86_64"):
     elif (u.system, u.machine) == ("Windows", "AMD64"):
-        url = "https://sdk.lunarg.com/sdk/download/1.3.236.0/windows/VulkanSDK-1.3.236.0-Installer.exe"
-        prefix = get_cache_home() / "vulkan-1.3.236.0"
+        url = "https://sdk.lunarg.com/sdk/download/1.3.296.0/windows/VulkanSDK-1.3.296.0-Installer.exe"
+        prefix = get_cache_home() / "vulkan-1.3.296.0"
         download_dep(
             url,
             prefix,

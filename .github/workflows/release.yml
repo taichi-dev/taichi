@@ -121,6 +121,58 @@ jobs:
         env:
           PY: ${{ matrix.python }}
 
+  build_and_test_linux_arm:
+    name: Build and Upload (linux Arm only)
+    needs: matrix_prep
+    strategy:
+      fail-fast: false
+      matrix: ${{ fromJson(needs.matrix_prep.outputs.matrix) }}
+    runs-on: [ ubuntu24.04-arm, cuda, vulkan, cn, release, sm70 ]
+    env:
+      PY: ${{ matrix.python }}
+      PROJECT_NAME: ${{ matrix.name }}
+      TAICHI_CMAKE_ARGS: >-
+        -DTI_WITH_OPENGL:BOOL=ON
+        -DTI_WITH_VULKAN:BOOL=ON
+        -DTI_BUILD_TESTS:BOOL=ON
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: 'recursive'
+          fetch-depth: '0'
+
+      - name: Prepare Environment
+        run: |
+          . .github/workflows/scripts/common-utils.sh
+          prepare-build-cache
+          echo CI_DOCKER_RUN_EXTRA_ARGS="-v $(pwd):/home/dev/taichi" >> $GITHUB_ENV
+
+      - name: Build
+        run: |
+          . .github/workflows/scripts/common-utils.sh
+
+          ci-docker-run-gpu --name taichi-build \
+            registry.botmaster.tgr/taichi-build-cuda:${{ env.CI_IMAGE_VERSION }} \
+            /home/dev/taichi/.github/workflows/scripts/build.py $NIGHTLY
+
+      - name: Archive Wheel Artifacts
+        uses: actions/upload-artifact@v3
+        with:
+          name: dist
+          path: dist/*.whl
+          retention-days: 20
+
+      - name: Test
+        run: |
+          . .github/workflows/scripts/common-utils.sh
+
+          ci-docker-run-gpu --name taichi-test \
+             registry.botmaster.tgr/taichi-test-cuda:${{ env.CI_IMAGE_VERSION }} \
+             /home/dev/taichi/.github/workflows/scripts/unix_test.sh
+        env:
+          PY: ${{ matrix.python }}
+
   # build_and_test_mac:
   #   name: Build and Upload (macOS only)
   #   needs: matrix_prep
@@ -289,7 +341,7 @@ jobs:
 
   upload_to_pypi:
     name: Upload release to PyPI
-    needs: [build_and_test_linux, build_and_test_m1, build_and_test_windows]
+    needs: [build_and_test_linux, build_and_test_m1, build_and_test_windows, build_and_test_linux_arm]
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4

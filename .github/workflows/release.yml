@@ -34,7 +34,7 @@ jobs:
     if: github.repository_owner == 'taichi-dev'
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
 
       - name: Save new version
         run: |
@@ -85,7 +85,7 @@ jobs:
         -DTI_BUILD_TESTS:BOOL=ON
 
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
         with:
           submodules: 'recursive'
           fetch-depth: '0'
@@ -136,7 +136,7 @@ jobs:
   #       -DTI_WITH_OPENGL:BOOL=OFF
   #       -DTI_BUILD_TESTS:BOOL=ON
   #   steps:
-  #     - uses: actions/checkout@v3
+  #     - uses: actions/checkout@v4
   #       with:
   #         submodules: 'recursive'
   #         fetch-depth: '0'
@@ -188,7 +188,7 @@ jobs:
         -DTI_BUILD_TESTS:BOOL=ON
 
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
         with:
           submodules: 'recursive'
           fetch-depth: '0'
@@ -243,12 +243,12 @@ jobs:
           git config --system core.longpaths true
           git submodule foreach 'git rev-parse HEAD > /dev/null 2>&1 || rm -rf $PWD'
 
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
         with:
           submodules: 'recursive'
           fetch-depth: '0'
 
-      - uses: actions/setup-python@v4
+      - uses: actions/checkout@v5
         with:
           python-version: ${{ matrix.python }}
 
@@ -292,8 +292,8 @@ jobs:
     needs: [build_and_test_linux, build_and_test_m1, build_and_test_windows]
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
-      - uses: actions/setup-python@v4
+      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
         with:
           python-version: 3.9
 
@@ -331,11 +331,11 @@ jobs:
     runs-on: ubuntu-latest
     if: ${{ github.event.inputs.version }}
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
         with:
           fetch-depth: 0
 
-      - uses: actions/setup-python@v4
+      - uses: actions/checkout@v5
         with:
           python-version: 3.9
 

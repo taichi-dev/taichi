@@ -51,11 +51,17 @@ def build_wheel(python: Command, pip: Command) -> None:
     elif wheel_tag:
         proj_tags.extend(["egg_info", f"--tag-build={wheel_tag}"])
 
-    if platform.system() == "Linux":
+    u = platform.uname()
+    if (u.system, u.machine) == ("Linux", "x86_64"):
         if is_manylinux2014():
             extra.extend(["-p", "manylinux2014_x86_64"])
         else:
-            extra.extend(["-p", "manylinux_2_27_x86_64"])
+            extra.extend(["-p", "manylinux_2_28_x86_64"])
+    elif (u.system, u.machine) in (("Linux", "arm64"), ("Linux", "aarch64")):
+        extra.extend(["-p", "manylinux_2_28_aarch64"])
+    else:
+        extra.extend(["-p", "manylinux_2_28_x86_64"])
+
 
     python("setup.py", "clean")
     python("misc/make_changelog.py", "--ver", "origin/master", "--repo_dir", "./", "--save")

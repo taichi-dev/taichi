@@ -57,16 +57,16 @@ jobs:
         run: |
           if [ -n "$RELEASE_VERSION" ]; then
             # For production release, we run on five python versions.
-            echo 'matrix={"include":[{"name":"taichi","python":"3.7"},{"name":"taichi","python":"3.8"},{"name":"taichi","python":"3.9"},{"name":"taichi","python":"3.10"},{"name":"taichi","python":"3.11"},{"name":"taichi","python":"3.12"}]}"' >> $GITHUB_OUTPUT
+            echo 'matrix={"include":[{"name":"taichi","python":"3.9"},{"name":"taichi","python":"3.10"},{"name":"taichi","python":"3.11"},{"name":"taichi","python":"3.13"}]}"' >> $GITHUB_OUTPUT
 
-            # M1 only supports 3.8, 3.9, and 3.10(conda), so change matrix.
-            echo 'matrix_osx={"include":[{"name":"taichi","python":"3.8"},{"name":"taichi","python":"3.9"},{"name":"taichi","python":"3.10"},{"name":"taichi","python":"3.11"},{"name":"taichi","python":"3.12"}]}"' >> $GITHUB_OUTPUT
+            # M1
+            echo 'matrix_osx={"include":[{"name":"taichi","python":"3.10"},{"name":"taichi","python":"3.11"},{"name":"taichi","python":"3.13"}]}"' >> $GITHUB_OUTPUT
           else
             # For nightly release, we run on three python versions.
-            echo 'matrix={"include":[{"name":"taichi-nightly","python":"3.7"},{"name":"taichi-nightly","python":"3.8"},{"name":"taichi-nightly","python":"3.9"},{"name":"taichi-nightly","python":"3.10"},{"name":"taichi-nightly","python":"3.11"},{"name":"taichi","python":"3.12"}]}"' >> $GITHUB_OUTPUT
+            echo 'matrix={"include":[{"name":"taichi-nightly","python":"3.10"},{"name":"taichi-nightly","python":"3.11"},{"name":"taichi","python":"3.13"}]}"' >> $GITHUB_OUTPUT
 
-            # M1 only supports 3.8 and 3.10(conda), so change matrix.
-            echo 'matrix_osx={"include":[{"name":"taichi-nightly","python":"3.8"},{"name":"taichi-nightly","python":"3.9"},{"name":"taichi-nightly","python":"3.10"},{"name":"taichi-nightly","python":"3.11"},{"name":"taichi","python":"3.12"}]}"' >> $GITHUB_OUTPUT
+            # M1 only support
+            echo 'matrix_osx={"include":[{"name":"taichi-nightly","python":"3.10"},{"name":"taichi-nightly","python":"3.11"},{"name":"taichi","python":"3.13"}]}"' >> $GITHUB_OUTPUT
           fi
 
   build_and_test_linux:
@@ -345,9 +345,9 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/checkout@v5
+      - uses: actions/setup-python@v5
         with:
-          python-version: 3.9
+          python-version: 3.12
 
       - name: Get dist files
         uses: actions/download-artifact@v4
@@ -387,9 +387,9 @@ jobs:
         with:
           fetch-depth: 0
 
-      - uses: actions/checkout@v5
+      - uses: actions/setup-python@v5
         with:
-          python-version: 3.9
+          python-version: 3.12
 
       - name: Generate Changelog
         id: changelog

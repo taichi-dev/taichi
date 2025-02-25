@@ -7,6 +7,7 @@ User interface:
 1. Click on the window to restart the animation.
 2. Press `p` to save screenshot.
 """
+
 import taichi as ti
 import taichi.math as tm
 

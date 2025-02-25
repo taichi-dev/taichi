@@ -7,6 +7,7 @@ This module defines data types in Taichi:
 - ndarray: for arbitrary arrays.
 - quant: for quantized types, see "https://yuanming.taichi.graphics/publication/2021-quantaichi/quantaichi.pdf"
 """
+
 from taichi.types import quant
 from taichi.types.annotations import *
 from taichi.types.compound_types import *

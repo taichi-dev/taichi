@@ -13,10 +13,14 @@ enum class FieldSource : int {
   HostMappedPtr = 1,
 };
 
-#define DEFINE_PROPERTY(Type, name)                          \
-  Type name;                                                 \
-  void set_##name(const Type &new_name) { name = new_name; } \
-  Type get_##name() { return name; }
+#define DEFINE_PROPERTY(Type, name)       \
+  Type name;                              \
+  void set_##name(const Type &new_name) { \
+    name = new_name;                      \
+  }                                       \
+  Type get_##name() {                     \
+    return name;                          \
+  }
 
 struct FieldInfo {
   DEFINE_PROPERTY(bool, valid)

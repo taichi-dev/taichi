@@ -277,9 +277,7 @@ class NGP_fw:
         for i in range(self.level):
             resolution = int(np.ceil(self.base_res * np.exp(i * np.log(self.per_level_scales)) - 1.0)) + 1
             params_in_level = resolution**3
-            params_in_level = (
-                int(resolution**3) if params_in_level % 8 == 0 else int((params_in_level + 8 - 1) / 8) * 8
-            )
+            params_in_level = int(resolution**3) if params_in_level % 8 == 0 else int((params_in_level + 8 - 1) / 8) * 8
             params_in_level = min(self.max_params, params_in_level)
             self.offsets[i] = offset
             self.hash_map_sizes[i] = params_in_level

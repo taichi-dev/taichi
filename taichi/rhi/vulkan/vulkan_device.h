@@ -322,8 +322,8 @@ class VulkanPipeline : public Pipeline {
     return graphics_pipeline_template_ != nullptr;
   }
 
-  std::unordered_map<uint32_t, VulkanResourceSet>
-      &get_resource_set_templates() {
+  std::unordered_map<uint32_t, VulkanResourceSet> &
+  get_resource_set_templates() {
     return set_templates_;
   }
 

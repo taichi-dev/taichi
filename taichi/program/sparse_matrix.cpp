@@ -303,11 +303,11 @@ void EigenSparseMatrix<EigenMatrix>::spmv(Program *prog,
   size_t dY = prog->get_ndarray_data_ptr_as_int(&y);
   std::string sdtype = taichi::lang::data_type_name(dtype_);
   if (sdtype == "f32") {
-    Eigen::Map<Eigen::VectorXf>((float *)dY, cols_) =
+    Eigen::Map<Eigen::VectorXf>((float *)dY, rows_) =
         matrix_.template cast<float>() *
         Eigen::Map<Eigen::VectorXf>((float *)dX, cols_);
   } else if (sdtype == "f64") {
-    Eigen::Map<Eigen::VectorXd>((double *)dY, cols_) =
+    Eigen::Map<Eigen::VectorXd>((double *)dY, rows_) =
         matrix_.template cast<double>() *
         Eigen::Map<Eigen::VectorXd>((double *)dX, cols_);
   } else {

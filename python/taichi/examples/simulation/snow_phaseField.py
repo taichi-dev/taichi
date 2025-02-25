@@ -1,7 +1,8 @@
-""" phase field model for snow dendrite evolution, which simulates the snow growing from water vapor.
-    space discretization: finite difference method, time integration: Runge-Kutta method
-    repo's link: https://github.com/mo-hanxuan/Snow-PhaseField
-    more details about physical interpretation refer to [Physica D 63(3-4): 410-423]"""
+"""phase field model for snow dendrite evolution, which simulates the snow growing from water vapor.
+space discretization: finite difference method, time integration: Runge-Kutta method
+repo's link: https://github.com/mo-hanxuan/Snow-PhaseField
+more details about physical interpretation refer to [Physica D 63(3-4): 410-423]"""
+
 import numpy as np
 
 import taichi as ti

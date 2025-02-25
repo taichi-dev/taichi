@@ -177,7 +177,7 @@ jobs:
 
   #    - name: Save wheel if test failed
   #      if: failure() && steps.test.conclusion == 'failure'
-  #      uses: actions/upload-artifact@v3
+  #      uses: actions/upload-artifact@v4
   #      with:
   #        name: broken-wheel
   #        path: dist/*
@@ -256,7 +256,7 @@ jobs:
 
       - name: Save wheel if test failed
         if: failure() && steps.test.conclusion == 'failure'
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: broken-wheel
           path: dist/*
@@ -264,7 +264,7 @@ jobs:
 
       - name: Save Bad Captures
         if: failure() && steps.test.conclusion == 'failure'
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: bad-captures
           path: taichi-release-tests/bad-compare/*
@@ -324,7 +324,7 @@ jobs:
 
       - name: Save wheel if test failed
         if: failure() && steps.test.conclusion == 'failure'
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: broken-wheel
           path: dist/*
@@ -332,7 +332,7 @@ jobs:
 
       - name: Save Bad Captures
         if: failure() && steps.test.conclusion == 'failure'
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: bad-captures
           path: taichi-release-tests/bad-compare/*
@@ -406,7 +406,7 @@ jobs:
 
       - name: Save wheel if test failed
         if: failure() && steps.test.conclusion == 'failure'
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: broken-wheel
           path: dist/*
@@ -482,7 +482,7 @@ jobs:
 
       - name: Save wheel if test failed
         if: failure() && steps.test.conclusion == 'failure'
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: broken-wheel
           path: dist/*
@@ -490,7 +490,7 @@ jobs:
 
       - name: Save Bad Captures
         if: failure() && steps.test.conclusion == 'failure'
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: bad-captures
           path: taichi-release-tests/bad-compare/*
@@ -519,7 +519,7 @@ jobs:
 
       - name: Save Compiled Static Library
         if: ${{ needs.check_files.outputs.run_job != 'false' }}
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: libtaichi_c_api.iOS.a
           path: 'dist/C-API-iOS/*.a'
@@ -922,7 +922,7 @@ jobs:
 
       - name: Save wheel if test failed
         if: failure() && steps.test.conclusion == 'failure'
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: broken-wheel
           path: dist/*
@@ -930,7 +930,7 @@ jobs:
 
       - name: Save Bad Captures
         if: failure() && steps.test.conclusion == 'failure'
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: bad-captures
           path: taichi-release-tests/bad-compare/*

@@ -22,7 +22,7 @@ class OffloadedTask {
       : name(name),
         block_dim(block_dim),
         grid_dim(grid_dim),
-        dynamic_shared_array_bytes(dynamic_shared_array_bytes){};
+        dynamic_shared_array_bytes(dynamic_shared_array_bytes) {};
   TI_IO_DEF(name, block_dim, grid_dim, dynamic_shared_array_bytes);
 };
 

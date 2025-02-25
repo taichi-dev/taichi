@@ -3,6 +3,7 @@ This file tests if Taichi's testing utilities are functional.
 
 TODO: Skips these tests after all tests are using @ti.test
 """
+
 import os
 
 import pytest

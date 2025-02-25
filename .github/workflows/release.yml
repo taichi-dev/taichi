@@ -105,7 +105,7 @@ jobs:
             /home/dev/taichi/.github/workflows/scripts/build.py $NIGHTLY
 
       - name: Archive Wheel Artifacts
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: dist
           path: dist/*.whl
@@ -155,7 +155,7 @@ jobs:
   #         PROJECT_NAME: ${{ matrix.name }}
 
   #     - name: Archive Wheel Artifacts
-  #       uses: actions/upload-artifact@v3
+  #       uses: actions/upload-artifact@v4
   #       with:
   #         name: dist
   #         path: dist/*.whl
@@ -204,7 +204,7 @@ jobs:
           .github/workflows/scripts/build.py $NIGHTLY
 
       - name: Archive Wheel Artifacts
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: dist
           path: dist/*.whl
@@ -262,7 +262,7 @@ jobs:
           python .\.github\workflows\scripts\build.py $nightlyFlag
 
       - name: Archive Wheel Artifacts
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: dist
           path: dist/*.whl
@@ -298,7 +298,7 @@ jobs:
           python-version: 3.9
 
       - name: Get dist files
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v4
         with:
           name: dist
           path: dist

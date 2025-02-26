@@ -15,25 +15,32 @@ from .dep import download_dep
 from .misc import banner, get_cache_home, path_prepend, info
 from .tinysh import Command, sh
 
+
 # -- code --
 def setup_miniforge(prefix):
     u = platform.uname()
     if (u.system, u.machine) == ("Linux", "x86_64"):
-        url = "https://github.com/conda-forge/miniforge/releases/download/24.11.3-0/Miniforge3-24.11.3-0-Linux-x86_64.sh"
+        url = (
+            "https://github.com/conda-forge/miniforge/releases/download/24.11.3-0/Miniforge3-24.11.3-0-Linux-x86_64.sh"
+        )
         download_dep(url, prefix, args=["-bfp", str(prefix)])
     elif (u.system, u.machine) in (("Linux", "arm64"), ("Linux", "aarch64")):
-        url = "https://github.com/conda-forge/miniforge/releases/download/24.11.3-0/Miniforge3-24.11.3-0-Linux-aarch64.sh"
+        url = (
+            "https://github.com/conda-forge/miniforge/releases/download/24.11.3-0/Miniforge3-24.11.3-0-Linux-aarch64.sh"
+        )
         download_dep(url, prefix, args=["-bfp", str(prefix)])
     elif (u.system, u.machine) == ("Darwin", "arm64"):
-        url = "https://github.com/conda-forge/miniforge/releases/download/24.11.3-0/Miniforge3-24.11.3-0-MacOSX-arm64.sh"
+        url = (
+            "https://github.com/conda-forge/miniforge/releases/download/24.11.3-0/Miniforge3-24.11.3-0-MacOSX-arm64.sh"
+        )
         download_dep(url, prefix, args=["-bfp", str(prefix)])
     elif (u.system, u.machine) == ("Darwin", "x86_64"):
-        url = "https://github.com/conda-forge/miniforge/releases/download/24.11.3-0/Miniforge3-24.11.3-0-MacOSX-x86_64.sh"
+        url = (
+            "https://github.com/conda-forge/miniforge/releases/download/24.11.3-0/Miniforge3-24.11.3-0-MacOSX-x86_64.sh"
+        )
         download_dep(url, prefix, args=["-bfp", str(prefix)])
     elif u.system == "Windows":
-        url = (
-            "https://github.com/conda-forge/miniforge/releases/download/24.11.3-0/Miniforge3-Windows-x86_64.exe"
-        )
+        url = "https://github.com/conda-forge/miniforge/releases/download/24.11.3-0/Miniforge3-Windows-x86_64.exe"
         download_dep(
             url,
             prefix,

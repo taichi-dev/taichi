@@ -62,7 +62,6 @@ def build_wheel(python: Command, pip: Command) -> None:
     else:
         extra.extend(["-p", "manylinux_2_28_x86_64"])
 
-
     python("setup.py", "clean")
     python("misc/make_changelog.py", "--ver", "origin/master", "--repo_dir", "./", "--save")
 

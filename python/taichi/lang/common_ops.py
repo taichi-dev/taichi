@@ -264,7 +264,6 @@ class TaichiOperations:
             :class:`~taichi.lang.expr.Expr`: The expression after assigning."""
         return ops.assign(self, other)
 
-    # pylint: disable=R0201
     def _augassign(self, x, op):
         """Generate the computing expression between self and the given operand of given operator and assigned to self.
 

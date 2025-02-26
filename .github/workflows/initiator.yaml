@@ -36,7 +36,7 @@ jobs:
 
   preparation:
     name: Preparation
-    runs-on: [self-hosted, Linux]
+    runs-on: [self-hosted, Linux, ubuntu-24.04-arm]
     outputs:
       date: ${{ steps.gather.outputs.date }}
       short_sha: ${{ steps.gather.outputs.short_sha }}
@@ -58,7 +58,7 @@ jobs:
     with:
       build_id: ${{ needs.preparation.outputs.build_id }}
       nightly: false
-      python: '["3.9", "3.10", "3.11"]'
+      python: '["3.10", "3.11", "3.12", "3.13"]'
     secrets:
       BOT_MINIO_ACCESS_KEY: ${{ secrets.BOT_MINIO_ACCESS_KEY }}
       BOT_MINIO_SECRET_KEY: ${{ secrets.BOT_MINIO_SECRET_KEY }}

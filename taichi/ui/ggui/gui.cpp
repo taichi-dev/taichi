@@ -17,8 +17,8 @@ namespace vulkan {
  * The newer ImGui_ImplVulkan_LoadFunctions(...) signature requires:
  *    bool ImGui_ImplVulkan_LoadFunctions(
  *       uint32_t                         api_version,
- *       PFN_vkVoidFunction(*loader_func)(const char* function_name, void* user_data),
- *       void*                            user_data = nullptr
+ *       PFN_vkVoidFunction(*loader_func)(const char* function_name, void*
+ * user_data), void*                            user_data = nullptr
  *    );
  *
  * So we provide a loader that matches the PFN signature.
@@ -61,11 +61,11 @@ void Gui::init_render_resources(VkRenderPass render_pass) {
   // 1) Load Vulkan function pointers using new API
   // -------------------------------------------------
   // The new ImGui_ImplVulkan_LoadFunctions(...) requires
-  // at least an API version and a PFN loader. The final "user_data" is optional.
+  // at least an API version and a PFN loader. The final "user_data" is
+  // optional.
   ImGui_ImplVulkan_LoadFunctions(
-      VK_API_VERSION_1_0,   // or VK_API_VERSION_1_1, etc.
-      load_vk_function_for_gui,
-      nullptr /* user_data */
+      VK_API_VERSION_1_0,               // or VK_API_VERSION_1_1, etc.
+      load_vk_function_for_gui, nullptr /* user_data */
   );
 
   auto &device =

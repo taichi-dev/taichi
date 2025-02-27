@@ -220,7 +220,7 @@ class Installer:
                         execute_command("sudo apt-get install -y python3-dev libx11-dev")
                     else:
                         execute_command(
-                            "sudo apt-get install -y python3-dev git build-essential cmake make g++ libx11-dev"
+                            "sudo apt-get install -y python3-dev git build-essential cmake make g++ libx11-dev libxkbcommon-dev"
                         )
             elif dist == "arch":
                 execute_command("sudo pacman --needed -S git cmake make gcc")

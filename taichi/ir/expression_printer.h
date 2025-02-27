@@ -5,6 +5,7 @@
 #include "taichi/ir/frontend_ir.h"
 #include "taichi/program/program.h"
 #include "taichi/analysis/offline_cache_util.h"
+#include "spdlog/fmt/ranges.h"
 
 namespace taichi::lang {
 

@@ -91,13 +91,13 @@ class IRVerifier : public BasicStmtVisitor {
 
   void visit(OffloadedStmt *stmt) override {
     basic_verify(stmt);
-    if (stmt->has_body() && !stmt->body) {
+    if (stmt->has_body() && !stmt->body.get()) {
       TI_ERROR("offloaded {} ({})->body is nullptr",
                offloaded_task_type_name(stmt->task_type), stmt->name());
-    } else if (!stmt->has_body() && stmt->body) {
+    } else if (!stmt->has_body() && stmt->body.get()) {
       TI_ERROR("offloaded {} ({})->body is {} (should be nullptr)",
                offloaded_task_type_name(stmt->task_type), stmt->name(),
-               fmt::ptr(stmt->body));
+               fmt::ptr(stmt->body.get()));
     }
     stmt->all_blocks_accept(this);
   }

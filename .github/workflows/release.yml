@@ -34,7 +34,7 @@ jobs:
     if: github.repository_owner == 'taichi-dev'
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
 
       - name: Save new version
         run: |
@@ -57,16 +57,16 @@ jobs:
         run: |
           if [ -n "$RELEASE_VERSION" ]; then
             # For production release, we run on five python versions.
-            echo 'matrix={"include":[{"name":"taichi","python":"3.7"},{"name":"taichi","python":"3.8"},{"name":"taichi","python":"3.9"},{"name":"taichi","python":"3.10"},{"name":"taichi","python":"3.11"},{"name":"taichi","python":"3.12"}]}"' >> $GITHUB_OUTPUT
+            echo 'matrix={"include":[{"name":"taichi","python":"3.9"},{"name":"taichi","python":"3.10"},{"name":"taichi","python":"3.11"},{"name":"taichi","python":"3.12"},{"name":"taichi","python":"3.13"}]}"' >> $GITHUB_OUTPUT
 
-            # M1 only supports 3.8, 3.9, and 3.10(conda), so change matrix.
-            echo 'matrix_osx={"include":[{"name":"taichi","python":"3.8"},{"name":"taichi","python":"3.9"},{"name":"taichi","python":"3.10"},{"name":"taichi","python":"3.11"},{"name":"taichi","python":"3.12"}]}"' >> $GITHUB_OUTPUT
+            # M1
+            echo 'matrix_osx={"include":[{"name":"taichi","python":"3.10"},{"name":"taichi","python":"3.11"},{"name":"taichi","python":"3.12"}, {"name":"taichi","python":"3.13"}]}"' >> $GITHUB_OUTPUT
           else
             # For nightly release, we run on three python versions.
-            echo 'matrix={"include":[{"name":"taichi-nightly","python":"3.7"},{"name":"taichi-nightly","python":"3.8"},{"name":"taichi-nightly","python":"3.9"},{"name":"taichi-nightly","python":"3.10"},{"name":"taichi-nightly","python":"3.11"},{"name":"taichi","python":"3.12"}]}"' >> $GITHUB_OUTPUT
+            echo 'matrix={"include":[{"name":"taichi-nightly","python":"3.10"},{"name":"taichi-nightly","python":"3.11"},{"name":"taichi","python":"3.12"},{"name":"taichi","python":"3.13"}]}"' >> $GITHUB_OUTPUT
 
-            # M1 only supports 3.8 and 3.10(conda), so change matrix.
-            echo 'matrix_osx={"include":[{"name":"taichi-nightly","python":"3.8"},{"name":"taichi-nightly","python":"3.9"},{"name":"taichi-nightly","python":"3.10"},{"name":"taichi-nightly","python":"3.11"},{"name":"taichi","python":"3.12"}]}"' >> $GITHUB_OUTPUT
+            # M1 only support
+            echo 'matrix_osx={"include":[{"name":"taichi-nightly","python":"3.10"},{"name":"taichi-nightly","python":"3.11"},{"name":"taichi","python":"3.12"},{"name":"taichi","python":"3.13"}]}"' >> $GITHUB_OUTPUT
           fi
 
   build_and_test_linux:
@@ -85,7 +85,59 @@ jobs:
         -DTI_BUILD_TESTS:BOOL=ON
 
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
+        with:
+          submodules: 'recursive'
+          fetch-depth: '0'
+
+      - name: Prepare Environment
+        run: |
+          . .github/workflows/scripts/common-utils.sh
+          prepare-build-cache
+          echo CI_DOCKER_RUN_EXTRA_ARGS="-v $(pwd):/home/dev/taichi" >> $GITHUB_ENV
+
+      - name: Build
+        run: |
+          . .github/workflows/scripts/common-utils.sh
+
+          ci-docker-run-gpu --name taichi-build \
+            registry.botmaster.tgr/taichi-build-cuda:${{ env.CI_IMAGE_VERSION }} \
+            /home/dev/taichi/.github/workflows/scripts/build.py $NIGHTLY
+
+      - name: Archive Wheel Artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: dist
+          path: dist/*.whl
+          retention-days: 20
+
+      - name: Test
+        run: |
+          . .github/workflows/scripts/common-utils.sh
+
+          ci-docker-run-gpu --name taichi-test \
+             registry.botmaster.tgr/taichi-test-cuda:${{ env.CI_IMAGE_VERSION }} \
+             /home/dev/taichi/.github/workflows/scripts/unix_test.sh
+        env:
+          PY: ${{ matrix.python }}
+
+  build_and_test_linux_arm:
+    name: Build and Upload (linux Arm only)
+    needs: matrix_prep
+    strategy:
+      fail-fast: false
+      matrix: ${{ fromJson(needs.matrix_prep.outputs.matrix) }}
+    runs-on: [ ubuntu24.04-arm, cuda, vulkan, cn, release, sm70 ]
+    env:
+      PY: ${{ matrix.python }}
+      PROJECT_NAME: ${{ matrix.name }}
+      TAICHI_CMAKE_ARGS: >-
+        -DTI_WITH_OPENGL:BOOL=ON
+        -DTI_WITH_VULKAN:BOOL=ON
+        -DTI_BUILD_TESTS:BOOL=ON
+
+    steps:
+      - uses: actions/checkout@v4
         with:
           submodules: 'recursive'
           fetch-depth: '0'
@@ -142,7 +194,7 @@ jobs:
   #       -DTI_WITH_OPENGL:BOOL=OFF
   #       -DTI_BUILD_TESTS:BOOL=ON
   #   steps:
-  #     - uses: actions/checkout@v3
+  #     - uses: actions/checkout@v4
   #       with:
   #         submodules: 'recursive'
   #         fetch-depth: '0'
@@ -194,7 +246,7 @@ jobs:
         -DTI_BUILD_TESTS:BOOL=ON
 
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
         with:
           submodules: 'recursive'
           fetch-depth: '0'
@@ -255,12 +307,12 @@ jobs:
           git config --system core.longpaths true
           git submodule foreach 'git rev-parse HEAD > /dev/null 2>&1 || rm -rf $PWD'
 
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
         with:
           submodules: 'recursive'
           fetch-depth: '0'
 
-      - uses: actions/setup-python@v4
+      - uses: actions/setup-python@v5
         with:
           python-version: ${{ matrix.python }}
 
@@ -307,13 +359,13 @@ jobs:
 
   upload_to_pypi:
     name: Upload release to PyPI
-    needs: [build_and_test_linux, build_and_test_m1, build_and_test_windows]
+    needs: [build_and_test_linux, build_and_test_m1, build_and_test_windows, build_and_test_linux_arm]
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
-      - uses: actions/setup-python@v4
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
         with:
-          python-version: 3.9
+          python-version: 3.12
 
       - name: Download all artifacts
         uses: actions/download-artifact@v4
@@ -350,13 +402,13 @@ jobs:
     runs-on: ubuntu-latest
     if: ${{ github.event.inputs.version }}
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
         with:
           fetch-depth: 0
 
-      - uses: actions/setup-python@v4
+      - uses: actions/setup-python@v5
         with:
-          python-version: 3.9
+          python-version: 3.12
 
       - name: Generate Changelog
         id: changelog

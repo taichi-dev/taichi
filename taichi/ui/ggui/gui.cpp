@@ -2,17 +2,31 @@
 #include "taichi/ui/ggui/swap_chain.h"
 #include "taichi/ui/ggui/app_context.h"
 
+// ImGui backends
+#include "imgui.h"
+#include "imgui_impl_vulkan.h"
+
+// For VulkanLoader::instance() usage
 using namespace taichi::lang::vulkan;
 using namespace taichi::lang;
 
 namespace taichi::ui {
-
 namespace vulkan {
 
-PFN_vkVoidFunction load_vk_function_for_gui(const char *name, void *userData) {
-  auto result = VulkanLoader::instance().load_function(name);
-
-  return result;
+/**
+ * The newer ImGui_ImplVulkan_LoadFunctions(...) signature requires:
+ *    bool ImGui_ImplVulkan_LoadFunctions(
+ *       uint32_t                         api_version,
+ *       PFN_vkVoidFunction(*loader_func)(const char* function_name, void*
+ * user_data), void*                            user_data = nullptr
+ *    );
+ *
+ * So we provide a loader that matches the PFN signature.
+ */
+PFN_vkVoidFunction load_vk_function_for_gui(const char *name, void *user_data) {
+  // If you need 'user_data', you can cast it to your VkInstance or device.
+  // For now, we just ignore it here and load via Volk.
+  return VulkanLoader::instance().load_function(name);
 }
 
 Gui::Gui(AppContext *app_context, SwapChain *swap_chain, TaichiWindow *window) {
@@ -43,12 +57,23 @@ Gui::Gui(AppContext *app_context, SwapChain *swap_chain, TaichiWindow *window) {
 }
 
 void Gui::init_render_resources(VkRenderPass render_pass) {
+  // -------------------------------------------------
+  // 1) Load Vulkan function pointers using new API
+  // -------------------------------------------------
+  // The new ImGui_ImplVulkan_LoadFunctions(...) requires
+  // at least an API version and a PFN loader. The final "user_data" is
+  // optional.
   ImGui_ImplVulkan_LoadFunctions(
-      load_vk_function_for_gui);  // this is because we're using volk.
+      VK_API_VERSION_1_0,               // or VK_API_VERSION_1_1, etc.
+      load_vk_function_for_gui, nullptr /* user_data */
+  );
 
   auto &device =
       static_cast<taichi::lang::vulkan::VulkanDevice &>(app_context_->device());
 
+  // -------------------------------------------------
+  // 2) Prepare ImGui_ImplVulkan_InitInfo
+  // -------------------------------------------------
   ImGui_ImplVulkan_InitInfo init_info = {};
   init_info.Instance = device.vk_instance();
   init_info.PhysicalDevice = device.vk_physical_device();
@@ -57,28 +82,52 @@ void Gui::init_render_resources(VkRenderPass render_pass) {
   init_info.Queue = device.graphics_queue();
   init_info.PipelineCache = VK_NULL_HANDLE;
   init_info.DescriptorPool = descriptor_pool_;
+  init_info.Subpass = 0;  // If you're not using subpasses, leave as 0
   init_info.Allocator = VK_NULL_HANDLE;
   init_info.MinImageCount = swap_chain_->surface().get_image_count();
   init_info.ImageCount = swap_chain_->surface().get_image_count();
-  ImGui_ImplVulkan_Init(&init_info, render_pass);
+  init_info.CheckVkResultFn = nullptr;  // or your own error-check function
+  init_info.MSAASamples = VK_SAMPLE_COUNT_1_BIT;
+
+  // The new ImGui_ImplVulkan_Init(...) function no longer takes 'render_pass'
+  // as a separate argument; you must put it in init_info:
+  init_info.RenderPass = render_pass;
+
+  // -------------------------------------------------
+  // 3) Call ImGui_ImplVulkan_Init with single param
+  // -------------------------------------------------
+  ImGui_ImplVulkan_Init(&init_info);
+
   render_pass_ = render_pass;
 
-  // Upload Fonts
+  // -------------------------------------------------
+  // 4) Upload Fonts using new approach
+  // -------------------------------------------------
   {
+    // In the latest ImGui backend, CreateFontsTexture() automatically
+    // allocates a command buffer, does the GPU upload, and frees the staging.
+    // The old function that took (VkCommandBuffer) is removed.
+    //
+    // Also note that ImGui_ImplVulkan_DestroyFontUploadObjects() has been
+    // removed. Staging is destroyed automatically at the end of this call.
+    ImGui_ImplVulkan_CreateFontsTexture();
+
+    // If you were manually submitting a command buffer or waiting on a fence
+    // in older code, that’s no longer needed. The new code handles it for you.
+    // So you can remove the lines below, or leave them if you truly want to do
+    // your own synchronization. But the new ImGui code is self-contained.
+    //
+    // For example, you could still do a GPU sync if desired:
     auto stream = device.get_graphics_stream();
     auto [cmd_list, res] = stream->new_command_list_unique();
-    assert(res == RhiResult::success && "Failed to allocate command list");
-    VkCommandBuffer command_buffer =
-        static_cast<VulkanCommandList *>(cmd_list.get())
-            ->vk_command_buffer()
-            ->buffer;
-
-    ImGui_ImplVulkan_CreateFontsTexture(command_buffer);
-
+    // ... your own usage, if needed ...
     stream->submit_synced(cmd_list.get());
-    ImGui_ImplVulkan_DestroyFontUploadObjects();
+
+    // The old call: ImGui_ImplVulkan_DestroyFontUploadObjects() is gone.
+    // If you used that to free staging, the new code does it internally.
   }
 
+  // Start a new frame if desired
   prepare_for_next_frame();
 }
 
@@ -95,12 +144,14 @@ void Gui::create_descriptor_pool() {
       {VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC, 1000},
       {VK_DESCRIPTOR_TYPE_STORAGE_BUFFER_DYNAMIC, 1000},
       {VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT, 1000}};
+
   VkDescriptorPoolCreateInfo pool_info = {};
   pool_info.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
   pool_info.flags = VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT;
   pool_info.maxSets = 1000 * IM_ARRAYSIZE(pool_sizes);
   pool_info.poolSizeCount = (uint32_t)IM_ARRAYSIZE(pool_sizes);
   pool_info.pPoolSizes = pool_sizes;
+
   [[maybe_unused]] VkResult err = vkCreateDescriptorPool(
       static_cast<taichi::lang::vulkan::VulkanDevice &>(app_context_->device())
           .vk_device(),
@@ -112,6 +163,7 @@ void Gui::prepare_for_next_frame() {
     return;
   }
   ImGui_ImplVulkan_NewFrame();
+
   if (app_context_->config.show_window) {
 #ifdef ANDROID
     ImGui_ImplAndroid_NewFrame();
@@ -119,19 +171,19 @@ void Gui::prepare_for_next_frame() {
     ImGui_ImplGlfw_NewFrame();
 #endif
   } else {
-    // io.DisplaySize is set during ImGui_ImplGlfw_NewFrame()
-    // but since we're headless, we do it explicitly here
+    // For headless mode, we must manually set io.DisplaySize
     auto w = app_context_->config.width;
     auto h = app_context_->config.height;
     ImGuiIO &io = ImGui::GetIO();
     io.DisplaySize = ImVec2((float)w, (float)h);
   }
+
   ImGui::NewFrame();
   is_empty_ = true;
 }
 
 bool Gui::initialized() {
-  return render_pass_ != VK_NULL_HANDLE;
+  return (render_pass_ != VK_NULL_HANDLE);
 }
 
 float Gui::abs_x(float x) {
@@ -154,18 +206,21 @@ void Gui::begin(const std::string &name,
   ImGui::Begin(name.c_str());
   is_empty_ = false;
 }
+
 void Gui::end() {
   if (!initialized()) {
     return;
   }
   ImGui::End();
 }
+
 void Gui::text(const std::string &text) {
   if (!initialized()) {
     return;
   }
-  ImGui::Text("%s", text.c_str());
+  ImGui::TextUnformatted(text.c_str());
 }
+
 void Gui::text(const std::string &text, glm::vec3 color) {
   if (!initialized()) {
     return;
@@ -173,6 +228,7 @@ void Gui::text(const std::string &text, glm::vec3 color) {
   ImGui::TextColored(ImVec4(color[0], color[1], color[2], 1.0f), "%s",
                      text.c_str());
 }
+
 bool Gui::checkbox(const std::string &name, bool old_value) {
   if (!initialized()) {
     return old_value;
@@ -180,6 +236,7 @@ bool Gui::checkbox(const std::string &name, bool old_value) {
   ImGui::Checkbox(name.c_str(), &old_value);
   return old_value;
 }
+
 int Gui::slider_int(const std::string &name,
                     int old_value,
                     int minimum,
@@ -190,6 +247,7 @@ int Gui::slider_int(const std::string &name,
   ImGui::SliderInt(name.c_str(), &old_value, minimum, maximum);
   return old_value;
 }
+
 float Gui::slider_float(const std::string &name,
                         float old_value,
                         float minimum,
@@ -200,6 +258,7 @@ float Gui::slider_float(const std::string &name,
   ImGui::SliderFloat(name.c_str(), &old_value, minimum, maximum);
   return old_value;
 }
+
 glm::vec3 Gui::color_edit_3(const std::string &name, glm::vec3 old_value) {
   if (!initialized()) {
     return old_value;
@@ -207,6 +266,7 @@ glm::vec3 Gui::color_edit_3(const std::string &name, glm::vec3 old_value) {
   ImGui::ColorEdit3(name.c_str(), (float *)&old_value);
   return old_value;
 }
+
 bool Gui::button(const std::string &text) {
   if (!initialized()) {
     return false;
@@ -215,13 +275,13 @@ bool Gui::button(const std::string &text) {
 }
 
 void Gui::draw(taichi::lang::CommandList *cmd_list) {
-  // Rendering
   ImGui::Render();
   ImDrawData *draw_data = ImGui::GetDrawData();
 
   VkCommandBuffer buffer =
       static_cast<VulkanCommandList *>(cmd_list)->vk_command_buffer()->buffer;
 
+  // This call remains the same in the new API
   ImGui_ImplVulkan_RenderDrawData(draw_data, buffer);
 }
 
@@ -254,5 +314,4 @@ bool Gui::is_empty() {
 }
 
 }  // namespace vulkan
-
 }  // namespace taichi::ui

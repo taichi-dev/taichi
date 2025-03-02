@@ -11,6 +11,7 @@
 #include "taichi/program/function.h"
 #include "taichi/ir/mesh.h"
 #include "taichi/ir/type_system.h"
+#include "spdlog/fmt/ranges.h"
 
 namespace taichi::lang {
 

@@ -149,6 +149,7 @@ jobs:
           echo CI_DOCKER_RUN_EXTRA_ARGS="-v $(pwd):/home/dev/taichi" >> $GITHUB_ENV
 
       - name: Build
+        id: build
         run: |
           . .github/workflows/scripts/common-utils.sh
 
@@ -156,11 +157,16 @@ jobs:
             registry.botmaster.tgr/taichi-build-cuda:${{ env.CI_IMAGE_VERSION }} \
             /home/dev/taichi/.github/workflows/scripts/build.py $NIGHTLY
 
+          # Get wheel filename
+          WHEEL_NAME=$(ls dist/*.whl | head -n 1 | xargs basename)
+          echo "wheel_name=$WHEEL_NAME" >> $GITHUB_OUTPUT
+          echo "Found wheel: $WHEEL_NAME"
+
       - name: Archive Wheel Artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: dist
-          path: dist/*.whl
+          name: ${{ steps.build.outputs.wheel_name }}
+          path: dist/${{ steps.build.outputs.wheel_name }}
           retention-days: 20
 
       - name: Test
@@ -209,8 +215,8 @@ jobs:
   #     - name: Archive Wheel Artifacts
   #       uses: actions/upload-artifact@v4
   #       with:
-  #         name: dist
-  #         path: dist/*.whl
+  #         name: ${{ steps.build.outputs.wheel_name }}
+  #         path: dist/${{ steps.build.outputs.wheel_name }}
   #         retention-days: 20
 
   #     - name: Test
@@ -251,15 +257,21 @@ jobs:
           prepare-build-cache
 
       - name: Build
+        id: build
         run: |
           brew install molten-vk
           .github/workflows/scripts/build.py $NIGHTLY
 
+          # Get wheel filename
+          WHEEL_NAME=$(ls dist/*.whl | head -n 1 | xargs basename)
+          echo "wheel_name=$WHEEL_NAME" >> $GITHUB_OUTPUT
+          echo "Found wheel: $WHEEL_NAME"
+
       - name: Archive Wheel Artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: dist
-          path: dist/*.whl
+          name: ${{ steps.build.outputs.wheel_name }}
+          path: dist/${{ steps.build.outputs.wheel_name }}
           retention-days: 20
 
       - name: Test
@@ -305,6 +317,7 @@ jobs:
           python-version: ${{ matrix.python }}
 
       - name: Build
+        id: build
         shell: pwsh
         run: |
           $nightlyFlag = $null
@@ -313,11 +326,16 @@ jobs:
           SetGitCachingProxy
           python .\.github\workflows\scripts\build.py $nightlyFlag
 
+          # Get wheel filename
+          $WheelName = (Get-ChildItem -Path dist\*.whl | Select-Object -First 1).Name
+          echo "wheel_name=$WheelName" >> $env:GITHUB_OUTPUT
+          echo "Found wheel: $WheelName"
+
       - name: Archive Wheel Artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: dist
-          path: dist/*.whl
+          name: ${{ steps.build.outputs.wheel_name }}
+          path: dist/${{ steps.build.outputs.wheel_name }}
           retention-days: 20
 
       - name: Test
@@ -349,15 +367,16 @@ jobs:
         with:
           python-version: 3.12
 
-      - name: Get dist files
+      - name: Download all artifacts
         uses: actions/download-artifact@v4
         with:
-          name: dist
-          path: dist
+          path: zips
 
       - name: Upload to PyPI
         run: |
           set -ex
+          mkdir -p dist
+          mv zips/*/*.whl dist/
           ls -l dist/
           if [ -z "$RELEASE_VERSION" ]; then
             export PROJECT_NAME="taichi-nightly"

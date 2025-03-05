@@ -83,7 +83,7 @@ jobs:
       - name: Workaround checkout Needed single revision issue
         run: git submodule foreach 'git rev-parse HEAD > /dev/null 2>&1 || rm -rf $PWD' || true
 
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
         with:
           fetch-depth: '0'
           submodules: 'recursive'
@@ -131,7 +131,7 @@ jobs:
       - name: Workaround checkout Needed single revision issue
         run: git submodule foreach 'git rev-parse HEAD > /dev/null 2>&1 || rm -rf $PWD' || true
 
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
         with:
           submodules: 'recursive'
           fetch-depth: '0'
@@ -156,6 +156,32 @@ jobs:
           destination_dir: built-wheels/${{ inputs.build_id }}/${{ !matrix.designated && 'matrix/' || '' }}
           endpoint: http://botmaster.tgr:9000
 
+  build_linux_arm64:
+    name: Build Linux ARM
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        cuda: [ '', cuda ]
+        llvm: [ '', llvm ]
+        gl: [ '', gl ]
+        vk: [ '', vk ]
+        python: ${{ fromJSON(inputs.python) }}
+        include:
+          - { cuda: cuda, llvm: llvm, gl: gl, vk: vk, designated: designated }
+        exclude:
+          - { llvm: '', cuda: cuda }
+    runs-on: [ ubuntu24.04-arm ]
+    env:
+      TAICHI_CMAKE_ARGS: >-
+        -DTI_WITH_CUDA:BOOL=${{ matrix.cuda && 'ON' || 'OFF' }}
+        -DTI_WITH_LLVM:BOOL=${{ matrix.llvm && 'ON' || 'OFF' }}
+        -DTI_WITH_OPENGL:BOOL=${{ matrix.gl && 'ON' || 'OFF' }}
+        -DTI_WITH_VULKAN:BOOL=${{ matrix.vk && 'ON' || 'OFF' }}
+        -DTI_WITH_METAL:BOOL=OFF
+        -DTI_WITH_BACKTRACE:BOOL=ON
+        -DTI_BUILD_TESTS:BOOL=ON
+
   build_amdgpu_linux:
     name: Build AMDGPU
     timeout-minutes: 30
@@ -177,7 +203,7 @@ jobs:
       - name: Workaround checkout Needed single revision issue
         run: git submodule foreach 'git rev-parse HEAD > /dev/null 2>&1 || rm -rf $PWD' || true
 
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
         with:
           submodules: 'recursive'
           fetch-depth: '0'
@@ -240,12 +266,12 @@ jobs:
           git submodule foreach --recursive 'git rev-parse HEAD || rm -rf $PWD'
           $LASTEXITCODE = 0
 
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
         with:
           fetch-depth: '0'
           submodules: 'recursive'
 
-      - uses: actions/setup-python@v4
+      - uses: actions/setup-python@v5
         with:
           # force a 3.7 is ok, build.py will handle actual python env
           python-version: 3.7
@@ -309,7 +335,7 @@ jobs:
       - name: Workaround checkout Needed single revision issue
         run: git submodule foreach 'git rev-parse HEAD > /dev/null 2>&1 || rm -rf $PWD' || true
 
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
         with:
           fetch-depth: '0'
           submodules: 'recursive'
@@ -337,7 +363,7 @@ jobs:
       - name: Workaround checkout Needed single revision issue
         run: git submodule foreach 'git rev-parse HEAD > /dev/null 2>&1 || rm -rf $PWD' || true
 
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
         with:
           fetch-depth: '0'
           submodules: 'recursive'

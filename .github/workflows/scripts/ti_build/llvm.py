@@ -9,7 +9,7 @@ import platform
 from .bootstrap import get_cache_home
 from .cmake import cmake_args
 from .dep import download_dep
-from .misc import banner, get_cache_home, is_manylinux2014
+from .misc import banner, get_cache_home, is_manylinux_2_28
 
 
 # -- code --
@@ -19,13 +19,22 @@ def setup_llvm() -> None:
     Download and install LLVM.
     """
     u = platform.uname()
-    if u.system == "Linux":
+    if (u.system, u.machine) == ("Linux", "x86_64"):
         if cmake_args.get_effective("TI_WITH_AMDGPU"):
             out = get_cache_home() / "llvm15-amdgpu-005"
             url = "https://github.com/GaleSeLee/assets/releases/download/v0.0.5/taichi-llvm-15.0.0-linux.zip"
-        elif is_manylinux2014():
-            # FIXME: prebuilt llvm15 on ubuntu didn't work on manylinux2014 image of centos. Once that's fixed, remove this hack.
-            out = get_cache_home() / "llvm15-manylinux2014"
+        elif is_manylinux_2_28():
+            # FIXME: prebuilt llvm15 on ubuntu didn't work on manylinux_2_28 image of centos. Once that's fixed, remove this hack.
+            out = get_cache_home() / "llvm15-manylinux_2_28"
+            url = "https://github.com/ailzhang/torchhub_example/releases/download/0.3/taichi-llvm-15-linux.zip"
+        else:
+            out = get_cache_home() / "llvm15"
+            url = "https://github.com/taichi-dev/taichi_assets/releases/download/llvm15/taichi-llvm-15-linux.zip"
+        download_dep(url, out, strip=1)
+    elif (u.system, u.machine) in (("Linux", "arm64"), ("Linux", "aarch64")):
+        if is_manylinux_2_28():
+            # FIXME: prebuilt llvm15 on ubuntu didn't work on manylinux_2_28 image of centos. Once that's fixed, remove this hack.
+            out = get_cache_home() / "llvm15-manylinux_2_28"
             url = "https://github.com/ailzhang/torchhub_example/releases/download/0.3/taichi-llvm-15-linux.zip"
         else:
             out = get_cache_home() / "llvm15"

@@ -448,11 +448,11 @@ Or you can find it at:
 A typical cache dir will contain sub folders below:
 
 | Sub Folder       | Purpose                                                       | Code Responsible                                                                                                 |
-| ---------------- | ------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------- |
+|------------------| ------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------- |
 | bootstrap        | Contains Python packages used by `build.py` itself            | [bootstrap.py](https://github.com/taichi-dev/taichi/blob/master/.github/workflows/scripts/ti_build/bootstrap.py) |
 | deps             | Downloaded external dependencies, before extract/install      | [dep.py](https://github.com/taichi-dev/taichi/blob/master/.github/workflows/scripts/ti_build/dep.py)             |
 | llvm15           | Managed pre-built LLVM binaries                               | [llvm.py](https://github.com/taichi-dev/taichi/blob/master/.github/workflows/scripts/ti_build/llvm.py)           |
-| mambaforge       | Managed conda environment dedicated to build / develop Taichi | [python.py](https://github.com/taichi-dev/taichi/blob/master/.github/workflows/scripts/ti_build/python.py)       |
+| miniforge        | Managed conda environment dedicated to build / develop Taichi | [python.py](https://github.com/taichi-dev/taichi/blob/master/.github/workflows/scripts/ti_build/python.py)       |
 | sccache          | Compile cache                                                 | [sccache.py](https://github.com/taichi-dev/taichi/blob/master/.github/workflows/scripts/ti_build/sccache.py)     |
 | vulkan-1.x.xxx.x | Vulkan SDK location                                           | [vulkan.py](https://github.com/taichi-dev/taichi/blob/master/.github/workflows/scripts/ti_build/vulkan.py)       |
 

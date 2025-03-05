@@ -32,14 +32,7 @@ def setup_llvm() -> None:
             url = "https://github.com/taichi-dev/taichi_assets/releases/download/llvm15/taichi-llvm-15-linux.zip"
         download_dep(url, out, strip=1)
     elif (u.system, u.machine) in (("Linux", "arm64"), ("Linux", "aarch64")):
-        if is_manylinux_2_28():
-            # FIXME: prebuilt llvm15 on ubuntu didn't work on manylinux_2_28 image of centos. Once that's fixed, remove this hack.
-            out = get_cache_home() / "llvm15-manylinux_2_28"
-            url = "https://github.com/ailzhang/torchhub_example/releases/download/0.3/taichi-llvm-15-linux.zip"
-        else:
-            out = get_cache_home() / "llvm15"
-            url = "https://github.com/taichi-dev/taichi_assets/releases/download/llvm15/taichi-llvm-15-linux.zip"
-        download_dep(url, out, strip=1)
+        pass
     elif (u.system, u.machine) == ("Darwin", "arm64"):
         out = get_cache_home() / "llvm15-m1-nozstd"
         url = "https://github.com/taichi-dev/taichi_assets/releases/download/llvm15/taichi-llvm-15-m1-nozstd.zip"

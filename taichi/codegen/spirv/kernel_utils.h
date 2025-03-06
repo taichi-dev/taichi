@@ -8,7 +8,6 @@
 #include "taichi/ir/type.h"
 #include "taichi/ir/transforms.h"
 #include "taichi/rhi/device.h"
-#include "spdlog/fmt/ranges.h"
 
 namespace taichi::lang {
 

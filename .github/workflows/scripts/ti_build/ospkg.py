@@ -24,7 +24,7 @@ UBUNTU_PACKAGES = {
     "liblz4-dev",
     "libpng-dev",
     "libssl-dev",
-    "libtinfo-dev", # in 24.04 is inside "libncurses-dev",
+    "libncurses-dev",
     "libwayland-dev",
     "libx11-xcb-dev",
     "libxcb-dri3-dev",

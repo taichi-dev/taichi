@@ -23,7 +23,7 @@ jobs:
         fetch-depth: '0'
     - uses: actions/setup-python@v5
       with:
-        python-version: 3.9
+        python-version: 3.12
     - name: Check Current CI Status
       run: |
         pip install requests ghstack

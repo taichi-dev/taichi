@@ -2,7 +2,6 @@
 #include "taichi/inc/constants.h"
 #include "taichi/rhi/device.h"
 #include "taichi/util/lang_util.h"
-#include "spdlog/fmt/ranges.h"
 
 #include <stack>
 

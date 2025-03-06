@@ -1,13 +1,13 @@
 Pillow
 pytest
-git+https://github.com/taichi-dev/pytest-xdist@a3b5ad3038#egg=pytest-xdist
+git+https://github.com/taichi-dev/pytest-xdist
 pytest-rerunfailures
 pytest-cov
 numpy
 psutil
 autograd
 requests
-matplotlib<=3.7.3
+matplotlib<=3.10.1
 cffi
 scipy
 setproctitle

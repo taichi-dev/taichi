@@ -8,7 +8,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     - name: Slash Command Dispatch - Triage
-      uses: peter-evans/slash-command-dispatch@v3
+      uses: peter-evans/slash-command-dispatch@v4
       with:
         token: ${{ secrets.GARDENER_PAT }}
         reaction-token: ${{ secrets.GARDENER_PAT }}
@@ -21,7 +21,7 @@ jobs:
           rerun-failed
 
     - name: Slash Command Dispatch - Repo - Triage
-      uses: peter-evans/slash-command-dispatch@v3
+      uses: peter-evans/slash-command-dispatch@v4
       with:
         token: ${{ secrets.GARDENER_PAT }}
         reaction-token: ${{ secrets.GARDENER_PAT }}
@@ -31,7 +31,7 @@ jobs:
           benchmark
 
     - name: Slash Command Dispatch - Repo - Write
-      uses: peter-evans/slash-command-dispatch@v3
+      uses: peter-evans/slash-command-dispatch@v4
       with:
         token: ${{ secrets.GARDENER_PAT }}
         reaction-token: ${{ secrets.GARDENER_PAT }}

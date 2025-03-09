@@ -51,7 +51,7 @@ class _Ndrange:
         yield from gen(0, ())
 
     def grouped(self):
-        return GroupedNDRange(self)
+        return Grouped(self)
 
 
 def ndrange(*args) -> Iterable:
@@ -137,7 +137,7 @@ def ndrange(*args) -> Iterable:
     return _Ndrange(*args)
 
 
-class GroupedNDRange:
+class Grouped:
     def __init__(self, r):
         self.r = r
 

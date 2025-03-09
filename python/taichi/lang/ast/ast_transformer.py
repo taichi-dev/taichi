@@ -1490,11 +1490,7 @@ class ASTTransformer(Builder):
                 raise TaichiSyntaxError("'ti.static' cannot be nested")
             with ctx.loop_scope_guard(is_static=True):
                 return ASTTransformer.build_static_for(ctx, node, double_decorator == "grouped")
-        elif (
-            isinstance(node.iter, ast.Call)
-            and isinstance(node.iter.func, ast.Name)
-            and node.iter.func.id == "range"
-        ):
+        elif isinstance(node.iter, ast.Call) and isinstance(node.iter.func, ast.Name) and node.iter.func.id == "range":
             with ctx.loop_scope_guard(is_static=True):
                 return ASTTransformer.build_range_for(ctx, node)
 
@@ -1509,10 +1505,7 @@ class ASTTransformer(Builder):
                     return ASTTransformer.build_struct_for(ctx, node, is_grouped=True)
             elif isinstance(iterable, mesh.MeshElementField):
                 if not _ti_core.is_extension_supported(impl.default_cfg().arch, _ti_core.Extension.mesh):
-                    raise Exception(
-                        "Backend " + str(impl.default_cfg().arch) +
-                        " doesn't support MeshTaichi extension"
-                    )
+                    raise Exception("Backend " + str(impl.default_cfg().arch) + " doesn't support MeshTaichi extension")
                 return ASTTransformer.build_mesh_for(ctx, node)
             elif isinstance(iterable, mesh.MeshRelationAccessProxy):
                 return ASTTransformer.build_nested_mesh_for(ctx, node)

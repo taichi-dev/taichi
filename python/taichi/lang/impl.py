@@ -6,7 +6,7 @@ import numpy as np
 from taichi._lib import core as _ti_core
 from taichi._snode.fields_builder import FieldsBuilder
 from taichi.lang._ndarray import ScalarNdarray
-from taichi.lang._ndrange import GroupedNDRange, _Ndrange
+from taichi.lang._ndrange import Grouped, _Ndrange
 from taichi.lang._texture import RWTextureAccessor
 from taichi.lang.any_array import AnyArray
 from taichi.lang.enums import SNodeGradType
@@ -1109,7 +1109,7 @@ def static(x, *xs) -> Any:
                 list,
                 tuple,
                 enumerate,
-                GroupedNDRange,
+                Grouped,
                 _Ndrange,
                 zip,
                 filter,
@@ -1152,9 +1152,7 @@ def grouped(x):
         >>>     print(I)
         prints [0, 0], [0, 1], [0, 2], [1, 0], [1, 1], [1, 2]
     """
-    if isinstance(x, _Ndrange):
-        return x.grouped()
-    return x
+    return Grouped(x)
 
 
 def stop_grad(x):

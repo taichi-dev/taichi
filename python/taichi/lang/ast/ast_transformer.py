@@ -218,7 +218,7 @@ class ASTTransformer(Builder):
                 except AttributeError:
                     raise TaichiSyntaxError(
                         f"Variable '{unparse(target).strip()}' cannot be assigned. Maybe it is not a Taichi object?"
-                )
+                    )
         return var
 
     @staticmethod

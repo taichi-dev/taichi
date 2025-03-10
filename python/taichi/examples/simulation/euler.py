@@ -1,4 +1,4 @@
-from matplotlib import cm
+from matplotlib import colormaps
 
 import taichi as ti
 
@@ -433,7 +433,7 @@ def paint():
 
 def main():
     gui = ti.GUI("Euler Equations", (res, res))
-    cmap = cm.get_cmap(cmap_name)
+    cmap = colormaps[cmap_name]
     set_ic()
     set_bc()
 

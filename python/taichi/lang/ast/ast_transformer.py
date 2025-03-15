@@ -212,7 +212,7 @@ class ASTTransformer(Builder):
                 vars, values = var, value
             else:
                 vars, values = (var,), (value,)
-            for i in range(len(var)):
+            for i in range(len(vars)):
                 try:
                     vars[i]._assign(values[i])
                 except AttributeError:

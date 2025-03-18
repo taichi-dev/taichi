@@ -1,4 +1,5 @@
 import warnings
+import taichi
 from taichi._lib import core as _ti_core
 from taichi.lang.impl import field
 from taichi.lang.kernel_impl import kernel
@@ -8,6 +9,8 @@ from taichi.types.annotations import template
 from taichi.types.primitive_types import f32
 
 from .staging_buffer import (
+    copy_to_vbo_scalar,
+    copy_to_vbo_vector,
     copy_all_to_vbo,
     copy_all_to_vbo_particle,
     get_indices_field,
@@ -163,7 +166,16 @@ class SceneV2:
             vertex_count -= vertex_count % 2
         has_per_vertex_color = per_vertex_color is not None
         vbo = get_vbo_field_v2(vertices)
-        copy_all_to_vbo(vbo, vertices, 0, 0, per_vertex_color if has_per_vertex_color else 0)
+        if isinstance(vertices, taichi.Field):
+            copy_all_to_vbo(
+                vbo, vertices, 0, 0, per_vertex_color if has_per_vertex_color else 0
+            )
+        else:
+            copy_to_vbo_vector(vbo, vertices, 0, 3, taichi.Vector([0, 0, 0]))
+            if has_per_vertex_color:
+                copy_to_vbo_vector(
+                    vbo, per_vertex_color, 8, 4, taichi.Vector([1, 1, 1, 1])
+                )
         vbo_info = get_field_info(vbo)
         indices_ndarray = get_indices_field_v2(indices) if indices is not None else None
         indices_info = get_field_info(indices_ndarray)
@@ -398,12 +410,23 @@ class SceneV2:
             index_count = centers.shape[0]
             # per_vertex_radius_vec3[i] = Vector([per_vertex_radius[i], 0., 0.])
         vbo = get_vbo_field_v2(centers)
-        copy_all_to_vbo_particle(
-            vbo,
-            centers,
-            per_vertex_radius if has_per_vertex_radius else 0,
-            per_vertex_color if has_per_vertex_color else 0,
-        )
+
+        if isinstance(centers, taichi.Field):
+            copy_all_to_vbo_particle(
+                vbo,
+                centers,
+                per_vertex_radius if has_per_vertex_radius else 0,
+                per_vertex_color if has_per_vertex_color else 0,
+            )
+        else:
+            copy_to_vbo_vector(vbo, centers, 0, 3, taichi.Vector([0, 0, 0]))
+            if has_per_vertex_radius:
+                copy_to_vbo_scalar(vbo, per_vertex_radius, 3)
+            if has_per_vertex_color:
+                copy_to_vbo_vector(
+                    vbo, per_vertex_color, 8, 4, taichi.Vector([1, 1, 1, 1])
+                )
+
         vbo_info = get_field_info(vbo)
         self.scene.particles(
             vbo_info, has_per_vertex_color, has_per_vertex_radius, color, radius, index_count, index_offset

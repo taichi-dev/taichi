@@ -16,6 +16,7 @@ from taichi.lang import ops as ti_ops
 from taichi.lang._ndrange import _Ndrange, ndrange
 from taichi.lang.argpack import ArgPackType
 from taichi.lang.ast.ast_transformer_utils import Builder, LoopStatus, ReturnStatus
+from taichi.lang.ast import hint
 from taichi.lang.ast.symbol_resolver import ASTResolver
 from taichi.lang.exception import (
     TaichiIndexError,
@@ -105,18 +106,29 @@ class ASTTransformer(Builder):
                 f'Kernel argument "{target.id}" is immutable in the kernel. '
                 f"If you want to change its value, please create a new variable."
             )
-        anno = impl.expr_init(annotation)
-        if is_static_assign:
-            raise TaichiSyntaxError("Static assign cannot be used on annotated assignment")
-        if is_local and not ctx.is_var_declared(target.id):
-            var = ti_ops.cast(value, anno)
-            var = impl.expr_init(var)
+        if annotation is hint.new:
+            var = impl.expr_init(value)
             ctx.create_variable(target.id, var)
+        elif annotation is hint.hide:
+            var = impl.expr_init(value)
+            ctx.hide_variable(target.id, var)
         else:
-            var = build_stmt(ctx, target)
-            if var.ptr.get_rvalue_type() != anno:
-                raise TaichiSyntaxError("Static assign cannot have type overloading")
-            var._assign(value)
+            anno = impl.expr_init(annotation)
+            if is_static_assign:
+                raise TaichiSyntaxError(
+                    "Static assign cannot be used on annotated assignment"
+                )
+            if is_local and not ctx.is_var_declared(target.id):
+                var = ti_ops.cast(value, anno)
+                var = impl.expr_init(var)
+                ctx.create_variable(target.id, var)
+            else:
+                var = build_stmt(ctx, target)
+                if var.ptr.get_rvalue_type() != anno:
+                    raise TaichiSyntaxError(
+                        "Static assign cannot have type overloading"
+                    )
+                var._assign(value)
         return var
 
     @staticmethod

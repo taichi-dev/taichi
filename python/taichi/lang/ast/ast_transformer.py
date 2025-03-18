@@ -115,9 +115,7 @@ class ASTTransformer(Builder):
         else:
             anno = impl.expr_init(annotation)
             if is_static_assign:
-                raise TaichiSyntaxError(
-                    "Static assign cannot be used on annotated assignment"
-                )
+                raise TaichiSyntaxError("Static assign cannot be used on annotated assignment")
             if is_local and not ctx.is_var_declared(target.id):
                 var = ti_ops.cast(value, anno)
                 var = impl.expr_init(var)
@@ -125,9 +123,7 @@ class ASTTransformer(Builder):
             else:
                 var = build_stmt(ctx, target)
                 if var.ptr.get_rvalue_type() != anno:
-                    raise TaichiSyntaxError(
-                        "Static assign cannot have type overloading"
-                    )
+                    raise TaichiSyntaxError("Static assign cannot have type overloading")
                 var._assign(value)
         return var
 

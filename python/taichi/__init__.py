@@ -16,6 +16,8 @@ from taichi.ui import GUI, hex_to_rgb, rgb_to_hex, ui
 # Issue#2223: Do not reorder, or we're busted with partially initialized module
 from taichi import aot  # isort:skip
 
+from taichi.lang.ast.hint import new, hide
+
 
 def __getattr__(attr):
     if attr == "cfg":

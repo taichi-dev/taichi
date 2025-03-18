@@ -167,15 +167,11 @@ class SceneV2:
         has_per_vertex_color = per_vertex_color is not None
         vbo = get_vbo_field_v2(vertices)
         if isinstance(vertices, taichi.Field):
-            copy_all_to_vbo(
-                vbo, vertices, 0, 0, per_vertex_color if has_per_vertex_color else 0
-            )
+            copy_all_to_vbo(vbo, vertices, 0, 0, per_vertex_color if has_per_vertex_color else 0)
         else:
             copy_to_vbo_vector(vbo, vertices, 0, 3, taichi.Vector([0, 0, 0]))
             if has_per_vertex_color:
-                copy_to_vbo_vector(
-                    vbo, per_vertex_color, 8, 4, taichi.Vector([1, 1, 1, 1])
-                )
+                copy_to_vbo_vector(vbo, per_vertex_color, 8, 4, taichi.Vector([1, 1, 1, 1]))
         vbo_info = get_field_info(vbo)
         indices_ndarray = get_indices_field_v2(indices) if indices is not None else None
         indices_info = get_field_info(indices_ndarray)
@@ -423,9 +419,7 @@ class SceneV2:
             if has_per_vertex_radius:
                 copy_to_vbo_scalar(vbo, per_vertex_radius, 3)
             if has_per_vertex_color:
-                copy_to_vbo_vector(
-                    vbo, per_vertex_color, 8, 4, taichi.Vector([1, 1, 1, 1])
-                )
+                copy_to_vbo_vector(vbo, per_vertex_color, 8, 4, taichi.Vector([1, 1, 1, 1]))
 
         vbo_info = get_field_info(vbo)
         self.scene.particles(

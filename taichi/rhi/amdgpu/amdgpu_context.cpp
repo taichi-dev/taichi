@@ -34,10 +34,45 @@ AMDGPUContext::AMDGPUContext()
 
   void *hip_device_prop = std::malloc(HIP_DEVICE_PROPERTIES_STRUCT_SIZE);
   driver_.device_get_prop(hip_device_prop, device_);
-  compute_capability_ = *((int *)hip_device_prop + HIP_DEVICE_GCN_ARCH);
-  std::free(hip_device_prop);
 
-  mcpu_ = fmt::format("gfx{}", compute_capability_);
+  // Obtain compute capability and arch name using hip_device_prop.
+  int runtime_version;
+  driver_.runtime_get_version(&runtime_version);
+
+  // Future-proof way of getting compute_capability_ and mcpu_.
+  //
+  // hipGetDeviceProperties has two versions due to an ABI-breaking change in
+  // ROCm 6: hipGetDevicePropertiesR0000 and hipGetDevicePropertiesR0600. The
+  // former is for ROCm 5 and the latter is for ROCm 6. However, even in ROCm
+  // 6, the ABI symbol hipGetDeviceProperties in libamdhip64.so actually maps
+  // to hipGetDevicePropertiesR0000, the ROCm 5 version! See this commit for
+  // more details:
+  // https://github.com/ROCm/clr/commit/3e72b8d1e12347914974d4e7124cb205796f39f6
+  //
+  // IMO this is a bug, so in case of this behavior getting changed, let's first
+  // treat hipGetDeviceProperties as hipGetDevicePropertiesR0000, and if we're
+  // not getting a proper mcpu_, then we treat it as
+  // hipGetDevicePropertiesR0600.
+  //
+  // We can do this safely because hipDeviceProp_t is larger in R0600 then
+  // R0000, so using the field offset values in ROCm 5 on a ROCm 6 struct can
+  // never cause an out-of-bounds access.
+  compute_capability_ = (*((int *)(hip_device_prop) + int(HIP_DEVICE_MAJOR))) * 100;
+  compute_capability_ += (*((int *)(hip_device_prop) + int(HIP_DEVICE_MINOR))) * 10;
+  mcpu_ = std::string((char*)((int *)hip_device_prop + HIP_DEVICE_GCN_ARCH_NAME));
+  // Basic sanity check on mcpu_ to ensure we're calling R0000 instead of R0600
+  if (mcpu_.empty() || mcpu_.substr(0, 3) != "gfx") {
+    // ROCm 6 starts with 60000000
+    if (runtime_version < 60000000) {
+      TI_ERROR("hipGetDevicePropertiesR0000 returned an invalid mcpu_ but HIP version {} is not ROCm 6", runtime_version);
+    }
+    compute_capability_ = (*((int *)(hip_device_prop) + int(HIP_DEVICE_MAJOR_6))) * 100;
+    compute_capability_ += (*((int *)(hip_device_prop) + int(HIP_DEVICE_MINOR_6))) * 10;
+    mcpu_ = std::string((char*)((int *)(hip_device_prop) + int(HIP_DEVICE_GCN_ARCH_NAME_6)));
+  }
+  // Strip out xnack/ecc from name
+  mcpu_ = mcpu_.substr(0, mcpu_.find(":"));
+  std::free(hip_device_prop);
 
   TI_TRACE("Emitting AMDGPU code for {}", mcpu_);
 }

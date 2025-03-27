@@ -14,8 +14,22 @@ constexpr uint32 HIP_MEM_ATTACH_GLOBAL = 0x1;
 constexpr uint32 HIP_MEM_ADVISE_SET_PREFERRED_LOCATION = 3;
 constexpr uint32 HIP_DEVICE_ATTRIBUTE_MAX_BLOCK_DIM_X = 26;
 constexpr uint32 HIP_DEVICE_ATTRIBUTE_MULTIPROCESSOR_COUNT = 63;
-constexpr uint32 HIP_DEVICE_PROPERTIES_STRUCT_SIZE = 792;
-constexpr uint32 HIP_DEVICE_GCN_ARCH = 98;
+// sizeof(hipDeviceProperties_t) in ROCm 6.
+// ROCm 5.7.1 is 792 and ROCm 6 is 1472, so to make both work we use whichever is
+// larger.
+constexpr uint32 HIP_DEVICE_PROPERTIES_STRUCT_SIZE = 1472;
+// offsetof(hipDeviceProp_t, gcnArchName) / 4
+constexpr uint32 HIP_DEVICE_GCN_ARCH_NAME = 396 / 4;
+// offsetof(hipDeviceProp_t, gcnArchName) / 4
+constexpr uint32 HIP_DEVICE_GCN_ARCH_NAME_6 = 1160 / 4;
+// offsetof(hipDeviceProp_t, major) / 4
+constexpr uint32 HIP_DEVICE_MAJOR = 328 / 4;
+// offsetof(hipDeviceProp_t, major) / 4
+constexpr uint32 HIP_DEVICE_MAJOR_6 = 360 / 4;
+// offsetof(hipDeviceProp_t, minor) / 4
+constexpr uint32 HIP_DEVICE_MINOR = 332 / 4;
+// offsetof(hipDeviceProp_t, minor) / 4
+constexpr uint32 HIP_DEVICE_MINOR_6 = 364 / 4;
 constexpr uint32 HIP_ERROR_ASSERT = 710;
 constexpr uint32 HIP_JIT_MAX_REGISTERS = 0;
 constexpr uint32 HIP_POINTER_ATTRIBUTE_MEMORY_TYPE = 2;
@@ -100,6 +114,8 @@ class AMDGPUDriver : protected AMDGPUDriverBase {
   char *(*get_error_string)(uint32);
 
   void (*driver_get_version)(int *);
+
+  void (*runtime_get_version)(int *);
 
   bool detected();
 

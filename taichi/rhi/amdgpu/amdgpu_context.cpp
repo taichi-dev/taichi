@@ -57,18 +57,27 @@ AMDGPUContext::AMDGPUContext()
   // We can do this safely because hipDeviceProp_t is larger in R0600 then
   // R0000, so using the field offset values in ROCm 5 on a ROCm 6 struct can
   // never cause an out-of-bounds access.
-  compute_capability_ = (*((int *)(hip_device_prop) + int(HIP_DEVICE_MAJOR))) * 100;
-  compute_capability_ += (*((int *)(hip_device_prop) + int(HIP_DEVICE_MINOR))) * 10;
-  mcpu_ = std::string((char*)((int *)hip_device_prop + HIP_DEVICE_GCN_ARCH_NAME));
+  compute_capability_ =
+      (*((int *)(hip_device_prop) + int(HIP_DEVICE_MAJOR))) * 100;
+  compute_capability_ +=
+      (*((int *)(hip_device_prop) + int(HIP_DEVICE_MINOR))) * 10;
+  mcpu_ =
+      std::string((char *)((int *)hip_device_prop + HIP_DEVICE_GCN_ARCH_NAME));
   // Basic sanity check on mcpu_ to ensure we're calling R0000 instead of R0600
   if (mcpu_.empty() || mcpu_.substr(0, 3) != "gfx") {
     // ROCm 6 starts with 60000000
     if (runtime_version < 60000000) {
-      TI_ERROR("hipGetDevicePropertiesR0000 returned an invalid mcpu_ but HIP version {} is not ROCm 6", runtime_version);
+      TI_ERROR(
+          "hipGetDevicePropertiesR0000 returned an invalid mcpu_ but HIP "
+          "version {} is not ROCm 6",
+          runtime_version);
     }
-    compute_capability_ = (*((int *)(hip_device_prop) + int(HIP_DEVICE_MAJOR_6))) * 100;
-    compute_capability_ += (*((int *)(hip_device_prop) + int(HIP_DEVICE_MINOR_6))) * 10;
-    mcpu_ = std::string((char*)((int *)(hip_device_prop) + int(HIP_DEVICE_GCN_ARCH_NAME_6)));
+    compute_capability_ =
+        (*((int *)(hip_device_prop) + int(HIP_DEVICE_MAJOR_6))) * 100;
+    compute_capability_ +=
+        (*((int *)(hip_device_prop) + int(HIP_DEVICE_MINOR_6))) * 10;
+    mcpu_ = std::string(
+        (char *)((int *)(hip_device_prop) + int(HIP_DEVICE_GCN_ARCH_NAME_6)));
   }
   // Strip out xnack/ecc from name
   mcpu_ = mcpu_.substr(0, mcpu_.find(":"));

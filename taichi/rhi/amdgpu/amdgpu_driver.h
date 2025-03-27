@@ -15,8 +15,8 @@ constexpr uint32 HIP_MEM_ADVISE_SET_PREFERRED_LOCATION = 3;
 constexpr uint32 HIP_DEVICE_ATTRIBUTE_MAX_BLOCK_DIM_X = 26;
 constexpr uint32 HIP_DEVICE_ATTRIBUTE_MULTIPROCESSOR_COUNT = 63;
 // sizeof(hipDeviceProperties_t) in ROCm 6.
-// ROCm 5.7.1 is 792 and ROCm 6 is 1472, so to make both work we use whichever is
-// larger.
+// ROCm 5.7.1 is 792 and ROCm 6 is 1472, so to make both work we use whichever
+// is larger.
 constexpr uint32 HIP_DEVICE_PROPERTIES_STRUCT_SIZE = 1472;
 // offsetof(hipDeviceProp_t, gcnArchName) / 4
 constexpr uint32 HIP_DEVICE_GCN_ARCH_NAME = 396 / 4;

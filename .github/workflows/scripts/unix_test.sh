@@ -102,9 +102,10 @@ if [ -z "$GPU_TEST" ]; then
     else
         echo "::warning:: Hitting Running CPU tests only"
         # Fail fast, give priority to the error-prone tests
-        if [[ $OSTYPE == "linux-"* ]]; then
-            run-it cpu 1 "paddle"
-        fi
+        # FIXME(proton): Disable paddle tests, out of sync for too long
+        # if [[ $OSTYPE == "linux-"* ]]; then
+        #     run-it cpu 1 "paddle"
+        # fi
         run-it cpu $N
         run-it cpu 1 "torch"
     fi

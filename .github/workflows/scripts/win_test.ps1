@@ -32,7 +32,7 @@ Invoke ti diagnose
 # Invoke ti changelog
 echo wanted arch: $env:TI_WANTED_ARCHS
 Invoke pip install -r requirements_test.txt
-Invoke pip install "paddlepaddle==2.3.0; python_version < '3.10'"
+# Invoke pip install "paddlepaddle==2.3.0; python_version < '3.10'"
 
 if ($env:EXTRA_TEST_MARKERS) {
     $EXTRA_TEST_MARKERS_SOLO = @("-m", $env:EXTRA_TEST_MARKERS)
@@ -47,7 +47,8 @@ if ($env:EXTRA_TEST_MARKERS) {
 Invoke python tests/run_tests.py --cpp -vr2 -t4 @EXTRA_TEST_MARKERS_SOLO
 
 # Fail fast, give priority to the error-prone tests
-Invoke python tests/run_tests.py -vr2 -t1 -k "paddle" -a cpu @EXTRA_TEST_MARKERS_SOLO
+# FIXME(proton): Disable paddle tests, out of sync for too long.
+# Invoke python tests/run_tests.py -vr2 -t1 -k "paddle" -a cpu @EXTRA_TEST_MARKERS_SOLO
 
 # Disable paddle for the remaining test
 $env:TI_ENABLE_PADDLE = "0"

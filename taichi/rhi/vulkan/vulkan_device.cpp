@@ -2455,8 +2455,7 @@ void VulkanDevice::create_vma_allocator() {
   allocatorInfo.device = device_;
   allocatorInfo.instance = instance_;
 
-  VolkDeviceTable table;
-  static VmaVulkanFunctions vk_vma_functions{};
+  VmaVulkanFunctions vk_vma_functions{};
   vk_vma_functions.vkGetInstanceProcAddr = vkGetInstanceProcAddr;
   vk_vma_functions.vkGetDeviceProcAddr = vkGetDeviceProcAddr;
 

@@ -57,6 +57,9 @@ Gui::Gui(AppContext *app_context, SwapChain *swap_chain, TaichiWindow *window) {
 }
 
 void Gui::init_render_resources(VkRenderPass render_pass) {
+  auto &device =
+      static_cast<taichi::lang::vulkan::VulkanDevice &>(app_context_->device());
+
   // -------------------------------------------------
   // 1) Load Vulkan function pointers using new API
   // -------------------------------------------------
@@ -64,12 +67,9 @@ void Gui::init_render_resources(VkRenderPass render_pass) {
   // at least an API version and a PFN loader. The final "user_data" is
   // optional.
   ImGui_ImplVulkan_LoadFunctions(
-      VK_API_VERSION_1_0,               // or VK_API_VERSION_1_1, etc.
-      load_vk_function_for_gui, nullptr /* user_data */
+      device.vk_caps().vk_api_version,
+      load_vk_function_for_gui, /*user_data=*/nullptr
   );
-
-  auto &device =
-      static_cast<taichi::lang::vulkan::VulkanDevice &>(app_context_->device());
 
   // -------------------------------------------------
   // 2) Prepare ImGui_ImplVulkan_InitInfo
@@ -82,16 +82,15 @@ void Gui::init_render_resources(VkRenderPass render_pass) {
   init_info.Queue = device.graphics_queue();
   init_info.PipelineCache = VK_NULL_HANDLE;
   init_info.DescriptorPool = descriptor_pool_;
+  // The new ImGui_ImplVulkan_Init(...) function no longer takes 'render_pass'
+  // as a separate argument; you must put it in init_info:
+  init_info.RenderPass = render_pass;
   init_info.Subpass = 0;  // If you're not using subpasses, leave as 0
   init_info.Allocator = VK_NULL_HANDLE;
   init_info.MinImageCount = swap_chain_->surface().get_image_count();
   init_info.ImageCount = swap_chain_->surface().get_image_count();
   init_info.CheckVkResultFn = nullptr;  // or your own error-check function
   init_info.MSAASamples = VK_SAMPLE_COUNT_1_BIT;
-
-  // The new ImGui_ImplVulkan_Init(...) function no longer takes 'render_pass'
-  // as a separate argument; you must put it in init_info:
-  init_info.RenderPass = render_pass;
 
   // -------------------------------------------------
   // 3) Call ImGui_ImplVulkan_Init with single param
@@ -100,34 +99,9 @@ void Gui::init_render_resources(VkRenderPass render_pass) {
 
   render_pass_ = render_pass;
 
-  // -------------------------------------------------
-  // 4) Upload Fonts using new approach
-  // -------------------------------------------------
-  {
-    // In the latest ImGui backend, CreateFontsTexture() automatically
-    // allocates a command buffer, does the GPU upload, and frees the staging.
-    // The old function that took (VkCommandBuffer) is removed.
-    //
-    // Also note that ImGui_ImplVulkan_DestroyFontUploadObjects() has been
-    // removed. Staging is destroyed automatically at the end of this call.
-    ImGui_ImplVulkan_CreateFontsTexture();
+  // https://github.com/ocornut/imgui/blob/faa03031b4cdf34fe9174c4e73dd769a5b41fda5/backends/imgui_impl_vulkan.cpp#L47
+  // We no longer need to explicitly upload fonts
 
-    // If you were manually submitting a command buffer or waiting on a fence
-    // in older code, that’s no longer needed. The new code handles it for you.
-    // So you can remove the lines below, or leave them if you truly want to do
-    // your own synchronization. But the new ImGui code is self-contained.
-    //
-    // For example, you could still do a GPU sync if desired:
-    auto stream = device.get_graphics_stream();
-    auto [cmd_list, res] = stream->new_command_list_unique();
-    // ... your own usage, if needed ...
-    stream->submit_synced(cmd_list.get());
-
-    // The old call: ImGui_ImplVulkan_DestroyFontUploadObjects() is gone.
-    // If you used that to free staging, the new code does it internally.
-  }
-
-  // Start a new frame if desired
   prepare_for_next_frame();
 }
 
@@ -281,6 +255,7 @@ void Gui::draw(taichi::lang::CommandList *cmd_list) {
   VkCommandBuffer buffer =
       static_cast<VulkanCommandList *>(cmd_list)->vk_command_buffer()->buffer;
 
+  // Note: The renderpass has started & will finish in the caller of this function
   // This call remains the same in the new API
   ImGui_ImplVulkan_RenderDrawData(draw_data, buffer);
 }

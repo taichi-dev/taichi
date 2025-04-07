@@ -46,9 +46,9 @@ class Dendrite:
         self.temperature_equi = 1.0  # temperature of equilibrium state
 
         ### parameters for RK4 method
-        self.dtRatio_rk4 = ti.field(ti.f64, shape=(4))
+        self.dtRatio_rk4 = ti.field(ti.f64, shape=4)
         self.dtRatio_rk4.from_numpy(np.array([0.0, 0.5, 0.5, 1.0]))
-        self.weights_rk4 = ti.field(ti.f64, shape=(4))
+        self.weights_rk4 = ti.field(ti.f64, shape=4)
         self.weights_rk4.from_numpy(np.array([1.0 / 6.0, 1.0 / 3.0, 1.0 / 3.0, 1.0 / 6.0]))
 
         self.showFrameFrequency = int(4 * 1.0e-4 / self.dt)

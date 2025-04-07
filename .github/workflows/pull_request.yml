@@ -22,9 +22,9 @@ jobs:
         env:
           PR_TITLE: ${{ github.event.pull_request.title }}
 
-      - name: PR Project Card Creation
-        if: github.event.action == 'opened' || github.event.action == 'edited'
-        run: python misc/ci_create_pr_card.py
-        env:
-          GITHUB_TOKEN: ${{ secrets.GARDENER_PAT }}
-          GH_EVENT: ${{ toJson(github.event) }}
+      # - name: PR Project Card Creation
+      #   if: github.event.action == 'opened' || github.event.action == 'edited'
+      #   run: python misc/ci_create_pr_card.py
+      #   env:
+      #     GITHUB_TOKEN: ${{ secrets.GARDENER_PAT }}
+      #     GH_EVENT: ${{ toJson(github.event) }}

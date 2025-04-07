@@ -2456,8 +2456,12 @@ void VulkanDevice::create_vma_allocator() {
   allocatorInfo.instance = instance_;
 
   VolkDeviceTable table;
-  VmaVulkanFunctions vk_vma_functions{nullptr};
+  static VmaVulkanFunctions vk_vma_functions{};
+  vk_vma_functions.vkGetInstanceProcAddr = vkGetInstanceProcAddr;
+  vk_vma_functions.vkGetDeviceProcAddr = vkGetDeviceProcAddr;
 
+  // Let VMA grab the functions by itself
+  /*
   volkLoadDeviceTable(&table, device_);
   vk_vma_functions.vkGetPhysicalDeviceProperties =
       PFN_vkGetPhysicalDeviceProperties(vkGetInstanceProcAddr(
@@ -2499,6 +2503,7 @@ void VulkanDevice::create_vma_allocator() {
       table.vkGetDeviceBufferMemoryRequirements;
   vk_vma_functions.vkGetDeviceImageMemoryRequirements =
       table.vkGetDeviceImageMemoryRequirements;
+  */
 
   allocatorInfo.pVulkanFunctions = &vk_vma_functions;
 

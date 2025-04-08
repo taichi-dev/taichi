@@ -175,25 +175,25 @@ class NGP_fw:
 
         # rays intersection parameters
         # t1, t2 need to be initialized to -1.0
-        self.hits_t = ti.Vector.field(n=2, dtype=data_type, shape=(self.N_rays))
+        self.hits_t = ti.Vector.field(n=2, dtype=data_type, shape=self.N_rays)
         self.hits_t.fill(-1.0)
         self.center = tf_vec3(0.0, 0.0, 0.0)
         self.xyz_min = -tf_vec3(scale, scale, scale)
         self.xyz_max = tf_vec3(scale, scale, scale)
         self.half_size = (self.xyz_max - self.xyz_min) / 2
 
-        self.noise_buffer = ti.Vector.field(2, dtype=data_type, shape=(self.N_rays))
+        self.noise_buffer = ti.Vector.field(2, dtype=data_type, shape=self.N_rays)
         self.gen_noise_buffer()
 
-        self.rays_o = ti.Vector.field(n=3, dtype=data_type, shape=(self.N_rays))
-        self.rays_d = ti.Vector.field(n=3, dtype=data_type, shape=(self.N_rays))
+        self.rays_o = ti.Vector.field(n=3, dtype=data_type, shape=self.N_rays)
+        self.rays_d = ti.Vector.field(n=3, dtype=data_type, shape=self.N_rays)
 
         # use the pre-compute direction and scene pose
         self.directions = ti.Matrix.field(n=1, m=3, dtype=data_type, shape=(self.N_rays,))
         self.pose = ti.Matrix.field(n=3, m=4, dtype=data_type, shape=())
 
         # density_bitfield is used for point sampling
-        self.density_bitfield = ti.field(ti.uint32, shape=(cascades * grid_size**3 // 32))
+        self.density_bitfield = ti.field(ti.uint32, shape=cascades * grid_size**3 // 32)
 
         # count the number of rays that still alive
         self.counter = ti.field(ti.i32, shape=())
@@ -252,7 +252,7 @@ class NGP_fw:
 
         # results buffers
         self.opacity = ti.field(ti.f32, shape=(self.N_rays,))
-        self.depth = ti.field(ti.f32, shape=(self.N_rays))
+        self.depth = ti.field(ti.f32, shape=self.N_rays)
         self.rgb = ti.Vector.field(3, dtype=ti.f32, shape=(self.N_rays,))
 
         # GUI render buffer (data type must be float32)

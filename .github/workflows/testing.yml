@@ -605,7 +605,7 @@ jobs:
   #     packages: read
   #     contents: read
   #   env:
-  #     REDIS_HOST: 172.16.5.1
+  #     REDIS_HOST: botmaster.tgr
   #     PY: '3.9'
   #   steps:
   #     - name: Workaround checkout Needed single revision issue
@@ -684,7 +684,7 @@ jobs:
   #     packages: read
   #     contents: read
   #   env:
-  #     REDIS_HOST: 172.16.5.1
+  #     REDIS_HOST: botmaster.tgr
   #     PY: '3.9'
   #   steps:
   #     - name: Workaround checkout Needed single revision issue
@@ -762,7 +762,7 @@ jobs:
   #     packages: read
   #     contents: read
   #   env:
-  #     REDIS_HOST: 172.16.5.1
+  #     REDIS_HOST: botmaster.tgr
   #     PY: '3.9'
   #   steps:
   #     - name: Workaround checkout Needed single revision issue

@@ -37,9 +37,9 @@ install_taichi_wheel() {
         python3 -m pip install -r requirements_test.txt
         python3 -m pip install "torch>1.12.0; python_version < '3.10'"
         # Paddle's develop package doesn't support CI's MACOS machine at present
-        if [[ $OSTYPE == "linux-"* ]]; then
-            python3 -m pip install "paddlepaddle==2.3.0; python_version < '3.10'"
-        fi
+        # if [[ $OSTYPE == "linux-"* ]]; then
+        #     python3 -m pip install "paddlepaddle==2.3.0; python_version < '3.10'"
+        # fi
     else
         ## Only GPU machine uses system python.
         export PATH=$PATH:$HOME/.local/bin

@@ -23,7 +23,7 @@ jobs:
       - name: Workaround checkout Needed single revision issue
         run: git submodule foreach 'git rev-parse HEAD > /dev/null 2>&1 || rm -rf $PWD' || true
 
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v4
         with:
           submodules: "recursive"
           fetch-depth: '0'
@@ -43,7 +43,7 @@ jobs:
             /home/dev/taichi/.github/workflows/scripts/build.py
 
         env:
-          PY: '3.8'
+          PY: '3.12'
           PROJECT_NAME: taichi
           TAICHI_CMAKE_ARGS: >-
             -DTI_WITH_OPENGL:BOOL=ON
@@ -82,7 +82,7 @@ jobs:
             /home/dev/taichi/.github/workflows/scripts/unix-perf-mon.sh
 
         env:
-          PY: '3.8'
+          PY: '3.12'
           BENCHMARK_UPLOAD_TOKEN: ${{ secrets.BENCHMARK_UPLOAD_TOKEN }}
           GITHUB_EVENT_ACTION: ${{ github.event.action }}
           GITHUB_TOKEN: ${{ secrets.GARDENER_PAT }}

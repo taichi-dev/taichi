@@ -110,7 +110,7 @@ jobs:
           docker exec --user dev check_clang_tidy /home/dev/taichi/.github/workflows/scripts/check_clang_tidy.sh "$CI_SETUP_CMAKE_ARGS"
         env:
           CR_PAT: ${{ secrets.GITHUB_TOKEN }}
-          CI_SETUP_CMAKE_ARGS: -DCMAKE_EXPORT_COMPILE_COMMANDS=ON -DTI_WITH_OPENGL:BOOL=ON -DTI_WITH_VULKAN:BOOL=ON -DTI_BUILD_TESTS:BOOL=ON -DTI_WITH_BACKTRACE:BOOL=ON
+          CI_SETUP_CMAKE_ARGS: -DCMAKE_EXPORT_COMPILE_COMMANDS=ON -DTI_WITH_OPENGL:BOOL=OFF -DTI_WITH_VULKAN:BOOL=ON -DTI_BUILD_TESTS:BOOL=ON -DTI_WITH_BACKTRACE:BOOL=ON
 
   #build_and_test_cpu_mac:
   #  name: Build and Test macos (CPU)
@@ -210,7 +210,7 @@ jobs:
         -DTI_WITH_VULKAN:BOOL=ON
         -DTI_WITH_BACKTRACE:BOOL=ON
         -DTI_BUILD_TESTS:BOOL=ON
-      TI_WANTED_ARCHS: 'cpu,cuda,vulkan,opengl,gles'
+      TI_WANTED_ARCHS: 'cpu,cuda,vulkan,gles'
       TI_DEVICE_MEMORY_GB: '1'
       TI_RUN_RELEASE_TESTS: '1'
 
@@ -276,7 +276,7 @@ jobs:
     timeout-minutes: ${{ github.event.schedule != '0 18 * * *' && 90 || 120 }}
     runs-on: [self-hosted, amdgpu]
     env:
-      PY: '3.8'
+      PY: '3.9'
       PROJECT_NAME: taichi
       TI_WANTED_ARCHS: 'cpu,amdgpu'
       TI_DEVICE_MEMORY_GB: '1'
@@ -356,16 +356,16 @@ jobs:
     - ${{ matrix.extra_markers == 'sm70' && 'sm70' || 'windows' }}
     timeout-minutes: ${{ github.event.schedule != '0 18 * * *' && 90 || 180 }}
     env:
-      PY: "3.7"
+      PY: "3.9"
       TAICHI_CMAKE_ARGS: >-
-        -DTI_WITH_OPENGL:BOOL=ON
+        -DTI_WITH_OPENGL:BOOL=OFF
         -DTI_WITH_VULKAN:BOOL=ON
         -DTI_WITH_DX11:BOOL=ON
         -DTI_WITH_DX12:BOOL=ON
         -DTI_BUILD_TESTS:BOOL=ON
         -DTI_WITH_BACKTRACE=ON
         -DTI_WITH_C_API=ON
-      TI_WANTED_ARCHS: cpu,cuda,vulkan,opengl,gles
+      TI_WANTED_ARCHS: cpu,cuda,vulkan
       TI_SKIP_VERSION_CHECK: ON
       TI_DEVICE_MEMORY_GB: '1'
       TI_RUN_RELEASE_TESTS: '1'
@@ -383,7 +383,7 @@ jobs:
 
       - uses: actions/setup-python@v4
         with:
-          python-version: 3.7
+          python-version: 3.9
 
       - name: Build
         if: ${{ needs.check_files.outputs.run_job != 'false' }}
@@ -428,7 +428,7 @@ jobs:
       matrix:
         include:
           - os: macos-latest
-            python: 3.8
+            python: 3.9
     defaults:
       run:
         # https://github.com/actions/runner/issues/805#issuecomment-844426478
@@ -531,13 +531,13 @@ jobs:
     timeout-minutes: ${{ github.event.schedule != '0 18 * * *' && 90 || 120 }}
     runs-on: [self-hosted, Linux, cuda, vulkan, cn]
     env:
-      PY: '3.8'
+      PY: '3.9'
       PROJECT_NAME: taichi
-      TI_WANTED_ARCHS: 'cpu,cuda,vulkan,opengl,gles'
+      TI_WANTED_ARCHS: 'cpu,cuda,vulkan'
       TI_DEVICE_MEMORY_GB: '1'
       TI_RUN_RELEASE_TESTS: '1'
       TAICHI_CMAKE_ARGS: >-
-        -DTI_WITH_OPENGL:BOOL=ON
+        -DTI_WITH_OPENGL:BOOL=OFF
         -DTI_WITH_VULKAN:BOOL=ON
         -DTI_WITH_BACKTRACE:BOOL=ON
         -DTI_BUILD_TESTS:BOOL=ON
@@ -852,10 +852,10 @@ jobs:
         tags:
           - [self-hosted, cuda, vulkan, cn, driver550]
     env:
-      PY: '3.8'
+      PY: '3.9'
       PROJECT_NAME: taichi
       TAICHI_CMAKE_ARGS: >-
-        -DTI_WITH_OPENGL:BOOL=ON
+        -DTI_WITH_OPENGL:BOOL=OFF
         -DTI_WITH_VULKAN:BOOL=ON
         -DTI_WITH_BACKTRACE:BOOL=ON
         -DTI_BUILD_TESTS:BOOL=ON

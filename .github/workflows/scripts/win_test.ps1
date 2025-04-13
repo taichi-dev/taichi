@@ -67,13 +67,12 @@ if ("$env:TI_WANTED_ARCHS".Contains("cpu")) {
   #       to 5GiB per test process (compared to 1.4GiB for non-CUDA version).
   #       This greatly improves test paralllism.
   #       This is a non-issue on Linux, since Linux overcommits.
-  Invoke pip install "torch==2.5.1"
+  Invoke pip install "torch==2.5.1" "torchvision==0.20.1" "torchaudio==2.5.1" --index-url https://download.pytorch.org/whl/cpu
   RunIt cpu (EstimateNumProcs)
 }
 
 if ("$env:TI_WANTED_ARCHS".Contains("cuda")) {
-  # TODO relax this when torch supports 3.10
-  Invoke pip install "torch==2.5.1" --index-url https://download.pytorch.org/whl/cu121
+  Invoke pip install --force-reinstall "torch==2.5.1" "torchvision==0.20.1" "torchaudio==2.5.1" --index-url https://download.pytorch.org/whl/cu121
   RunIt cuda 8
 }
 

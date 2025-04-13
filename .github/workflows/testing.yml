@@ -110,7 +110,7 @@ jobs:
           docker exec --user dev check_clang_tidy /home/dev/taichi/.github/workflows/scripts/check_clang_tidy.sh "$CI_SETUP_CMAKE_ARGS"
         env:
           CR_PAT: ${{ secrets.GITHUB_TOKEN }}
-          CI_SETUP_CMAKE_ARGS: -DCMAKE_EXPORT_COMPILE_COMMANDS=ON -DTI_WITH_OPENGL:BOOL=ON -DTI_WITH_VULKAN:BOOL=ON -DTI_BUILD_TESTS:BOOL=ON -DTI_WITH_BACKTRACE:BOOL=ON
+          CI_SETUP_CMAKE_ARGS: -DCMAKE_EXPORT_COMPILE_COMMANDS=ON -DTI_WITH_OPENGL:BOOL=OFF -DTI_WITH_VULKAN:BOOL=ON -DTI_BUILD_TESTS:BOOL=ON -DTI_WITH_BACKTRACE:BOOL=ON
 
   #build_and_test_cpu_mac:
   #  name: Build and Test macos (CPU)
@@ -206,7 +206,7 @@ jobs:
       PY: '3.11'
       PROJECT_NAME: taichi
       TAICHI_CMAKE_ARGS: >-
-        -DTI_WITH_OPENGL:BOOL=ON
+        -DTI_WITH_OPENGL:BOOL=OFF
         -DTI_WITH_VULKAN:BOOL=ON
         -DTI_WITH_BACKTRACE:BOOL=ON
         -DTI_BUILD_TESTS:BOOL=ON
@@ -358,7 +358,7 @@ jobs:
     env:
       PY: "3.9"
       TAICHI_CMAKE_ARGS: >-
-        -DTI_WITH_OPENGL:BOOL=ON
+        -DTI_WITH_OPENGL:BOOL=OFF
         -DTI_WITH_VULKAN:BOOL=ON
         -DTI_WITH_DX11:BOOL=ON
         -DTI_WITH_DX12:BOOL=ON
@@ -537,7 +537,7 @@ jobs:
       TI_DEVICE_MEMORY_GB: '1'
       TI_RUN_RELEASE_TESTS: '1'
       TAICHI_CMAKE_ARGS: >-
-        -DTI_WITH_OPENGL:BOOL=ON
+        -DTI_WITH_OPENGL:BOOL=OFF
         -DTI_WITH_VULKAN:BOOL=ON
         -DTI_WITH_BACKTRACE:BOOL=ON
         -DTI_BUILD_TESTS:BOOL=ON
@@ -855,7 +855,7 @@ jobs:
       PY: '3.9'
       PROJECT_NAME: taichi
       TAICHI_CMAKE_ARGS: >-
-        -DTI_WITH_OPENGL:BOOL=ON
+        -DTI_WITH_OPENGL:BOOL=OFF
         -DTI_WITH_VULKAN:BOOL=ON
         -DTI_WITH_BACKTRACE:BOOL=ON
         -DTI_BUILD_TESTS:BOOL=ON

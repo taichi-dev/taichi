@@ -59,7 +59,7 @@ EOF
     popd
 
     pushd repos/difftaichi
-    pip uninstall opencv-python
+    pip uninstall -y opencv-python
     pip install --only-binary "opencv-python" -r requirements.txt
     popd
 

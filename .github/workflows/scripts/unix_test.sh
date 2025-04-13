@@ -59,7 +59,7 @@ EOF
     popd
 
     pushd repos/difftaichi
-    pip install -r requirements.txt
+    pip install --only-binary "opencv-python" -r requirements.txt
     popd
 
     python3 run.py --log=DEBUG --runners 1 timelines

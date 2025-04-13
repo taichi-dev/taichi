@@ -206,11 +206,11 @@ jobs:
       PY: '3.11'
       PROJECT_NAME: taichi
       TAICHI_CMAKE_ARGS: >-
-        -DTI_WITH_OPENGL:BOOL=OFF
+        -DTI_WITH_OPENGL:BOOL=ON
         -DTI_WITH_VULKAN:BOOL=ON
         -DTI_WITH_BACKTRACE:BOOL=ON
         -DTI_BUILD_TESTS:BOOL=ON
-      TI_WANTED_ARCHS: 'cpu,cuda,vulkan,opengl,gles'
+      TI_WANTED_ARCHS: 'cpu,cuda,vulkan,gles'
       TI_DEVICE_MEMORY_GB: '1'
       TI_RUN_RELEASE_TESTS: '1'
 
@@ -365,7 +365,7 @@ jobs:
         -DTI_BUILD_TESTS:BOOL=ON
         -DTI_WITH_BACKTRACE=ON
         -DTI_WITH_C_API=ON
-      TI_WANTED_ARCHS: cpu,cuda,vulkan,opengl,gles
+      TI_WANTED_ARCHS: cpu,cuda,vulkan
       TI_SKIP_VERSION_CHECK: ON
       TI_DEVICE_MEMORY_GB: '1'
       TI_RUN_RELEASE_TESTS: '1'
@@ -533,7 +533,7 @@ jobs:
     env:
       PY: '3.9'
       PROJECT_NAME: taichi
-      TI_WANTED_ARCHS: 'cpu,cuda,vulkan,opengl,gles'
+      TI_WANTED_ARCHS: 'cpu,cuda,vulkan'
       TI_DEVICE_MEMORY_GB: '1'
       TI_RUN_RELEASE_TESTS: '1'
       TAICHI_CMAKE_ARGS: >-

@@ -19,7 +19,7 @@ def setup_llvm() -> None:
     Download and install LLVM.
     """
     u = platform.uname()
-    if u.system == "Linux":
+    if (u.system, u.machine) == ("Linux", "x86_64"):
         if cmake_args.get_effective("TI_WITH_AMDGPU"):
             out = get_cache_home() / "llvm15-amdgpu-005"
             url = "https://github.com/GaleSeLee/assets/releases/download/v0.0.5/taichi-llvm-15.0.0-linux.zip"
@@ -31,6 +31,11 @@ def setup_llvm() -> None:
             out = get_cache_home() / "llvm15"
             url = "https://github.com/taichi-dev/taichi_assets/releases/download/llvm15/taichi-llvm-15-linux.zip"
         download_dep(url, out, strip=1)
+
+    elif (u.system, u.machine) in (("Linux", "arm64"), ("Linux", "aarch64")):
+        out = get_cache_home() / "llvm15-manylinux2014"
+        # FIXME: ARM LLVM!
+        pass
     elif (u.system, u.machine) == ("Darwin", "arm64"):
         out = get_cache_home() / "llvm15-m1-nozstd"
         url = "https://github.com/taichi-dev/taichi_assets/releases/download/llvm15/taichi-llvm-15-m1-nozstd.zip"

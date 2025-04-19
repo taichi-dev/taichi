@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.0)
+cmake_minimum_required(VERSION 3.17)
 
 set(C_API_TESTS_NAME taichi_c_api_tests)
 if (WIN32)

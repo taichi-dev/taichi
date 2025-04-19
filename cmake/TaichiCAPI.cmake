@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.0)
+cmake_minimum_required(VERSION 3.17)
 
 # This function creates a static target from OBJECT_TARGET, then link TARGET with the static target
 #

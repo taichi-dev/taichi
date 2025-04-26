@@ -98,11 +98,11 @@ std::map<std::string, std::vector<uint8>> font_buffers;
 
 template <typename T>
 void ArrayND<2, T>::write_text(const std::string &font_fn,
-                            const std::string &content_,
-                            real size,
-                            int dx,
-                            int dy,
-                            T color) {
+                               const std::string &content_,
+                               real size,
+                               int dx,
+                               int dy,
+                               T color) {
   std::vector<unsigned char> screen_buffer(
       (size_t)(this->res[0] * this->res[1]), (unsigned char)0);
 

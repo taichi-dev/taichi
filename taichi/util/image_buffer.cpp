@@ -18,7 +18,7 @@
 namespace taichi {
 
 template <typename T>
-void Array2D<T>::load_image(const std::string &filename, bool linearize) {
+void ArrayND<2, T>::load_image(const std::string &filename, bool linearize) {
   int channels;
   FILE *f = fopen(filename.c_str(), "rb");
   TI_ASSERT_INFO(f != nullptr, "Image file not found: " + filename);
@@ -57,7 +57,7 @@ void Array2D<T>::load_image(const std::string &filename, bool linearize) {
 }
 
 template <typename T>
-void Array2D<T>::write_as_image(const std::string &filename) {
+void ArrayND<2, T>::write_as_image(const std::string &filename) {
   int comp = 3;
   std::vector<unsigned char> data(this->res[0] * this->res[1] * comp);
   for (int i = 0; i < this->res[0]; i++) {
@@ -97,7 +97,7 @@ std::map<std::string, stbtt_fontinfo> fonts;
 std::map<std::string, std::vector<uint8>> font_buffers;
 
 template <typename T>
-void Array2D<T>::write_text(const std::string &font_fn,
+void ArrayND<2, T>::write_text(const std::string &font_fn,
                             const std::string &content_,
                             real size,
                             int dx,

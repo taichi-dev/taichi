@@ -15,17 +15,18 @@ TEST(IRBuilder, Bool) {
   IRBuilder builder;
   auto *bool_true = builder.get_bool(true);
   auto *bool_false = builder.get_bool(false);
-  auto ir = builder.extract_ir();
-  // auto *result = builder.create_print(bool_true, "", "");
-  // auto *print = result->cast<PrintStmt>();
+  builder.create_and(bool_true, bool_false);
+  auto block = builder.extract_ir();
+
   auto print = irpass::make_pass_printer(true, true, "", bool_true);
-  // irpass::re_id(ir);
-  std::cout << std::flush;
-  irpass::print(bool_true);
-  std::cout << std::flush;
-  std::cout << std::flush;
-  irpass::print(bool_false);
-  std::cout << std::flush;
+  std::string ir_string;
+  irpass::print(block->get_ir_root(), &ir_string);
+  EXPECT_STREQ(ir_string.c_str(), R"(kernel {
+  <u1> $0 = const true
+  <u1> $1 = const false
+  $2 = bit_and $0 $1
+}
+)");
 }
 
 TEST(IRBuilder, Basic) {

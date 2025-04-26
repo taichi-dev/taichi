@@ -4,11 +4,29 @@
 #include "taichi/ir/statements.h"
 #include "tests/cpp/program/test_program.h"
 #include "tests/cpp/ir/ndarray_kernel.h"
+#include "taichi/ir/transforms.h"
 #ifdef TI_WITH_VULKAN
 #include "taichi/rhi/vulkan/vulkan_loader.h"
 #endif
 
 namespace taichi::lang {
+
+TEST(IRBuilder, Bool) {
+  IRBuilder builder;
+  auto *bool_true = builder.get_bool(true);
+  auto *bool_false = builder.get_bool(false);
+  auto ir = builder.extract_ir();
+  // auto *result = builder.create_print(bool_true, "", "");
+  // auto *print = result->cast<PrintStmt>();
+  auto print = irpass::make_pass_printer(true, true, "", bool_true);
+  // irpass::re_id(ir);
+  std::cout << std::flush;
+  irpass::print(bool_true);
+  std::cout << std::flush;
+  std::cout << std::flush;
+  irpass::print(bool_false);
+  std::cout << std::flush;
+}
 
 TEST(IRBuilder, Basic) {
   IRBuilder builder;

@@ -138,6 +138,12 @@ LoopIndexStmt *IRBuilder::get_loop_index(Stmt *loop, int index) {
   return insert(Stmt::make_typed<LoopIndexStmt>(loop, index));
 }
 
+ConstStmt *IRBuilder::get_bool(bool value) {
+  return insert(Stmt::make_typed<ConstStmt>(TypedConstant(
+      TypeFactory::get_instance().get_primitive_type(PrimitiveTypeID::u1),
+      value)));
+}
+
 ConstStmt *IRBuilder::get_int32(int32 value) {
   return insert(Stmt::make_typed<ConstStmt>(TypedConstant(
       TypeFactory::get_instance().get_primitive_type(PrimitiveTypeID::i32),

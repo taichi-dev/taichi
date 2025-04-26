@@ -130,6 +130,7 @@ class IRBuilder {
   LoopIndexStmt *get_loop_index(Stmt *loop, int index = 0);
 
   // Constants. TODO: add more types
+  ConstStmt *get_bool(bool value);
   ConstStmt *get_int32(int32 value);
   ConstStmt *get_int64(int64 value);
   ConstStmt *get_uint32(uint32 value);

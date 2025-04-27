@@ -6,6 +6,7 @@ function unset-git-caching-proxy {
     echo "Unsetting git caching proxy"
     # git config --global --list | grep 'url\.' | cut -d'=' -f1 | xargs -L1 git config --global --unset-all || true
     git config --global --unset https.proxy
+    exit 0
 }
 
 function set-git-caching-proxy {

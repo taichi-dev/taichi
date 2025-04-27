@@ -110,7 +110,7 @@ jobs:
           docker exec --user dev check_clang_tidy /home/dev/taichi/.github/workflows/scripts/check_clang_tidy.sh "$CI_SETUP_CMAKE_ARGS"
         env:
           CR_PAT: ${{ secrets.GITHUB_TOKEN }}
-          CI_SETUP_CMAKE_ARGS: -DCMAKE_EXPORT_COMPILE_COMMANDS=ON -DTI_WITH_OPENGL:BOOL=ON -DTI_WITH_VULKAN:BOOL=ON -DTI_BUILD_TESTS:BOOL=ON -DTI_WITH_BACKTRACE:BOOL=ON
+          CI_SETUP_CMAKE_ARGS: -DCMAKE_EXPORT_COMPILE_COMMANDS=ON -DTI_WITH_OPENGL:BOOL=OFF -DTI_WITH_VULKAN:BOOL=ON -DTI_BUILD_TESTS:BOOL=ON -DTI_WITH_BACKTRACE:BOOL=ON
 
   #build_and_test_cpu_mac:
   #  name: Build and Test macos (CPU)
@@ -210,7 +210,7 @@ jobs:
         -DTI_WITH_VULKAN:BOOL=ON
         -DTI_WITH_BACKTRACE:BOOL=ON
         -DTI_BUILD_TESTS:BOOL=ON
-      TI_WANTED_ARCHS: 'cpu,cuda,vulkan,opengl,gles'
+      TI_WANTED_ARCHS: 'cpu,cuda,vulkan,gles'
       TI_DEVICE_MEMORY_GB: '1'
       TI_RUN_RELEASE_TESTS: '1'
 
@@ -358,14 +358,14 @@ jobs:
     env:
       PY: "3.12"
       TAICHI_CMAKE_ARGS: >-
-        -DTI_WITH_OPENGL:BOOL=ON
+        -DTI_WITH_OPENGL:BOOL=OFF
         -DTI_WITH_VULKAN:BOOL=ON
         -DTI_WITH_DX11:BOOL=ON
         -DTI_WITH_DX12:BOOL=ON
         -DTI_BUILD_TESTS:BOOL=ON
         -DTI_WITH_BACKTRACE=ON
         -DTI_WITH_C_API=ON
-      TI_WANTED_ARCHS: cpu,cuda,vulkan,opengl,gles
+      TI_WANTED_ARCHS: cpu,cuda,vulkan
       TI_SKIP_VERSION_CHECK: ON
       TI_DEVICE_MEMORY_GB: '1'
       TI_RUN_RELEASE_TESTS: '1'
@@ -384,7 +384,6 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: 3.12
-
       - name: Build
         if: ${{ needs.check_files.outputs.run_job != 'false' }}
         shell: cmd
@@ -533,11 +532,11 @@ jobs:
     env:
       PY: '3.12'
       PROJECT_NAME: taichi
-      TI_WANTED_ARCHS: 'cpu,cuda,vulkan,opengl,gles'
+      TI_WANTED_ARCHS: 'cpu,cuda,vulkan'
       TI_DEVICE_MEMORY_GB: '1'
       TI_RUN_RELEASE_TESTS: '1'
       TAICHI_CMAKE_ARGS: >-
-        -DTI_WITH_OPENGL:BOOL=ON
+        -DTI_WITH_OPENGL:BOOL=OFF
         -DTI_WITH_VULKAN:BOOL=ON
         -DTI_WITH_BACKTRACE:BOOL=ON
         -DTI_BUILD_TESTS:BOOL=ON
@@ -605,7 +604,7 @@ jobs:
   #     packages: read
   #     contents: read
   #   env:
-  #     REDIS_HOST: 172.16.5.1
+  #     REDIS_HOST: botmaster.tgr
   #     PY: '3.9'
   #   steps:
   #     - name: Workaround checkout Needed single revision issue
@@ -684,7 +683,7 @@ jobs:
   #     packages: read
   #     contents: read
   #   env:
-  #     REDIS_HOST: 172.16.5.1
+  #     REDIS_HOST: botmaster.tgr
   #     PY: '3.9'
   #   steps:
   #     - name: Workaround checkout Needed single revision issue
@@ -762,7 +761,7 @@ jobs:
   #     packages: read
   #     contents: read
   #   env:
-  #     REDIS_HOST: 172.16.5.1
+  #     REDIS_HOST: botmaster.tgr
   #     PY: '3.9'
   #   steps:
   #     - name: Workaround checkout Needed single revision issue
@@ -855,7 +854,7 @@ jobs:
       PY: '3.12'
       PROJECT_NAME: taichi
       TAICHI_CMAKE_ARGS: >-
-        -DTI_WITH_OPENGL:BOOL=ON
+        -DTI_WITH_OPENGL:BOOL=OFF
         -DTI_WITH_VULKAN:BOOL=ON
         -DTI_WITH_BACKTRACE:BOOL=ON
         -DTI_BUILD_TESTS:BOOL=ON

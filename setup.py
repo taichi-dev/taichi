@@ -228,7 +228,6 @@ setup(
         "colorama",
         "dill",
         "rich",
-        'astunparse;python_version<"3.9"',
     ],
     data_files=[
         (os.path.join("_lib", "runtime"), data_files),

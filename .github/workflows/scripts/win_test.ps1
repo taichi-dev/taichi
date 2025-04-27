@@ -32,7 +32,7 @@ Invoke ti diagnose
 # Invoke ti changelog
 echo wanted arch: $env:TI_WANTED_ARCHS
 Invoke pip install -r requirements_test.txt
-Invoke pip install "paddlepaddle==2.3.0; python_version < '3.10'"
+# Invoke pip install "paddlepaddle==2.3.0; python_version < '3.10'"
 
 if ($env:EXTRA_TEST_MARKERS) {
     $EXTRA_TEST_MARKERS_SOLO = @("-m", $env:EXTRA_TEST_MARKERS)
@@ -47,7 +47,8 @@ if ($env:EXTRA_TEST_MARKERS) {
 Invoke python tests/run_tests.py --cpp -vr2 -t4 @EXTRA_TEST_MARKERS_SOLO
 
 # Fail fast, give priority to the error-prone tests
-Invoke python tests/run_tests.py -vr2 -t1 -k "paddle" -a cpu @EXTRA_TEST_MARKERS_SOLO
+# FIXME(proton): Disable paddle tests, out of sync for too long.
+# Invoke python tests/run_tests.py -vr2 -t1 -k "paddle" -a cpu @EXTRA_TEST_MARKERS_SOLO
 
 # Disable paddle for the remaining test
 $env:TI_ENABLE_PADDLE = "0"
@@ -66,19 +67,16 @@ if ("$env:TI_WANTED_ARCHS".Contains("cpu")) {
   #       to 5GiB per test process (compared to 1.4GiB for non-CUDA version).
   #       This greatly improves test paralllism.
   #       This is a non-issue on Linux, since Linux overcommits.
-  # TODO relax this when torch supports 3.10
-  Invoke pip install "torch==1.12.1; python_version < '3.10'"
+  Invoke pip install "torch==2.5.1" "torchvision==0.20.1" "torchaudio==2.5.1" --index-url https://download.pytorch.org/whl/cpu
   RunIt cpu (EstimateNumProcs)
 }
 
 if ("$env:TI_WANTED_ARCHS".Contains("cuda")) {
-  # TODO relax this when torch supports 3.10
-  Invoke pip install "torch==1.10.1+cu113; python_version < '3.10'" -f https://download.pytorch.org/whl/cu113/torch_stable.html
+  Invoke pip install --force-reinstall "torch==2.5.1" "torchvision==0.20.1" "torchaudio==2.5.1" --index-url https://download.pytorch.org/whl/cu121
   RunIt cuda 8
 }
 
-RunIt opengl 4
-RunIt vulkan 4
+RunIt vulkan 8
 
 Invoke python tests/run_tests.py -vr2 -t1 -k "torch" -a "$env:TI_WANTED_ARCHS" @EXTRA_TEST_MARKERS_SOLO
 

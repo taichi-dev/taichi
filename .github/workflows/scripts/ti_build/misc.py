@@ -17,12 +17,14 @@ from .escapes import escape_codes
 # -- code --
 options = None
 
+
 def is_manylinux2014() -> bool:
     """
     Are we in a manylinux2014 environment?
     This means a particular CentOS docker image.
     """
     return platform.system() == "Linux" and Path("/etc/centos-release").exists()
+
 
 def is_manylinux_2_28() -> bool:
     """

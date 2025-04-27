@@ -63,7 +63,7 @@ jobs:
           else
             # For nightly release, we run on three python versions.
             echo 'matrix={"include":[{"name":"taichi-nightly","python":"3.10"},{"name":"taichi-nightly","python":"3.11"},{"name":"taichi","python":"3.12"},{"name":"taichi","python":"3.13"}]}"' >> $GITHUB_OUTPUT
-          
+
             # M1 only supports 3.8 and 3.10(conda), so change matrix.
             echo 'matrix_osx={"include":[{"name":"taichi-nightly","python":"3.10"},{"name":"taichi-nightly","python":"3.11"},{"name":"taichi","python":"3.12"},{"name":"taichi","python":"3.13"}]}"' >> $GITHUB_OUTPUT
           fi

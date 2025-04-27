@@ -459,8 +459,6 @@ jobs:
       - name: Build
         if: ${{ needs.check_files.outputs.run_job != 'false' }}
         run: |
-          sw_vers
-          clang++ --version
           . .github/workflows/scripts/common-utils.sh
           prepare-build-cache
           brew install molten-vk

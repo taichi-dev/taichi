@@ -140,16 +140,6 @@ void compile_to_offloads(IRNode *ir,
   print("Offloaded");
   irpass::analysis::verify(ir);
 
-  // TODO: This pass may be redundant as cfg_optimization() is already called
-  //  in full_simplify().
-  if (config.opt_level > 0 && config.cfg_optimization) {
-    irpass::cfg_optimization(
-        ir, false, /*autodiff_enabled*/ false,
-        !config.real_matrix_scalarize && !config.force_scalarize_matrix);
-    print("Optimized by CFG");
-    irpass::analysis::verify(ir);
-  }
-
   irpass::flag_access(ir);
   print("Access flagged II");
 

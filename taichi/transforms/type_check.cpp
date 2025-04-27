@@ -158,7 +158,9 @@ class TypeCheck : public IRVisitor {
 
   void visit(MatrixPtrStmt *stmt) override {
     TI_ASSERT(stmt->offset->ret_type.get_element_type()->is_primitive(
-        PrimitiveTypeID::i32));
+                  PrimitiveTypeID::i32) ||
+              stmt->offset->ret_type.get_element_type()->is_primitive(
+                  PrimitiveTypeID::i64));
     stmt->ret_type.set_is_pointer(true);
   }
 

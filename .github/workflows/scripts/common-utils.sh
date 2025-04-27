@@ -13,7 +13,7 @@ function set-git-caching-proxy {
     echo "Setting git caching proxy"
     # git config --global --add url.http://oauth2:$GITHUB_TOKEN@git-cdn-github.botmaster.tgr/.insteadOf https://github.com/
     # git config --global --add url.http://oauth2:$GITHUB_TOKEN@git-cdn-github.botmaster.tgr/.insteadOf git@github.com:
-    git config --global https.proxy http://proxy.tgr:18000 ||  true
+    git config --global https.proxy http://proxy.tgr:18000 || true
 }
 
 if [ ! -z "$TI_USE_GIT_CACHE" ]; then

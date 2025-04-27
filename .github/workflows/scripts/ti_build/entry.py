@@ -22,7 +22,8 @@ from .ospkg import setup_os_pkgs
 from .python import get_desired_python_version, setup_python
 from .sccache import setup_sccache
 from .tinysh import Command, CommandFailed, git, nice
-from .vulkan import setup_vulkan
+
+# from .vulkan import setup_vulkan
 
 
 # -- code --
@@ -81,7 +82,7 @@ def setup_basic_build_env():
         setup_clang()
 
     setup_llvm()
-    setup_vulkan()
+    # setup_vulkan()
 
     sccache = setup_sccache()
 

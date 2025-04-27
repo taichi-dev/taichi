@@ -121,6 +121,7 @@ class IRBuilder {
   IfStmt *create_if(Stmt *cond);
   WhileControlStmt *create_break();
   ContinueStmt *create_continue();
+  void create_assert(Stmt *cond, const std::string &msg);
 
   // Function.
   FuncCallStmt *create_func_call(Function *func,

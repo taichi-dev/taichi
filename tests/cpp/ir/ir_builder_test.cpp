@@ -29,6 +29,22 @@ TEST(IRBuilder, Bool) {
 )");
 }
 
+TEST(IRBuilder, Assert) {
+  IRBuilder builder;
+  auto *bool_true = builder.get_bool(true);
+  builder.create_assert(bool_true, "assertion failed");
+  auto block = builder.extract_ir();
+
+  auto print = irpass::make_pass_printer(true, true, "", bool_true);
+  std::string ir_string;
+  irpass::print(block->get_ir_root(), &ir_string);
+  EXPECT_STREQ(ir_string.c_str(),
+               "kernel {\n"
+               "  <u1> $0 = const true\n"
+               "  1 : assert $0, \"assertion failed\"\n"
+               "}\n");
+}
+
 TEST(IRBuilder, Basic) {
   IRBuilder builder;
   auto *lhs = builder.get_int32(40);

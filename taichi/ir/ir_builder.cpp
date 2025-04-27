@@ -129,6 +129,12 @@ ContinueStmt *IRBuilder::create_continue() {
   return insert(Stmt::make_typed<ContinueStmt>());
 }
 
+void IRBuilder::create_assert(Stmt *cond, const std::string &msg) {
+  std::vector<Stmt *> empty_args;
+  auto assert_stmt = Stmt::make_typed<AssertStmt>(cond, msg, empty_args);
+  insert(std::move(assert_stmt));
+}
+
 FuncCallStmt *IRBuilder::create_func_call(Function *func,
                                           const std::vector<Stmt *> &args) {
   return insert(Stmt::make_typed<FuncCallStmt>(func, args));

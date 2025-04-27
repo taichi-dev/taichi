@@ -173,7 +173,11 @@ function check-c-api-export-symbols {
     python3 .github/workflows/scripts/build.py wheel --permissive --write-env=/tmp/ti-aot-env.sh
     . /tmp/ti-aot-env.sh
 
-    LIBTAICHI_C_API=$TAICHI_C_API_INSTALL_DIR/lib/libtaichi_c_api.so
+    SO_EXT=.so
+    if [ $(uname) == Darwin ]; then {
+        SO_EXT=.dylib
+    } fi
+    LIBTAICHI_C_API=$TAICHI_C_API_INSTALL_DIR/lib/libtaichi_c_api${SO_EXT}
 
     # T: global functions
     # B: global variables (uninitialized)

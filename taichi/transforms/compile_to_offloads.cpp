@@ -139,7 +139,7 @@ void compile_to_offloads(IRNode *ir,
   irpass::offload(ir, config);
   print("Offloaded");
   irpass::analysis::verify(ir);
-
+  // NOTE: There was an additional CFG pass here, removed in https://github.com/taichi-dev/taichi/pull/8691
   irpass::flag_access(ir);
   print("Access flagged II");
 

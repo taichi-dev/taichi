@@ -82,7 +82,10 @@ def setup_basic_build_env():
         setup_clang()
 
     setup_llvm()
-    # setup_vulkan()
+    if u.system == "Linux":
+        # We support & test Vulkan shader debug printf on Linux
+        # This is done through the validation layer
+        setup_vulkan()
 
     sccache = setup_sccache()
 

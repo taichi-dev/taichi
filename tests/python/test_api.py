@@ -389,7 +389,6 @@ user_api[ti.SNode] = [
     "pointer",
     "quant_array",
     "shape",
-    "snode_tree_id",
 ]
 user_api[ti.ScalarField] = [
     "copy_from",

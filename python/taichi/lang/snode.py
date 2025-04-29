@@ -216,7 +216,7 @@ class SNode:
         return self.ptr.id
 
     @property
-    def snode_tree_id(self):
+    def _snode_tree_id(self):
         return self.ptr.get_snode_tree_id()
 
     @property

@@ -10,12 +10,12 @@ def some_kernel(_: ti.template()): ...
 def test_get_snode_tree_id():
     s = ti.field(int, shape=())
     some_kernel(s)
-    assert s.snode.snode_tree_id == 0
+    assert s.snode._snode_tree_id == 0
 
     s = ti.field(int, shape=())
     some_kernel(s)
-    assert s.snode.snode_tree_id == 1
+    assert s.snode._snode_tree_id == 1
 
     s = ti.field(int, shape=())
     some_kernel(s)
-    assert s.snode.snode_tree_id == 2
+    assert s.snode._snode_tree_id == 2

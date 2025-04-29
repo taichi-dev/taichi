@@ -5,7 +5,7 @@ set -x
 function unset-git-caching-proxy {
     echo "Unsetting git caching proxy"
     # git config --global --list | grep 'url\.' | cut -d'=' -f1 | xargs -L1 git config --global --unset-all || true
-    git config --global --unset https.proxy
+    git config --global --unset https.proxy || true
 }
 
 function set-git-caching-proxy {
@@ -13,7 +13,7 @@ function set-git-caching-proxy {
     echo "Setting git caching proxy"
     # git config --global --add url.http://oauth2:$GITHUB_TOKEN@git-cdn-github.botmaster.tgr/.insteadOf https://github.com/
     # git config --global --add url.http://oauth2:$GITHUB_TOKEN@git-cdn-github.botmaster.tgr/.insteadOf git@github.com:
-    git config --global https.proxy http://proxy.tgr:18000
+    git config --global https.proxy http://proxy.tgr:18000 || true
 }
 
 if [ ! -z "$TI_USE_GIT_CACHE" ]; then

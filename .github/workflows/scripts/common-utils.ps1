@@ -1,6 +1,6 @@
 function UnsetGitCachingProxy {
     Write-Host "Unsetting git caching proxy"
-    git config --global --unset https.proxy
+    git config --global --unset https.proxy || true
     # git config --global --list | Select-String 'url\.' | ForEach-Object {
     #     $key = $_ -split '=' | Select-Object -First 1
     #     git config --global --unset-all $key
@@ -11,7 +11,7 @@ function SetGitCachingProxy {
     Write-Host "Setting up git caching proxy"
     # git config --global --add "url.http://oauth2:${env:GITHUB_TOKEN}@git-cdn-github.botmaster.tgr/.insteadOf" https://github.com/
     # git config --global --add "url.http://oauth2:${env:GITHUB_TOKEN}@git-cdn-github.botmaster.tgr/.insteadOf" git@github.com:
-    git config --global https.proxy http://proxy.tgr:18000
+    git config --global https.proxy http://proxy.tgr:18000 || true
 }
 
 if($env:TI_USE_GIT_CACHE) {

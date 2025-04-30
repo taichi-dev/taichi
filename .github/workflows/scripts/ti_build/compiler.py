@@ -22,7 +22,7 @@ from .tinysh import powershell
 def grep(value, target):
     for line in target.split("\n"):
         if value in line:
-           return line
+            return line
 
 
 # -- code --
@@ -42,7 +42,7 @@ def setup_clang(as_compiler=True) -> None:
         else:
             error("Could not find clang of any version")
             return
-    elif u.system == 'Darwin':
+    elif u.system == "Darwin":
         brew_config = subprocess.check_output(["brew", "config"]).decode("utf-8")
         print("brew_config", brew_config)
         brew_prefix = grep("HOMEBREW_PREFIX", brew_config).split()[1]

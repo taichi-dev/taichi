@@ -216,6 +216,10 @@ class SNode:
         return self.ptr.id
 
     @property
+    def _snode_tree_id(self):
+        return self.ptr.get_snode_tree_id()
+
+    @property
     def shape(self):
         """Gets the number of elements from root in each axis of `self`.
 

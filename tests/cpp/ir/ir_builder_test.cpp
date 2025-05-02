@@ -18,7 +18,6 @@ TEST(IRBuilder, Bool) {
   builder.create_and(bool_true, bool_false);
   auto block = builder.extract_ir();
 
-  auto print = irpass::make_pass_printer(true, true, "", bool_true);
   std::string ir_string;
   irpass::print(block->get_ir_root(), &ir_string);
   EXPECT_STREQ(ir_string.c_str(), R"(kernel {

@@ -4,6 +4,9 @@
 
 namespace taichi::lang {
 
+#ifndef TARGET_OS_IPHONE
+// This code will only compile and run on non-iOS platforms
+
 TEST(HostMemoryPool, AllocateMemory) {
   // fairly sure this leaks 1GB memory, but it's a test, so yeah
   // Just don't make lots of copies of this test :sweat_smile:
@@ -21,5 +24,6 @@ TEST(HostMemoryPool, AllocateMemory) {
   EXPECT_EQ((std::size_t)ptr2, (std::size_t)ptr1 + 1024);
   EXPECT_EQ((std::size_t)ptr3, (std::size_t)ptr2 + 1024);
 }
+#endif
 
 }  // namespace taichi::lang

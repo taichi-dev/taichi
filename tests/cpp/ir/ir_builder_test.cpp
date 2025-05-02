@@ -35,7 +35,6 @@ TEST(IRBuilder, Assert) {
   builder.create_assert(bool_true, "assertion failed");
   auto block = builder.extract_ir();
 
-  auto print = irpass::make_pass_printer(true, true, "", bool_true);
   std::string ir_string;
   irpass::print(block->get_ir_root(), &ir_string);
   EXPECT_STREQ(ir_string.c_str(),

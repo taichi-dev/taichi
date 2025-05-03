@@ -35,6 +35,11 @@ class TI_DLL_EXPORT Kernel : public Callable {
          const std::string &name = "",
          AutodiffMode autodiff_mode = AutodiffMode::kNone);
 
+  Kernel(Program &program,
+         Block *block,
+         const std::string &name = "",
+         AutodiffMode autodiff_mode = AutodiffMode::kNone);
+
   bool ir_is_ast() const {
     return ir_is_ast_;
   }

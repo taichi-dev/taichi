@@ -31,6 +31,33 @@ Kernel::Kernel(Program &program,
 }
 
 Kernel::Kernel(Program &program,
+               Block *block,
+               const std::string &primal_name,
+               AutodiffMode autodiff_mode) {
+  this->arch = program.compile_config().arch;
+  this->autodiff_mode = autodiff_mode;
+  this->ir = std::unique_ptr<IRNode>(block);
+  this->program = &program;
+  is_accessor = false;
+  ir_is_ast_ = false;  // CHI IR
+
+  TI_ASSERT(this->ir->is<Block>());
+  this->ir->as<Block>()->set_parent_callable(this);
+
+  if (autodiff_mode == AutodiffMode::kNone) {
+    name = primal_name;
+  } else if (autodiff_mode == AutodiffMode::kForward) {
+    name = primal_name + "_forward_grad";
+  } else if (autodiff_mode == AutodiffMode::kReverse) {
+    name = primal_name + "_reverse_grad";
+  } else if (autodiff_mode == AutodiffMode::kCheckAutodiffValid) {
+    name = primal_name + "_validate_grad";
+  } else {
+    TI_ERROR("Unsupported autodiff mode");
+  }
+}
+
+Kernel::Kernel(Program &program,
                std::unique_ptr<IRNode> &&ir,
                const std::string &primal_name,
                AutodiffMode autodiff_mode) {

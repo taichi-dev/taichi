@@ -44,7 +44,7 @@ Gui::Gui(AppContext *app_context, SwapChain *swap_chain, TaichiWindow *window) {
 
 void Gui::init_render_resources(VkRenderPass render_pass) {
   ImGui_ImplVulkan_LoadFunctions(
-    K_API_VERSION_1_0,          // or app_context_->config.vk_api_version
+    VK_API_VERSION_1_0,          // or app_context_->config.vk_api_version
     load_vk_function_for_gui, // this is because we're using volk.
     nullptr);
 

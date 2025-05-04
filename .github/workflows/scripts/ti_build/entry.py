@@ -17,7 +17,7 @@ from .cmake import cmake_args
 from .compiler import setup_clang, setup_msvc
 from .ios import build_ios, setup_ios
 from .llvm import setup_llvm
-from .misc import banner, is_manylinux2014
+from .misc import banner, is_manylinux_2_28
 from .ospkg import setup_os_pkgs
 from .python import get_desired_python_version, setup_python
 from .sccache import setup_sccache
@@ -52,11 +52,19 @@ def build_wheel(python: Command, pip: Command) -> None:
     elif wheel_tag:
         proj_tags.extend(["egg_info", f"--tag-build={wheel_tag}"])
 
-    if platform.system() == "Linux":
-        if is_manylinux2014():
-            extra.extend(["-p", "manylinux2014_x86_64"])
+    u = platform.uname()
+    if (u.system, u.machine) == ("Linux", "x86_64"):
+        if is_manylinux_2_28():
+            extra.extend(["-p", "manylinux_2_28_x86_64"])
         else:
             extra.extend(["-p", "manylinux_2_27_x86_64"])
+    elif (u.system, u.machine) in (("Linux", "arm64"), ("Linux", "aarch64")):
+        if is_manylinux_2_28():
+            extra.extend(["-p", "manylinux_2_28_aarch64"])
+        else:
+            extra.extend(["-p", "manylinux_2_27_aarch64"])
+    else:
+        extra.extend(["-p", "manylinux2014_x86_64"])
 
     python("setup.py", "clean")
     python("misc/make_changelog.py", "--ver", "origin/master", "--repo_dir", "./", "--save")
@@ -158,7 +166,7 @@ def parse_args():
     parser.add_argument("-s", "--shell", action="store_true", help=help)
 
     help = (
-        "Python version to use, e.g. '3.7', '3.11', or 'native' to not use an isolated python environment. "
+        "Python version to use, e.g. '3.10', '3.11', or 'native' to not use an isolated python environment. "
         "Defaults to the same version of the current python interpreter."
     )
     parser.add_argument("--python", default=None, help=help)

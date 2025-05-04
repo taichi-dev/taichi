@@ -47,7 +47,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
         with:
           fetch-depth: '0'
 
@@ -90,7 +90,7 @@ jobs:
     runs-on: ubuntu-latest
     needs: check_files
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
         with:
           submodules: 'recursive'
           fetch-depth: '0'
@@ -140,7 +140,7 @@ jobs:
   #        git submodule foreach 'git rev-parse HEAD > /dev/null 2>&1 || rm -rf $PWD' || true
   #        unset-git-caching-proxy
 
-  #    - uses: actions/checkout@v3
+  #    - uses: actions/checkout@v4
   #      with:
   #        fetch-depth: '0'
   #        submodules: 'recursive'
@@ -163,7 +163,7 @@ jobs:
 
   #    # [DEBUG] Copy this step around to enable debugging inside Github Action instances.
   #    #- name: Setup tmate session
-  #    #  uses: mxschmitt/action-tmate@v3
+  #    #  uses: mxschmitt/action-tmate@v4
   #    #  with:
   #    #    limit-access-to-actor: true
 
@@ -203,7 +203,7 @@ jobs:
     - ${{ matrix.driver }}
     - ${{ matrix.extra_markers == 'sm70' && 'sm70' || 'Linux' }}
     env:
-      PY: '3.11'
+      PY: '3.12'
       PROJECT_NAME: taichi
       TAICHI_CMAKE_ARGS: >-
         -DTI_WITH_OPENGL:BOOL=ON
@@ -222,7 +222,7 @@ jobs:
       - name: Workaround checkout Needed single revision issue
         run: git submodule foreach 'git rev-parse HEAD > /dev/null 2>&1 || rm -rf $PWD' || true
 
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
         with:
           submodules: 'recursive'
           fetch-depth: '0'
@@ -276,7 +276,7 @@ jobs:
     timeout-minutes: ${{ github.event.schedule != '0 18 * * *' && 90 || 120 }}
     runs-on: [self-hosted, amdgpu]
     env:
-      PY: '3.9'
+      PY: '3.12'
       PROJECT_NAME: taichi
       TI_WANTED_ARCHS: 'cpu,amdgpu'
       TI_DEVICE_MEMORY_GB: '1'
@@ -292,7 +292,7 @@ jobs:
       - name: Workaround checkout Needed single revision issue
         run: git submodule foreach 'git rev-parse HEAD > /dev/null 2>&1 || rm -rf $PWD' || true
 
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
         with:
           submodules: 'recursive'
           fetch-depth: '0'
@@ -356,7 +356,7 @@ jobs:
     - ${{ matrix.extra_markers == 'sm70' && 'sm70' || 'windows' }}
     timeout-minutes: ${{ github.event.schedule != '0 18 * * *' && 90 || 180 }}
     env:
-      PY: "3.9"
+      PY: "3.12"
       TAICHI_CMAKE_ARGS: >-
         -DTI_WITH_OPENGL:BOOL=OFF
         -DTI_WITH_VULKAN:BOOL=ON
@@ -376,15 +376,14 @@ jobs:
           git config --system core.longpaths true
           git submodule foreach 'git rev-parse HEAD > /dev/null 2>&1 || rm -rf $PWD'  # no '|| true' here
 
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
         with:
           fetch-depth: '0'
           submodules: 'recursive'
 
-      - uses: actions/setup-python@v4
+      - uses: actions/setup-python@v5
         with:
-          python-version: 3.9
-
+          python-version: 3.12
       - name: Build
         if: ${{ needs.check_files.outputs.run_job != 'false' }}
         shell: cmd
@@ -428,7 +427,7 @@ jobs:
       matrix:
         include:
           - os: macos-latest
-            python: 3.9
+            python: 3.12
     defaults:
       run:
         # https://github.com/actions/runner/issues/805#issuecomment-844426478
@@ -451,7 +450,7 @@ jobs:
       - name: Workaround checkout Needed single revision issue
         run: git submodule foreach 'git rev-parse HEAD > /dev/null 2>&1 || rm -rf $PWD' || true
 
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
         with:
           fetch-depth: '0'
           submodules: 'recursive'
@@ -508,7 +507,7 @@ jobs:
       - name: Workaround checkout Needed single revision issue
         run: git submodule foreach 'git rev-parse HEAD > /dev/null 2>&1 || rm -rf $PWD' || true
 
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
         with:
           fetch-depth: '0'
           submodules: 'recursive'
@@ -531,7 +530,7 @@ jobs:
     timeout-minutes: ${{ github.event.schedule != '0 18 * * *' && 90 || 120 }}
     runs-on: [self-hosted, Linux, cuda, vulkan, cn]
     env:
-      PY: '3.9'
+      PY: '3.12'
       PROJECT_NAME: taichi
       TI_WANTED_ARCHS: 'cpu,cuda,vulkan'
       TI_DEVICE_MEMORY_GB: '1'
@@ -547,7 +546,7 @@ jobs:
       - name: Workaround checkout Needed single revision issue
         run: git submodule foreach 'git rev-parse HEAD > /dev/null 2>&1 || rm -rf $PWD' || true
 
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
         with:
           submodules: 'recursive'
           fetch-depth: '0'
@@ -611,7 +610,7 @@ jobs:
   #     - name: Workaround checkout Needed single revision issue
   #       run: git submodule foreach 'git rev-parse HEAD > /dev/null 2>&1 || rm -rf $PWD' || true
 
-  #     - uses: actions/checkout@v3
+  #     - uses: actions/checkout@v4
   #       name: Checkout taichi
   #       with:
   #         fetch-depth: '0'
@@ -690,7 +689,7 @@ jobs:
   #     - name: Workaround checkout Needed single revision issue
   #       run: git submodule foreach 'git rev-parse HEAD > /dev/null 2>&1 || rm -rf $PWD' || true
 
-  #     - uses: actions/checkout@v3
+  #     - uses: actions/checkout@v4
   #       name: Checkout taichi
   #       with:
   #         fetch-depth: '0'
@@ -768,7 +767,7 @@ jobs:
   #     - name: Workaround checkout Needed single revision issue
   #       run: git submodule foreach 'git rev-parse HEAD > /dev/null 2>&1 || rm -rf $PWD' || true
 
-  #     - uses: actions/checkout@v3
+  #     - uses: actions/checkout@v4
   #       name: Checkout taichi
   #       with:
   #         fetch-depth: '0'
@@ -852,7 +851,7 @@ jobs:
         tags:
           - [self-hosted, cuda, vulkan, cn, driver550]
     env:
-      PY: '3.9'
+      PY: '3.12'
       PROJECT_NAME: taichi
       TAICHI_CMAKE_ARGS: >-
         -DTI_WITH_OPENGL:BOOL=OFF
@@ -870,7 +869,7 @@ jobs:
       - name: Workaround checkout Needed single revision issue
         run: git submodule foreach 'git rev-parse HEAD > /dev/null 2>&1 || rm -rf $PWD' || true
 
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
         with:
           submodules: 'recursive'
           fetch-depth: '0'

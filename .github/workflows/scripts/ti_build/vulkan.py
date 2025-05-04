@@ -24,6 +24,18 @@ def setup_vulkan():
         path_prepend("PATH", sdk / "bin")
         path_prepend("LD_LIBRARY_PATH", sdk / "lib")
         os.environ["VK_LAYER_PATH"] = str(sdk / "etc" / "vulkan" / "explicit_layer.d")
+    elif (u.system, u.machine) in (("Linux", "arm64"), ("Linux", "aarch64")):
+        url = (
+            "https://github.com/johnnynunez/vulkan-sdk-arm/releases/download/1.4.309.0/"
+            "vulkansdk-linux-arm64-ubuntu-24.04-arm-1.4.309.0.zip"
+        )
+        prefix = get_cache_home() / "vulkan-1.4.309.0"
+        download_dep(url, prefix, strip=1)
+        sdk = prefix / "arm64"
+        os.environ["VULKAN_SDK"] = str(sdk)
+        path_prepend("PATH", sdk / "bin")
+        path_prepend("LD_LIBRARY_PATH", sdk / "lib")
+        os.environ["VK_LAYER_PATH"] = str(sdk / "etc" / "vulkan" / "explicit_layer.d")
     # elif (u.system, u.machine) == ("Darwin", "arm64"):
     # elif (u.system, u.machine) == ("Darwin", "x86_64"):
     elif (u.system, u.machine) == ("Windows", "AMD64"):

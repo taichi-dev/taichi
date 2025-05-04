@@ -17,13 +17,13 @@ jobs:
         EOF
     - name: Show Github Event Path Json
       run: 'cat $GITHUB_EVENT_PATH || true'
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@v4
       with:
         token: ${{ secrets.GARDENER_PAT }}
         fetch-depth: '0'
-    - uses: actions/setup-python@v4
+    - uses: actions/setup-python@v5
       with:
-        python-version: 3.9
+        python-version: 3.12
     - name: Check Current CI Status
       run: |
         pip install requests ghstack

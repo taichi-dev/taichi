@@ -28,7 +28,7 @@ on:
         default: false
         type: boolean
       python:
-        description: 'JSON encoded python versions need building wheel. e.g.: ["3.7"]'
+        description: 'JSON encoded python versions need building wheel. e.g.: ["3.12"]'
         required: true
         type: string
 
@@ -83,7 +83,7 @@ jobs:
       - name: Workaround checkout Needed single revision issue
         run: git submodule foreach 'git rev-parse HEAD > /dev/null 2>&1 || rm -rf $PWD' || true
 
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
         with:
           fetch-depth: '0'
           submodules: 'recursive'
@@ -92,7 +92,7 @@ jobs:
         run: ./build.py ${NIGHTLY:+--nightly} --python=${{ matrix.python }} ${SHOULD_TAG_CONFIG:+--tag-config}
 
       - name: Upload Built Wheel
-        uses: shallwefootball/s3-upload-action@v1.3.3
+        uses: shallwefootball/s3-upload-action@master
         with:
           aws_key_id: ${{ secrets.BOT_MINIO_ACCESS_KEY }}
           aws_secret_access_key: ${{ secrets.BOT_MINIO_SECRET_KEY }}
@@ -131,7 +131,7 @@ jobs:
       - name: Workaround checkout Needed single revision issue
         run: git submodule foreach 'git rev-parse HEAD > /dev/null 2>&1 || rm -rf $PWD' || true
 
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
         with:
           submodules: 'recursive'
           fetch-depth: '0'
@@ -147,7 +147,7 @@ jobs:
           SHOULD_TAG_CONFIG: ${{ !matrix.designated && 'yes' || '' }}
 
       - name: Upload Built Wheel
-        uses: shallwefootball/s3-upload-action@v1.3.3
+        uses: shallwefootball/s3-upload-action@master
         with:
           aws_key_id: ${{ secrets.BOT_MINIO_ACCESS_KEY }}
           aws_secret_access_key: ${{ secrets.BOT_MINIO_SECRET_KEY }}
@@ -177,7 +177,7 @@ jobs:
       - name: Workaround checkout Needed single revision issue
         run: git submodule foreach 'git rev-parse HEAD > /dev/null 2>&1 || rm -rf $PWD' || true
 
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
         with:
           submodules: 'recursive'
           fetch-depth: '0'
@@ -192,7 +192,7 @@ jobs:
             /home/dev/taichi/build.py ${NIGHTLY:+--nightly} --python=${{ matrix.python }} --tag-local=amd
 
       - name: Upload Built Wheel
-        uses: shallwefootball/s3-upload-action@v1.3.3
+        uses: shallwefootball/s3-upload-action@master
         with:
           aws_key_id: ${{ secrets.BOT_MINIO_ACCESS_KEY }}
           aws_secret_access_key: ${{ secrets.BOT_MINIO_SECRET_KEY }}
@@ -240,15 +240,15 @@ jobs:
           git submodule foreach --recursive 'git rev-parse HEAD || rm -rf $PWD'
           $LASTEXITCODE = 0
 
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
         with:
           fetch-depth: '0'
           submodules: 'recursive'
 
-      - uses: actions/setup-python@v4
+      - uses: actions/setup-python@v5
         with:
-          # force a 3.7 is ok, build.py will handle actual python env
-          python-version: 3.7
+          # force a 3.12 is ok, build.py will handle actual python env
+          python-version: 3.12
 
       - name: Build
         shell: pwsh
@@ -262,7 +262,7 @@ jobs:
           SHOULD_TAG_CONFIG: ${{ !matrix.designated && 'yes' || '' }}
 
       - name: Upload Built Wheel
-        uses: shallwefootball/s3-upload-action@v1.3.3
+        uses: shallwefootball/s3-upload-action@master
         with:
           aws_key_id: ${{ secrets.BOT_MINIO_ACCESS_KEY }}
           aws_secret_access_key: ${{ secrets.BOT_MINIO_SECRET_KEY }}
@@ -289,6 +289,7 @@ jobs:
         _designated: ['']
         exclude:
         - python: "3.7"
+        - python: "3.8"
         include:
         - _designated: ''
           designated: designated
@@ -309,7 +310,7 @@ jobs:
       - name: Workaround checkout Needed single revision issue
         run: git submodule foreach 'git rev-parse HEAD > /dev/null 2>&1 || rm -rf $PWD' || true
 
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
         with:
           fetch-depth: '0'
           submodules: 'recursive'
@@ -320,7 +321,7 @@ jobs:
           ./build.py ${NIGHTLY:+--nightly} --python=${{ matrix.python }}
 
       - name: Upload Built Wheel
-        uses: shallwefootball/s3-upload-action@v1.3.3
+        uses: shallwefootball/s3-upload-action@master
         with:
           aws_key_id: ${{ secrets.BOT_MINIO_ACCESS_KEY }}
           aws_secret_access_key: ${{ secrets.BOT_MINIO_SECRET_KEY }}
@@ -337,7 +338,7 @@ jobs:
       - name: Workaround checkout Needed single revision issue
         run: git submodule foreach 'git rev-parse HEAD > /dev/null 2>&1 || rm -rf $PWD' || true
 
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
         with:
           fetch-depth: '0'
           submodules: 'recursive'

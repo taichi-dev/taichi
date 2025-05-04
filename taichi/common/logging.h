@@ -10,7 +10,7 @@
 // before including "spdlog/fmt/fmt.h"
 #include "spdlog/common.h"
 #include "spdlog/fmt/fmt.h"
-#include "spdlog/fmt/ranges.h"   // ← brings in fmt::join()
+#include "spdlog/fmt/ranges.h"  // ← brings in fmt::join()
 namespace spdlog {
 class logger;
 }

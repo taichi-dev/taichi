@@ -2,7 +2,7 @@
 #include "taichi/ir/statements.h"
 #include "taichi/program/program.h"
 
-void run_snode() {
+int main() {
   /*
   import taichi as ti, numpy as np
   ti.init()
@@ -39,7 +39,7 @@ void run_snode() {
 
   using namespace taichi;
   using namespace lang;
-  auto program = Program(Arch::x64);
+  auto program = Program(host_arch());
   const auto &config = program.compile_config();
   /*CompileConfig config_print_ir;
   config_print_ir.print_ir = true;

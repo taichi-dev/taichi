@@ -1,11 +1,10 @@
 #include "taichi/ir/ir_builder.h"
 #include "taichi/ir/statements.h"
 #include "taichi/program/program.h"
+using namespace taichi;
+using namespace lang;
 
-void aot_save(taichi::Arch arch) {
-  using namespace taichi;
-  using namespace lang;
-
+void run_aot(taichi::Arch arch) {
   default_compile_config.advanced_optimization = false;
   auto program = Program(arch);
 
@@ -76,4 +75,14 @@ void aot_save(taichi::Arch arch) {
   aot_builder->add("ret", kernel_ret.get());
   aot_builder->dump(".", taichi::arch_name(arch) + "_aot.tcb");
   std::cout << "done" << std::endl;
+}
+
+int main() {
+  run_aot(host_arch());
+#ifdef TI_WITH_VULKAN
+  run_aot(taichi::Arch::vulkan);
+#endif
+#ifdef TI_WITH_DX12
+  run_aot(Arch::dx12);
+#endif
 }

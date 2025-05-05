@@ -3,11 +3,13 @@
 # -- stdlib --
 from pathlib import Path
 import os
+from os.path import join
 import json
 import platform
 import shutil
 import tempfile
 import sys
+import subprocess
 
 # -- third party --
 # -- own --
@@ -17,6 +19,12 @@ from .misc import banner, error, get_cache_home, warn
 from .tinysh import powershell
 
 
+def grep(value, target):
+    for line in target.split("\n"):
+        if value in line:
+            return line
+
+
 # -- code --
 @banner("Setup Clang")
 def setup_clang(as_compiler=True) -> None:
@@ -24,7 +32,7 @@ def setup_clang(as_compiler=True) -> None:
     Setup Clang.
     """
     u = platform.uname()
-    if u.system in ("Linux", "Darwin"):
+    if u.system == "Linux":
         for v in ("", "-14", "-13", "-12", "-11", "-10"):
             clang = shutil.which(f"clang{v}")
             if clang is not None:
@@ -34,7 +42,13 @@ def setup_clang(as_compiler=True) -> None:
         else:
             error("Could not find clang of any version")
             return
-
+    elif u.system == "Darwin":
+        brew_config = subprocess.check_output(["brew", "config"]).decode("utf-8")
+        print("brew_config", brew_config)
+        brew_prefix = grep("HOMEBREW_PREFIX", brew_config).split()[1]
+        print("brew_prefix", brew_prefix)
+        clang = join(brew_prefix, "opt", "llvm@15", "bin", "clang")
+        clangpp = join(brew_prefix, "opt", "llvm@15", "bin", "clang++")
     elif (u.system, u.machine) == ("Windows", "AMD64"):
         out = get_cache_home() / "clang-14-v2"
         url = "https://github.com/taichi-dev/taichi_assets/releases/download/llvm15/clang-14.0.6-win-complete.zip"

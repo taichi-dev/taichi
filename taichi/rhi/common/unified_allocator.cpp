@@ -6,7 +6,7 @@
 
 namespace taichi::lang {
 
-const std::size_t UnifiedAllocator::default_allocator_size =
+std::size_t UnifiedAllocator::default_allocator_size =
     1 << 30;  // 1 GB per allocator
 
 template <typename T>

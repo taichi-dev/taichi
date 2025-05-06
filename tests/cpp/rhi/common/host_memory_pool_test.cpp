@@ -18,9 +18,6 @@ class HostMemoryPoolTestHelper {
 };
 
 TEST(HostMemoryPool, AllocateMemory) {
-  // fairly sure this leaks 1GB memory, but it's a test, so yeah
-  // Just don't make lots of copies of this test :sweat_smile:
-
   auto oldAllocatorSize = HostMemoryPoolTestHelper::getDefaultAllocatorSize();
   HostMemoryPoolTestHelper::setDefaultAllocatorSize(102400);  // 100KB
 

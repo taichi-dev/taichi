@@ -206,12 +206,19 @@ class ASTTransformer(Builder):
             ctx.create_variable(target.id, var)
         else:
             var = build_stmt(ctx, target)
-            try:
-                var._assign(value)
-            except AttributeError:
-                raise TaichiSyntaxError(
-                    f"Variable '{unparse(target).strip()}' cannot be assigned. Maybe it is not a Taichi object?"
-                )
+            if isinstance(var, tuple) and isinstance(value, tuple):
+                if len(var) != len(value):
+                    raise TaichiSyntaxError("Tuple assign with different lengths")
+                vars, values = var, value
+            else:
+                vars, values = (var,), (value,)
+            for i in range(len(vars)):
+                try:
+                    vars[i]._assign(values[i])
+                except AttributeError:
+                    raise TaichiSyntaxError(
+                        f"Variable '{unparse(target).strip()}' cannot be assigned. Maybe it is not a Taichi object?"
+                    )
         return var
 
     @staticmethod

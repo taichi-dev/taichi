@@ -427,13 +427,13 @@ jobs:
     strategy:
       matrix:
         include:
-          - os: macos-latest
+          - os: macos-15
             python: 3.9
     defaults:
       run:
         # https://github.com/actions/runner/issues/805#issuecomment-844426478
         shell: '/usr/bin/arch -arch arm64e /bin/bash --noprofile --norc -eo pipefail {0}'
-    runs-on: [self-hosted, m1]
+    runs-on: macos-15
     env:
       CXX: clang++
       PY: ${{ matrix.python }}
@@ -459,6 +459,8 @@ jobs:
       - name: Build
         if: ${{ needs.check_files.outputs.run_job != 'false' }}
         run: |
+          sw_vers
+          clang++ --version
           . .github/workflows/scripts/common-utils.sh
           prepare-build-cache
           brew install molten-vk

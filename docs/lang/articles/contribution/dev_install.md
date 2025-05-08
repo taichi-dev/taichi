@@ -70,9 +70,12 @@ This guide will focus on the `build.py` approach. If you prefer to use the conve
 
 | Category                       | Prerequisites                            |
 | :----------------------------- | ---------------------------------------- |
-| macOS                          | macOS Big Sur or later                   |
+| macOS                          | macOS Big Sur or later [*1]              |
 | Python                         | 3.6+ (should be readily available)       |
 | Command line tools for Xcode   | Run `xcode-select --install` to install  |
+
+Notes:
+- [*1] Note that 15.x Sequoia is not supported out of the box currently. See the HOWTO at https://github.com/taichi-dev/taichi/issues/8685 in the meantime.
 
 </TabItem>
 
@@ -95,7 +98,7 @@ This guide will focus on the `build.py` approach. If you prefer to use the conve
 
 Taichi supports building from source with Clang++ >= 10.0 and MSVC from VS2022.
 
-For macOS developers, it is recommended to use AppleClang, which comes with the Command Line Tools for Xcode. You can install them by running `xcode-select --install`. Alternatively, you can also install Xcode.app from the Apple Store.
+For macOS developers, Taichi build script automatically uses `brew` to install `@llvm15`, which contains the clang-15 compiler. The clang-15 compiler will be used to built Taichi. No additional compilers are necessary.
 
 For Linux developers, it is recommended to install Clang using the package manager specific to your operating system. On Ubuntu 22.04, running `sudo apt install clang-15` should be sufficient. For older Ubuntu distributions to use a newer version of Clang, please follow the instructions on [official LLVM Debian/Ubuntu Nightly Packages](https://apt.llvm.org/).
 

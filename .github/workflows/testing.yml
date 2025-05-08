@@ -210,6 +210,7 @@ jobs:
         -DTI_WITH_VULKAN:BOOL=ON
         -DTI_WITH_BACKTRACE:BOOL=ON
         -DTI_BUILD_TESTS:BOOL=ON
+        -DTI_BUILD_EXAMPLES:BOOL=ON
       TI_WANTED_ARCHS: 'cpu,cuda,vulkan,gles'
       TI_DEVICE_MEMORY_GB: '1'
       TI_RUN_RELEASE_TESTS: '1'

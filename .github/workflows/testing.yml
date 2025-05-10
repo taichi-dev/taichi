@@ -211,10 +211,6 @@ jobs:
           submodules: 'recursive'
           fetch-depth: '0'
 
-      - name: Prepare Environment
-        run: |
-          prepare-build-cache
-
       - name: Build & Install
         run: |
             /home/dev/taichi/.github/workflows/scripts/build.py

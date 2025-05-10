@@ -213,27 +213,15 @@ jobs:
 
       - name: Prepare Environment
         run: |
-          . .github/workflows/scripts/common-utils.sh
           prepare-build-cache
-          echo CI_DOCKER_RUN_EXTRA_ARGS="-v $(pwd):/home/dev/taichi" >> $GITHUB_ENV
 
       - name: Build & Install
         run: |
-          [[ ${{needs.check_files.outputs.run_job}} == false ]] && exit 0
-          . .github/workflows/scripts/common-utils.sh
-
-          ci-docker-run-gpu --name taichi-build \
-            registry.botmaster.tgr/taichi-build-cuda:${{ env.CI_IMAGE_VERSION }} \
             /home/dev/taichi/.github/workflows/scripts/build.py
 
       - name: Test
         id: test
         run: |
-          [[ ${{needs.check_files.outputs.run_job}} == false ]] && exit 0
-          . .github/workflows/scripts/common-utils.sh
-
-          ci-docker-run-gpu --name taichi-test \
-             registry.botmaster.tgr/taichi-test-cuda:${{ env.CI_IMAGE_VERSION }} \
              /home/dev/taichi/.github/workflows/scripts/unix_test.sh
         env:
           EXTRA_TEST_MARKERS: ${{ matrix.extra_markers }}

@@ -183,8 +183,8 @@ jobs:
   #        path: dist/*
   #        retention-days: 7
 
-  build_and_test_linux_x864_cpu:
-    name: Build and Test Github runner x86 cpu
+  build_and_test_linux_x86_cpu:
+    name: Build and Test Github linux runner x86 cpu
     needs: check_files
     timeout-minutes: ${{ github.event.schedule != '0 18 * * *' && 90 || 120 }}
 
@@ -203,10 +203,6 @@ jobs:
       TI_RUN_RELEASE_TESTS: '1'
 
     steps:
-      - name: Restart X Server
-        run: |
-          sudo systemctl restart xorg
-
       - name: Workaround checkout Needed single revision issue
         run: git submodule foreach 'git rev-parse HEAD > /dev/null 2>&1 || rm -rf $PWD' || true
 

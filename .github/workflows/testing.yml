@@ -183,6 +183,81 @@ jobs:
   #        path: dist/*
   #        retention-days: 7
 
+  build_and_test_linux_x864_cpu:
+    name: Build and Test Github runner x86 cpu
+    needs: check_files
+    timeout-minutes: ${{ github.event.schedule != '0 18 * * *' && 90 || 120 }}
+
+    runs-on:
+    - ubuntu-22.04
+    env:
+      PY: '3.11'
+      PROJECT_NAME: taichi
+      TAICHI_CMAKE_ARGS: >-
+        -DTI_WITH_OPENGL:BOOL=ON
+        -DTI_WITH_VULKAN:BOOL=ON
+        -DTI_WITH_BACKTRACE:BOOL=ON
+        -DTI_BUILD_TESTS:BOOL=ON
+      TI_WANTED_ARCHS: 'cpu,vulkan,gles'
+      TI_DEVICE_MEMORY_GB: '1'
+      TI_RUN_RELEASE_TESTS: '1'
+
+    steps:
+      - name: Restart X Server
+        run: |
+          sudo systemctl restart xorg
+
+      - name: Workaround checkout Needed single revision issue
+        run: git submodule foreach 'git rev-parse HEAD > /dev/null 2>&1 || rm -rf $PWD' || true
+
+      - uses: actions/checkout@v3
+        with:
+          submodules: 'recursive'
+          fetch-depth: '0'
+
+      - name: Prepare Environment
+        run: |
+          . .github/workflows/scripts/common-utils.sh
+          prepare-build-cache
+          echo CI_DOCKER_RUN_EXTRA_ARGS="-v $(pwd):/home/dev/taichi" >> $GITHUB_ENV
+
+      - name: Build & Install
+        run: |
+          [[ ${{needs.check_files.outputs.run_job}} == false ]] && exit 0
+          . .github/workflows/scripts/common-utils.sh
+
+          ci-docker-run-gpu --name taichi-build \
+            registry.botmaster.tgr/taichi-build-cuda:${{ env.CI_IMAGE_VERSION }} \
+            /home/dev/taichi/.github/workflows/scripts/build.py
+
+      - name: Test
+        id: test
+        run: |
+          [[ ${{needs.check_files.outputs.run_job}} == false ]] && exit 0
+          . .github/workflows/scripts/common-utils.sh
+
+          ci-docker-run-gpu --name taichi-test \
+             registry.botmaster.tgr/taichi-test-cuda:${{ env.CI_IMAGE_VERSION }} \
+             /home/dev/taichi/.github/workflows/scripts/unix_test.sh
+        env:
+          EXTRA_TEST_MARKERS: ${{ matrix.extra_markers }}
+
+      - name: Save wheel if test failed
+        if: failure() && steps.test.conclusion == 'failure'
+        uses: actions/upload-artifact@v4
+        with:
+          name: broken-wheel
+          path: dist/*
+          retention-days: 7
+
+      - name: Save Bad Captures
+        if: failure() && steps.test.conclusion == 'failure'
+        uses: actions/upload-artifact@v4
+        with:
+          name: bad-captures
+          path: taichi-release-tests/bad-compare/*
+          retention-days: 7
+
   build_and_test_gpu_linux:
     name: Build and Test (GPU)
     needs: check_files
@@ -286,6 +361,7 @@ jobs:
         -DTI_WITH_VULKAN:BOOL=OFF
         -DTI_WITH_OPENGL:BOOL=OFF
         -DTI_BUILD_TESTS:BOOL=ON
+        -DTI_BUILD_EXAMPLES:BOOL=ON
         -DTI_WITH_AMDGPU:BOOL=ON
 
     steps:

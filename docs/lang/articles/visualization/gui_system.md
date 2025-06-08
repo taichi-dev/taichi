@@ -21,11 +21,8 @@ while gui.running:
     gui.show()
 ```
 
-:::note
+In order to ensure a continuous visual display, it is imperative to put the call to `gui.show()` within a `while` loop. Otherwise, the window will only briefly appear before being automatically closed.
 
-Call `gui.show()` inside a `while` loop. Otherwise, the window would flash once and disappear.
-
-:::
 
 ## Close the window
 
@@ -43,7 +40,7 @@ while gui.running:
 
 ## Coordinate system
 
-Each window is built on a coordinate system: the origin is located in the lower-left corner, with the `+x` direction stretching to the right and the `+y` direction stretching upward.
+Each window in the system is constructed based on a coordinate system, with the origin positioned at the lower-left corner. The positive x-axis extends towards the right, while the positive y-axis extends upwards.
 
 ## Display a field or ndarray
 
@@ -67,22 +64,24 @@ Ensure that the shape of the input matches the resolution of the GUI window.
 
 ### Zero-copying frame buffer
 
-In each loop of the `gui.set_image()` method call, the GUI system converts the image data to a displayable format and copies the result to the window buffer. This causes huge overload when the window size is large, making it hard to achieve high FPS (frames per second).
+In each iteration of the invocation of the `gui.set_image()` method, the GUI framework performs a conversion of the image data into a format suitable for display and transfers the converted data to the window's frame buffer. This results in a substantial increase in processing overhead when the window size is substantial, which hinders the ability to attain high frame rates (FPS).
 
-If you only need to call the `set_image()` method without using any drawing command, you can enable `fast_gui` mode for better performance. This mode allows Taichi GUI to write the image data directly to the frame buffer without additional copying, and significantly increases FPS.
+In instances where the sole purpose of calling the `set_image()` method is to display an image, and no additional drawing operations are required, it is possible to enable the `fast_gui` mode for improved performance. This mode enables Taichi GUI to directly write the image data to the frame buffer, thereby eliminating the need for additional data copying and significantly enhancing the frame rate (FPS).
 
 ```python
 gui = ti.GUI('Fast GUI', res=(400, 400), fast_gui=True)
 ```
 
-For this mode to work, ensure that the data passed into `gui.set_image()` is in a display-compatible format. In other words, If it is a Taichi field, ensure that it is one of the following:
+In order to ensure that the `fast_gui` mode operates effectively, it is crucial to verify that the data passed to the `gui.set_image()` method is in a format that is suitable for display. Specifically, if the data is represented as a Taichi field, it should be of one of the following formats:
 
 - a vector field `ti.field(3, dtype, shape)` compatible with RGB format.
 - a vector field `ti.field(4, dtype, shape)`  compatible with RGBA format.
 
-Note that `dtype` must be `ti.f32`, `ti.f64`, or `ti.u8`.
+It is important to note that the `dtype` attribute of the Taichi field must be set to `ti.f32`, `ti.f64`, or `ti.u8`.
+
 
 ## Draw on a window
+
 
 Taichi's GUI system supports drawing simple geometries, such as lines, circles, triangles, rectangles, arrows, and texts.
 
@@ -90,9 +89,11 @@ Taichi's GUI system supports drawing simple geometries, such as lines, circles, 
 
 In Taichi, drawing basic geometric shapes on the GUI is very intuitive. In most cases, all we need to do is specify information such as the position and size of the geometry and call the corresponding APIs.
 
+
 #### Line
 
 You can draw a single line on a GUI canvas by specifying its begin and end points:
+
 
 ```python
 import numpy as np
@@ -199,7 +200,7 @@ It's also possible to draw multiple geometries at once by providing a collection
 
 #### Lines
 
-The following code draws five blue line segments whose width is 2, with `X` and `Y` representing the five starting points and the five ending points.
+The following code snippet demonstrates the rendering of five blue line segments, each with a width of 2, with `X` and `Y` denoting the starting and ending points respectively:
 
 ```python
 import numpy as np
@@ -212,6 +213,7 @@ while gui.running:
 ```
 
 ![gui-lines](https://raw.githubusercontent.com/taichi-dev/public_files/master/taichi/doc/gui-lines.png)
+
 
 #### Circles
 
@@ -236,6 +238,7 @@ while gui.running:
 #### Triangles
 
 The following code draws two orange triangles orange, with `X`, `Y`, and `Z` representing the three points of the triangles.
+
 
 ```python
 import numpy as np
@@ -270,7 +273,7 @@ Notice that we used `low` and `high` in the call to `np.random.uniform()` to lim
 
 ## Event handling
 
-Taichi's GUI system also provides a set of methods for mouse and keyboard control. Input events are classified into three types:
+In addition to its rendering capabilities, Taichi's GUI system also offers a range of methods for mouse and keyboard input control. Input events are categorized into three categories:
 
 ```python
 ti.GUI.RELEASE  # key up or mouse button up
@@ -278,7 +281,7 @@ ti.GUI.PRESS    # key down or mouse button down
 ti.GUI.MOTION   # mouse motion or mouse wheel
 ```
 
-*Event key* is the key that you press from your keyboard or mouse. It can be one of:
+*Event key*: refers to the key that you press from your keyboard or mouse. It can be one of:
 
 ```python
 # for ti.GUI.PRESS and ti.GUI.RELEASE event:
@@ -296,7 +299,7 @@ ti.GUI.MOVE    # Mouse Moved
 ti.GUI.WHEEL   # Mouse Wheel Scrolling
 ```
 
-An *event filter* is a combined list of *key*, *type*, and *(type, key)* tuple. For example:
+*Event filter*: refers to a combined list of *key*, *type*, and (*type*, *key*) tuple. For example:
 
 ```python preludes:gui
 # if ESC pressed or released:
@@ -309,9 +312,7 @@ gui.get_event(ti.GUI.PRESS)
 gui.get_event((ti.GUI.PRESS, ti.GUI.ESCAPE), (ti.GUI.RELEASE, ti.GUI.SPACE))
 ```
 
-
-
-`gui.get_event()` pops an event from the queue and saves it to `gui.event`. For example:
+`gui.get_event()`: retrieves and removes the next event from the queue and saves it to `gui.event`. For example:
 
 ```python preludes:gui
 if gui.get_event():
@@ -327,6 +328,7 @@ while gui.running:
     gui.show()
 ```
 
+
 `gui.is_pressed()` detects the pressed keys. As the following code snippet shows, you must use it together with `gui.get_event()`. Otherwise, it is not updated.
 
 For example:
@@ -341,15 +343,16 @@ while gui.running:
     gui.show()
 ```
 
+This method returns `True` if the specified `event_filter` is matched, otherwise returns `False`.
+
 :::caution
 
-Call `gui.get_event()` before calling `gui.is_pressed()`. Otherwise, `gui.is_pressed()` does not take effect.
-
+It is crucial to call `gui.get_event()` before calling `gui.is_pressed()`, as the latter will not have the desired effect if not used in the proper order.
 :::
 
 #### Retrieve cursor position
 
-`gui.get_cursor_pos()` returns the cursor's current position in the window. The return value is a pair of floats in the range `[0.0, 1.0]`. For example:
+The `gui.get_cursor_pos()` method returns the current position of the cursor in the GUI window as a pair of normalized `x` and `y` float values in the range `[0.0, 1.0]`. This information can be used to build interactive applications that respond to cursor movement and user input.
 
 ```python preludes:gui
 mouse_x, mouse_y = gui.get_cursor_pos()
@@ -357,7 +360,7 @@ mouse_x, mouse_y = gui.get_cursor_pos()
 
 ## GUI Widgets
 
-Taichi's GUI system also provides widgets, including `slider()`, `label()`, and `button()`, for you to customize your control interface. Take a look at the following code snippet:
+The Taichi GUI system also features a suite of widgets, such as `slider()`, `label()`, and `button()`, that enable you to create a customized control interface. The following code provides a simple example:
 
 ```python
 import taichi as ti

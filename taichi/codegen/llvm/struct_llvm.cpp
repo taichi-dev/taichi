@@ -1,4 +1,3 @@
-
 #include "taichi/codegen/llvm/struct_llvm.h"
 
 #include "llvm/IR/Verifier.h"
@@ -9,7 +8,6 @@
 #include "taichi/util/file_sequence_writer.h"
 
 namespace taichi::lang {
-
 StructCompilerLLVM::StructCompilerLLVM(Arch arch,
                                        const CompileConfig &config,
                                        TaichiLLVMContext *tlctx,
@@ -105,14 +103,14 @@ void StructCompilerLLVM::generate_types(SNode &snode) {
     // mutex
     aux_type = llvm::ArrayType::get(llvm::PointerType::getInt64Ty(*ctx),
                                     snode.max_num_elements());
-    body_type = llvm::ArrayType::get(llvm::PointerType::getInt8PtrTy(*ctx),
+    body_type = llvm::ArrayType::get(llvm::PointerType::get(*ctx, 0),
                                      snode.max_num_elements());
   } else if (type == SNodeType::dynamic) {
     // mutex and n (number of elements)
     aux_type =
         llvm::StructType::get(*ctx, {llvm::PointerType::getInt32Ty(*ctx),
                                      llvm::PointerType::getInt32Ty(*ctx)});
-    body_type = llvm::PointerType::getInt8PtrTy(*ctx);
+    body_type = llvm::PointerType::get(*ctx, 0);
   } else {
     TI_P(snode.type_name());
     TI_NOT_IMPLEMENTED;
@@ -207,10 +205,9 @@ void StructCompilerLLVM::generate_child_accessors(SNode &snode) {
 
     auto inp_type =
         llvm::PointerType::get(get_llvm_element_type(module.get(), parent), 0);
-
     auto ft =
-        llvm::FunctionType::get(llvm::Type::getInt8PtrTy(*llvm_ctx_),
-                                {llvm::Type::getInt8PtrTy(*llvm_ctx_)}, false);
+        llvm::FunctionType::get(llvm::PointerType::get(*llvm_ctx_, 0),
+                                {llvm::PointerType::get(*llvm_ctx_, 0)}, false);
 
     auto func = create_function(ft, snode.get_ch_from_parent_func_name());
 
@@ -222,15 +219,14 @@ void StructCompilerLLVM::generate_child_accessors(SNode &snode) {
     for (auto &arg : func->args()) {
       args.push_back(&arg);
     }
+
     llvm::Value *ret;
     ret = builder.CreateGEP(get_llvm_element_type(module.get(), parent),
                             builder.CreateBitCast(args[0], inp_type),
                             {tlctx_->get_constant(0),
                              tlctx_->get_constant(parent->child_id(&snode))},
                             "getch");
-
-    builder.CreateRet(
-        builder.CreateBitCast(ret, llvm::Type::getInt8PtrTy(*llvm_ctx_)));
+    builder.CreateRet(ret);
   }
 
   for (auto &ch : snode.ch) {
@@ -262,26 +258,6 @@ void StructCompilerLLVM::run(SNode &root) {
     static FileSequenceWriter writer("taichi_struct_llvm_ir_{:04d}.ll",
                                      "struct LLVM IR");
     writer.write(module.get());
-  }
-
-  const char *dump_ir_env = std::getenv("TAICHI_DUMP_IR");
-  const std::string dumpOutDir = "/tmp/ir/";
-  if (dump_ir_env != nullptr) {
-    std::filesystem::create_directories(dumpOutDir);
-
-    std::string filename =
-        dumpOutDir + "/" + std::string(module->getName()) + "_llvm.ll";
-    // std::ofstream out_file(filename);
-    std::error_code EC;
-    llvm::raw_fd_ostream dest_file(filename, EC);
-    // if (out_file.is_open()) {
-    if (!EC) {
-      // std::string outString;
-      module->print(dest_file, nullptr);
-      // irpass::print(ir, &outString);
-      // out_file << outString;
-      // out_file.close();
-    }
   }
 
   TI_ASSERT((int)snodes.size() <= taichi_max_num_snodes);
@@ -332,5 +308,4 @@ llvm::Function *StructCompilerLLVM::create_function(llvm::FunctionType *ft,
   return llvm::Function::Create(ft, llvm::Function::ExternalLinkage, func_name,
                                 *module);
 }
-
 }  // namespace taichi::lang

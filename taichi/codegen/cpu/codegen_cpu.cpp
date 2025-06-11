@@ -22,8 +22,6 @@
 #include "llvm/Transforms/IPO.h"
 #include "llvm/Analysis/TargetTransformInfo.h"
 #include "llvm/ExecutionEngine/Orc/JITTargetMachineBuilder.h"
-
-// sonicflux:
 #include "llvm/Passes/PassBuilder.h"
 
 namespace taichi::lang {
@@ -162,7 +160,7 @@ class TaskCodeGenCPU : public TaskCodeGenLLVM {
         "bls_buffer", nullptr, llvm::GlobalVariable::LocalExecTLSModel, 0);
     /* module->getOrInsertGlobal("bls_buffer", type);
     bls_buffer = module->getNamedGlobal("bls_buffer");
-    bls_buffer->setAlignment(llvm::MaybeAlign(8));*/ // TODO(changyu): Fix JIT session error: Symbols not found: [ __emutls_get_address ] in python 3.10
+    bls_buffer->setAlignment(llvm::MaybeAlign(8));*/ //
 
     // initialize the variable with an undef value to ensure it is added to the
     // symbol table

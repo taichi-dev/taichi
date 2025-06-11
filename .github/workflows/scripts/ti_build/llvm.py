@@ -54,4 +54,5 @@ def setup_llvm() -> None:
 
     # We should use LLVM toolchains shipped with OS.
     # path_prepend('PATH', out / 'bin')
-    os.environ["LLVM_DIR"] = str(out)
+    if (u.system, u.machine) not in (("Linux", "arm64"), ("Linux", "aarch64")):
+        os.environ["LLVM_DIR"] = str(out)

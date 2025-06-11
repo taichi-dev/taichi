@@ -4,6 +4,8 @@
 #include <set>
 #include <functional>
 
+#include "llvm/Config/llvm-config.h"  // For LLVM_VERSION_MAJOR
+
 #include "taichi/common/core.h"
 #include "taichi/util/io.h"
 #include "taichi/ir/ir.h"
@@ -17,7 +19,6 @@
 #include "taichi/ir/analysis.h"
 #include "taichi/ir/transforms.h"
 #include "taichi/codegen/codegen_utils.h"
-#include "llvm/Config/llvm-config.h"
 
 namespace taichi::lang {
 
@@ -607,23 +608,59 @@ class TaskCodeGenCUDA : public TaskCodeGenLLVM {
     return true;  // on CUDA, pass the argument by value
   }
 
-  llvm::Value *TaskCodeGenCUDA::create_intrinsic_load(llvm::Value *ptr,
-                                                    llvm::Type *ty) {
-  #if LLVM_VERSION_MAJOR >= 20
-      // ldg intrinsics removed – use normal load from AS(1) + invariant metadata
-      auto *load = builder->CreateLoad(ty, ptr);          // ld.global.ca
-      load->setMetadata(llvm::LLVMContext::MD_invariant_load,
-                        llvm::MDNode::get(*llvm_context, {}));
-      return load;
-  #else
-      auto intrin = ty->isFloatingPointTy()
-                        ? llvm::Intrinsic::nvvm_ldg_global_f
-                        : llvm::Intrinsic::nvvm_ldg_global_i;
-      return builder->CreateIntrinsic(intrin,
-              {ty, llvm::PointerType::get(ty, 0)},
-              {ptr, tlctx->get_constant(ty->getScalarSizeInBits())});
-  #endif
+  llvm::Value *create_intrinsic_load(llvm::Value *ptr,
+                                     llvm::Type *ty) override {
+// The nvvm_ldg_global_* intrinsics were removed in LLVM 15.
+// The modern equivalent is a standard load with !nontemporal metadata.
+#if LLVM_VERSION_MAJOR >= 15
+    llvm::Type *load_ty = ty;
+    llvm::Value *load_ptr = ptr;
+
+    // The original code had special handling for bools (i1), as ldg
+    // doesn't support 1-bit integers. We must preserve this logic.
+    bool is_bool = (ty->getScalarSizeInBits() == 1);
+    if (is_bool) {
+      load_ty = tlctx->get_data_type<uint8>();
+      load_ptr =
+          builder->CreatePointerCast(ptr, llvm::PointerType::get(load_ty, 0));
     }
+
+    llvm::LoadInst *load_inst = builder->CreateLoad(load_ty, load_ptr);
+
+    // Set alignment, which is required for ldg.
+    load_inst->setAlignment(
+        tlctx->get_data_layout().getABITypeAlign(load_ty));
+
+    // Attach !nontemporal metadata to generate an ldg instruction.
+    llvm::MDNode *nontemporal_md = llvm::MDNode::get(
+        *llvm_context,
+        {llvm::ConstantAsMetadata::get(tlctx->get_constant(true))});
+    load_inst->setMetadata(llvm::LLVMContext::MD_nontemporal, nontemporal_md);
+
+    if (is_bool) {
+      return builder->CreateIsNotNull(load_inst);
+    } else {
+      return load_inst;
+    }
+#else
+    // Old path for LLVM < 15
+    auto intrin = ty->isFloatingPointTy() ? llvm::Intrinsic::nvvm_ldg_global_f
+                                          : llvm::Intrinsic::nvvm_ldg_global_i;
+    // Special treatment for bool types.
+    if (ty->getScalarSizeInBits() == 1) {
+      auto *new_ty = tlctx->get_data_type<uint8>();
+      auto *new_ptr =
+          builder->CreatePointerCast(ptr, llvm::PointerType::get(new_ty, 0));
+      auto *v = builder->CreateIntrinsic(
+          intrin, {new_ty, llvm::PointerType::get(new_ty, 0)},
+          {new_ptr, tlctx->get_constant(new_ty->getScalarSizeInBits())});
+      return builder->CreateIsNotNull(v);
+    }
+    return builder->CreateIntrinsic(
+        intrin, {ty, llvm::PointerType::get(ty, 0)},
+        {ptr, tlctx->get_constant(ty->getScalarSizeInBits())});
+#endif
+  }
 
   void visit(GlobalLoadStmt *stmt) override {
     if (auto get_ch = stmt->src->cast<GetChStmt>()) {

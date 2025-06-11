@@ -7,7 +7,7 @@
 #include "taichi/util/io.h"
 #include "taichi/util/lang_util.h"
 #include "taichi/util/file_sequence_writer.h"
-#include "taichi/program/program.hh"
+#include "taichi/program/program.h"
 #include "taichi/ir/ir.h"
 #include "taichi/ir/statements.h"
 #include "taichi/ir/transforms.h"

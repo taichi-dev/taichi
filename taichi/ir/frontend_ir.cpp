@@ -1,3 +1,4 @@
+
 #include "taichi/ir/frontend_ir.h"
 
 #include "taichi/ir/expression_printer.h"
@@ -1407,6 +1408,13 @@ void ReferenceExpression::flatten(FlattenContext *ctx) {
   auto var_stmt = flatten_lvalue(var, ctx);
   ctx->push_back<ReferenceStmt>(var_stmt, dbg_info);
   stmt = ctx->back_stmt();
+}
+
+ASTBuilder::ASTBuilder(Block *initial, Arch arch, bool is_kernel)
+    : is_kernel_(is_kernel), arch_(arch) {
+  Stmt::reset_counter();
+  stack_.push_back(initial);
+  loop_state_stack_.push_back(None);
 }
 
 Block *ASTBuilder::current_block() {

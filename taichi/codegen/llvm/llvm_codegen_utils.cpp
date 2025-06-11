@@ -29,7 +29,7 @@ bool is_same_type(llvm::Type *a, llvm::Type *b) {
     return false;
   }
   if (a->isPointerTy()) {
-    return is_same_type(a->getPointerElementType(), b->getPointerElementType());
+    return is_same_type(a->getNonOpaquePointerElementType(), b->getNonOpaquePointerElementType());
   }
   if (a->isFunctionTy() != b->isFunctionTy()) {
     return false;

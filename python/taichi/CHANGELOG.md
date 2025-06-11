@@ -12,6 +12,9 @@ Highlights:
       - Fix the Unified Allocator to no longer return first two allocations as dupes (#8705) (by **Hugh Perkins**)
 
 Full changelog:
+   - Refactor assignment operator in VectorND to use element-wise copy instead of memcpy (by **johnnynunez**)
+   - Update CHANGELOG.md to include recent formatting fixes and signature updates (by **johnnynunez**)
+   - Optimize assignment operator in VectorND by using memcpy (by **johnnynunez**)
    - Fix formatting issues in linalg.h and llvm_context.cpp, and update clone_runtime_module signature in llvm_context.cpp (by **johnnynunez**)
    - Fix formatting of user-defined literals in core.h (by **johnnynunez**)
    - Update CMake configuration for Clang 20 and fix various header includes (by **johnnynunez**)

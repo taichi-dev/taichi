@@ -617,8 +617,8 @@ class TaskCodeGenCUDA : public TaskCodeGenLLVM {
   llvm::Value *create_intrinsic_load(llvm::Value *ptr,
                                      llvm::Type *ty) override {
     // Issue an "__ldg" instruction to cache data in the read-only data cache.
-    auto intrin = ty->isFloatingPointTy() ? llvm::Intrinsic::nvvm_ldg_global_f
-                                          : llvm::Intrinsic::nvvm_ldg_global_i;
+    auto intrin = ty->isFloatingPointTy() ? llvm::Intrinsic::nvvm_ldu_global_f
+                                          : llvm::Intrinsic::nvvm_ldu_global_i;
     // Special treatment for bool types. As nvvm_ldg_global_i does not support
     // 1-bit integer, so we convert them to i8.
     if (ty->getScalarSizeInBits() == 1) {

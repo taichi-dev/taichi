@@ -1,4 +1,3 @@
-
 #include "gui.h"
 #include "taichi/ui/ggui/swap_chain.h"
 #include "taichi/ui/ggui/app_context.h"
@@ -73,7 +72,7 @@ void Gui::init_render_resources(VkRenderPass render_pass) {
     auto stream = device.get_graphics_stream();
     auto [cmd_list, res] = stream->new_command_list_unique();
     assert(res == RhiResult::success && "Failed to allocate command list");
-    VkCommandBuffer command_buffer =
+    [[maybe_unused]] VkCommandBuffer command_buffer =
         static_cast<VulkanCommandList *>(cmd_list.get())
             ->vk_command_buffer()
             ->buffer;

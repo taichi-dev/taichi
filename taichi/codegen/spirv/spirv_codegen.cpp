@@ -3,6 +3,7 @@
 #include <string>
 #include <vector>
 #include <variant>
+#include <filesystem>
 
 #include "taichi/codegen/codegen_utils.h"
 #include "taichi/program/program.h"
@@ -2714,6 +2715,25 @@ KernelCodegen::KernelCodegen(const Params &params)
 void KernelCodegen::run(TaichiKernelAttributes &kernel_attribs,
                         std::vector<std::vector<uint32_t>> &generated_spirv) {
   auto *root = params_.ir_root->as<Block>();
+
+  {
+    const char *dump_ir_env = std::getenv("TAICHI_DUMP_IR");
+    const std::string dumpOutDir = "/tmp/ir/";
+    if (dump_ir_env != nullptr) {
+      std::filesystem::create_directories(dumpOutDir);
+
+      std::string filename =
+          dumpOutDir + "/" + params_.ti_kernel_name + "_before_final_spirv.ll";
+      std::ofstream out_file(filename);
+      if (out_file.is_open()) {
+        std::string outString;
+        irpass::print((IRNode *)(params_.ir_root), &outString);
+        out_file << outString;
+        out_file.close();
+      }
+    }
+  }
+
   auto &tasks = root->statements;
   for (int i = 0; i < tasks.size(); ++i) {
     TaskCodegen::Params tp;
@@ -2752,6 +2772,27 @@ void KernelCodegen::run(TaichiKernelAttributes &kernel_attribs,
 
     TI_TRACE("SPIRV-Tools-opt: binary size, before={}, after={}",
              task_res.spirv_code.size(), optimized_spv.size());
+
+    {
+      const char *dump_ir_env = std::getenv("TAICHI_DUMP_SPIRV");
+      const std::string dumpOutDir = "/tmp/spirv/";
+      if (dump_ir_env != nullptr) {
+        std::filesystem::create_directories(dumpOutDir);
+
+        // std::vector<uint32_t> &spirv =
+        //     success ? optimized_spv : task_res.spirv_code;
+
+        std::string spirv_asm;
+        spirv_tools_->Disassemble(optimized_spv, &spirv_asm);
+        auto kernel_name = tp.ti_kernel_name;
+        std::string filename = std::filesystem::path(dumpOutDir) / (kernel_name + ".spirv");
+        std::ofstream out_file(filename);
+        if (out_file.is_open()) {
+          out_file.write(spirv_asm.c_str(), spirv_asm.size());
+          out_file.close();
+        }
+      }
+    }
 
     // Enable to dump SPIR-V assembly of kernels
     if constexpr (false) {

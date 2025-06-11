@@ -162,7 +162,9 @@ bool initialize_opengl(bool use_gles, bool error_tolerance) {
               1,
               EGL_NONE,
           };
-          egl_context = eglGetCurrentContext();
+          if (eglGetCurrentContext != nullptr && egl_version > 0) {
+            egl_context = eglGetCurrentContext();
+          }
           if (egl_context == EGL_NO_CONTEXT) {
             egl_context = eglCreateContext(egl_display, egl_config,
                                            EGL_NO_CONTEXT, gl_attribs);
@@ -171,7 +173,9 @@ bool initialize_opengl(bool use_gles, bool error_tolerance) {
           }
 
         } else {
-          egl_context = eglGetCurrentContext();
+          if (eglGetCurrentContext != nullptr && egl_version > 0) {
+            egl_context = eglGetCurrentContext();
+          }
           if (egl_context == EGL_NO_CONTEXT) {
             egl_context = eglCreateContext(egl_display, egl_config,
                                            EGL_NO_CONTEXT, nullptr);

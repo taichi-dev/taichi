@@ -21,11 +21,112 @@
 // Obj-c runtime doc:
 // https://developer.apple.com/documentation/objectivec/objective-c_runtime?language=objc
 
+#include <objc/NSObjCRuntime.h>
+#include <objc/objc.h>
+#include <objc/runtime.h>
+
+typedef const struct __CFAttributedString *CFAttributedStringRef;
 #include <ApplicationServices/ApplicationServices.h>
+
+#if MAC_OS_X_VERSION_MIN_REQUIRED >= 140000  // macOS 14 or newer
+#include <CoreGraphics/CGBase.h>
+#include <CoreGraphics/CGGeometry.h>
+#include <AppKit/AppKit.h>
+// #ifndef IconRef
+// typedef void* IconRef;
+// #endif
+// #ifndef HIShapeRef
+// typedef void* HIShapeRef;
+// #endif
+// Define key codes that were previously in Carbon
+#define kVK_ANSI_0 0x1D
+#define kVK_ANSI_1 0x12
+#define kVK_ANSI_2 0x13
+#define kVK_ANSI_3 0x14
+#define kVK_ANSI_4 0x15
+#define kVK_ANSI_5 0x17
+#define kVK_ANSI_6 0x16
+#define kVK_ANSI_7 0x1A
+#define kVK_ANSI_8 0x1C
+#define kVK_ANSI_9 0x19
+#define kVK_ANSI_A 0x00
+#define kVK_ANSI_B 0x0B
+#define kVK_ANSI_C 0x08
+#define kVK_ANSI_D 0x02
+#define kVK_ANSI_E 0x0E
+#define kVK_ANSI_F 0x03
+#define kVK_ANSI_G 0x05
+#define kVK_ANSI_H 0x04
+#define kVK_ANSI_I 0x22
+#define kVK_ANSI_J 0x26
+#define kVK_ANSI_K 0x28
+#define kVK_ANSI_L 0x25
+#define kVK_ANSI_M 0x2E
+#define kVK_ANSI_N 0x2D
+#define kVK_ANSI_O 0x1F
+#define kVK_ANSI_P 0x23
+#define kVK_ANSI_Q 0x0C
+#define kVK_ANSI_R 0x0F
+#define kVK_ANSI_S 0x01
+#define kVK_ANSI_T 0x11
+#define kVK_ANSI_U 0x20
+#define kVK_ANSI_V 0x09
+#define kVK_ANSI_W 0x0D
+#define kVK_ANSI_X 0x07
+#define kVK_ANSI_Y 0x10
+#define kVK_ANSI_Z 0x06
+
+#define kVK_F1 0x7A
+#define kVK_F2 0x78
+#define kVK_F3 0x63
+#define kVK_F4 0x76
+#define kVK_F5 0x60
+#define kVK_F6 0x61
+#define kVK_F7 0x62
+#define kVK_F8 0x64
+#define kVK_F9 0x65
+#define kVK_F10 0x6D
+#define kVK_F11 0x67
+#define kVK_F12 0x6F
+#define kVK_F13 0x69
+#define kVK_F14 0x6B
+#define kVK_F15 0x71
+#define kVK_F16 0x6A
+
+#define kVK_LeftArrow 0x7B
+#define kVK_RightArrow 0x7C
+#define kVK_UpArrow 0x7E
+#define kVK_DownArrow 0x7D
+#define kVK_Tab 0x30
+#define kVK_Return 0x24
+#define kVK_Delete 0x33
+#define kVK_Escape 0x35
+#define kVK_Space 0x31
+#else  // < mac os 14.0
 #include <Carbon/Carbon.h>
 #include <CoreGraphics/CGBase.h>
 #include <CoreGraphics/CGGeometry.h>
 #include <objc/NSObjCRuntime.h>
+
+extern id NSApp;
+extern id const NSDefaultRunLoopMode;
+
+enum {
+  NSBorderlessWindowMask = 0,
+  NSTitledWindowMask = 1 << 0,
+  NSClosableWindowMask = 1 << 1,
+  NSMiniaturizableWindowMask = 1 << 2,
+  NSResizableWindowMask = 1 << 3,
+};
+
+// TODO(k-ye): Define all the magic numbers for Obj-C enums here
+constexpr int NSApplicationActivationPolicyRegular = 0;
+constexpr int NSEventTypeKeyDown = 10;
+constexpr int NSEventTypeKeyUp = 11;
+constexpr int NSEventTypeFlagsChanged = 12;
+constexpr int NSEventTypeScrollWheel = 22;
+
+#endif  // mac os 14.0
 
 namespace {
 using taichi::mac::call;
@@ -113,13 +214,6 @@ std::string lookup_keysym(ushort keycode) {
   return "Vk" + std::to_string((int)keycode);
 }
 
-// TODO(k-ye): Define all the magic numbers for Obj-C enums here
-constexpr int NSApplicationActivationPolicyRegular = 0;
-constexpr int NSEventTypeKeyDown = 10;
-constexpr int NSEventTypeKeyUp = 11;
-constexpr int NSEventTypeFlagsChanged = 12;
-constexpr int NSEventTypeScrollWheel = 22;
-
 struct ModifierFlagsHandler {
   struct Result {
     std::vector<std::string> released;
@@ -163,9 +257,6 @@ constexpr char kTaichiViewClassName[] = "TaichiGuiView";
 
 }  // namespace
 
-extern id NSApp;
-extern id const NSDefaultRunLoopMode;
-
 typedef struct AppDel {
   Class isa;
   id window;
@@ -181,14 +272,6 @@ class IdComparator {
 };
 
 std::map<id, taichi::GUI *, IdComparator> gui_from_id;
-
-enum {
-  NSBorderlessWindowMask = 0,
-  NSTitledWindowMask = 1 << 0,
-  NSClosableWindowMask = 1 << 1,
-  NSMiniaturizableWindowMask = 1 << 2,
-  NSResizableWindowMask = 1 << 3,
-};
 
 void updateLayer(id self, SEL _) {
   using namespace taichi;
@@ -293,7 +376,7 @@ void GUI::create_window() {
   // call(NSApp, "activateIgnoringOtherApps:", YES);
   img_data_length = width * height * 4;
   img_data.resize(img_data_length);
-  auto appDelObj = clscall("AppDelegate", "alloc");
+  id appDelObj = clscall("AppDelegate", "alloc");
   appDelObj = call(appDelObj, "init");
   call(NSApp, "setDelegate:", appDelObj);
   window = clscall("NSWindow", "alloc");
@@ -324,7 +407,7 @@ void GUI::process_event() {
        "runMode:beforeDate:", NSDefaultRunLoopMode,
        clscall("NSDate", "distantPast"));
   while (1) {
-    auto event = call(
+    id event = call(
         NSApp, "nextEventMatchingMask:untilDate:inMode:dequeue:", NSUIntegerMax,
         clscall("NSDate", "distantPast"), NSDefaultRunLoopMode, YES);
     if (event != nullptr) {
@@ -412,7 +495,7 @@ void GUI::process_event() {
 }
 
 void GUI::set_title(std::string title) {
-  auto str = clscall("NSString", "stringWithUTF8String:", title.c_str());
+  id str = clscall("NSString", "stringWithUTF8String:", title.c_str());
   call(window, "setTitle:", str);
   call(str, "release");
 }

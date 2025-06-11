@@ -71,13 +71,6 @@ class TaskCodeGenCUDA : public TaskCodeGenLLVM {
           stype, value_arr, {tlctx->get_constant(0), tlctx->get_constant(i)});
       builder->CreateStore(values[i], value_ptr);
     }
-
-    // sonicflux: the original vprintf(`cuda_vprintf` inside
-    // `llvm/runtime_module/runtime.cpp`) is compiled with opaque pointer.
-    //
-    // ```llvm
-    // declare void @cuda_vprintf(ptr noundef, ptr noundef) #2
-    // ```
     return LLVMModuleBuilder::call(
         builder.get(), "vprintf",
         builder->CreateGlobalStringPtr(format, "format_string"),

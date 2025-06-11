@@ -1,5 +1,3 @@
-// taichi/codegen/cpu/codegen_cpu.cpp
-
 #include "taichi/codegen/cpu/codegen_cpu.h"
 
 #include "taichi/runtime/program_impls/llvm/llvm_program.h"
@@ -46,33 +44,24 @@ class TaskCodeGenCPU : public TaskCodeGenLLVM {
 
   void create_offload_range_for(OffloadedStmt *stmt) override {
     int step = 1;
-
     if (stmt->reversed) {
       step = -1;
     }
-
     auto *tls_prologue = create_xlogue(stmt->tls_prologue);
-
     llvm::Function *body;
     {
-      // FIX: Use `llvm::PointerType::get(context, address_space)`
       auto guard = get_function_creation_guard(
           {llvm::PointerType::get(get_runtime_type("RuntimeContext"), 0),
            llvm::PointerType::get(*llvm_context, 0),
            tlctx->get_data_type<int>()});
-
       auto loop_var = create_entry_block_alloca(PrimitiveType::i32);
       loop_vars_llvm[stmt].push_back(loop_var);
       builder->CreateStore(get_arg(2), loop_var);
       stmt->body->accept(this);
-
       body = guard.body;
     }
-
     llvm::Value *epilogue = create_xlogue(stmt->tls_epilogue);
-
     auto [begin, end] = get_range_for_bounds(stmt);
-
     call("cpu_parallel_range_for", get_arg(0),
          tlctx->get_constant(stmt->num_cpu_threads), begin, end,
          tlctx->get_constant(step), tlctx->get_constant(stmt->block_dim),
@@ -81,24 +70,19 @@ class TaskCodeGenCPU : public TaskCodeGenLLVM {
 
   void create_offload_mesh_for(OffloadedStmt *stmt) override {
     auto *tls_prologue = create_mesh_xlogue(stmt->tls_prologue);
-
     llvm::Function *body;
     {
-      // FIX: Use `llvm::PointerType::get(context, address_space)`
       auto guard = get_function_creation_guard(
           {llvm::PointerType::get(get_runtime_type("RuntimeContext"), 0),
            llvm::PointerType::get(*llvm_context, 0),
            tlctx->get_data_type<int>()});
-
       for (int i = 0; i < stmt->mesh_prologue->size(); i++) {
         auto &s = stmt->mesh_prologue->statements[i];
         s->accept(this);
       }
-
       if (stmt->bls_prologue) {
         stmt->bls_prologue->accept(this);
       }
-
       auto loop_test_bb =
           llvm::BasicBlock::Create(*llvm_context, "loop_test", func);
       auto loop_body_bb =
@@ -109,7 +93,6 @@ class TaskCodeGenCPU : public TaskCodeGenLLVM {
           create_entry_block_alloca(llvm::Type::getInt32Ty(*llvm_context));
       builder->CreateStore(tlctx->get_constant(0), loop_index);
       builder->CreateBr(loop_test_bb);
-
       {
         builder->SetInsertPoint(loop_test_bb);
         auto *loop_index_load =
@@ -120,7 +103,6 @@ class TaskCodeGenCPU : public TaskCodeGenLLVM {
                          ->second]);
         builder->CreateCondBr(cond, loop_body_bb, func_exit);
       }
-
       {
         builder->SetInsertPoint(loop_body_bb);
         loop_vars_llvm[stmt].push_back(loop_index);
@@ -136,16 +118,12 @@ class TaskCodeGenCPU : public TaskCodeGenLLVM {
         builder->CreateBr(loop_test_bb);
         builder->SetInsertPoint(func_exit);
       }
-
       if (stmt->bls_epilogue) {
         stmt->bls_epilogue->accept(this);
       }
-
       body = guard.body;
     }
-
     llvm::Value *epilogue = create_mesh_xlogue(stmt->tls_epilogue);
-
     call("cpu_parallel_mesh_for", get_arg(0),
          tlctx->get_constant(stmt->num_cpu_threads),
          tlctx->get_constant(stmt->mesh->num_patches),
@@ -264,11 +242,11 @@ void KernelCodeGenCPU::optimize_module(llvm::Module *module) {
   options.GuaranteedTailCallOpt = false;
 
   llvm::StringRef mcpu = llvm::sys::getHostCPUName();
-  // FIX: `CodeGenOpt::Aggressive` is removed. Optimizations are handled by PassBuilder.
+  // FIX: Use llvm::CodeGenOptLevel
   std::unique_ptr<llvm::TargetMachine> target_machine(
       target->createTargetMachine(triple.str(), mcpu.str(), "", options,
                                   llvm::Reloc::PIC_, llvm::CodeModel::Small,
-                                  llvm::CodeGenOpt::None));
+                                  compile_config.opt_level > 0 ? llvm::CodeGenOptLevel::Default : llvm::CodeGenOptLevel::None));
 
   TI_ERROR_UNLESS(target_machine, "Could not allocate target machine!");
   module->setDataLayout(target_machine->createDataLayout());
@@ -287,30 +265,25 @@ void KernelCodeGenCPU::optimize_module(llvm::Module *module) {
   PB.registerLoopAnalyses(LAM);
   PB.crossRegisterProxies(LAM, FAM, CGAM, MAM);
 
-  // FIX: `PassBuilder::OptimizationLevel` is now `llvm::OptimizationLevel`
   llvm::OptimizationLevel opt_level = llvm::OptimizationLevel::O3;
 
-  llvm::ModulePassManager MPM = PB.buildPerModuleDefaultPipeline(opt_level);
+  llvm::ModulePassManager MPM;
+  if (compile_config.opt_level > 0) {
+    MPM = PB.buildPerModuleDefaultPipeline(opt_level);
+  }
 
-  // FIX: Correctly adapt Loop and Function passes to the Module pipeline.
   llvm::FunctionPassManager FPM;
-  // Loop passes must be adapted to run in a function pass pipeline.
   FPM.addPass(llvm::createFunctionToLoopPassAdaptor(llvm::LoopStrengthReducePass()));
   FPM.addPass(llvm::createFunctionToLoopPassAdaptor(llvm::IndVarSimplifyPass()));
-  // These are function passes, so they can be added directly.
   FPM.addPass(llvm::SeparateConstOffsetFromGEPPass(false));
   FPM.addPass(llvm::EarlyCSEPass(true));
-  // Adapt the entire function pass manager to run in the module pipeline.
   MPM.addPass(createModuleToFunctionPassAdaptor(std::move(FPM)));
-
 
   llvm::SmallString<0> asm_buffer;
   if (compile_config.print_kernel_asm) {
-    // FIX: `raw_svector_ostream` must be constructed directly on the buffer
     llvm::raw_svector_ostream asm_stream(asm_buffer);
-    asm_stream.SetUnbuffered();
-    // FIX: `CGFT_AssemblyFile` is now `CodeGenFileType::AssemblyFile`
-    if (auto err = target_machine->addPassesToEmitFile(
+    // FIX: Pass the stream by reference, not by pointer
+    if (target_machine->addPassesToEmitFile(
             MPM, asm_stream, nullptr, llvm::CodeGenFileType::AssemblyFile)) {
       TI_ERROR("Failed to addPassesToEmitFile");
     }
@@ -325,7 +298,6 @@ void KernelCodeGenCPU::optimize_module(llvm::Module *module) {
     static FileSequenceWriter writer(
         "taichi_kernel_cpu_llvm_ir_optimized_asm_{:04d}.s",
         "optimized assembly code (CPU)");
-    // The buffer is only filled after MPM.run(), so we get the content now.
     writer.write(std::string(asm_buffer.str()));
   }
 

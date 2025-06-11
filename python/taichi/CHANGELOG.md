@@ -12,6 +12,7 @@ Highlights:
       - Fix the Unified Allocator to no longer return first two allocations as dupes (#8705) (by **Hugh Perkins**)
 
 Full changelog:
+   - Update CMake configuration for Clang 20 and fix various header includes (by **johnnynunez**)
    - Update header includes and fix configuration access in JIT compilation for CUDA (by **johnnynunez**)
    - Fix header includes and update LLVM API calls in CPU code generation (by **johnnynunez**)
    - Update CUDA header includes and fix call signatures in JIT compilation (by **johnnynunez**)

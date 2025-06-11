@@ -192,7 +192,7 @@ class JITSessionCPU : public JITSession {
 #endif
     if (!symbol)
       TI_ERROR("Function \"{}\" not found", Name);
-    return (void *)(symbol->getAddress());
+    return symbol->toPtr<void>();
   }
 
   void *lookup_in_module(JITDylib *lib, const std::string Name) {
@@ -204,7 +204,7 @@ class JITSessionCPU : public JITSession {
 #endif
     if (!symbol)
       TI_ERROR("Function \"{}\" not found", Name);
-    return (void *)(symbol->getAddress());
+    return symbol->toPtr<void>();
   }
 };
 

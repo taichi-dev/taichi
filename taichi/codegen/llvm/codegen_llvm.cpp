@@ -1,3 +1,4 @@
+
 #include "taichi/codegen/llvm/codegen_llvm.h"
 
 #include <algorithm>
@@ -199,6 +200,9 @@ void TaskCodeGenLLVM::emit_extra_unary(UnaryOpStmt *stmt) {
   UNARY_STD(asin)
   UNARY_STD(cos)
   UNARY_STD(sin)
+  UNARY_STD(erf)
+  UNARY_STD(erfc)
+
   else if (op == UnaryOpType::sqrt) {
     llvm_val[stmt] =
         builder->CreateIntrinsic(llvm::Intrinsic::sqrt, {input_type}, {input});
@@ -1678,9 +1682,10 @@ llvm::Value *TaskCodeGenLLVM::call(
     const std::vector<llvm::Value *> &arguments) {
   auto prefix = get_runtime_snode_name(snode);
   auto s = emit_struct_meta(snode);
-  auto s_ptr = builder->CreateBitCast(s, llvm::Type::getInt8Ty(*llvm_context)->getPointerTo());
-
-  node_ptr = builder->CreateBitCast(node_ptr, llvm::Type::getInt8Ty(*llvm_context)->getPointerTo());
+  auto s_ptr =
+      builder->CreateBitCast(s, llvm::PointerType::get(*llvm_context, 0));
+  node_ptr = builder->CreateBitCast(node_ptr,
+                                    llvm::PointerType::get(*llvm_context, 0));
 
   std::vector<llvm::Value *> func_arguments{s_ptr, node_ptr};
 
@@ -1792,15 +1797,20 @@ void TaskCodeGenLLVM::visit(SNodeLookupStmt *stmt) {
   parent = llvm_val[stmt->input_snode];
   TI_ASSERT(parent);
   auto snode = stmt->snode;
+
   if (snode->type == SNodeType::root) {
     // FIXME: get parent_type from taichi instead of llvm.
-    llvm::Type *parent_ty = parent->getType()->getPointerElementType();
+    llvm::Type *parent_ty = builder->getInt8Ty();
+
     if (auto bit_cast = llvm::dyn_cast<llvm::BitCastInst>(parent)) {
       parent_ty = bit_cast->getDestTy();
-      if (auto ptr_ty = llvm::dyn_cast<llvm::PointerType>(parent_ty))
-        parent_ty = ptr_ty->getPointerElementType();
+      if (auto ptr_ty = llvm::dyn_cast<llvm::PointerType>(parent_ty)) {
+        TI_NOT_IMPLEMENTED;
+      }
     }
-    llvm_val[stmt] = builder->CreateGEP(parent_ty, parent, llvm_val[stmt->input_index]);
+
+    llvm_val[stmt] =
+        builder->CreateGEP(parent_ty, parent, llvm_val[stmt->input_index]);
   } else if (snode->type == SNodeType::dense ||
              snode->type == SNodeType::pointer ||
              snode->type == SNodeType::dynamic ||
@@ -1838,7 +1848,8 @@ void TaskCodeGenLLVM::visit(GetChStmt *stmt) {
     auto ch = call_struct_func(
         stmt->output_snode->get_snode_tree_id(),
         stmt->output_snode->get_ch_from_parent_func_name(),
-        builder->CreateBitCast(llvm_val[stmt->input_ptr], llvm::Type::getInt8Ty(*llvm_context)->getPointerTo()));
+        builder->CreateBitCast(llvm_val[stmt->input_ptr],
+                               llvm::PointerType::get(*llvm_context, 0)));
     llvm_val[stmt] = builder->CreateBitCast(
         ch, llvm::PointerType::get(StructCompilerLLVM::get_llvm_node_type(
                                        module.get(), stmt->output_snode),
@@ -2432,7 +2443,8 @@ void TaskCodeGenLLVM::visit(AdStackAllocaStmt *stmt) {
   auto type = llvm::ArrayType::get(llvm::Type::getInt8Ty(*llvm_context),
                                    stmt->size_in_bytes());
   auto alloca = create_entry_block_alloca(type, sizeof(int64));
-  llvm_val[stmt] = builder->CreateBitCast(alloca, llvm::Type::getInt8Ty(*llvm_context)->getPointerTo());
+  llvm_val[stmt] =
+      builder->CreateBitCast(alloca, llvm::PointerType::get(*llvm_context, 0));
   call("stack_init", llvm_val[stmt]);
 }
 
@@ -2624,7 +2636,7 @@ llvm::Value *TaskCodeGenLLVM::get_tls_base_ptr() {
 }
 
 llvm::Type *TaskCodeGenLLVM::get_tls_buffer_type() {
-  return llvm::Type::getInt8Ty(*llvm_context)->getPointerTo();
+  return llvm::PointerType::get(*llvm_context, 0);
 }
 
 std::vector<llvm::Type *> TaskCodeGenLLVM::get_xlogue_argument_types() {
@@ -2648,18 +2660,31 @@ llvm::Type *TaskCodeGenLLVM::get_mesh_xlogue_function_type() {
 }
 
 llvm::PointerType *TaskCodeGenLLVM::get_integer_ptr_type(int bits) {
+#if 0
   switch (bits) {
     case 8:
-      return llvm::Type::getInt8Ty(*llvm_context)->getPointerTo();
+      return llvm::Type::getInt8PtrTy(*llvm_context);
     case 16:
-      return llvm::Type::getInt16Ty(*llvm_context)->getPointerTo();
+      return llvm::Type::getInt16PtrTy(*llvm_context);
     case 32:
-      return llvm::Type::getInt32Ty(*llvm_context)->getPointerTo();
+      return llvm::Type::getInt32PtrTy(*llvm_context);
     case 64:
-      return llvm::Type::getInt64Ty(*llvm_context)->getPointerTo();
+      return llvm::Type::getInt64PtrTy(*llvm_context);
     default:
       break;
   }
+#else
+  // opaque pointer
+  switch (bits) {
+    case 8:
+    case 16:
+    case 32:
+    case 64:
+      return llvm::PointerType::get(*llvm_context, 0);
+    default:
+      break;
+  }
+#endif
   TI_ERROR("No compatible " + std::to_string(bits) + " bits integer ptr type.");
   return nullptr;
 }

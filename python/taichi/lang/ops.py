@@ -4,6 +4,7 @@ import operator as _bt_ops_mod  # bt for builtin
 from typing import Union
 
 import numpy as np
+import math
 from taichi._lib import core as _ti_core
 from taichi.lang import expr, impl
 from taichi.lang.exception import TaichiSyntaxError
@@ -555,6 +556,24 @@ def logical_not(a):
     """
     return _unary_operation(_ti_core.expr_logic_not, np.logical_not, a)
 
+def erf(a):
+    """The error function.
+    Args:
+        a (Union[:class:`~taichi.lang.expr.Expr`, :class:`~taichi.lang.matrix.Matrix`]): A number or a matrix.
+    Returns:
+        The error function of `a`.
+    """
+    return _unary_operation(_ti_core.expr_erf, math.erf, a)
+
+
+def erfc(a):
+    """The complement error function.
+    Args:
+        a (Union[:class:`~taichi.lang.expr.Expr`, :class:`~taichi.lang.matrix.Matrix`]): A number or a matrix.
+    Returns:
+        The complement error function of `a`.
+    """
+    return _unary_operation(_ti_core.expr_erfc, math.erfc, a)
 
 def random(dtype=float) -> Union[float, int]:
     """Return a single random float/integer according to the specified data type.

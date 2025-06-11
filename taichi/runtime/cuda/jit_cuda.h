@@ -1,3 +1,5 @@
+#pragma once // It's good practice to have include guards
+
 #include <memory>
 
 #include "llvm/ADT/StringRef.h"
@@ -7,17 +9,25 @@
 #include "llvm/IR/Module.h"
 #include "llvm/IR/DataLayout.h"
 #include "llvm/IR/LLVMContext.h"
-#include "llvm/IR/LegacyPassManager.h"
+// #include "llvm/IR/LegacyPassManager.h"            // Obsolete: Removed
 #include "llvm/IR/Verifier.h"
-#include "llvm/Transforms/InstCombine/InstCombine.h"
-#include "llvm/Transforms/Scalar.h"
-#include "llvm/Transforms/Scalar/GVN.h"
-#include "llvm/Transforms/IPO.h"
-#include "llvm/Transforms/IPO/PassManagerBuilder.h"
+// #include "llvm/Transforms/InstCombine/InstCombine.h"// Obsolete: Handled by NPM PassBuilder
+// #include "llvm/Transforms/Scalar.h"                 // Obsolete: Handled by NPM PassBuilder
+// #include "llvm/Transforms/Scalar/GVN.h"             // Obsolete: Handled by NPM PassBuilder
+// #include "llvm/Transforms/IPO.h"                    // Obsolete: Handled by NPM PassBuilder
+// #include "llvm/Transforms/IPO/PassManagerBuilder.h" // Obsolete: Removed
 #include "llvm/Analysis/TargetTransformInfo.h"
 #include "llvm/MC/TargetRegistry.h"
-#include "llvm/Target/TargetMachine.h"
+// Note: TargetMachine is already included above
+// #include "llvm/Target/TargetMachine.h"
 #include "llvm/ExecutionEngine/Orc/JITTargetMachineBuilder.h"
+
+// === CHANGED SECTION: HEADER INCLUDES ===
+// Add the main header for the New Pass Manager. This will be needed
+// by the implementation file (jit_cuda.cpp) to build the pass pipeline.
+#include "llvm/Passes/PassBuilder.h"
+// === END OF CHANGED SECTION ===
+
 
 #include "taichi/rhi/cuda/cuda_context.h"
 #include "taichi/rhi/cuda/cuda_driver.h"

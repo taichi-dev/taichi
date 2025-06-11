@@ -15,8 +15,6 @@
 #include "taichi/codegen/llvm/struct_llvm.h"
 #include "taichi/util/file_sequence_writer.h"
 #include "taichi/codegen/codegen_utils.h"
-#include "llvm/Support/SourceMgr.h"  // Add this line for SMDiagnostic
-#include "llvm/AsmParser/Parser.h"   // Add this line for parseIRFile
 
 namespace taichi::lang {
 
@@ -1680,11 +1678,9 @@ llvm::Value *TaskCodeGenLLVM::call(
     const std::vector<llvm::Value *> &arguments) {
   auto prefix = get_runtime_snode_name(snode);
   auto s = emit_struct_meta(snode);
-  auto s_ptr =
-      builder->CreateBitCast(s, llvm::Type::getInt8PtrTy(*llvm_context));
+  auto s_ptr = builder->CreateBitCast(s, llvm::Type::getInt8Ty(*llvm_context)->getPointerTo());
 
-  node_ptr =
-      builder->CreateBitCast(node_ptr, llvm::Type::getInt8PtrTy(*llvm_context));
+  node_ptr = builder->CreateBitCast(node_ptr, llvm::Type::getInt8Ty(*llvm_context)->getPointerTo());
 
   std::vector<llvm::Value *> func_arguments{s_ptr, node_ptr};
 
@@ -1798,14 +1794,13 @@ void TaskCodeGenLLVM::visit(SNodeLookupStmt *stmt) {
   auto snode = stmt->snode;
   if (snode->type == SNodeType::root) {
     // FIXME: get parent_type from taichi instead of llvm.
-    llvm::Type *parent_ty = builder->getInt8Ty();
+    llvm::Type *parent_ty = parent->getType()->getPointerElementType();
     if (auto bit_cast = llvm::dyn_cast<llvm::BitCastInst>(parent)) {
       parent_ty = bit_cast->getDestTy();
       if (auto ptr_ty = llvm::dyn_cast<llvm::PointerType>(parent_ty))
         parent_ty = ptr_ty->getPointerElementType();
     }
-    llvm_val[stmt] =
-        builder->CreateGEP(parent_ty, parent, llvm_val[stmt->input_index]);
+    llvm_val[stmt] = builder->CreateGEP(parent_ty, parent, llvm_val[stmt->input_index]);
   } else if (snode->type == SNodeType::dense ||
              snode->type == SNodeType::pointer ||
              snode->type == SNodeType::dynamic ||
@@ -1843,8 +1838,7 @@ void TaskCodeGenLLVM::visit(GetChStmt *stmt) {
     auto ch = call_struct_func(
         stmt->output_snode->get_snode_tree_id(),
         stmt->output_snode->get_ch_from_parent_func_name(),
-        builder->CreateBitCast(llvm_val[stmt->input_ptr],
-                               llvm::PointerType::getInt8PtrTy(*llvm_context)));
+        builder->CreateBitCast(llvm_val[stmt->input_ptr], llvm::Type::getInt8Ty(*llvm_context)->getPointerTo()));
     llvm_val[stmt] = builder->CreateBitCast(
         ch, llvm::PointerType::get(StructCompilerLLVM::get_llvm_node_type(
                                        module.get(), stmt->output_snode),
@@ -2438,8 +2432,7 @@ void TaskCodeGenLLVM::visit(AdStackAllocaStmt *stmt) {
   auto type = llvm::ArrayType::get(llvm::Type::getInt8Ty(*llvm_context),
                                    stmt->size_in_bytes());
   auto alloca = create_entry_block_alloca(type, sizeof(int64));
-  llvm_val[stmt] = builder->CreateBitCast(
-      alloca, llvm::PointerType::getInt8PtrTy(*llvm_context));
+  llvm_val[stmt] = builder->CreateBitCast(alloca, llvm::Type::getInt8Ty(*llvm_context)->getPointerTo());
   call("stack_init", llvm_val[stmt]);
 }
 
@@ -2631,7 +2624,7 @@ llvm::Value *TaskCodeGenLLVM::get_tls_base_ptr() {
 }
 
 llvm::Type *TaskCodeGenLLVM::get_tls_buffer_type() {
-  return llvm::Type::getInt8PtrTy(*llvm_context);
+  return llvm::Type::getInt8Ty(*llvm_context)->getPointerTo();
 }
 
 std::vector<llvm::Type *> TaskCodeGenLLVM::get_xlogue_argument_types() {
@@ -2657,13 +2650,13 @@ llvm::Type *TaskCodeGenLLVM::get_mesh_xlogue_function_type() {
 llvm::PointerType *TaskCodeGenLLVM::get_integer_ptr_type(int bits) {
   switch (bits) {
     case 8:
-      return llvm::Type::getInt8PtrTy(*llvm_context);
+      return llvm::Type::getInt8Ty(*llvm_context)->getPointerTo();
     case 16:
-      return llvm::Type::getInt16PtrTy(*llvm_context);
+      return llvm::Type::getInt16Ty(*llvm_context)->getPointerTo();
     case 32:
-      return llvm::Type::getInt32PtrTy(*llvm_context);
+      return llvm::Type::getInt32Ty(*llvm_context)->getPointerTo();
     case 64:
-      return llvm::Type::getInt64PtrTy(*llvm_context);
+      return llvm::Type::getInt64Ty(*llvm_context)->getPointerTo();
     default:
       break;
   }
@@ -2746,42 +2739,6 @@ LLVMCompiledTask TaskCodeGenLLVM::run_compilation() {
       llvm::Function *func = module->getFunction(task.name);
       TI_ASSERT(func);
       tlctx->mark_function_as_amdgpu_kernel(func);
-    }
-  }
-  const char *dump_ir_env = std::getenv("TAICHI_DUMP_IR");
-  const std::string dumpOutDir = "/tmp/ir/";
-  if (dump_ir_env != nullptr) {
-    std::filesystem::create_directories(dumpOutDir);
-
-    std::string filename = dumpOutDir + "/" + kernel->name + "_llvm.ll";
-    // std::ofstream out_file(filename);
-    std::error_code EC;
-    llvm::raw_fd_ostream dest_file(filename, EC);
-    // if (out_file.is_open()) {
-    if (!EC) {
-      // std::string outString;
-      module->print(dest_file, nullptr);
-      // irpass::print(ir, &outString);
-      // out_file << outString;
-      // out_file.close();
-    }
-  }
-
-  const char *load_ir_env = std::getenv("TAICHI_LOAD_IR");
-  // if (const char *load_ir_path = std::getenv("TAICHI_LOAD_IR_FILE")) {
-  if (load_ir_env != nullptr) {
-    std::string filename = dumpOutDir + "/" + kernel->name + "_llvm.ll";
-    llvm::SMDiagnostic err;
-    // auto loaded_module = llvm::parseIRFile(load_ir_path, err, *llvm_context);
-    auto loaded_module = llvm::parseAssemblyFile(filename, err, *llvm_context);
-    if (!loaded_module) {
-      err.print("TAICHI_LOAD_IR_FILE error", llvm::errs());
-      TI_ERROR("Failed to load LLVM IR from {}", filename);
-    } else {
-      // Replace the current module with the loaded one
-      module = std::move(loaded_module);
-      // You might need to update offloaded_tasks and other data based on the
-      // loaded module
     }
   }
 

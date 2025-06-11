@@ -6,6 +6,12 @@ cmake_minimum_required(VERSION 3.17)
 
 project(taichi)
 
+if(CMAKE_CXX_COMPILER_ID MATCHES "Clang")
+    message(STATUS "Clang compiler detected. Forcing use of libc++.")
+    add_compile_options(-stdlib=libc++)
+    add_link_options(-stdlib=libc++)
+endif()
+
 include("cmake/utils.cmake")
 
 if (NOT DEFINED TI_VERSION_MAJOR)

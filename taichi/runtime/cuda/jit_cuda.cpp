@@ -5,7 +5,7 @@
 
 // === CHANGED SECTION: HEADER INCLUDES ===
 // Add headers for NPM and the specific passes we need.
-#include "llvm/Passes/PassBuilder.hh"
+#include "llvm/Passes/PassBuilder.h"
 #include "llvm/Transforms/Scalar/LoopStrengthReduce.h"
 #include "llvm/Transforms/Scalar/IndVarSimplify.h"
 #include "llvm/Transforms/Scalar/SeparateConstOffsetFromGEP.h"

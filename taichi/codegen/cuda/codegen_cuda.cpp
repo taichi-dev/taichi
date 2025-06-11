@@ -615,24 +615,32 @@ class TaskCodeGenCUDA : public TaskCodeGenLLVM {
   }
 
   llvm::Value *create_intrinsic_load(llvm::Value *ptr,
-                                     llvm::Type *ty) override {
-    // Issue an "__ldg" instruction to cache data in the read-only data cache.
-    auto intrin = ty->isFloatingPointTy() ? llvm::Intrinsic::nvvm_ldu_global_f
-                                          : llvm::Intrinsic::nvvm_ldu_global_i;
-    // Special treatment for bool types. As nvvm_ldg_global_i does not support
-    // 1-bit integer, so we convert them to i8.
-    if (ty->getScalarSizeInBits() == 1) {
-      auto *new_ty = tlctx->get_data_type<uint8>();
-      auto *new_ptr =
-          builder->CreatePointerCast(ptr, llvm::PointerType::get(new_ty, 0));
-      auto *v = builder->CreateIntrinsic(
-          intrin, {new_ty, llvm::PointerType::get(new_ty, 0)},
-          {new_ptr, tlctx->get_constant(new_ty->getScalarSizeInBits())});
-      return builder->CreateIsNotNull(v);
+                                  llvm::Type *ty) override {
+    // Create a load from address space 1 (global memory) with !invariant.load
+    // metadata, replacing the removed llvm.nvvm.ldg.global intrinsics.
+    auto *load = builder->CreateLoad(
+        ty,
+        ptr,
+        false // Not volatile
+    );
+
+    // Attach !invariant.load metadata to indicate the load is invariant.
+    llvm::MDNode *invariant_load_md = llvm::MDNode::get(
+        builder->getContext(),
+        llvm::MDString::get(builder->getContext(), "invariant.load")
+    );
+    load->setMetadata(llvm::LLVMContext::MD_invariant_load, invariant_load_md);
+
+    // Ensure the pointer is in address space 1 (global memory).
+    if (ptr->getType()->getPointerAddressSpace() != 1) {
+      ptr = builder->CreateAddrSpaceCast(
+          ptr,
+          llvm::PointerType::get(ty, 1)
+      );
+      load->setOperand(0, ptr);
     }
-    return builder->CreateIntrinsic(
-        intrin, {ty, llvm::PointerType::get(ty, 0)},
-        {ptr, tlctx->get_constant(ty->getScalarSizeInBits())});
+
+    return load;
   }
 
   void visit(GlobalLoadStmt *stmt) override {

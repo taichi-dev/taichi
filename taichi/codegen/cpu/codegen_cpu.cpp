@@ -12,18 +12,12 @@
 #include "taichi/ir/analysis.h"
 #include "taichi/analysis/offline_cache_util.h"
 
-#include "llvm/TargetParser/Host.h"
+#include "llvm/Support/Host.h"
 #include "llvm/MC/TargetRegistry.h"
+#include "llvm/Transforms/IPO.h"
+#include "llvm/Transforms/IPO/PassManagerBuilder.h"
 #include "llvm/Analysis/TargetTransformInfo.h"
 #include "llvm/ExecutionEngine/Orc/JITTargetMachineBuilder.h"
-#include "llvm/Passes/PassBuilder.h"
-#include "llvm/Passes/StandardInstrumentations.h"
-#include "llvm/Transforms/Scalar/IndVarSimplify.h"
-#include "llvm/Transforms/Scalar/LoopStrengthReduce.h"
-#include "llvm/Transforms/Scalar/SeparateConstOffsetFromGEP.h"
-#include "llvm/Transforms/Scalar/EarlyCSE.h"
-#include "llvm/Transforms/IPO/FunctionAttrs.h"
-#include "llvm/Transforms/IPO/InferFunctionAttrs.h"
 
 namespace taichi::lang {
 
@@ -44,24 +38,36 @@ class TaskCodeGenCPU : public TaskCodeGenLLVM {
 
   void create_offload_range_for(OffloadedStmt *stmt) override {
     int step = 1;
+
+    // In parallel for-loops reversing the order doesn't make sense.
+    // However, we may need to support serial offloaded range for's in the
+    // future, so it still makes sense to reverse the order here.
     if (stmt->reversed) {
       step = -1;
     }
+
     auto *tls_prologue = create_xlogue(stmt->tls_prologue);
+
+    // The loop body
     llvm::Function *body;
     {
       auto guard = get_function_creation_guard(
           {llvm::PointerType::get(get_runtime_type("RuntimeContext"), 0),
-           llvm::PointerType::get(*llvm_context, 0),
+           llvm::Type::getInt8PtrTy(*llvm_context),
            tlctx->get_data_type<int>()});
+
       auto loop_var = create_entry_block_alloca(PrimitiveType::i32);
       loop_vars_llvm[stmt].push_back(loop_var);
       builder->CreateStore(get_arg(2), loop_var);
       stmt->body->accept(this);
+
       body = guard.body;
     }
+
     llvm::Value *epilogue = create_xlogue(stmt->tls_epilogue);
+
     auto [begin, end] = get_range_for_bounds(stmt);
+
     call("cpu_parallel_range_for", get_arg(0),
          tlctx->get_constant(stmt->num_cpu_threads), begin, end,
          tlctx->get_constant(step), tlctx->get_constant(stmt->block_dim),
@@ -70,19 +76,23 @@ class TaskCodeGenCPU : public TaskCodeGenLLVM {
 
   void create_offload_mesh_for(OffloadedStmt *stmt) override {
     auto *tls_prologue = create_mesh_xlogue(stmt->tls_prologue);
+
     llvm::Function *body;
     {
       auto guard = get_function_creation_guard(
           {llvm::PointerType::get(get_runtime_type("RuntimeContext"), 0),
-           llvm::PointerType::get(*llvm_context, 0),
+           llvm::Type::getInt8PtrTy(*llvm_context),
            tlctx->get_data_type<int>()});
+
       for (int i = 0; i < stmt->mesh_prologue->size(); i++) {
         auto &s = stmt->mesh_prologue->statements[i];
         s->accept(this);
       }
+
       if (stmt->bls_prologue) {
         stmt->bls_prologue->accept(this);
       }
+
       auto loop_test_bb =
           llvm::BasicBlock::Create(*llvm_context, "loop_test", func);
       auto loop_body_bb =
@@ -93,6 +103,7 @@ class TaskCodeGenCPU : public TaskCodeGenLLVM {
           create_entry_block_alloca(llvm::Type::getInt32Ty(*llvm_context));
       builder->CreateStore(tlctx->get_constant(0), loop_index);
       builder->CreateBr(loop_test_bb);
+
       {
         builder->SetInsertPoint(loop_test_bb);
         auto *loop_index_load =
@@ -103,6 +114,7 @@ class TaskCodeGenCPU : public TaskCodeGenLLVM {
                          ->second]);
         builder->CreateCondBr(cond, loop_body_bb, func_exit);
       }
+
       {
         builder->SetInsertPoint(loop_body_bb);
         loop_vars_llvm[stmt].push_back(loop_index);
@@ -118,12 +130,16 @@ class TaskCodeGenCPU : public TaskCodeGenLLVM {
         builder->CreateBr(loop_test_bb);
         builder->SetInsertPoint(func_exit);
       }
+
       if (stmt->bls_epilogue) {
         stmt->bls_epilogue->accept(this);
       }
+
       body = guard.body;
     }
+
     llvm::Value *epilogue = create_mesh_xlogue(stmt->tls_epilogue);
+
     call("cpu_parallel_mesh_for", get_arg(0),
          tlctx->get_constant(stmt->num_cpu_threads),
          tlctx->get_constant(stmt->mesh->num_patches),
@@ -137,6 +153,12 @@ class TaskCodeGenCPU : public TaskCodeGenLLVM {
     bls_buffer = new llvm::GlobalVariable(
         *module, type, false, llvm::GlobalValue::ExternalLinkage, nullptr,
         "bls_buffer", nullptr, llvm::GlobalVariable::LocalExecTLSModel, 0);
+    /* module->getOrInsertGlobal("bls_buffer", type);
+    bls_buffer = module->getNamedGlobal("bls_buffer");
+    bls_buffer->setAlignment(llvm::MaybeAlign(8));*/ // TODO(changyu): Fix JIT session error: Symbols not found: [ __emutls_get_address ] in python 3.10
+
+    // initialize the variable with an undef value to ensure it is added to the
+    // symbol table
     bls_buffer->setInitializer(llvm::UndefValue::get(type));
   }
 
@@ -219,11 +241,9 @@ LLVMCompiledTask KernelCodeGenCPU::compile_task(
 }
 
 void KernelCodeGenCPU::optimize_module(llvm::Module *module) {
-  TI_AUTO_PROF;
-
+  TI_AUTO_PROF
   const auto &compile_config = get_compile_config();
   auto triple = get_host_target_triple();
-  module->setTargetTriple(triple.str());
 
   std::string err_str;
   const llvm::Target *target =
@@ -233,72 +253,90 @@ void KernelCodeGenCPU::optimize_module(llvm::Module *module) {
   llvm::TargetOptions options;
   if (compile_config.fast_math) {
     options.AllowFPOpFusion = llvm::FPOpFusion::Fast;
-    options.UnsafeFPMath = true;
-    options.NoInfsFPMath = true;
-    options.NoNaNsFPMath = true;
+    options.UnsafeFPMath = 1;
+    options.NoInfsFPMath = 1;
+    options.NoNaNsFPMath = 1;
+  } else {
+    options.AllowFPOpFusion = llvm::FPOpFusion::Strict;
+    options.UnsafeFPMath = 0;
+    options.NoInfsFPMath = 0;
+    options.NoNaNsFPMath = 0;
   }
   options.HonorSignDependentRoundingFPMathOption = false;
   options.NoZerosInBSS = false;
   options.GuaranteedTailCallOpt = false;
 
+  llvm::legacy::FunctionPassManager function_pass_manager(module);
+  llvm::legacy::PassManager module_pass_manager;
+
   llvm::StringRef mcpu = llvm::sys::getHostCPUName();
-  // FIX: Use llvm::CodeGenOptLevel
   std::unique_ptr<llvm::TargetMachine> target_machine(
       target->createTargetMachine(triple.str(), mcpu.str(), "", options,
                                   llvm::Reloc::PIC_, llvm::CodeModel::Small,
-                                  compile_config.opt_level > 0 ? llvm::CodeGenOptLevel::Default : llvm::CodeGenOptLevel::None));
+                                  llvm::CodeGenOpt::Aggressive));
 
-  TI_ERROR_UNLESS(target_machine, "Could not allocate target machine!");
+  TI_ERROR_UNLESS(target_machine.get(), "Could not allocate target machine!");
+
   module->setDataLayout(target_machine->createDataLayout());
 
-  llvm::LoopAnalysisManager LAM;
-  llvm::FunctionAnalysisManager FAM;
-  llvm::CGSCCAnalysisManager CGAM;
-  llvm::ModuleAnalysisManager MAM;
-  llvm::PassBuilder PB(target_machine.get());
+  module_pass_manager.add(llvm::createTargetTransformInfoWrapperPass(
+      target_machine->getTargetIRAnalysis()));
+  function_pass_manager.add(llvm::createTargetTransformInfoWrapperPass(
+      target_machine->getTargetIRAnalysis()));
 
-  FAM.registerPass([&] { return target_machine->getTargetIRAnalysis(); });
+  llvm::PassManagerBuilder b;
+  b.OptLevel = 3;
+  b.Inliner = llvm::createFunctionInliningPass(b.OptLevel, 0, false);
+  b.LoopVectorize = true;
+  b.SLPVectorize = true;
 
-  PB.registerModuleAnalyses(MAM);
-  PB.registerCGSCCAnalyses(CGAM);
-  PB.registerFunctionAnalyses(FAM);
-  PB.registerLoopAnalyses(LAM);
-  PB.crossRegisterProxies(LAM, FAM, CGAM, MAM);
+  target_machine->adjustPassManager(b);
 
-  llvm::OptimizationLevel opt_level = llvm::OptimizationLevel::O3;
+  b.populateFunctionPassManager(function_pass_manager);
+  b.populateModulePassManager(module_pass_manager);
 
-  llvm::ModulePassManager MPM;
-  if (compile_config.opt_level > 0) {
-    MPM = PB.buildPerModuleDefaultPipeline(opt_level);
+  {
+    TI_PROFILER("llvm_function_pass");
+    function_pass_manager.doInitialization();
+    for (llvm::Module::iterator i = module->begin(); i != module->end(); i++)
+      function_pass_manager.run(*i);
+
+    function_pass_manager.doFinalization();
   }
 
-  llvm::FunctionPassManager FPM;
-  FPM.addPass(llvm::createFunctionToLoopPassAdaptor(llvm::LoopStrengthReducePass()));
-  FPM.addPass(llvm::createFunctionToLoopPassAdaptor(llvm::IndVarSimplifyPass()));
-  FPM.addPass(llvm::SeparateConstOffsetFromGEPPass(false));
-  FPM.addPass(llvm::EarlyCSEPass(true));
-  MPM.addPass(createModuleToFunctionPassAdaptor(std::move(FPM)));
+  /*
+    Optimization for llvm::GetElementPointer:
+    https://github.com/taichi-dev/taichi/issues/5472 The three other passes
+    "loop-reduce", "ind-vars", "cse" serves as preprocessing for
+    "separate-const-offset-gep".
 
-  llvm::SmallString<0> asm_buffer;
+    Note there's an update for "separate-const-offset-gep" in llvm-12.
+  */
+  module_pass_manager.add(llvm::createLoopStrengthReducePass());
+  module_pass_manager.add(llvm::createIndVarSimplifyPass());
+  module_pass_manager.add(llvm::createSeparateConstOffsetFromGEPPass(false));
+  module_pass_manager.add(llvm::createEarlyCSEPass(true));
+
+  llvm::SmallString<8> outstr;
+  llvm::raw_svector_ostream ostream(outstr);
+  ostream.SetUnbuffered();
   if (compile_config.print_kernel_asm) {
-    llvm::raw_svector_ostream asm_stream(asm_buffer);
-    // FIX: Pass the stream by reference, not by pointer
-    if (target_machine->addPassesToEmitFile(
-            MPM, asm_stream, nullptr, llvm::CodeGenFileType::AssemblyFile)) {
-      TI_ERROR("Failed to addPassesToEmitFile");
-    }
+    // Generate assembly code if neccesary
+    target_machine->addPassesToEmitFile(module_pass_manager, ostream, nullptr,
+                                        llvm::CGFT_AssemblyFile);
   }
 
   {
     TI_PROFILER("llvm_module_pass");
-    MPM.run(*module, MAM);
+    module_pass_manager.run(*module);
   }
 
   if (compile_config.print_kernel_asm) {
     static FileSequenceWriter writer(
         "taichi_kernel_cpu_llvm_ir_optimized_asm_{:04d}.s",
         "optimized assembly code (CPU)");
-    writer.write(std::string(asm_buffer.str()));
+    std::string buffer(outstr.begin(), outstr.end());
+    writer.write(buffer);
   }
 
   if (compile_config.print_kernel_llvm_ir_optimized) {

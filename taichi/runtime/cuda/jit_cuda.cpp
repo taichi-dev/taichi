@@ -8,9 +8,12 @@
 #include "llvm/Transforms/Scalar/IndVarSimplify.h"
 #include "llvm/Transforms/Scalar/SeparateConstOffsetFromGEP.h"
 #include "llvm/Transforms/Scalar/EarlyCSE.h"
+#include "llvm/Target/TargetMachine.h"
 
 // This is the crucial include for CUDA driver types like CUjit_option
 #include <cuda.h>
+#include <string>
+#include <vector>
 
 namespace taichi::lang {
 
@@ -57,7 +60,6 @@ JITModule *JITSessionCUDA::add_module(std::unique_ptr<llvm::Module> M,
   }
 
   auto ptx = compile_module_to_ptx(M);
-  // FIX: Use config_ instead of config
   if (this->config_.print_kernel_asm) {
     static FileSequenceWriter writer("taichi_kernel_nvptx_{:04d}.ptx",
                                      "module NVPTX");
@@ -104,7 +106,6 @@ JITModule *JITSessionCUDA::add_module(std::unique_ptr<llvm::Module> M,
   TI_TRACE("Loading module...");
   [[maybe_unused]] auto _ = CUDAContext::get_instance().get_lock_guard();
 
-  // FIX: CUjit_option is now included from <cuda.h>
   std::vector<CUjit_option> options;
   std::vector<void *> option_values;
   unsigned int max_reg_uint = max_reg;
@@ -124,7 +125,6 @@ JITModule *JITSessionCUDA::add_module(std::unique_ptr<llvm::Module> M,
   return modules.back().get();
 }
 
-// FIX: `get_ptx_version` is now `get_mcpu_version`
 std::string cuda_mattrs() {
   return "+ptx" +
          std::to_string(CUDAContext::get_instance().get_mcpu_version());
@@ -154,7 +154,6 @@ std::string JITSessionCUDA::compile_module_to_ptx(
 
   using namespace llvm;
 
-  // FIX: Use config_ instead of config
   if (this->config_.print_kernel_llvm_ir) {
     static FileSequenceWriter writer("taichi_kernel_cuda_llvm_ir_{:04d}.ll",
                                      "unoptimized LLVM IR (CUDA)");
@@ -175,7 +174,6 @@ std::string JITSessionCUDA::compile_module_to_ptx(
   TI_ERROR_UNLESS(target, err_str);
 
   TargetOptions options;
-  // FIX: Use config_ instead of config
   if (this->config_.fast_math) {
     options.AllowFPOpFusion = FPOpFusion::Fast;
     options.UnsafeFPMath = true;
@@ -186,7 +184,6 @@ std::string JITSessionCUDA::compile_module_to_ptx(
   options.NoZerosInBSS = false;
   options.GuaranteedTailCallOpt = false;
 
-  // FIX: Use llvm::CodeGenOptLevel::None/Default
   std::unique_ptr<TargetMachine> target_machine(target->createTargetMachine(
       triple.str(), CUDAContext::get_instance().get_mcpu(), cuda_mattrs(),
       options, llvm::Reloc::PIC_, llvm::CodeModel::Small,
@@ -223,10 +220,9 @@ std::string JITSessionCUDA::compile_module_to_ptx(
   OptimizationLevel opt_level = OptimizationLevel::O3;
   ModulePassManager MPM;
   if (config_.opt_level > 0) {
-      MPM = PB.buildPerModuleDefaultPipeline(opt_level);
+    MPM = PB.buildPerModuleDefaultPipeline(opt_level);
   }
 
-  // FIX: Correctly adapt Loop and Function passes
   FunctionPassManager FPM;
   FPM.addPass(createFunctionToLoopPassAdaptor(LoopStrengthReducePass()));
   FPM.addPass(createFunctionToLoopPassAdaptor(IndVarSimplifyPass()));
@@ -240,7 +236,6 @@ std::string JITSessionCUDA::compile_module_to_ptx(
 
   target_machine->Options.MCOptions.AsmVerbose = true;
 
-  // FIX: Correct call signature for addPassesToEmitFile
   if (target_machine->addPassesToEmitFile(MPM, ostream, nullptr,
                                          CodeGenFileType::AssemblyFile, true)) {
     TI_ERROR("Failed to set up passes to emit PTX source\n");
@@ -251,7 +246,6 @@ std::string JITSessionCUDA::compile_module_to_ptx(
     MPM.run(*module, MAM);
   }
 
-  // FIX: Use config_ instead of config
   if (this->config_.print_kernel_llvm_ir_optimized) {
     static FileSequenceWriter writer(
         "taichi_kernel_cuda_llvm_ir_optimized_{:04d}.ll",

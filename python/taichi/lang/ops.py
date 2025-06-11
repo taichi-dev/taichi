@@ -1502,4 +1502,6 @@ __all__ = [
     "select",
     "abs",
     "pow",
+    "erf",
+    "erfc",
 ]

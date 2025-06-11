@@ -185,6 +185,8 @@ class IRBuilder {
   UnaryOpStmt *create_log(Stmt *value);
   UnaryOpStmt *create_popcnt(Stmt *value);
   UnaryOpStmt *create_clz(Stmt *value);
+  UnaryOpStmt *create_erf(Stmt *value);
+  UnaryOpStmt *create_erfc(Stmt *value);
 
   // Binary operations. Returns the result.
   BinaryOpStmt *create_add(Stmt *l, Stmt *r);

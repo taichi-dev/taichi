@@ -1,23 +1,16 @@
 #pragma once
 
 #include "llvm/IR/LLVMContext.h"
-// #include "llvm/IR/LegacyPassManager.h" // Obsolete: Removed
+#include "llvm/IR/LegacyPassManager.h"
 #include "llvm/IR/Function.h"
-// #include "llvm/Pass.h" // Obsolete: Base classes for LPM are replaced
+#include "llvm/Pass.h"
 #include "llvm/IR/Module.h"
-// #include "llvm/Transforms/IPO.h" // Obsolete: Part of LPM
-// #include "llvm/Transforms/IPO/PassManagerBuilder.h" // Obsolete: Removed
+#include "llvm/Transforms/IPO.h"
 #include "llvm/IR/Instructions.h"
 #include "llvm/IR/IRBuilder.h"
 #include "llvm/Support/SourceMgr.h"
 #include "llvm/Transforms/Utils/ValueMapper.h"
 #include "llvm/Transforms/Utils/Cloning.h"
-
-// === CHANGED SECTION: HEADER INCLUDES ===
-// New includes for the New Pass Manager (NPM) base classes.
-#include "llvm/IR/PassManager.h"
-// === END OF CHANGED SECTION ===
-
 
 #if defined(TI_WITH_AMDGPU)
 #include "taichi/rhi/amdgpu/amdgpu_context.h"
@@ -27,19 +20,15 @@ namespace taichi {
 namespace lang {
 using namespace llvm;
 
-// === CHANGED SECTION: PASS DEFINITION ===
-// The pass now inherits from `PassInfoMixin` and `ModulePass` is replaced by an
-// interface that works with the New Pass Manager. The core logic is wrapped
-// inside a `run` method.
-struct AddStructForFuncPass : public PassInfoMixin<AddStructForFuncPass> {
+struct AddStructForFuncPass : public ModulePass {
+  static inline char ID{0};
   std::string func_name_;
   int tls_size_;
-
-  AddStructForFuncPass(std::string func_name, int tls_size)
-      : func_name_(std::move(func_name)), tls_size_(tls_size) {
+  AddStructForFuncPass(std::string func_name, int tls_size) : ModulePass(ID) {
+    func_name_ = func_name;
+    tls_size_ = tls_size;
   }
-
-  PreservedAnalyses run(llvm::Module &M, llvm::ModuleAnalysisManager &AM) {
+  bool runOnModule(llvm::Module &M) override {
     auto struct_for_func = M.getFunction("parallel_struct_for");
     auto &llvm_context = M.getContext();
     auto value_map = llvm::ValueToValueMapTy();
@@ -83,26 +72,19 @@ struct AddStructForFuncPass : public PassInfoMixin<AddStructForFuncPass> {
     gep->replaceAllUsesWith(new_gep);
     gep->eraseFromParent();
     alloca->eraseFromParent();
-
-    // In NPM, we must return which analyses are preserved.
-    // Since this pass modifies the IR, we return `None` to indicate that
-    // all analyses are invalidated.
-    return PreservedAnalyses::none();
+    return false;
   }
 };
-// === END OF CHANGED SECTION ===
-
 
 #if defined(TI_WITH_AMDGPU)
-
-// === CHANGED SECTION: PASS DEFINITION ===
-// `FunctionPass` is replaced by a modern NPM-compatible interface.
-struct AMDGPUConvertAllocaInstAddressSpacePass : public PassInfoMixin<AMDGPUConvertAllocaInstAddressSpacePass> {
-  PreservedAnalyses run(llvm::Function &f, llvm::FunctionAnalysisManager &AM) {
+struct AMDGPUConvertAllocaInstAddressSpacePass : public FunctionPass {
+  static inline char ID{0};
+  AMDGPUConvertAllocaInstAddressSpacePass() : FunctionPass(ID) {
+  }
+  bool runOnFunction(llvm::Function &f) override {
     f.addFnAttr("target-cpu",
                 "gfx" + AMDGPUContext::get_instance().get_mcpu().substr(3, 4));
     f.addFnAttr("target-features", "");
-    bool changed = false;
     for (auto &bb : f) {
       std::vector<AllocaInst *> alloca_inst_vec;
       for (Instruction &inst : bb) {
@@ -112,9 +94,6 @@ struct AMDGPUConvertAllocaInstAddressSpacePass : public PassInfoMixin<AMDGPUConv
           continue;
         }
         alloca_inst_vec.push_back(now_alloca);
-      }
-      if (!alloca_inst_vec.empty()) {
-          changed = true;
       }
       for (auto &allocainst : alloca_inst_vec) {
         auto alloca_type = allocainst->getAllocatedType();
@@ -130,20 +109,20 @@ struct AMDGPUConvertAllocaInstAddressSpacePass : public PassInfoMixin<AMDGPUConv
         allocainst->eraseFromParent();
       }
     }
-    return changed ? PreservedAnalyses::none() : PreservedAnalyses::all();
+    return false;
   }
 };
-// === END OF CHANGED SECTION ===
 
-
-// === CHANGED SECTION: PASS DEFINITION ===
-struct AMDGPUAddStructForFuncPass : public PassInfoMixin<AMDGPUAddStructForFuncPass> {
+struct AMDGPUAddStructForFuncPass : public ModulePass {
+  static inline char ID{0};
   std::string func_name_;
   int tls_size_;
   AMDGPUAddStructForFuncPass(std::string func_name, int tls_size)
-      : func_name_(std::move(func_name)), tls_size_(tls_size) {
+      : ModulePass(ID) {
+    func_name_ = func_name;
+    tls_size_ = tls_size;
   }
-  PreservedAnalyses run(llvm::Module &M, llvm::ModuleAnalysisManager &AM) {
+  bool runOnModule(llvm::Module &M) override {
     auto struct_for_func = M.getFunction("parallel_struct_for");
     auto &llvm_context = M.getContext();
     auto value_map = llvm::ValueToValueMapTy();
@@ -200,16 +179,15 @@ struct AMDGPUAddStructForFuncPass : public PassInfoMixin<AMDGPUAddStructForFuncP
     gep->eraseFromParent();
     cast->eraseFromParent();
     alloca->eraseFromParent();
-    return PreservedAnalyses::none();
+    return false;
   }
 };
-// === END OF CHANGED SECTION ===
 
-
-// === CHANGED SECTION: PASS DEFINITION ===
-struct AMDGPUConvertFunctionBodyAllocsAddressSpacePass : public PassInfoMixin<AMDGPUConvertFunctionBodyAllocsAddressSpacePass> {
-  PreservedAnalyses run(llvm::Function &f, llvm::FunctionAnalysisManager &AM) {
-    bool changed = false;
+struct AMDGPUConvertFunctionBodyAllocsAddressSpacePass : public FunctionPass {
+  static inline char ID{0};
+  AMDGPUConvertFunctionBodyAllocsAddressSpacePass() : FunctionPass(ID) {
+  }
+  bool runOnFunction(llvm::Function &f) override {
     for (auto &bb : f) {
       if (bb.getName() != "allocs")
         continue;
@@ -223,9 +201,6 @@ struct AMDGPUConvertFunctionBodyAllocsAddressSpacePass : public PassInfoMixin<AM
         }
         alloca_inst_vec.push_back(now_alloca);
       }
-      if (!alloca_inst_vec.empty()) {
-          changed = true;
-      }
       for (auto &allocainst : alloca_inst_vec) {
         auto alloca_type = allocainst->getAllocatedType();
         llvm::IRBuilder<> builder(allocainst);
@@ -237,16 +212,15 @@ struct AMDGPUConvertFunctionBodyAllocsAddressSpacePass : public PassInfoMixin<AM
         allocainst->eraseFromParent();
       }
     }
-    return changed ? PreservedAnalyses::none() : PreservedAnalyses::all();
+    return false;
   }
 };
-// === END OF CHANGED SECTION ===
 
-
-// === CHANGED SECTION: PASS DEFINITION ===
-struct AMDGPUConvertFuncParamAddressSpacePass : public PassInfoMixin<AMDGPUConvertFuncParamAddressSpacePass> {
-  PreservedAnalyses run(llvm::Module &M, llvm::ModuleAnalysisManager &AM) {
-    bool changed = false;
+struct AMDGPUConvertFuncParamAddressSpacePass : public ModulePass {
+  static inline char ID{0};
+  AMDGPUConvertFuncParamAddressSpacePass() : ModulePass(ID) {
+  }
+  bool runOnModule(llvm::Module &M) override {
     for (auto &f : M) {
       bool is_kernel = false;
       const std::string func_name = f.getName().str();
@@ -260,30 +234,28 @@ struct AMDGPUConvertFuncParamAddressSpacePass : public PassInfoMixin<AMDGPUConve
         // default value is 1,1024.
         f.addFnAttr("amdgpu-flat-work-group-size", "1, 1024");
         is_kernel = true;
-        changed = true;
       }
-      if (!is_kernel && !f.isDeclaration()) {
+      if (!is_kernel && !f.isDeclaration())
         f.setLinkage(llvm::Function::PrivateLinkage);
-        changed = true;
-      }
     }
     std::vector<llvm::Function *> kernel_function;
     for (auto &f : M) {
       if (f.getCallingConv() == llvm::CallingConv::AMDGPU_KERNEL)
         kernel_function.push_back(&f);
     }
-    if (!kernel_function.empty()) {
-        changed = true;
-    }
     for (auto &f : kernel_function) {
       llvm::FunctionType *func_type = f->getFunctionType();
       std::vector<llvm::Type *> new_func_params;
       for (auto &arg : f->args()) {
-        if (arg.getType()->isPointerTy()) { // Modern way to check for pointer type
-          // The old getWithSamePointeeType is deprecated.
-          // The modern way is to get the pointee type and create a new pointer type.
-          llvm::Type* pointee_type = llvm::dyn_cast<llvm::PointerType>(arg.getType())->getNonOpaquePointerElementType();
-          auto new_type = llvm::PointerType::get(pointee_type, unsigned(1));
+        if (arg.getType()->getTypeID() == llvm::Type::PointerTyID) {
+          // This is a temporary LLVM interface to handle transition from typed
+          // pointer to opaque pointer In the future, if we only clang++ > 14,
+          // we can compeletely comply to opaque pointer and replace the
+          // following code with llvm::PointerType::get(M.getContext(),
+          // usigned(1))
+          auto new_type = llvm::PointerType::getWithSamePointeeType(
+              llvm::dyn_cast<llvm::PointerType>(arg.getType()), unsigned(1));
+
           new_func_params.push_back(new_type);
         } else {
           new_func_params.push_back(arg.getType());
@@ -306,10 +278,10 @@ struct AMDGPUConvertFuncParamAddressSpacePass : public PassInfoMixin<AMDGPUConve
       for (llvm::Function::arg_iterator I = f->arg_begin(), E = f->arg_end(),
                                         I2 = new_func->arg_begin();
            I != E; ++I, ++I2) {
-        if (I->getType()->isPointerTy()) { // Modern check
+        if (I->getType()->getTypeID() == llvm::Type::PointerTyID) {
           auto &front_bb = new_func->getBasicBlockList().front();
           llvm::Instruction *addrspacecast =
-              new AddrSpaceCastInst(&*I2, I->getType());
+              new AddrSpaceCastInst(I2, I->getType());
           front_bb.getInstList().insertAfter(front_bb.getFirstInsertionPt(),
                                              addrspacecast);
           I->replaceAllUsesWith(addrspacecast);
@@ -322,10 +294,9 @@ struct AMDGPUConvertFuncParamAddressSpacePass : public PassInfoMixin<AMDGPUConve
 
       f->eraseFromParent();
     }
-    return changed ? PreservedAnalyses::none() : PreservedAnalyses::all();
+    return false;
   }
 };
-// === END OF CHANGED SECTION ===
 
 #endif
 

@@ -76,8 +76,7 @@ class TaskCodeGenCUDA : public TaskCodeGenLLVM {
     return LLVMModuleBuilder::call(
         builder.get(), "vprintf",
         builder->CreateGlobalStringPtr(format, "format_string"),
-        builder->CreateBitCast(value_arr,
-                               llvm::Type::getPointerTy()));
+        builder->CreateBitCast(value_arr, llvm::PointerType::get(*llvm_context, 0)));
     // === END OF CHANGED SECTION ===
   }
 

@@ -7,22 +7,17 @@
 #include "taichi/util/io.h"
 #include "taichi/util/lang_util.h"
 #include "taichi/util/file_sequence_writer.h"
-#include "taichi/program/program.h"
+#include "taichi/program/program.hh"
 #include "taichi/ir/ir.h"
 #include "taichi/ir/statements.h"
 #include "taichi/ir/transforms.h"
 #include "taichi/ir/analysis.h"
 #include "taichi/analysis/offline_cache_util.h"
 
-// === CHANGED SECTION: HEADER INCLUDES ===
-// #include "llvm/Support/Host.h" // Obsolete: This header has been removed.
-#include "llvm/TargetParser/Host.h" // Replacement for Host.h to get sys::getHostCPUName()
+#include "llvm/TargetParser/Host.h"
 #include "llvm/MC/TargetRegistry.h"
-// #include "llvm/Transforms/IPO.h" // Obsolete: Part of the Legacy Pass Manager
-// #include "llvm/Transforms/IPO/PassManagerBuilder.h" // Obsolete: Part of the Legacy Pass Manager
 #include "llvm/Analysis/TargetTransformInfo.h"
 #include "llvm/ExecutionEngine/Orc/JITTargetMachineBuilder.h"
-// New includes for the New Pass Manager (NPM)
 #include "llvm/Passes/PassBuilder.h"
 #include "llvm/Passes/StandardInstrumentations.h"
 #include "llvm/Transforms/Scalar/IndVarSimplify.h"
@@ -31,8 +26,6 @@
 #include "llvm/Transforms/Scalar/EarlyCSE.h"
 #include "llvm/Transforms/IPO/FunctionAttrs.h"
 #include "llvm/Transforms/IPO/InferFunctionAttrs.h"
-// === END OF CHANGED SECTION ===
-
 
 namespace taichi::lang {
 
@@ -54,28 +47,19 @@ class TaskCodeGenCPU : public TaskCodeGenLLVM {
   void create_offload_range_for(OffloadedStmt *stmt) override {
     int step = 1;
 
-    // In parallel for-loops reversing the order doesn't make sense.
-    // However, we may need to support serial offloaded range for's in the
-    // future, so it still makes sense to reverse the order here.
     if (stmt->reversed) {
       step = -1;
     }
 
     auto *tls_prologue = create_xlogue(stmt->tls_prologue);
 
-    // The loop body
     llvm::Function *body;
     {
-      // === CHANGED SECTION: LLVM API CALL ===
+      // FIX: Use `llvm::PointerType::get(context, address_space)`
       auto guard = get_function_creation_guard(
           {llvm::PointerType::get(get_runtime_type("RuntimeContext"), 0),
-           // The call to `llvm::Type::getInt8PtrTy(*llvm_context)` was replaced.
-           // `getInt8PtrTy` was a convenience function for getting an i8* type,
-           // which has been removed. The modern equivalent for a generic pointer
-           // is `getPointerTy()`, which creates an opaque `ptr` type.
-           llvm::Type::getPointerTy(),
+           llvm::PointerType::get(*llvm_context, 0),
            tlctx->get_data_type<int>()});
-      // === END OF CHANGED SECTION ===
 
       auto loop_var = create_entry_block_alloca(PrimitiveType::i32);
       loop_vars_llvm[stmt].push_back(loop_var);
@@ -100,15 +84,11 @@ class TaskCodeGenCPU : public TaskCodeGenLLVM {
 
     llvm::Function *body;
     {
-      // === CHANGED SECTION: LLVM API CALL ===
+      // FIX: Use `llvm::PointerType::get(context, address_space)`
       auto guard = get_function_creation_guard(
           {llvm::PointerType::get(get_runtime_type("RuntimeContext"), 0),
-           // Same change as in `create_offload_range_for`.
-           // The call to `llvm::Type::getInt8PtrTy(*llvm_context)` was replaced
-           // with the modern `llvm::Type::getPointerTy()`.
-           llvm::Type::getPointerTy(),
+           llvm::PointerType::get(*llvm_context, 0),
            tlctx->get_data_type<int>()});
-      // === END OF CHANGED SECTION ===
 
       for (int i = 0; i < stmt->mesh_prologue->size(); i++) {
         auto &s = stmt->mesh_prologue->statements[i];
@@ -179,12 +159,6 @@ class TaskCodeGenCPU : public TaskCodeGenLLVM {
     bls_buffer = new llvm::GlobalVariable(
         *module, type, false, llvm::GlobalValue::ExternalLinkage, nullptr,
         "bls_buffer", nullptr, llvm::GlobalVariable::LocalExecTLSModel, 0);
-    /* module->getOrInsertGlobal("bls_buffer", type);
-    bls_buffer = module->getNamedGlobal("bls_buffer");
-    bls_buffer->setAlignment(llvm::MaybeAlign(8));*/ // TODO(changyu): Fix JIT session error: Symbols not found: [ __emutls_get_address ] in python 3.10
-
-    // initialize the variable with an undef value to ensure it is added to the
-    // symbol table
     bls_buffer->setInitializer(llvm::UndefValue::get(type));
   }
 
@@ -266,13 +240,9 @@ LLVMCompiledTask KernelCodeGenCPU::compile_task(
   return gen.run_compilation();
 }
 
-
-// === CHANGED SECTION: ENTIRE FUNCTION REWRITTEN ===
-// The `optimize_module` function has been completely rewritten to use the
-// New Pass Manager (NPM) instead of the removed Legacy Pass Manager (LPM).
 void KernelCodeGenCPU::optimize_module(llvm::Module *module) {
-  TI_AUTO_PROF
-  
+  TI_AUTO_PROF;
+
   const auto &compile_config = get_compile_config();
   auto triple = get_host_target_triple();
   module->setTargetTriple(triple.str());
@@ -294,71 +264,68 @@ void KernelCodeGenCPU::optimize_module(llvm::Module *module) {
   options.GuaranteedTailCallOpt = false;
 
   llvm::StringRef mcpu = llvm::sys::getHostCPUName();
+  // FIX: `CodeGenOpt::Aggressive` is removed. Optimizations are handled by PassBuilder.
   std::unique_ptr<llvm::TargetMachine> target_machine(
       target->createTargetMachine(triple.str(), mcpu.str(), "", options,
                                   llvm::Reloc::PIC_, llvm::CodeModel::Small,
-                                  llvm::CodeGenOpt::Aggressive));
+                                  llvm::CodeGenOpt::None));
 
   TI_ERROR_UNLESS(target_machine, "Could not allocate target machine!");
-
   module->setDataLayout(target_machine->createDataLayout());
 
-  // === New Pass Manager Setup ===
-  // 1. Create the analysis managers.
   llvm::LoopAnalysisManager LAM;
   llvm::FunctionAnalysisManager FAM;
   llvm::CGSCCAnalysisManager CGAM;
   llvm::ModuleAnalysisManager MAM;
-
-  // 2. Create the PassBuilder. It's the main entry point for the NPM.
   llvm::PassBuilder PB(target_machine.get());
 
-  // 3. Register all the standard analyses with the managers.
   FAM.registerPass([&] { return target_machine->getTargetIRAnalysis(); });
+
   PB.registerModuleAnalyses(MAM);
   PB.registerCGSCCAnalyses(CGAM);
   PB.registerFunctionAnalyses(FAM);
   PB.registerLoopAnalyses(LAM);
   PB.crossRegisterProxies(LAM, FAM, CGAM, MAM);
 
-  // 4. Create the main pass manager.
-  llvm::ModulePassManager MPM;
+  // FIX: `PassBuilder::OptimizationLevel` is now `llvm::OptimizationLevel`
+  llvm::OptimizationLevel opt_level = llvm::OptimizationLevel::O3;
 
-  // 5. Build the default optimization pipeline for a given level (e.g., O3).
-  // This single line replaces the old `PassManagerBuilder` and `populate...` calls.
-  llvm::PassBuilder::OptimizationLevel opt_level = llvm::PassBuilder::OptimizationLevel::O3;
-  MPM = PB.buildPerModuleDefaultPipeline(opt_level);
+  llvm::ModulePassManager MPM = PB.buildPerModuleDefaultPipeline(opt_level);
 
-  // 6. Add the custom passes that Taichi used in the old code.
-  // Since they are FunctionPasses, they must be wrapped in an adaptor to be
-  // added to a ModulePassManager.
-  MPM.addPass(llvm::createModuleToFunctionPassAdaptor(llvm::LoopStrengthReducePass()));
-  MPM.addPass(llvm::createModuleToFunctionPassAdaptor(llvm::IndVarSimplifyPass()));
-  MPM.addPass(llvm::createModuleToFunctionPassAdaptor(llvm::SeparateConstOffsetFromGEPPass(false)));
-  MPM.addPass(llvm::createModuleToFunctionPassAdaptor(llvm::EarlyCSEPass(true)));
+  // FIX: Correctly adapt Loop and Function passes to the Module pipeline.
+  llvm::FunctionPassManager FPM;
+  // Loop passes must be adapted to run in a function pass pipeline.
+  FPM.addPass(llvm::createFunctionToLoopPassAdaptor(llvm::LoopStrengthReducePass()));
+  FPM.addPass(llvm::createFunctionToLoopPassAdaptor(llvm::IndVarSimplifyPass()));
+  // These are function passes, so they can be added directly.
+  FPM.addPass(llvm::SeparateConstOffsetFromGEPPass(false));
+  FPM.addPass(llvm::EarlyCSEPass(true));
+  // Adapt the entire function pass manager to run in the module pipeline.
+  MPM.addPass(createModuleToFunctionPassAdaptor(std::move(FPM)));
 
-  llvm::raw_svector_ostream *asm_ostream_ptr = nullptr;
+
   llvm::SmallString<0> asm_buffer;
-
   if (compile_config.print_kernel_asm) {
-    // To emit assembly with NPM, you add a pass to the pipeline that writes to a stream.
-    llvm::raw_svector_ostream &asm_stream = asm_buffer;
-    asm_ostream_ptr = &asm_stream;
-    asm_ostream_ptr->SetUnbuffered();
-    if (auto err = target_machine->addPassesToEmitFile(MPM, *asm_ostream_ptr, nullptr, llvm::CGFT_AssemblyFile)) {
-        TI_ERROR("Failed to addPassesToEmitFile");
+    // FIX: `raw_svector_ostream` must be constructed directly on the buffer
+    llvm::raw_svector_ostream asm_stream(asm_buffer);
+    asm_stream.SetUnbuffered();
+    // FIX: `CGFT_AssemblyFile` is now `CodeGenFileType::AssemblyFile`
+    if (auto err = target_machine->addPassesToEmitFile(
+            MPM, asm_stream, nullptr, llvm::CodeGenFileType::AssemblyFile)) {
+      TI_ERROR("Failed to addPassesToEmitFile");
     }
   }
+
   {
     TI_PROFILER("llvm_module_pass");
     MPM.run(*module, MAM);
   }
 
-  // After MPM.run(), the asm_buffer will be populated if print_kernel_asm was true.
   if (compile_config.print_kernel_asm) {
     static FileSequenceWriter writer(
         "taichi_kernel_cpu_llvm_ir_optimized_asm_{:04d}.s",
         "optimized assembly code (CPU)");
+    // The buffer is only filled after MPM.run(), so we get the content now.
     writer.write(std::string(asm_buffer.str()));
   }
 
@@ -373,7 +340,6 @@ void KernelCodeGenCPU::optimize_module(llvm::Module *module) {
     writer.write(module);
   }
 }
-
 
 #endif  // TI_WITH_LLVM
 }  // namespace taichi::lang

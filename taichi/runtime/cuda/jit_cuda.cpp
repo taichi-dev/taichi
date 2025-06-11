@@ -3,14 +3,14 @@
 #include "taichi/util/file_sequence_writer.h"
 #include "taichi/runtime/program_impls/llvm/llvm_program.h"
 
-// === CHANGED SECTION: HEADER INCLUDES ===
-// Add headers for NPM and the specific passes we need.
 #include "llvm/Passes/PassBuilder.h"
 #include "llvm/Transforms/Scalar/LoopStrengthReduce.h"
 #include "llvm/Transforms/Scalar/IndVarSimplify.h"
 #include "llvm/Transforms/Scalar/SeparateConstOffsetFromGEP.h"
 #include "llvm/Transforms/Scalar/EarlyCSE.h"
-// === END OF CHANGED SECTION ===
+
+// FIX: Include the CUDA driver header for CUjit_option
+#include <cuda.h>
 
 namespace taichi::lang {
 
@@ -34,8 +34,6 @@ std::string moduleToDumpName(llvm::Module *M) {
     return dumpName;
   }
   if (!module_has_runtime_initialize(M->getFunctionList())) {
-    // If runtime_initialize is not present, it's likely a kernel-only module.
-    // Use the first function's name for a more descriptive dump file name.
     dumpName = M->getFunctionList().begin()->getName().str();
   }
   return dumpName;
@@ -59,7 +57,8 @@ JITModule *JITSessionCUDA::add_module(std::unique_ptr<llvm::Module> M,
   }
 
   auto ptx = compile_module_to_ptx(M);
-  if (this->config.print_kernel_asm) {
+  // FIX: Use config_ instead of config
+  if (this->config_.print_kernel_asm) {
     static FileSequenceWriter writer("taichi_kernel_nvptx_{:04d}.ptx",
                                      "module NVPTX");
     writer.write(ptx);
@@ -95,7 +94,7 @@ JITModule *JITSessionCUDA::add_module(std::unique_ptr<llvm::Module> M,
     }
   }
   if (ptx.back() != '\0') {
-    ptx += '\0'; // Ensure null termination
+    ptx += '\0';
   }
 
   CUDAContext::get_instance().make_current();
@@ -105,13 +104,14 @@ JITModule *JITSessionCUDA::add_module(std::unique_ptr<llvm::Module> M,
   TI_TRACE("Loading module...");
   [[maybe_unused]] auto _ = CUDAContext::get_instance().get_lock_guard();
 
+  // FIX: Use CUjit_option from the cuda.h header
   std::vector<CUjit_option> options;
   std::vector<void *> option_values;
   unsigned int max_reg_uint = max_reg;
 
   if (max_reg > 0) {
     options.push_back(CU_JIT_MAX_REGISTERS);
-    option_values.push_back(&max_reg_uint);
+    option_values.push_back(reinterpret_cast<void *>(&max_reg_uint));
   }
 
   CUDADriver::get_instance().module_load_data_ex(&cuda_module, ptx.c_str(),
@@ -124,12 +124,12 @@ JITModule *JITSessionCUDA::add_module(std::unique_ptr<llvm::Module> M,
   return modules.back().get();
 }
 
-// Generates the PTX features string, e.g., "+ptx63"
+// FIX: `get_ptx_version` is now `get_mcpu_version`
 std::string cuda_mattrs() {
-  return "+ptx" + std::to_string(CUDAContext::get_instance().get_ptx_version());
+  return "+ptx" +
+         std::to_string(CUDAContext::get_instance().get_mcpu_version());
 }
 
-// Mangles symbol names to be safe for PTX.
 std::string convert_name_for_ptx(std::string new_name) {
   for (char &i : new_name) {
     if (i == '@' || i == '?' || i == '$' || i == '<' || i == '>' ||
@@ -144,7 +144,6 @@ std::string convert_name_for_ptx(std::string new_name) {
   return new_name;
 }
 
-// === CHANGED SECTION: FUNCTION REWRITTEN FOR NPM ===
 std::string JITSessionCUDA::compile_module_to_ptx(
     std::unique_ptr<llvm::Module> &module) {
   TI_AUTO_PROF
@@ -155,7 +154,8 @@ std::string JITSessionCUDA::compile_module_to_ptx(
 
   using namespace llvm;
 
-  if (this->config.print_kernel_llvm_ir) {
+  // FIX: Use config_ instead of config
+  if (this->config_.print_kernel_llvm_ir) {
     static FileSequenceWriter writer("taichi_kernel_cuda_llvm_ir_{:04d}.ll",
                                      "unoptimized LLVM IR (CUDA)");
     writer.write(module.get());
@@ -175,7 +175,8 @@ std::string JITSessionCUDA::compile_module_to_ptx(
   TI_ERROR_UNLESS(target, err_str);
 
   TargetOptions options;
-  if (this->config.fast_math) {
+  // FIX: Use config_ instead of config
+  if (this->config_.fast_math) {
     options.AllowFPOpFusion = FPOpFusion::Fast;
     options.UnsafeFPMath = true;
     options.NoInfsFPMath = true;
@@ -184,12 +185,13 @@ std::string JITSessionCUDA::compile_module_to_ptx(
   options.HonorSignDependentRoundingFPMathOption = false;
   options.NoZerosInBSS = false;
   options.GuaranteedTailCallOpt = false;
-  
-  // `CodeGenOpt::Aggressive` is removed. Optimizations are now controlled by PassBuilder.
+
+  // FIX: Use llvm::CodeGenOptLevel::None
   std::unique_ptr<TargetMachine> target_machine(target->createTargetMachine(
       triple.str(), CUDAContext::get_instance().get_mcpu(), cuda_mattrs(),
       options, llvm::Reloc::PIC_, llvm::CodeModel::Small,
-      CodeGenOpt::None));
+      config_.opt_level > 0 ? llvm::CodeGenOptLevel::Default
+                           : llvm::CodeGenOptLevel::None));
 
   TI_ERROR_UNLESS(target_machine, "Could not allocate target machine!");
   module->setDataLayout(target_machine->createDataLayout());
@@ -204,7 +206,6 @@ std::string JITSessionCUDA::compile_module_to_ptx(
     }
   }
 
-  // === New Pass Manager Setup ===
   LoopAnalysisManager LAM;
   FunctionAnalysisManager FAM;
   CGSCCAnalysisManager CGAM;
@@ -219,40 +220,36 @@ std::string JITSessionCUDA::compile_module_to_ptx(
   PB.registerLoopAnalyses(LAM);
   PB.crossRegisterProxies(LAM, FAM, CGAM, MAM);
 
-  // `PassManagerBuilder::OptLevel=3` is now `llvm::OptimizationLevel::O3`
   OptimizationLevel opt_level = OptimizationLevel::O3;
-  
   ModulePassManager MPM = PB.buildPerModuleDefaultPipeline(opt_level);
 
-  // Add the custom GEP optimization passes.
-  // These are FunctionPasses, so they need to be grouped in an FPM and then adapted.
+  // FIX: Correctly adapt Loop and Function passes
   FunctionPassManager FPM;
-  FPM.addPass(llvm::LoopStrengthReducePass());
-  FPM.addPass(llvm::IndVarSimplifyPass());
-  FPM.addPass(llvm::SeparateConstOffsetFromGEPPass(false));
-  FPM.addPass(llvm::EarlyCSEPass(true));
+  FPM.addPass(createFunctionToLoopPassAdaptor(LoopStrengthReducePass()));
+  FPM.addPass(createFunctionToLoopPassAdaptor(IndVarSimplifyPass()));
+  FPM.addPass(SeparateConstOffsetFromGEPPass(false));
+  FPM.addPass(EarlyCSEPass(true));
   MPM.addPass(createModuleToFunctionPassAdaptor(std::move(FPM)));
 
-  // Setup the output stream for PTX
   SmallString<0> outstr;
   raw_svector_ostream ostream(outstr);
   ostream.SetUnbuffered();
-  
+
   target_machine->Options.MCOptions.AsmVerbose = true;
-  
-  // `CGFT_AssemblyFile` is now `CodeGenFileType::AssemblyFile`
+
+  // FIX: addPassesToEmitFile takes a raw_pwrite_stream&, not a PassManagerBase&
   if (target_machine->addPassesToEmitFile(MPM, ostream, nullptr,
                                          CodeGenFileType::AssemblyFile, true)) {
     TI_ERROR("Failed to set up passes to emit PTX source\n");
   }
-  
-  // Run all passes
+
   {
     TI_PROFILER("llvm_module_pass");
     MPM.run(*module, MAM);
   }
 
-  if (this->config.print_kernel_llvm_ir_optimized) {
+  // FIX: Use config_ instead of config
+  if (this->config_.print_kernel_llvm_ir_optimized) {
     static FileSequenceWriter writer(
         "taichi_kernel_cuda_llvm_ir_optimized_{:04d}.ll",
         "optimized LLVM IR (CUDA)");
@@ -261,25 +258,14 @@ std::string JITSessionCUDA::compile_module_to_ptx(
 
   return std::string(outstr.str());
 }
-// === END OF CHANGED SECTION ===
-
 
 std::unique_ptr<JITSession> create_llvm_jit_session_cuda(
     TaichiLLVMContext *tlctx,
     const CompileConfig &config,
     Arch arch) {
   TI_ASSERT(arch == Arch::cuda);
-  // https://docs.nvidia.com/cuda/nvvm-ir-spec/index.html#data-layout
   auto data_layout = TaichiLLVMContext::get_data_layout(arch);
   return std::make_unique<JITSessionCUDA>(tlctx, config, data_layout);
-}
-#else
-std::unique_ptr<JITSession> create_llvm_jit_session_cuda(
-    TaichiLLVMContext *tlctx,
-    const CompileConfig &config,
-    Arch arch) {
-  TI_NOT_IMPLEMENTED;
-  return nullptr;
 }
 #endif
 

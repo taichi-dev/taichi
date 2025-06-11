@@ -9,7 +9,7 @@
 #include "llvm/Transforms/Scalar/SeparateConstOffsetFromGEP.h"
 #include "llvm/Transforms/Scalar/EarlyCSE.h"
 
-// FIX: Include the CUDA driver header for CUjit_option
+// This is the crucial include for CUDA driver types like CUjit_option
 #include <cuda.h>
 
 namespace taichi::lang {
@@ -93,7 +93,7 @@ JITModule *JITSessionCUDA::add_module(std::unique_ptr<llvm::Module> M,
       TI_WARN("Failed to open PTX file for loading: {}", filename);
     }
   }
-  if (ptx.back() != '\0') {
+  if (ptx.empty() || ptx.back() != '\0') {
     ptx += '\0';
   }
 
@@ -104,7 +104,7 @@ JITModule *JITSessionCUDA::add_module(std::unique_ptr<llvm::Module> M,
   TI_TRACE("Loading module...");
   [[maybe_unused]] auto _ = CUDAContext::get_instance().get_lock_guard();
 
-  // FIX: Use CUjit_option from the cuda.h header
+  // FIX: CUjit_option is now included from <cuda.h>
   std::vector<CUjit_option> options;
   std::vector<void *> option_values;
   unsigned int max_reg_uint = max_reg;
@@ -186,7 +186,7 @@ std::string JITSessionCUDA::compile_module_to_ptx(
   options.NoZerosInBSS = false;
   options.GuaranteedTailCallOpt = false;
 
-  // FIX: Use llvm::CodeGenOptLevel::None
+  // FIX: Use llvm::CodeGenOptLevel::None/Default
   std::unique_ptr<TargetMachine> target_machine(target->createTargetMachine(
       triple.str(), CUDAContext::get_instance().get_mcpu(), cuda_mattrs(),
       options, llvm::Reloc::PIC_, llvm::CodeModel::Small,
@@ -221,7 +221,10 @@ std::string JITSessionCUDA::compile_module_to_ptx(
   PB.crossRegisterProxies(LAM, FAM, CGAM, MAM);
 
   OptimizationLevel opt_level = OptimizationLevel::O3;
-  ModulePassManager MPM = PB.buildPerModuleDefaultPipeline(opt_level);
+  ModulePassManager MPM;
+  if (config_.opt_level > 0) {
+      MPM = PB.buildPerModuleDefaultPipeline(opt_level);
+  }
 
   // FIX: Correctly adapt Loop and Function passes
   FunctionPassManager FPM;
@@ -237,7 +240,7 @@ std::string JITSessionCUDA::compile_module_to_ptx(
 
   target_machine->Options.MCOptions.AsmVerbose = true;
 
-  // FIX: addPassesToEmitFile takes a raw_pwrite_stream&, not a PassManagerBase&
+  // FIX: Correct call signature for addPassesToEmitFile
   if (target_machine->addPassesToEmitFile(MPM, ostream, nullptr,
                                          CodeGenFileType::AssemblyFile, true)) {
     TI_ERROR("Failed to set up passes to emit PTX source\n");

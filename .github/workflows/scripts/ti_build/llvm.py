@@ -1,3 +1,4 @@
+
 # -*- coding: utf-8 -*-
 
 # -- stdlib --
@@ -34,8 +35,8 @@ def setup_llvm() -> None:
 
     elif (u.system, u.machine) in (("Linux", "arm64"), ("Linux", "aarch64")):
         out = get_cache_home() / "llvm15-manylinux2014"
-        url = "https://github.com/hughperkins/assets/releases/download/llvm-15.0.7/llvm-15-linux-arm64.tar"
-        download_dep(url, out, strip=1)
+        # FIXME: ARM LLVM!
+        pass
     elif (u.system, u.machine) == ("Darwin", "arm64"):
         out = get_cache_home() / "llvm15-m1-nozstd"
         url = "https://github.com/taichi-dev/taichi_assets/releases/download/llvm15/taichi-llvm-15-m1-nozstd.zip"

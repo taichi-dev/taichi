@@ -12,6 +12,7 @@ Highlights:
       - Fix the Unified Allocator to no longer return first two allocations as dupes (#8705) (by **Hugh Perkins**)
 
 Full changelog:
+   - Fix formatting issues in linalg.h and llvm_context.cpp, and update clone_runtime_module signature in llvm_context.cpp (by **johnnynunez**)
    - Fix formatting of user-defined literals in core.h (by **johnnynunez**)
    - Update CMake configuration for Clang 20 and fix various header includes (by **johnnynunez**)
    - Update header includes and fix configuration access in JIT compilation for CUDA (by **johnnynunez**)

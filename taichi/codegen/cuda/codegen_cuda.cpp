@@ -1,4 +1,3 @@
-
 #include "taichi/codegen/cuda/codegen_cuda.h"
 
 #include <vector>
@@ -615,30 +614,25 @@ class TaskCodeGenCUDA : public TaskCodeGenLLVM {
   }
 
   llvm::Value *create_intrinsic_load(llvm::Value *ptr,
-                                  llvm::Type *ty) override {
-    // Create a load from address space 1 (global memory) with !invariant.load
-    // metadata, replacing the removed llvm.nvvm.ldg.global intrinsics.
-    auto *load = builder->CreateLoad(
-        ty,
-        ptr,
-        false // Not volatile
-    );
+                                     llvm::Type *ty) override {
+    // The llvm.nvvm.ldg.global.* intrinsics have been removed.
+    // They are replaced by a standard load from global address space 1
+    // with !invariant.load metadata.
 
-    // Attach !invariant.load metadata to indicate the load is invariant.
-    llvm::MDNode *invariant_load_md = llvm::MDNode::get(
-        builder->getContext(),
-        llvm::MDString::get(builder->getContext(), "invariant.load")
-    );
-    load->setMetadata(llvm::LLVMContext::MD_invariant_load, invariant_load_md);
+    // The address space for read-only cache loads is 1 (global).
+    llvm::PointerType *ptr_ty_addrspace_1 = llvm::PointerType::get(ty, 1);
 
-    // Ensure the pointer is in address space 1 (global memory).
-    if (ptr->getType()->getPointerAddressSpace() != 1) {
-      ptr = builder->CreateAddrSpaceCast(
-          ptr,
-          llvm::PointerType::get(ty, 1)
-      );
-      load->setOperand(0, ptr);
-    }
+    // Cast the input pointer to the correct address space.
+    llvm::Value *cast_ptr = builder->CreateAddrSpaceCast(ptr, ptr_ty_addrspace_1);
+
+    // Create the load instruction.
+    llvm::LoadInst *load = builder->CreateLoad(ty, cast_ptr);
+
+    // Attach the !invariant.load metadata.
+    llvm::MDNode *invariant_load_metadata =
+        llvm::MDNode::get(builder->getContext(), {});
+    load->setMetadata(llvm::LLVMContext::MD_invariant_load,
+                      invariant_load_metadata);
 
     return load;
   }

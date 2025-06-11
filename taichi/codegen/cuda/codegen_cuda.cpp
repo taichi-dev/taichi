@@ -1,10 +1,9 @@
+
 #include "taichi/codegen/cuda/codegen_cuda.h"
 
 #include <vector>
 #include <set>
 #include <functional>
-
-#include "llvm/Config/llvm-config.h"  // For LLVM_VERSION_MAJOR
 
 #include "taichi/common/core.h"
 #include "taichi/util/io.h"
@@ -73,6 +72,13 @@ class TaskCodeGenCUDA : public TaskCodeGenLLVM {
           stype, value_arr, {tlctx->get_constant(0), tlctx->get_constant(i)});
       builder->CreateStore(values[i], value_ptr);
     }
+
+    // sonicflux: the original vprintf(`cuda_vprintf` inside
+    // `llvm/runtime_module/runtime.cpp`) is compiled with opaque pointer.
+    //
+    // ```llvm
+    // declare void @cuda_vprintf(ptr noundef, ptr noundef) #2
+    // ```
     return LLVMModuleBuilder::call(
         builder.get(), "vprintf",
         builder->CreateGlobalStringPtr(format, "format_string"),
@@ -610,43 +616,11 @@ class TaskCodeGenCUDA : public TaskCodeGenLLVM {
 
   llvm::Value *create_intrinsic_load(llvm::Value *ptr,
                                      llvm::Type *ty) override {
-// The nvvm_ldg_global_* intrinsics were removed in LLVM 15.
-// The modern equivalent is a standard load with !nontemporal metadata.
-#if LLVM_VERSION_MAJOR >= 15
-    llvm::Type *load_ty = ty;
-    llvm::Value *load_ptr = ptr;
-
-    // The original code had special handling for bools (i1), as ldg
-    // doesn't support 1-bit integers. We must preserve this logic.
-    bool is_bool = (ty->getScalarSizeInBits() == 1);
-    if (is_bool) {
-      load_ty = tlctx->get_data_type<uint8>();
-      load_ptr =
-          builder->CreatePointerCast(ptr, llvm::PointerType::get(load_ty, 0));
-    }
-
-    llvm::LoadInst *load_inst = builder->CreateLoad(load_ty, load_ptr);
-
-    // Set alignment, which is required for ldg.
-    load_inst->setAlignment(
-        tlctx->get_data_layout().getABITypeAlign(load_ty));
-
-    // Attach !nontemporal metadata to generate an ldg instruction.
-    llvm::MDNode *nontemporal_md = llvm::MDNode::get(
-        *llvm_context,
-        {llvm::ConstantAsMetadata::get(tlctx->get_constant(true))});
-    load_inst->setMetadata(llvm::LLVMContext::MD_nontemporal, nontemporal_md);
-
-    if (is_bool) {
-      return builder->CreateIsNotNull(load_inst);
-    } else {
-      return load_inst;
-    }
-#else
-    // Old path for LLVM < 15
+    // Issue an "__ldg" instruction to cache data in the read-only data cache.
     auto intrin = ty->isFloatingPointTy() ? llvm::Intrinsic::nvvm_ldg_global_f
                                           : llvm::Intrinsic::nvvm_ldg_global_i;
-    // Special treatment for bool types.
+    // Special treatment for bool types. As nvvm_ldg_global_i does not support
+    // 1-bit integer, so we convert them to i8.
     if (ty->getScalarSizeInBits() == 1) {
       auto *new_ty = tlctx->get_data_type<uint8>();
       auto *new_ptr =
@@ -659,7 +633,6 @@ class TaskCodeGenCUDA : public TaskCodeGenLLVM {
     return builder->CreateIntrinsic(
         intrin, {ty, llvm::PointerType::get(ty, 0)},
         {ptr, tlctx->get_constant(ty->getScalarSizeInBits())});
-#endif
   }
 
   void visit(GlobalLoadStmt *stmt) override {

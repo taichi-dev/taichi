@@ -12,6 +12,7 @@ Highlights:
       - Fix the Unified Allocator to no longer return first two allocations as dupes (#8705) (by **Hugh Perkins**)
 
 Full changelog:
+   - Update CHANGELOG.md with recent changes and clarify pointer type compatibility in llvm_codegen_utils.cpp (by **johnnynunez**)
    - Refactor assignment operator in VectorND to use element-wise copy instead of memcpy (by **johnnynunez**)
    - Update CHANGELOG.md to include recent formatting fixes and signature updates (by **johnnynunez**)
    - Optimize assignment operator in VectorND by using memcpy (by **johnnynunez**)

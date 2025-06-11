@@ -29,10 +29,14 @@ bool is_same_type(llvm::Type *a, llvm::Type *b) {
     return false;
   }
   if (a->isPointerTy()) {
-    // With opaque pointers, we can't recursively check the element type here.
-    // We assume they are compatible and let later stages of compilation
-    // (e.g., the LLVM verifier) catch any real mismatches.
-    return true;
+    #if LLVM_VERSION_MAJOR < 18
+        return is_same_type(a->getNonOpaquePointerElementType(),
+                            b->getNonOpaquePointerElementType());
+    #else
+        // With opaque pointers the only distinguishing feature left is the address
+        // space.  If those match, the pointer types are considered identical.
+        return a->getPointerAddressSpace() == b->getPointerAddressSpace();
+    #endif
   }
   if (a->isFunctionTy() != b->isFunctionTy()) {
     return false;

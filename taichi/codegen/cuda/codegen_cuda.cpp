@@ -17,6 +17,7 @@
 #include "taichi/ir/analysis.h"
 #include "taichi/ir/transforms.h"
 #include "taichi/codegen/codegen_utils.h"
+#include "llvm/Config/llvm-config.h"
 
 namespace taichi::lang {
 
@@ -606,26 +607,23 @@ class TaskCodeGenCUDA : public TaskCodeGenLLVM {
     return true;  // on CUDA, pass the argument by value
   }
 
-  llvm::Value *create_intrinsic_load(llvm::Value *ptr,
-                                     llvm::Type *ty) override {
-    // Issue an "__ldg" instruction to cache data in the read-only data cache.
-    auto intrin = ty->isFloatingPointTy() ? llvm::Intrinsic::nvvm_ldg_global_f
-                                          : llvm::Intrinsic::nvvm_ldg_global_i;
-    // Special treatment for bool types. As nvvm_ldg_global_i does not support
-    // 1-bit integer, so we convert them to i8.
-    if (ty->getScalarSizeInBits() == 1) {
-      auto *new_ty = tlctx->get_data_type<uint8>();
-      auto *new_ptr =
-          builder->CreatePointerCast(ptr, llvm::PointerType::get(new_ty, 0));
-      auto *v = builder->CreateIntrinsic(
-          intrin, {new_ty, llvm::PointerType::get(new_ty, 0)},
-          {new_ptr, tlctx->get_constant(new_ty->getScalarSizeInBits())});
-      return builder->CreateIsNotNull(v);
+  llvm::Value *TaskCodeGenCUDA::create_intrinsic_load(llvm::Value *ptr,
+                                                    llvm::Type *ty) {
+  #if LLVM_VERSION_MAJOR >= 20
+      // ldg intrinsics removed – use normal load from AS(1) + invariant metadata
+      auto *load = builder->CreateLoad(ty, ptr);          // ld.global.ca
+      load->setMetadata(llvm::LLVMContext::MD_invariant_load,
+                        llvm::MDNode::get(*llvm_context, {}));
+      return load;
+  #else
+      auto intrin = ty->isFloatingPointTy()
+                        ? llvm::Intrinsic::nvvm_ldg_global_f
+                        : llvm::Intrinsic::nvvm_ldg_global_i;
+      return builder->CreateIntrinsic(intrin,
+              {ty, llvm::PointerType::get(ty, 0)},
+              {ptr, tlctx->get_constant(ty->getScalarSizeInBits())});
+  #endif
     }
-    return builder->CreateIntrinsic(
-        intrin, {ty, llvm::PointerType::get(ty, 0)},
-        {ptr, tlctx->get_constant(ty->getScalarSizeInBits())});
-  }
 
   void visit(GlobalLoadStmt *stmt) override {
     if (auto get_ch = stmt->src->cast<GetChStmt>()) {

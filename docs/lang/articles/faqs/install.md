@@ -35,11 +35,11 @@ sidebar_position: 2
   ERROR: No matching distribution found for taichi
   ```
 
-  - Make sure you're using Python version 3.7/3.8/3.9/3.10:
+  - Make sure you're using Python version 3.9/3.10:
 
     ```bash
     python3 -c "import sys;print(sys.version[:sys.version.find('.', 2)])"
-    # 3.7, 3.8, 3.9, or 3.10
+    # 3.9, or 3.10
     ```
 
   - Make sure your Python executable is 64-bit:

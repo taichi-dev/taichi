@@ -13,7 +13,7 @@ Additionally, Taichi also has an ahead-of-time (AOT) system for exporting code t
 
 ## Prerequisites
 
-- Python: 3.7/3.8/3.9/3.10 (64-bit)
+- Python: 3.9/3.10 (64-bit)
 - OS: Windows, OS X, and Linux (64-bit)
 
 ## Installation

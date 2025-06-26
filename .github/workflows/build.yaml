@@ -245,7 +245,7 @@ jobs:
           fetch-depth: '0'
           submodules: 'recursive'
 
-      - uses: actions/setup-python@v4
+      - uses: actions/setup-python@v5
         with:
           # force a 3.7 is ok, build.py will handle actual python env
           python-version: 3.7

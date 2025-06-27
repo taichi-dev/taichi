@@ -1,3 +1,4 @@
+
 #pragma once
 
 #include "sparse_matrix.h"
@@ -91,16 +92,16 @@ class CuSparseSolver : public SparseSolver {
   bool is_analyzed_{false};
   bool is_factorized_{false};
 
-  int *h_Q_{
+  int *h_Q_{  // NOLINT
       nullptr}; /* <int> n,  B = Q*A*Q' or B = A(Q,Q) by MATLAB notation */
-  int *d_Q_{nullptr};
-  int *h_csrRowPtrB_{nullptr}; /* <int> n+1 */
-  int *h_csrColIndB_{nullptr}; /* <int> nnzA */
-  float *h_csrValB_{nullptr};  /* <float> nnzA */
-  int *h_mapBfromA_{nullptr};  /* <int> nnzA */
-  int *d_csrRowPtrB_{nullptr}; /* <int> n+1 */
-  int *d_csrColIndB_{nullptr}; /* <int> nnzA */
-  float *d_csrValB_{nullptr};  /* <float> nnzA */
+  int *d_Q_{nullptr};  // NOLINT
+  int *h_csr_row_ptr_B_{nullptr}; /* <int> n+1 */  // NOLINT
+  int *h_csr_col_ind_B_{nullptr}; /* <int> nnzA */ // NOLINT
+  float *h_csr_val_B_{nullptr};  /* <float> nnzA */  // NOLINT
+  int *h_map_B_from_A_{nullptr};  /* <int> nnzA */  // NOLINT
+  int *d_csr_row_ptr_B_{nullptr}; /* <int> n+1 */  // NOLINT
+  int *d_csr_col_ind_B_{nullptr}; /* <int> nnzA */  // NOLINT
+  float *d_csr_val_B_{nullptr};  /* <float> nnzA */  // NOLINT
  public:
   CuSparseSolver();
   explicit CuSparseSolver(SolverType solver_type) : solver_type_(solver_type) {

@@ -1,3 +1,4 @@
+
 #include "taichi/ir/ir.h"
 #include "taichi/ir/transforms.h"
 #include "taichi/ir/analysis.h"
@@ -28,15 +29,27 @@ void compile_to_offloads(IRNode *ir,
 
   if (!verbose && config.print_preprocessed_ir && start_from_ast) {
     TI_INFO("[{}] {}:", kernel->get_name(), "Preprocessed IR");
-    std::cout << std::flush;
     irpass::re_id(ir);
-    irpass::print(ir);
-    std::cout << std::flush;
   }
 
   if (autodiff_mode == AutodiffMode::kReverse) {
     irpass::reverse_segments(ir);
     print("Segment reversed (for autodiff)");
+  }
+
+  const char *dump_ir_env = std::getenv("TAICHI_DUMP_IR");
+  const std::string dumpOutDir = "/tmp/ir/";
+  if (dump_ir_env != nullptr) {
+    std::filesystem::create_directories(dumpOutDir);
+
+    std::string filename = dumpOutDir + "/" + kernel->name + "_from_ast.ll";
+    std::ofstream out_file(filename);
+    if (out_file.is_open()) {
+      std::string outString;
+      irpass::print(ir, &outString);
+      out_file << outString;
+      out_file.close();
+    }
   }
 
   if (start_from_ast) {
@@ -45,6 +58,16 @@ void compile_to_offloads(IRNode *ir,
     print("Lowered");
   }
 
+  if (dump_ir_env != nullptr) {
+    std::string filename = dumpOutDir + "/" + kernel->name + "_taichi1.ll";
+    std::ofstream out_file(filename);
+    if (out_file.is_open()) {
+      std::string outString;
+      irpass::print(ir, &outString);
+      out_file << outString;
+      out_file.close();
+    }
+  }
   irpass::compile_taichi_functions(ir, config,
                                    Function::IRStage::BeforeLowerAccess);
   irpass::analysis::gather_func_store_dests(ir);

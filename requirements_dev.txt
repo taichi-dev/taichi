@@ -3,6 +3,7 @@ colorama
 coverage
 Pillow
 pybind11
+pybind11-stubgen
 GitPython
 yapf
 distro

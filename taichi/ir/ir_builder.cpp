@@ -1,3 +1,4 @@
+
 #include "taichi/ir/ir_builder.h"
 #include "taichi/ir/statements.h"
 #include "taichi/common/logging.h"
@@ -129,6 +130,12 @@ ContinueStmt *IRBuilder::create_continue() {
   return insert(Stmt::make_typed<ContinueStmt>());
 }
 
+void IRBuilder::create_assert(Stmt *cond, const std::string &msg) {
+  std::vector<Stmt *> empty_args;
+  auto assert_stmt = Stmt::make_typed<AssertStmt>(cond, msg, empty_args);
+  insert(std::move(assert_stmt));
+}
+
 FuncCallStmt *IRBuilder::create_func_call(Function *func,
                                           const std::vector<Stmt *> &args) {
   return insert(Stmt::make_typed<FuncCallStmt>(func, args));
@@ -136,6 +143,12 @@ FuncCallStmt *IRBuilder::create_func_call(Function *func,
 
 LoopIndexStmt *IRBuilder::get_loop_index(Stmt *loop, int index) {
   return insert(Stmt::make_typed<LoopIndexStmt>(loop, index));
+}
+
+ConstStmt *IRBuilder::get_bool(bool value) {
+  return insert(Stmt::make_typed<ConstStmt>(TypedConstant(
+      TypeFactory::get_instance().get_primitive_type(PrimitiveTypeID::u1),
+      value)));
 }
 
 ConstStmt *IRBuilder::get_int32(int32 value) {
@@ -181,9 +194,10 @@ RandStmt *IRBuilder::create_rand(DataType value_type) {
 ArgLoadStmt *IRBuilder::create_arg_load(const std::vector<int> &arg_id,
                                         DataType dt,
                                         bool is_ptr,
-                                        int arg_depth) {
-  return insert(Stmt::make_typed<ArgLoadStmt>(arg_id, dt, is_ptr,
-                                              /*create_load*/ true, arg_depth));
+                                        int arg_depth,
+                                        bool create_load) {
+  return insert(Stmt::make_typed<ArgLoadStmt>(arg_id, dt, is_ptr, create_load,
+                                              arg_depth));
 }
 
 ReturnStmt *IRBuilder::create_return(Stmt *value) {
@@ -280,6 +294,14 @@ UnaryOpStmt *IRBuilder::create_popcnt(Stmt *value) {
 
 UnaryOpStmt *IRBuilder::create_clz(Stmt *value) {
   return insert(Stmt::make_typed<UnaryOpStmt>(UnaryOpType::clz, value));
+}
+
+UnaryOpStmt *IRBuilder::create_erf(Stmt *value) {
+  return insert(Stmt::make_typed<UnaryOpStmt>(UnaryOpType::erf, value));
+}
+
+UnaryOpStmt *IRBuilder::create_erfc(Stmt *value) {
+  return insert(Stmt::make_typed<UnaryOpStmt>(UnaryOpType::erfc, value));
 }
 
 BinaryOpStmt *IRBuilder::create_add(Stmt *l, Stmt *r) {

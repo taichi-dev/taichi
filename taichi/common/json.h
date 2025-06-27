@@ -174,7 +174,7 @@ struct JsonValue {
       : ty(L_JSON_OBJECT), obj(std::move(obj.inner)) {
   }
   inline explicit JsonValue(JsonArray &&arr)
-      : ty(L_JSON_ARRAY), arr(move(arr.inner)) {
+      : ty(L_JSON_ARRAY), arr(std::move(arr.inner)) {
   }
 
   inline JsonValue &operator[](const char *key) {

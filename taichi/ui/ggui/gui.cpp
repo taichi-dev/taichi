@@ -44,7 +44,9 @@ Gui::Gui(AppContext *app_context, SwapChain *swap_chain, TaichiWindow *window) {
 
 void Gui::init_render_resources(VkRenderPass render_pass) {
   ImGui_ImplVulkan_LoadFunctions(
-      load_vk_function_for_gui);  // this is because we're using volk.
+      VK_API_VERSION_1_0,        // or app_context_->config.vk_api_version
+      load_vk_function_for_gui,  // this is because we're using volk.
+      nullptr);
 
   auto &device =
       static_cast<taichi::lang::vulkan::VulkanDevice &>(app_context_->device());
@@ -60,7 +62,9 @@ void Gui::init_render_resources(VkRenderPass render_pass) {
   init_info.Allocator = VK_NULL_HANDLE;
   init_info.MinImageCount = swap_chain_->surface().get_image_count();
   init_info.ImageCount = swap_chain_->surface().get_image_count();
-  ImGui_ImplVulkan_Init(&init_info, render_pass);
+  // new signature takes only the struct
+  init_info.RenderPass = render_pass;
+  ImGui_ImplVulkan_Init(&init_info);
   render_pass_ = render_pass;
 
   // Upload Fonts
@@ -68,15 +72,16 @@ void Gui::init_render_resources(VkRenderPass render_pass) {
     auto stream = device.get_graphics_stream();
     auto [cmd_list, res] = stream->new_command_list_unique();
     assert(res == RhiResult::success && "Failed to allocate command list");
-    VkCommandBuffer command_buffer =
+    [[maybe_unused]] VkCommandBuffer command_buffer =
         static_cast<VulkanCommandList *>(cmd_list.get())
             ->vk_command_buffer()
             ->buffer;
 
-    ImGui_ImplVulkan_CreateFontsTexture(command_buffer);
+    // ≥ 1.90: the helper records its own commands
+    ImGui_ImplVulkan_CreateFontsTexture();
 
     stream->submit_synced(cmd_list.get());
-    ImGui_ImplVulkan_DestroyFontUploadObjects();
+    ImGui_ImplVulkan_DestroyFontsTexture();
   }
 
   prepare_for_next_frame();

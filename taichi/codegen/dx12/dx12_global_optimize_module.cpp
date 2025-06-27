@@ -1,4 +1,3 @@
-
 #include "taichi/common/core.h"
 #include "taichi/util/io.h"
 #include "taichi/program/program.h"
@@ -12,25 +11,30 @@
 #include "llvm/ADT/Twine.h"
 #include "llvm/IR/Function.h"
 
+// === CHANGED SECTION: HEADER INCLUDES ===
 #include "llvm/Analysis/TargetTransformInfo.h"
 #include "llvm/IR/Attributes.h"
-#include "llvm/Support/Host.h"
+// #include "llvm/Support/Host.h" // This was not used, but good to be aware of.
 #include "llvm/MC/TargetRegistry.h"
 #include "llvm/IR/Verifier.h"
 #include "llvm/IR/Module.h"
 #include "llvm/IR/LLVMContext.h"
-#include "llvm/IR/LegacyPassManager.h"
+// #include "llvm/IR/LegacyPassManager.h" // Obsolete: Removed
 #include "llvm/Support/raw_ostream.h"
 #include "llvm/Support/Error.h"
 #include "llvm/Support/FormatVariadic.h"
 #include "llvm/Target/TargetMachine.h"
-#include "llvm/Transforms/IPO/PassManagerBuilder.h"
-#include "llvm/Transforms/InstCombine/InstCombine.h"
-#include "llvm/Transforms/Scalar.h"
-#include "llvm/Transforms/Scalar/GVN.h"
-#include "llvm/Transforms/IPO.h"
+// #include "llvm/Transforms/IPO/PassManagerBuilder.h" // Obsolete: Removed
+// #include "llvm/Transforms/InstCombine/InstCombine.h" // Included via PassBuilder
+// #include "llvm/Transforms/Scalar.h" // Included via PassBuilder
+// #include "llvm/Transforms/Scalar/GVN.h" // Included via PassBuilder
+// #include "llvm/Transforms/IPO.h" // Included via PassBuilder
 #include "llvm/ADT/SmallString.h"
 #include "llvm/IR/GlobalVariable.h"
+// New includes for the New Pass Manager (NPM)
+#include "llvm/Passes/PassBuilder.h"
+// === END OF CHANGED SECTION ===
+
 
 using namespace llvm;
 
@@ -64,6 +68,9 @@ GlobalVariable *createGlobalVariableForResource(Module &M,
   return GV;
 }
 
+// === CHANGED SECTION: ENTIRE FUNCTION REWRITTEN ===
+// The `global_optimize_module` function has been completely rewritten to use the
+// New Pass Manager (NPM) instead of the removed Legacy Pass Manager (LPM).
 std::vector<uint8_t> global_optimize_module(llvm::Module *module,
                                             const CompileConfig &config) {
   TI_AUTO_PROF
@@ -75,8 +82,10 @@ std::vector<uint8_t> global_optimize_module(llvm::Module *module,
   for (llvm::Function &F : module->functions()) {
     if (directx12::is_cs_entry(&F))
       continue;
+    // Mark other functions for inlining.
     F.addFnAttr(llvm::Attribute::AlwaysInline);
   }
+
   // FIXME: choose shader model based on feature used.
   llvm::StringRef triple = "dxil-pc-shadermodel6.0-compute";
   module->setTargetTriple(triple);
@@ -89,21 +98,13 @@ std::vector<uint8_t> global_optimize_module(llvm::Module *module,
   TargetOptions options;
   if (config.fast_math) {
     options.AllowFPOpFusion = FPOpFusion::Fast;
-    options.UnsafeFPMath = 1;
-    options.NoInfsFPMath = 1;
-    options.NoNaNsFPMath = 1;
-  } else {
-    options.AllowFPOpFusion = FPOpFusion::Strict;
-    options.UnsafeFPMath = 0;
-    options.NoInfsFPMath = 0;
-    options.NoNaNsFPMath = 0;
+    options.UnsafeFPMath = true;
+    options.NoInfsFPMath = true;
+    options.NoNaNsFPMath = true;
   }
   options.HonorSignDependentRoundingFPMathOption = false;
   options.NoZerosInBSS = false;
   options.GuaranteedTailCallOpt = false;
-
-  legacy::FunctionPassManager function_pass_manager(module);
-  legacy::PassManager module_pass_manager;
 
   llvm::StringRef mcpu = "";
   std::unique_ptr<TargetMachine> target_machine(target->createTargetMachine(
@@ -111,50 +112,61 @@ std::vector<uint8_t> global_optimize_module(llvm::Module *module,
       llvm::CodeModel::Small,
       config.opt_level > 0 ? CodeGenOpt::Aggressive : CodeGenOpt::None));
 
-  TI_ERROR_UNLESS(target_machine.get(), "Could not allocate target machine!");
+  TI_ERROR_UNLESS(target_machine, "Could not allocate target machine!");
 
   module->setDataLayout(target_machine->createDataLayout());
 
-  // Lower taichi intrinsic first.
-  module_pass_manager.add(createTaichiIntrinsicLowerPass(&config));
+  // === New Pass Manager Setup ===
+  // 1. Create the analysis managers.
+  llvm::LoopAnalysisManager LAM;
+  llvm::FunctionAnalysisManager FAM;
+  llvm::CGSCCAnalysisManager CGAM;
+  llvm::ModuleAnalysisManager MAM;
 
-  module_pass_manager.add(createTargetTransformInfoWrapperPass(
-      target_machine->getTargetIRAnalysis()));
-  function_pass_manager.add(createTargetTransformInfoWrapperPass(
-      target_machine->getTargetIRAnalysis()));
+  // 2. Create the PassBuilder.
+  llvm::PassBuilder PB(target_machine.get());
 
-  PassManagerBuilder b;
-  b.OptLevel = 3;
-  b.Inliner = createFunctionInliningPass(b.OptLevel, 0, false);
-  b.LoopVectorize = true;
-  b.SLPVectorize = true;
+  // 3. Register all the standard analyses.
+  FAM.registerPass([&] { return target_machine->getTargetIRAnalysis(); });
+  PB.registerModuleAnalyses(MAM);
+  PB.registerCGSCCAnalyses(CGAM);
+  PB.registerFunctionAnalyses(FAM);
+  PB.registerLoopAnalyses(LAM);
+  PB.crossRegisterProxies(LAM, FAM, CGAM, MAM);
 
-  target_machine->adjustPassManager(b);
-
-  b.populateFunctionPassManager(function_pass_manager);
-  b.populateModulePassManager(module_pass_manager);
-  // Add passes after inline.
-  module_pass_manager.add(createTaichiRuntimeContextLowerPass());
-
-  llvm::SmallString<256> str;
-  llvm::raw_svector_ostream OS(str);
-  // Write DXIL container to OS.
-  target_machine->addPassesToEmitFile(module_pass_manager, OS, nullptr,
-                                      CGFT_ObjectFile);
-
-  {
-    TI_PROFILER("llvm_function_pass");
-    function_pass_manager.doInitialization();
-    for (llvm::Module::iterator i = module->begin(); i != module->end(); i++)
-      function_pass_manager.run(*i);
-
-    function_pass_manager.doFinalization();
+  // 4. Create the main pass manager.
+  llvm::ModulePassManager MPM;
+  
+  // Lower taichi intrinsic first. This is a custom pass.
+  MPM.addPass(createTaichiIntrinsicLowerPass(&config));
+  
+  // 5. Build the default optimization pipeline for O3.
+  llvm::PassBuilder::OptimizationLevel opt_level = llvm::PassBuilder::OptimizationLevel::O3;
+  // This will add inlining, vectorization, etc., replacing `PassManagerBuilder`.
+  // Note: We are now creating a more complex pipeline. We can use `buildPerModuleDefaultPipeline`
+  // but to insert passes in the middle, we construct it manually. A simpler way is to
+  // use `parsePassPipeline`. For now, we build the default pipeline first.
+  if (config.opt_level > 0) {
+      MPM = PB.buildPerModuleDefaultPipeline(opt_level);
   }
 
+  // Add the second custom pass, which should run after inlining.
+  MPM.addPass(createTaichiRuntimeContextLowerPass());
+
+  llvm::SmallString<0> str;
+  llvm::raw_svector_ostream OS(str);
+  
+  // 6. Add the pass to emit the object file to the stream.
+  if (auto err = target_machine->addPassesToEmitFile(MPM, OS, nullptr, CGFT_ObjectFile)) {
+    TI_ERROR("Failed to addPassesToEmitFile");
+  }
+
+  // 7. Run the entire pipeline.
   {
     TI_PROFILER("llvm_module_pass");
-    module_pass_manager.run(*module);
+    MPM.run(*module, MAM);
   }
+
   if (config.print_kernel_llvm_ir_optimized) {
     static FileSequenceWriter writer(
         "taichi_kernel_dx12_llvm_ir_optimized_{:04d}.ll",
@@ -163,6 +175,5 @@ std::vector<uint8_t> global_optimize_module(llvm::Module *module,
   }
   return std::vector<uint8_t>(str.begin(), str.end());
 }
-
 }  // namespace directx12
 }  // namespace taichi::lang

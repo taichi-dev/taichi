@@ -1,5 +1,8 @@
+
 #include "taichi/runtime/cuda/jit_cuda.h"
 #include "taichi/runtime/llvm/llvm_context.h"
+
+#include "llvm/Passes/PassBuilder.h"
 
 namespace taichi::lang {
 
@@ -13,9 +16,11 @@ JITModule *JITSessionCUDA ::add_module(std::unique_ptr<llvm::Module> M,
                                      "module NVPTX");
     writer.write(ptx);
   }
+
   // TODO: figure out why using the guard leads to wrong tests results
   // auto context_guard = CUDAContext::get_instance().get_guard();
   CUDAContext::get_instance().make_current();
+
   // Create module for object
   void *cuda_module;
   TI_TRACE("PTX size: {:.2f}KB", ptx.size() / 1024.0);
@@ -40,12 +45,13 @@ JITModule *JITSessionCUDA ::add_module(std::unique_ptr<llvm::Module> M,
   CUDADriver::get_instance().module_load_data_ex(
       &cuda_module, ptx.c_str(), num_options, options, option_values);
   TI_TRACE("CUDA module load time : {}ms", (Time::get_time() - t) * 1000);
-  // cudaModules.push_back(cudaModule);
+
   modules.push_back(std::make_unique<JITModuleCUDA>(cuda_module));
   return modules.back().get();
 }
 
 std::string cuda_mattrs() {
+  // TODO: upgrade to ptx78 as supported by LLVM 16
   return "+ptx63";
 }
 
@@ -98,7 +104,6 @@ std::string JITSessionCUDA::compile_module_to_ptx(
   llvm::Triple triple(module->getTargetTriple());
 
   // Allocate target machine
-
   std::string err_str;
   const llvm::Target *target =
       TargetRegistry::lookupTarget(triple.str(), err_str);
@@ -119,31 +124,24 @@ std::string JITSessionCUDA::compile_module_to_ptx(
     options.NoInfsFPMath = 0;
     options.NoNaNsFPMath = 0;
   }
+
   options.HonorSignDependentRoundingFPMathOption = 0;
   options.NoZerosInBSS = 0;
   options.GuaranteedTailCallOpt = 0;
 
+#if LLVM_VERSION_MAJOR >= 18
+  const auto opt_level = llvm::CodeGenOptLevel::Aggressive;
+#else
+  const auto opt_level = llvm::CodeGenOpt::Aggressive;
+#endif
   std::unique_ptr<TargetMachine> target_machine(target->createTargetMachine(
       triple.str(), CUDAContext::get_instance().get_mcpu(), cuda_mattrs(),
-      options, llvm::Reloc::PIC_, llvm::CodeModel::Small,
-      CodeGenOpt::Aggressive));
+      options, llvm::Reloc::PIC_, llvm::CodeModel::Small, opt_level));
 
   TI_ERROR_UNLESS(target_machine.get(), "Could not allocate target machine!");
 
+  module->setTargetTriple(triple.str());
   module->setDataLayout(target_machine->createDataLayout());
-
-  // Set up passes
-  llvm::SmallString<8> outstr;
-  raw_svector_ostream ostream(outstr);
-  ostream.SetUnbuffered();
-
-  legacy::FunctionPassManager function_pass_manager(module.get());
-  legacy::PassManager module_pass_manager;
-
-  module_pass_manager.add(createTargetTransformInfoWrapperPass(
-      target_machine->getTargetIRAnalysis()));
-  function_pass_manager.add(createTargetTransformInfoWrapperPass(
-      target_machine->getTargetIRAnalysis()));
 
   // NVidia's libdevice library uses a __nvvm_reflect to choose
   // how to handle denormalized numbers. (The pass replaces calls
@@ -178,51 +176,41 @@ std::string JITSessionCUDA::compile_module_to_ptx(
     }
   }
 
-  PassManagerBuilder b;
-  b.OptLevel = 3;
-  b.Inliner = createFunctionInliningPass(b.OptLevel, 0, false);
-  b.LoopVectorize = false;
-  b.SLPVectorize = false;
+  // Create the new analysis manager
+  llvm::LoopAnalysisManager LAM;
+  llvm::FunctionAnalysisManager FAM;
+  llvm::CGSCCAnalysisManager CGAM;
+  llvm::ModuleAnalysisManager MAM;
 
-  target_machine->adjustPassManager(b);
+  // Create the new pass builder
+  llvm::PipelineTuningOptions PTO;
+  PTO.LoopInterleaving = false;
+  PTO.LoopVectorization = false;
+  PTO.SLPVectorization = true;
+  PTO.LoopUnrolling = false;
+  PTO.ForgetAllSCEVInLoopUnroll = true;
 
-  b.populateFunctionPassManager(function_pass_manager);
-  b.populateModulePassManager(module_pass_manager);
+  llvm::PassBuilder PB(target_machine.get(), PTO);
 
-  // Override default to generate verbose assembly.
-  target_machine->Options.MCOptions.AsmVerbose = true;
+  PB.registerModuleAnalyses(MAM);
+  PB.registerCGSCCAnalyses(CGAM);
+  PB.registerFunctionAnalyses(FAM);
+  PB.registerLoopAnalyses(LAM);
+  PB.crossRegisterProxies(LAM, FAM, CGAM, MAM);
 
-  /*
-    Optimization for llvm::GetElementPointer:
-    https://github.com/taichi-dev/taichi/issues/5472 The three other passes
-    "loop-reduce", "ind-vars", "cse" serves as preprocessing for
-    "separate-const-offset-gep".
+  target_machine->registerPassBuilderCallbacks(PB);
 
-    Note there's an update for "separate-const-offset-gep" in llvm-12.
-  */
-  module_pass_manager.add(llvm::createLoopStrengthReducePass());
-  module_pass_manager.add(llvm::createIndVarSimplifyPass());
-  module_pass_manager.add(llvm::createSeparateConstOffsetFromGEPPass(false));
-  module_pass_manager.add(llvm::createEarlyCSEPass(true));
-
-  // Ask the target to add backend passes as necessary.
-  bool fail = target_machine->addPassesToEmitFile(
-      module_pass_manager, ostream, nullptr, llvm::CGFT_AssemblyFile, true);
-
-  TI_ERROR_IF(fail, "Failed to set up passes to emit PTX source\n");
-
-  {
-    TI_PROFILER("llvm_function_pass");
-    function_pass_manager.doInitialization();
-    for (llvm::Module::iterator i = module->begin(); i != module->end(); i++)
-      function_pass_manager.run(*i);
-
-    function_pass_manager.doFinalization();
-  }
+  llvm::ModulePassManager MPM =
+      PB.buildPerModuleDefaultPipeline(llvm::OptimizationLevel::O3);
 
   {
     TI_PROFILER("llvm_module_pass");
-    module_pass_manager.run(*module);
+    MPM.run(*module, MAM);
+  }
+
+  if (llvm::verifyModule(*module, &llvm::errs())) {
+    module->print(llvm::errs(), nullptr);
+    TI_ERROR("LLVM Module broken");
   }
 
   if (this->config_.print_kernel_llvm_ir_optimized) {
@@ -232,9 +220,29 @@ std::string JITSessionCUDA::compile_module_to_ptx(
     writer.write(module.get());
   }
 
-  std::string buffer(outstr.begin(), outstr.end());
+  llvm::SmallString<8> outstr;
+  raw_svector_ostream ostream(outstr);
+  ostream.SetUnbuffered();
 
-  // Null-terminate the ptx source
+  llvm::legacy::PassManager LPM;
+  LPM.add(createTargetTransformInfoWrapperPass(
+      target_machine->getTargetIRAnalysis()));
+
+  // Override default to generate verbose assembly.
+  target_machine->Options.MCOptions.AsmVerbose = true;
+
+#if LLVM_VERSION_MAJOR >= 18
+  const auto file_type = llvm::CodeGenFileType::AssemblyFile;
+#else
+  const auto file_type = llvm::CGFT_AssemblyFile;
+#endif
+  bool fail = target_machine->addPassesToEmitFile(LPM, ostream, nullptr,
+                                                  file_type, true);
+
+  TI_ERROR_IF(fail, "Failed to set up passes to emit PTX source\n");
+  LPM.run(*module);
+
+  std::string buffer(outstr.begin(), outstr.end());
   buffer.push_back(0);
   return buffer;
 }

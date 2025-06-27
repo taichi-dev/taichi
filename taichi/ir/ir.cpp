@@ -1,3 +1,4 @@
+
 #include "taichi/ir/ir.h"
 
 #include <numeric>
@@ -147,7 +148,6 @@ Callable *Stmt::get_callable() const {
   if (parent_block->parent_stmt()) {
     return parent_block->parent_stmt()->get_callable();
   }
-  irpass::print((IRNode *)this);
 
   TI_WARN("Stmt is not in a kernel.");
   return nullptr;

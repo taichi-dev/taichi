@@ -264,13 +264,13 @@ def field_fill_python_scope(F: template(), val: template()):
 @kernel
 def snode_deactivate(b: template()):
     for I in grouped(b):
-        deactivate(b, I)
+        deactivate(b, [int(i) for i in I])
 
 
 @kernel
 def snode_deactivate_dynamic(b: template()):
     for I in grouped(b.parent()):
-        deactivate(b, I)
+        deactivate(b, [int(i) for i in I])
 
 
 @kernel

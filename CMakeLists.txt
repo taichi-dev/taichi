@@ -139,9 +139,9 @@ endif()
 option(TI_BUILD_EXAMPLES "Build the CPP examples" ON)
 option(TI_BUILD_RHI_EXAMPLES "Build the Unified Device API examples" OFF)
 
-if(NOT TI_WITH_LLVM OR NOT TI_WITH_METAL)
-    set(TI_BUILD_EXAMPLES OFF)
-endif()
+# if(NOT TI_WITH_LLVM OR NOT TI_WITH_METAL)
+#     set(TI_BUILD_EXAMPLES OFF)
+# endif()
 
 message("C++ Flags: ${CMAKE_CXX_FLAGS}")
 message("Build type: ${CMAKE_BUILD_TYPE}")

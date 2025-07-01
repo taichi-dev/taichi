@@ -20,20 +20,20 @@ from .tinysh import Command, sh
 def setup_miniforge(prefix):
     u = platform.uname()
     if (u.system, u.machine) == ("Linux", "x86_64"):
-        url = "https://github.com/conda-forge/miniforge/releases/download/25.3.0-1/Miniforge3-25.3.0-1-Linux-x86_64.sh"
+        url = "https://github.com/conda-forge/miniforge/releases/download/25.3.0-3/Miniforge3-25.3.0-3-Linux-x86_64.sh"
         download_dep(url, prefix, args=["-bfp", str(prefix)])
     elif (u.system, u.machine) in (("Linux", "arm64"), ("Linux", "aarch64")):
-        url = "https://github.com/conda-forge/miniforge/releases/download/25.3.0-1/Miniforge3-25.3.0-1-Linux-aarch64.sh"
+        url = "https://github.com/conda-forge/miniforge/releases/download/25.3.0-3/Miniforge3-25.3.0-3-Linux-aarch64.sh"
         download_dep(url, prefix, args=["-bfp", str(prefix)])
     elif (u.system, u.machine) == ("Darwin", "arm64"):
-        url = "https://github.com/conda-forge/miniforge/releases/download/25.3.0-1/Miniforge3-25.3.0-1-MacOSX-arm64.sh"
+        url = "https://github.com/conda-forge/miniforge/releases/download/25.3.0-3/Miniforge3-25.3.0-3-MacOSX-arm64.sh"
         download_dep(url, prefix, args=["-bfp", str(prefix)])
     elif (u.system, u.machine) == ("Darwin", "x86_64"):
-        url = "https://github.com/conda-forge/miniforge/releases/download/25.3.0-1/Miniforge3-25.3.0-1-MacOSX-x86_64.sh"
+        url = "https://github.com/conda-forge/miniforge/releases/download/25.3.0-3/Miniforge3-25.3.0-3-MacOSX-x86_64.sh"
         download_dep(url, prefix, args=["-bfp", str(prefix)])
     elif u.system == "Windows":
         url = (
-            "https://github.com/conda-forge/miniforge/releases/download/25.3.0-1/Miniforge3-25.3.0-1-Windows-x86_64.exe"
+            "https://github.com/conda-forge/miniforge/releases/download/25.3.0-3/Miniforge3-25.3.0-3-Windows-x86_64.exe"
         )
         download_dep(
             url,

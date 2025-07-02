@@ -17,20 +17,21 @@ if (NOT DEFINED TI_VERSION_MAJOR)
     set(TI_VERSION_PATCH ${CMAKE_MATCH_3})
 endif()
 
+set(CMAKE_COLOR_DIAGNOSTICS ON)
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED TRUE)
-set(CMAKE_EXPORT_COMPILECOMMANDS ON)
+set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
 execute_process(
-  WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
-  COMMAND git rev-parse --short HEAD
-  RESULT_VARIABLE SHORT_HASH_RESULT
-  OUTPUT_VARIABLE TI_COMMIT_SHORT_HASH)
+        WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
+        COMMAND git rev-parse --short HEAD
+        RESULT_VARIABLE SHORT_HASH_RESULT
+        OUTPUT_VARIABLE TI_COMMIT_SHORT_HASH)
 execute_process(
-  WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
-  COMMAND git rev-parse HEAD
-  RESULT_VARIABLE SHORT_HASH_RESULT
-  OUTPUT_VARIABLE TI_COMMIT_HASH)
+        WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
+        COMMAND git rev-parse HEAD
+        RESULT_VARIABLE SHORT_HASH_RESULT
+        OUTPUT_VARIABLE TI_COMMIT_HASH)
 string(STRIP ${TI_COMMIT_HASH} TI_COMMIT_HASH)
 string(STRIP ${TI_COMMIT_SHORT_HASH} TI_COMMIT_SHORT_HASH)
 
@@ -64,7 +65,6 @@ endif()
 # This compiles all the libraries with -fPIC, which is critical to link a static
 # library into a shared lib.
 set(CMAKE_POSITION_INDEPENDENT_CODE ON)
-
 
 option(USE_LLD "Use lld (from llvm) linker" OFF)
 option(USE_MOLD "Use mold (A Modern Linker)" OFF)
@@ -102,13 +102,13 @@ if (USE_MOLD)
 endif()
 
 if (WIN32)
-  # For `Debug` configs MSVC links to a debuggable runtime by default which has
-  # symbol conflicts with the prebuilt LLVM in `Release`. We should be providing
-  # prebuilt LLVMs for both `Debug` and `Release` but LLVM 10 cannot be built by
-  # MSVC in `Debug` config because MSVC would try to fill uninitialize memory
-  # with `0xCC` but it too breaks `LLVMTableGen` which is depended on by almost
-  # every component in LLVM.
-  message("CMAKE_MSVC_RUNTIME_LIBRARY: ${CMAKE_MSVC_RUNTIME_LIBRARY}")
+    # For `Debug` configs MSVC links to a debuggable runtime by default which has
+    # symbol conflicts with the prebuilt LLVM in `Release`. We should be providing
+    # prebuilt LLVMs for both `Debug` and `Release` but LLVM 10 cannot be built by
+    # MSVC in `Debug` config because MSVC would try to fill uninitialize memory
+    # with `0xCC` but it too breaks `LLVMTableGen` which is depended on by almost
+    # every component in LLVM.
+    message("CMAKE_MSVC_RUNTIME_LIBRARY: ${CMAKE_MSVC_RUNTIME_LIBRARY}")
 endif()
 
 # No support of Python for Android build; or in any case taichi is integrated
@@ -119,7 +119,7 @@ if (TI_WITH_PYTHON AND NOT ANDROID)
 endif()
 
 if (TI_WITH_BACKTRACE)
-  add_subdirectory(external/backward_cpp)
+    add_subdirectory(external/backward_cpp)
 endif()
 
 if (TI_DISTRIBUTED_COMPILE)
@@ -132,8 +132,8 @@ include(cmake/TaichiCore.cmake)
 option(TI_BUILD_TESTS "Build the CPP tests" OFF)
 
 if (TI_BUILD_TESTS)
-  add_subdirectory(external/googletest EXCLUDE_FROM_ALL)
-  include(cmake/TaichiTests.cmake)
+    add_subdirectory(external/googletest EXCLUDE_FROM_ALL)
+    include(cmake/TaichiTests.cmake)
 endif()
 
 option(TI_BUILD_EXAMPLES "Build the CPP examples" ON)
@@ -166,34 +166,34 @@ endif()
 if (TI_WITH_LLVM)
     # Setup CLANG_EXECUTABLE
     if (CLANG_EXECUTABLE)
-      message("CLANG_EXECUTABLE defined: ${CLANG_EXECUTABLE}")
+        message("CLANG_EXECUTABLE defined: ${CLANG_EXECUTABLE}")
     elseif ("${CMAKE_CXX_COMPILER_ID}" MATCHES "Clang")
-      set (CLANG_EXECUTABLE ${CMAKE_CXX_COMPILER})
-      message("Clang executable using host compiler ${CLANG_EXECUTABLE}")
+        set (CLANG_EXECUTABLE ${CMAKE_CXX_COMPILER})
+        message("Clang executable using host compiler ${CLANG_EXECUTABLE}")
     else()
-      find_program(CLANG_EXECUTABLE NAMES clang-15 clang-14 clang-13 clang-12 clang-11 clang-10 clang-9 clang-8 clang-7 clang)
-      message("Clang executable found at ${CLANG_EXECUTABLE}")
+        find_program(CLANG_EXECUTABLE NAMES clang-20 clang-19 clang-18 clang-17 clang-16 clang-15 clang-14 clang-13 clang-12 clang-11 clang-10 clang-9 clang-8 clang-7 clang)
+        message("Clang executable found at ${CLANG_EXECUTABLE}")
     endif()
 
     if (NOT CLANG_EXECUTABLE)
-      message(FATAL_ERROR "Cannot find any clang executable.")
+        message(FATAL_ERROR "Cannot find any clang executable.")
     endif()
 
     macro(check_clang_version)
-      execute_process(COMMAND ${CLANG_EXECUTABLE} --version OUTPUT_VARIABLE CLANG_VERSION_OUTPUT)
-      string(REGEX MATCH "([0-9]+)\\.[0-9]+(\\.[0-9]+)?" CLANG_VERSION "${CLANG_VERSION_OUTPUT}")
+        execute_process(COMMAND ${CLANG_EXECUTABLE} --version OUTPUT_VARIABLE CLANG_VERSION_OUTPUT)
+        string(REGEX MATCH "([0-9]+)\\.[0-9]+(\\.[0-9]+)?" CLANG_VERSION "${CLANG_VERSION_OUTPUT}")
 
-      message("${CLANG_EXECUTABLE} --version: ${CLANG_VERSION}")
+        message("${CLANG_EXECUTABLE} --version: ${CLANG_VERSION}")
 
-      set(CLANG_VERSION_MAJOR "${CMAKE_MATCH_1}")
+        set(CLANG_VERSION_MAJOR "${CMAKE_MATCH_1}")
     endmacro()
 
     if (APPLE)
-      set(CLANG_OSX_FLAGS "-isysroot${CMAKE_OSX_SYSROOT}")
+        set(CLANG_OSX_FLAGS "-isysroot${CMAKE_OSX_SYSROOT}")
     endif()
 
     # Highest clang version that we've tested
-    set(CLANG_HIGHEST_VERSION "15")
+    set(CLANG_HIGHEST_VERSION "20")
 
     check_clang_version()
 
@@ -214,29 +214,29 @@ if(TI_WITH_STATIC_C_API)
 endif()
 
 if (TI_WITH_C_API)
-  include(cmake/TaichiCAPI.cmake)
-  if (TI_BUILD_TESTS)
-    include(cmake/TaichiCAPITests.cmake)
-  endif()
+    include(cmake/TaichiCAPI.cmake)
+    if (TI_BUILD_TESTS)
+        include(cmake/TaichiCAPITests.cmake)
+    endif()
 endif()
 
 if (TI_BUILD_EXAMPLES)
-  include(cmake/TaichiExamples.cmake)
+    include(cmake/TaichiExamples.cmake)
 endif()
 
 if (TI_BUILD_RHI_EXAMPLES)
-  add_subdirectory(cpp_examples/rhi_examples)
+    add_subdirectory(cpp_examples/rhi_examples)
 endif()
 
 
 option(TI_WITH_GRAPHVIZ "generate dependency graphs between targets" OFF)  # wheel-tag: viz
 if (TI_WITH_GRAPHVIZ)
-  set(GRAPHVIZ_GRAPH_NAME "ti_targets")
-  add_custom_target(graphviz ALL
-      COMMAND cp ${CMAKE_SOURCE_DIR}/cmake/CMakeGraphVizOptions.cmake .
-      COMMAND ${CMAKE_COMMAND} "--graphviz=${GRAPHVIZ_GRAPH_NAME}.dot" .
-      COMMAND dot -Tpng ${GRAPHVIZ_GRAPH_NAME}.dot -o ${GRAPHVIZ_GRAPH_NAME}.png
-      COMMAND cp ti_targets.png ${CMAKE_SOURCE_DIR}/build
-      WORKING_DIRECTORY "${CMAKE_BINARY_DIR}"
-  )
+    set(GRAPHVIZ_GRAPH_NAME "ti_targets")
+    add_custom_target(graphviz ALL
+            COMMAND cp ${CMAKE_SOURCE_DIR}/cmake/CMakeGraphVizOptions.cmake .
+            COMMAND ${CMAKE_COMMAND} "--graphviz=${GRAPHVIZ_GRAPH_NAME}.dot" .
+            COMMAND dot -Tpng ${GRAPHVIZ_GRAPH_NAME}.dot -o ${GRAPHVIZ_GRAPH_NAME}.png
+            COMMAND cp ti_targets.png ${CMAKE_SOURCE_DIR}/build
+            WORKING_DIRECTORY "${CMAKE_BINARY_DIR}"
+    )
 endif()

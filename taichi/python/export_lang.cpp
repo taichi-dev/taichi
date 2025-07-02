@@ -1,3 +1,4 @@
+
 // Bindings for the python frontend
 
 #include <optional>
@@ -350,11 +351,11 @@ void export_lang(py::module &m) {
       .def("insert_snode_access_flag", &ASTBuilder::insert_snode_access_flag)
       .def("reset_snode_access_flag", &ASTBuilder::reset_snode_access_flag);
 
-  py::class_<DeviceCapabilityConfig>(
-      m, "DeviceCapabilityConfig");  // NOLINT(bugprone-unused-raii)
+  auto device_capability_config =
+      py::class_<DeviceCapabilityConfig>(m, "DeviceCapabilityConfig");
 
-  py::class_<CompiledKernelData>(
-      m, "CompiledKernelData");  // NOLINT(bugprone-unused-raii)
+  auto compiled_kernel_data =
+      py::class_<CompiledKernelData>(m, "CompiledKernelData");
 
   py::class_<Program>(m, "Program")
       .def(py::init<>())

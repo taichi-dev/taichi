@@ -226,6 +226,8 @@ class ConstantFold : public BasicStmtVisitor {
       HANDLE_REAL_AND_INTEGRAL_UNARY(log, std::log)
       HANDLE_REAL_AND_INTEGRAL_UNARY(exp, std::exp)
       HANDLE_REAL_AND_INTEGRAL_UNARY(rsqrt, 1.0 / std::sqrt)
+      HANDLE_REAL_AND_INTEGRAL_UNARY(erf, std::erf)
+      HANDLE_REAL_AND_INTEGRAL_UNARY(erfc, std::erfc)
 #undef HANDLE_REAL_AND_INTEGRAL_UNARY
 
 #define HANDLE_INTEGRAL_UNARY(OP_TYPE, OP_CPP)                        \

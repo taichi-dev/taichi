@@ -65,6 +65,7 @@ class TaskCodeGenCUDA : public TaskCodeGenLLVM {
                             const std::vector<llvm::Value *> &values) {
     auto stype = llvm::StructType::get(*llvm_context, types, false);
     auto value_arr = builder->CreateAlloca(stype);
+
     for (int i = 0; i < values.size(); i++) {
       auto value_ptr = builder->CreateGEP(
           stype, value_arr, {tlctx->get_constant(0), tlctx->get_constant(i)});
@@ -74,7 +75,7 @@ class TaskCodeGenCUDA : public TaskCodeGenLLVM {
         builder.get(), "vprintf",
         builder->CreateGlobalStringPtr(format, "format_string"),
         builder->CreateBitCast(value_arr,
-                               llvm::Type::getInt8PtrTy(*llvm_context)));
+                               llvm::PointerType::get(*llvm_context, 0)));
   }
 
   std::tuple<llvm::Value *, llvm::Type *> create_value_and_type(
@@ -341,6 +342,8 @@ class TaskCodeGenCUDA : public TaskCodeGenLLVM {
     UNARY_STD(sgn)
     UNARY_STD(acos)
     UNARY_STD(asin)
+    UNARY_STD(erf)
+    UNARY_STD(erfc)
     else {
       TI_P(unary_op_type_name(op));
       TI_NOT_IMPLEMENTED
@@ -605,23 +608,27 @@ class TaskCodeGenCUDA : public TaskCodeGenLLVM {
 
   llvm::Value *create_intrinsic_load(llvm::Value *ptr,
                                      llvm::Type *ty) override {
-    // Issue an "__ldg" instruction to cache data in the read-only data cache.
-    auto intrin = ty->isFloatingPointTy() ? llvm::Intrinsic::nvvm_ldg_global_f
-                                          : llvm::Intrinsic::nvvm_ldg_global_i;
-    // Special treatment for bool types. As nvvm_ldg_global_i does not support
-    // 1-bit integer, so we convert them to i8.
-    if (ty->getScalarSizeInBits() == 1) {
-      auto *new_ty = tlctx->get_data_type<uint8>();
-      auto *new_ptr =
-          builder->CreatePointerCast(ptr, llvm::PointerType::get(new_ty, 0));
-      auto *v = builder->CreateIntrinsic(
-          intrin, {new_ty, llvm::PointerType::get(new_ty, 0)},
-          {new_ptr, tlctx->get_constant(new_ty->getScalarSizeInBits())});
-      return builder->CreateIsNotNull(v);
-    }
-    return builder->CreateIntrinsic(
-        intrin, {ty, llvm::PointerType::get(ty, 0)},
-        {ptr, tlctx->get_constant(ty->getScalarSizeInBits())});
+    // The llvm.nvvm.ldg.global.* intrinsics have been removed.
+    // They are replaced by a standard load from global address space 1
+    // with !invariant.load metadata.
+
+    // The address space for read-only cache loads is 1 (global).
+    llvm::PointerType *ptr_ty_addrspace_1 = llvm::PointerType::get(ty, 1);
+
+    // Cast the input pointer to the correct address space.
+    llvm::Value *cast_ptr =
+        builder->CreateAddrSpaceCast(ptr, ptr_ty_addrspace_1);
+
+    // Create the load instruction.
+    llvm::LoadInst *load = builder->CreateLoad(ty, cast_ptr);
+
+    // Attach the !invariant.load metadata.
+    llvm::MDNode *invariant_load_metadata =
+        llvm::MDNode::get(builder->getContext(), {});
+    load->setMetadata(llvm::LLVMContext::MD_invariant_load,
+                      invariant_load_metadata);
+
+    return load;
   }
 
   void visit(GlobalLoadStmt *stmt) override {

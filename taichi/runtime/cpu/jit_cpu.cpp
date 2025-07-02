@@ -3,7 +3,8 @@
 #include <memory>
 
 #ifdef TI_WITH_LLVM
-// #include "llvm/Analysis/TargetTransformInfo.h" // Not used here, but kept for consistency
+// #include "llvm/Analysis/TargetTransformInfo.h" // Not used here, but kept for
+// consistency
 #include "llvm/ADT/StringRef.h"
 #include "llvm/ExecutionEngine/ExecutionEngine.h"
 #include "llvm/ExecutionEngine/JITSymbol.h"
@@ -45,7 +46,7 @@
 // === END OF CHANGED SECTION ===
 
 #include "llvm/MC/TargetRegistry.h"
-#include "llvm/TargetParser/Host.h" // Corrected include path for llvm::sys::*
+#include "llvm/TargetParser/Host.h"  // Corrected include path for llvm::sys::*
 
 #endif
 
@@ -84,7 +85,7 @@ std::pair<JITTargetMachineBuilder, llvm::DataLayout> get_host_target_info() {
   auto data_layout = *expected_data_layout;
   return std::make_pair(jtmb, data_layout);
 }
-} // anonymous namespace
+}  // anonymous namespace
 
 class JITSessionCPU;
 
@@ -192,7 +193,7 @@ class JITSessionCPU : public JITSession {
 #endif
     if (!symbol)
       TI_ERROR("Function \"{}\" not found", Name);
-    return symbol->toPtr<void*>();
+    return symbol->toPtr<void *>();
   }
 
   void *lookup_in_module(JITDylib *lib, const std::string Name) {
@@ -204,7 +205,7 @@ class JITSessionCPU : public JITSession {
 #endif
     if (!symbol)
       TI_ERROR("Function \"{}\" not found", Name);
-    return symbol->toPtr<void*>();
+    return symbol->toPtr<void *>();
   }
 };
 

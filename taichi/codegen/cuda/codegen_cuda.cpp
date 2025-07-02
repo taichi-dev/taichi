@@ -616,7 +616,8 @@ class TaskCodeGenCUDA : public TaskCodeGenLLVM {
     llvm::PointerType *ptr_ty_addrspace_1 = llvm::PointerType::get(ty, 1);
 
     // Cast the input pointer to the correct address space.
-    llvm::Value *cast_ptr = builder->CreateAddrSpaceCast(ptr, ptr_ty_addrspace_1);
+    llvm::Value *cast_ptr =
+        builder->CreateAddrSpaceCast(ptr, ptr_ty_addrspace_1);
 
     // Create the load instruction.
     llvm::LoadInst *load = builder->CreateLoad(ty, cast_ptr);

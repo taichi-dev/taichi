@@ -92,16 +92,17 @@ class CuSparseSolver : public SparseSolver {
   bool is_analyzed_{false};
   bool is_factorized_{false};
 
-  int *h_Q_{  // NOLINT
+  int *h_Q_{
+      // NOLINT
       nullptr}; /* <int> n,  B = Q*A*Q' or B = A(Q,Q) by MATLAB notation */
-  int *d_Q_{nullptr};  // NOLINT
-  int *h_csr_row_ptr_B_{nullptr}; /* <int> n+1 */  // NOLINT
-  int *h_csr_col_ind_B_{nullptr}; /* <int> nnzA */ // NOLINT
-  float *h_csr_val_B_{nullptr};  /* <float> nnzA */  // NOLINT
-  int *h_map_B_from_A_{nullptr};  /* <int> nnzA */  // NOLINT
-  int *d_csr_row_ptr_B_{nullptr}; /* <int> n+1 */  // NOLINT
+  int *d_Q_{nullptr};                               // NOLINT
+  int *h_csr_row_ptr_B_{nullptr}; /* <int> n+1 */   // NOLINT
+  int *h_csr_col_ind_B_{nullptr}; /* <int> nnzA */  // NOLINT
+  float *h_csr_val_B_{nullptr}; /* <float> nnzA */  // NOLINT
+  int *h_map_B_from_A_{nullptr}; /* <int> nnzA */   // NOLINT
+  int *d_csr_row_ptr_B_{nullptr}; /* <int> n+1 */   // NOLINT
   int *d_csr_col_ind_B_{nullptr}; /* <int> nnzA */  // NOLINT
-  float *d_csr_val_B_{nullptr};  /* <float> nnzA */  // NOLINT
+  float *d_csr_val_B_{nullptr}; /* <float> nnzA */  // NOLINT
  public:
   CuSparseSolver();
   explicit CuSparseSolver(SolverType solver_type) : solver_type_(solver_type) {

@@ -222,17 +222,17 @@ void CuSparseSolver::reorder(const CuSparseMatrix &A) {
   assert(nullptr != h_csr_val_B_);
   assert(nullptr != h_map_B_from_A_);
 
-  CUDADriver::get_instance().memcpy_device_to_host(h_csr_row_ptr_B_, d_csrRowPtrA,
-                                                   sizeof(int) * (rowsA + 1));
-  CUDADriver::get_instance().memcpy_device_to_host(h_csr_col_ind_B_, d_csrColIndA,
-                                                   sizeof(int) * nnzA);
+  CUDADriver::get_instance().memcpy_device_to_host(
+      h_csr_row_ptr_B_, d_csrRowPtrA, sizeof(int) * (rowsA + 1));
+  CUDADriver::get_instance().memcpy_device_to_host(
+      h_csr_col_ind_B_, d_csrColIndA, sizeof(int) * nnzA);
   CUDADriver::get_instance().memcpy_device_to_host(h_csrValA, d_csrValA,
                                                    sizeof(float) * nnzA);
 
   // compoute h_Q_
-  CUSOLVERDriver::get_instance().csSpXcsrsymamdHost(cusolver_handle_, rowsA,
-                                                    nnzA, descr_, h_csr_row_ptr_B_,
-                                                    h_csr_col_ind_B_, h_Q_);
+  CUSOLVERDriver::get_instance().csSpXcsrsymamdHost(
+      cusolver_handle_, rowsA, nnzA, descr_, h_csr_row_ptr_B_, h_csr_col_ind_B_,
+      h_Q_);
   CUDADriver::get_instance().malloc((void **)&d_Q_, sizeof(int) * colsA);
   CUDADriver::get_instance().memcpy_host_to_device((void *)d_Q_, (void *)h_Q_,
                                                    sizeof(int) * (colsA));
@@ -256,9 +256,11 @@ void CuSparseSolver::reorder(const CuSparseMatrix &A) {
                                     sizeof(int) * (rowsA + 1));
   CUDADriver::get_instance().malloc((void **)&d_csr_col_ind_B_,
                                     sizeof(int) * nnzA);
-  CUDADriver::get_instance().malloc((void **)&d_csr_val_B_, sizeof(float) * nnzA);
-  CUDADriver::get_instance().memcpy_host_to_device(
-      (void *)d_csr_row_ptr_B_, (void *)h_csr_row_ptr_B_, sizeof(int) * (rowsA + 1));
+  CUDADriver::get_instance().malloc((void **)&d_csr_val_B_,
+                                    sizeof(float) * nnzA);
+  CUDADriver::get_instance().memcpy_host_to_device((void *)d_csr_row_ptr_B_,
+                                                   (void *)h_csr_row_ptr_B_,
+                                                   sizeof(int) * (rowsA + 1));
   CUDADriver::get_instance().memcpy_host_to_device(
       (void *)d_csr_col_ind_B_, (void *)h_csr_col_ind_B_, sizeof(int) * nnzA);
   CUDADriver::get_instance().memcpy_host_to_device(

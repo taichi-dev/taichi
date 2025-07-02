@@ -4,7 +4,7 @@
 # to do this, we need to run cmake with the following options:
 # -DCMAKE_EXPORT_COMPILE_COMMANDS=ON
 # I'm fairly sure that we don't need to run the actual build,
-# but it's not obvious to me how to do this. So, I'm just going 
+# but it's not obvious to me how to do this. So, I'm just going
 # to run a full build for now, and we can FIXME this later.
 
 set -ex

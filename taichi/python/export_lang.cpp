@@ -351,11 +351,11 @@ void export_lang(py::module &m) {
       .def("insert_snode_access_flag", &ASTBuilder::insert_snode_access_flag)
       .def("reset_snode_access_flag", &ASTBuilder::reset_snode_access_flag);
 
-  auto device_capability_config = py::class_<DeviceCapabilityConfig>(
-      m, "DeviceCapabilityConfig");
+  auto device_capability_config =
+      py::class_<DeviceCapabilityConfig>(m, "DeviceCapabilityConfig");
 
-  auto compiled_kernel_data = py::class_<CompiledKernelData>(
-      m, "CompiledKernelData");
+  auto compiled_kernel_data =
+      py::class_<CompiledKernelData>(m, "CompiledKernelData");
 
   py::class_<Program>(m, "Program")
       .def(py::init<>())

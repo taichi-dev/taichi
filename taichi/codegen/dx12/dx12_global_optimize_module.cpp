@@ -25,8 +25,8 @@
 #include "llvm/Support/FormatVariadic.h"
 #include "llvm/Target/TargetMachine.h"
 // #include "llvm/Transforms/IPO/PassManagerBuilder.h" // Obsolete: Removed
-// #include "llvm/Transforms/InstCombine/InstCombine.h" // Included via PassBuilder
-// #include "llvm/Transforms/Scalar.h" // Included via PassBuilder
+// #include "llvm/Transforms/InstCombine/InstCombine.h" // Included via
+// PassBuilder #include "llvm/Transforms/Scalar.h" // Included via PassBuilder
 // #include "llvm/Transforms/Scalar/GVN.h" // Included via PassBuilder
 // #include "llvm/Transforms/IPO.h" // Included via PassBuilder
 #include "llvm/ADT/SmallString.h"
@@ -34,7 +34,6 @@
 // New includes for the New Pass Manager (NPM)
 #include "llvm/Passes/PassBuilder.h"
 // === END OF CHANGED SECTION ===
-
 
 using namespace llvm;
 
@@ -69,8 +68,8 @@ GlobalVariable *createGlobalVariableForResource(Module &M,
 }
 
 // === CHANGED SECTION: ENTIRE FUNCTION REWRITTEN ===
-// The `global_optimize_module` function has been completely rewritten to use the
-// New Pass Manager (NPM) instead of the removed Legacy Pass Manager (LPM).
+// The `global_optimize_module` function has been completely rewritten to use
+// the New Pass Manager (NPM) instead of the removed Legacy Pass Manager (LPM).
 std::vector<uint8_t> global_optimize_module(llvm::Module *module,
                                             const CompileConfig &config) {
   TI_AUTO_PROF
@@ -136,18 +135,20 @@ std::vector<uint8_t> global_optimize_module(llvm::Module *module,
 
   // 4. Create the main pass manager.
   llvm::ModulePassManager MPM;
-  
+
   // Lower taichi intrinsic first. This is a custom pass.
   MPM.addPass(createTaichiIntrinsicLowerPass(&config));
-  
+
   // 5. Build the default optimization pipeline for O3.
-  llvm::PassBuilder::OptimizationLevel opt_level = llvm::PassBuilder::OptimizationLevel::O3;
-  // This will add inlining, vectorization, etc., replacing `PassManagerBuilder`.
-  // Note: We are now creating a more complex pipeline. We can use `buildPerModuleDefaultPipeline`
-  // but to insert passes in the middle, we construct it manually. A simpler way is to
-  // use `parsePassPipeline`. For now, we build the default pipeline first.
+  llvm::PassBuilder::OptimizationLevel opt_level =
+      llvm::PassBuilder::OptimizationLevel::O3;
+  // This will add inlining, vectorization, etc., replacing
+  // `PassManagerBuilder`. Note: We are now creating a more complex pipeline. We
+  // can use `buildPerModuleDefaultPipeline` but to insert passes in the middle,
+  // we construct it manually. A simpler way is to use `parsePassPipeline`. For
+  // now, we build the default pipeline first.
   if (config.opt_level > 0) {
-      MPM = PB.buildPerModuleDefaultPipeline(opt_level);
+    MPM = PB.buildPerModuleDefaultPipeline(opt_level);
   }
 
   // Add the second custom pass, which should run after inlining.
@@ -155,9 +156,10 @@ std::vector<uint8_t> global_optimize_module(llvm::Module *module,
 
   llvm::SmallString<0> str;
   llvm::raw_svector_ostream OS(str);
-  
+
   // 6. Add the pass to emit the object file to the stream.
-  if (auto err = target_machine->addPassesToEmitFile(MPM, OS, nullptr, CGFT_ObjectFile)) {
+  if (auto err = target_machine->addPassesToEmitFile(MPM, OS, nullptr,
+                                                     CGFT_ObjectFile)) {
     TI_ERROR("Failed to addPassesToEmitFile");
   }
 

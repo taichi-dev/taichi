@@ -556,6 +556,7 @@ def logical_not(a):
     """
     return _unary_operation(_ti_core.expr_logic_not, np.logical_not, a)
 
+
 def erf(a):
     """The error function.
     Args:
@@ -574,6 +575,7 @@ def erfc(a):
         The complement error function of `a`.
     """
     return _unary_operation(_ti_core.expr_erfc, math.erfc, a)
+
 
 def random(dtype=float) -> Union[float, int]:
     """Return a single random float/integer according to the specified data type.

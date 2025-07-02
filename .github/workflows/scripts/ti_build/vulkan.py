@@ -1,4 +1,3 @@
-
 # -*- coding: utf-8 -*-
 
 # -- stdlib --
@@ -63,4 +62,3 @@ def setup_vulkan():
         path_prepend("PATH", prefix / "Bin")
     else:
         return
-      

@@ -266,7 +266,11 @@ enum class BufferFormat : uint32_t {
 #undef PER_BUFFER_FORMAT
 };
 
-class RHI_DLL_EXPORT Pipeline{public : virtual ~Pipeline(){}};
+class RHI_DLL_EXPORT Pipeline {
+ public:
+  virtual ~Pipeline() {
+  }
+};
 
 using UPipeline = std::unique_ptr<Pipeline>;
 
@@ -554,8 +558,11 @@ enum class AllocUsage : int {
 
 MAKE_ENUM_FLAGS(AllocUsage)
 
-class RHI_DLL_EXPORT
-StreamSemaphoreObject{public : virtual ~StreamSemaphoreObject(){}};
+class RHI_DLL_EXPORT StreamSemaphoreObject {
+ public:
+  virtual ~StreamSemaphoreObject() {
+  }
+};
 
 using StreamSemaphore = std::shared_ptr<StreamSemaphoreObject>;
 

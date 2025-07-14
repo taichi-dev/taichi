@@ -1,3 +1,4 @@
+
 #pragma once
 
 #include "taichi/ir/ir.h"
@@ -121,6 +122,7 @@ class IRBuilder {
   IfStmt *create_if(Stmt *cond);
   WhileControlStmt *create_break();
   ContinueStmt *create_continue();
+  void create_assert(Stmt *cond, const std::string &msg);
 
   // Function.
   FuncCallStmt *create_func_call(Function *func,
@@ -130,6 +132,7 @@ class IRBuilder {
   LoopIndexStmt *get_loop_index(Stmt *loop, int index = 0);
 
   // Constants. TODO: add more types
+  ConstStmt *get_bool(bool value);
   ConstStmt *get_int32(int32 value);
   ConstStmt *get_int64(int64 value);
   ConstStmt *get_uint32(uint32 value);
@@ -148,7 +151,8 @@ class IRBuilder {
   ArgLoadStmt *create_arg_load(const std::vector<int> &arg_id,
                                DataType dt,
                                bool is_ptr,
-                               int arg_depth);
+                               int arg_depth,
+                               bool create_load = true);
   // Load kernel arguments.
   ArgLoadStmt *create_ndarray_arg_load(const std::vector<int> &arg_id,
                                        DataType dt,
@@ -181,6 +185,8 @@ class IRBuilder {
   UnaryOpStmt *create_log(Stmt *value);
   UnaryOpStmt *create_popcnt(Stmt *value);
   UnaryOpStmt *create_clz(Stmt *value);
+  UnaryOpStmt *create_erf(Stmt *value);
+  UnaryOpStmt *create_erfc(Stmt *value);
 
   // Binary operations. Returns the result.
   BinaryOpStmt *create_add(Stmt *l, Stmt *r);

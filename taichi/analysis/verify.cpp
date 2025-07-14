@@ -97,7 +97,7 @@ class IRVerifier : public BasicStmtVisitor {
     } else if (!stmt->has_body() && stmt->body) {
       TI_ERROR("offloaded {} ({})->body is {} (should be nullptr)",
                offloaded_task_type_name(stmt->task_type), stmt->name(),
-               fmt::ptr(stmt->body));
+               fmt::ptr(stmt->body.get()));
     }
     stmt->all_blocks_accept(this);
   }

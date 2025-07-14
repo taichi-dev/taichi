@@ -321,16 +321,6 @@ static void remove_useless_cuda_libdevice_functions(llvm::Module *module) {
       "lgammaf",
       "tgamma",
       "lgamma",
-      "erff",
-      "erfinvf",
-      "erfcf",
-      "erfcxf",
-      "erfcinvf",
-      "erf",
-      "erfinv",
-      "erfcx",
-      "erfcinv",
-      "erfc",
   };
   for (auto fn : function_name_list) {
     module->getFunction("__nv_" + fn)->eraseFromParent();
@@ -339,7 +329,6 @@ static void remove_useless_cuda_libdevice_functions(llvm::Module *module) {
 }
 
 // Note: runtime_module = init_module < struct_module
-
 std::unique_ptr<llvm::Module> TaichiLLVMContext::clone_runtime_module() {
   TI_AUTO_PROF
   auto *mod = get_this_thread_runtime_module();

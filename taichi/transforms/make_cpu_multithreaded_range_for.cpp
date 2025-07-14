@@ -1,3 +1,4 @@
+
 #include "taichi/ir/ir.h"
 #include "taichi/ir/statements.h"
 #include "taichi/ir/transforms.h"
@@ -49,7 +50,7 @@ using TaskType = OffloadedStmt::TaskType;
 class MakeCPUMultithreadedRangeFor : public BasicStmtVisitor {
  public:
   explicit MakeCPUMultithreadedRangeFor(const CompileConfig &config)
-      : config(config) {
+      : config_(config) {
   }
 
   void visit(Block *block) override {
@@ -69,7 +70,7 @@ class MakeCPUMultithreadedRangeFor : public BasicStmtVisitor {
     auto minimal_block_range = offloaded_body->insert(
         Stmt::make_typed<ConstStmt>(TypedConstant(PrimitiveType::i32, 512)));
     auto num_threads = offloaded_body->insert(Stmt::make_typed<ConstStmt>(
-        TypedConstant(PrimitiveType::i32, config.cpu_max_num_threads)));
+        TypedConstant(PrimitiveType::i32, config_.cpu_max_num_threads)));
     auto thread_index =
         offloaded_body->insert(Stmt::make_typed<LoopIndexStmt>(offloaded, 0));
 
@@ -138,22 +139,22 @@ class MakeCPUMultithreadedRangeFor : public BasicStmtVisitor {
     offloaded->const_begin = true;
     offloaded->const_end = true;
     offloaded->begin_value = 0;
-    offloaded->end_value = config.cpu_max_num_threads;
+    offloaded->end_value = config_.cpu_max_num_threads;
     offloaded->body = std::move(offloaded_body);
     offloaded->body->set_parent_stmt(offloaded);
     offloaded->block_dim = 1;
-    modified = true;
+    modified_ = true;
   }
 
   static bool run(IRNode *root, const CompileConfig &config) {
     MakeCPUMultithreadedRangeFor pass(config);
     root->accept(&pass);
-    return pass.modified;
+    return pass.modified_;
   }
 
  private:
-  const CompileConfig &config;
-  bool modified{false};
+  const CompileConfig &config_;
+  bool modified_{false};
 };
 }  // namespace
 

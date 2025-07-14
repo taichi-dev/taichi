@@ -58,14 +58,60 @@ class TypeCheck : public IRVisitor {
     }
   }
 
-  void visit(Block *stmt_list) override {
-    std::vector<Stmt *> stmts;
-    // Make a copy since type casts may be inserted for type promotion.
-    for (auto &stmt : stmt_list->statements) {
-      stmts.push_back(stmt.get());
+  class AlreadyCaught : std::exception {
+   public:
+    // AlreadyCaught()
+    explicit AlreadyCaught(std::runtime_error &e) : e_(e) {
     }
-    for (auto stmt : stmts)
-      stmt->accept(this);
+    const char *what() const noexcept override {
+      return e_.what();
+    }
+
+   private:
+    std::runtime_error &e_;
+  };
+
+  void visit(Block *stmt_list) override {
+    auto i = 0;
+    try {
+      std::vector<Stmt *> stmts;
+      stmts.reserve(stmt_list->statements.size());
+      // Make a copy since type casts may be inserted for type promotion.
+      for (auto &stmt : stmt_list->statements) {
+        stmts.push_back(stmt.get());
+      }
+      for (auto stmt : stmts) {
+        try {
+          stmt->accept(this);
+        } catch (std::runtime_error &e) {
+          std::cout << "hit exception whilst processing block, statement "
+                    << stmt->name() << std::endl;
+          throw e;
+        }
+        i += 1;
+      }
+    } catch (std::runtime_error &e) {
+      std::cout << "hit exception whilst processing block, statement idx " << i
+                << std::endl;
+      // irpass::print(stmt_list);
+
+      // Create directory if not exists and dump IR to file
+      {
+        std::string dumpOutDir = "/tmp/ir_dump";
+        std::filesystem::create_directories(dumpOutDir);
+
+        std::string filename = dumpOutDir + "/type_check.ll";
+        std::ofstream out_file(filename);
+        if (out_file.is_open()) {
+          std::string outString;
+          irpass::print(stmt_list, &outString);
+          out_file << outString;
+          out_file.close();
+        }
+        std::cout << "IR dump written to: " << filename << std::endl;
+      }
+      throw AlreadyCaught(e);
+    }
   }
 
   void visit(AtomicOpStmt *stmt) override {
@@ -158,7 +204,9 @@ class TypeCheck : public IRVisitor {
 
   void visit(MatrixPtrStmt *stmt) override {
     TI_ASSERT(stmt->offset->ret_type.get_element_type()->is_primitive(
-        PrimitiveTypeID::i32));
+                  PrimitiveTypeID::i32) ||
+              stmt->offset->ret_type.get_element_type()->is_primitive(
+                  PrimitiveTypeID::i64));
     stmt->ret_type.set_is_pointer(true);
   }
 

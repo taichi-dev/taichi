@@ -1,28 +1,35 @@
+
 # ./taichi/ui/CMakeLists.txt
 
 add_library(taichi_ui
-    gui/gui.cpp
-    gui/android.cpp
-    gui/cocoa.cpp
-    gui/win32.cpp
-    gui/x11.cpp
-  )
+        gui/gui.cpp
+        gui/android.cpp
+        gui/cocoa.cpp
+        gui/win32.cpp
+        gui/x11.cpp
+)
+
+if (APPLE)
+  set(CLANG_OSX_FLAGS -DTARGET_OS_OSX -x objective-c++)
+  target_compile_options(taichi_ui PRIVATE ${CLANG_OSX_FLAGS})
+endif()
+
 
 if(TI_WITH_GGUI AND NOT ANDROID)
   target_sources(taichi_ui PRIVATE common/window_base.cpp)
 endif()
 
 target_include_directories(taichi_ui
-  PRIVATE
-    ${PROJECT_SOURCE_DIR}
-    ${PROJECT_SOURCE_DIR}/external/glfw/include
-    ${PROJECT_SOURCE_DIR}/external/eigen
-    ${PROJECT_SOURCE_DIR}/external/volk
-    ${PROJECT_SOURCE_DIR}/external/Vulkan-Headers/include
-    ${LLVM_INCLUDE_DIRS}
-  PUBLIC
-    ${PROJECT_SOURCE_DIR}/external/glm
-  )
+        PRIVATE
+        ${PROJECT_SOURCE_DIR}
+        ${PROJECT_SOURCE_DIR}/external/glfw/include
+        ${PROJECT_SOURCE_DIR}/external/eigen
+        ${PROJECT_SOURCE_DIR}/external/volk
+        ${PROJECT_SOURCE_DIR}/external/Vulkan-Headers/include
+        ${LLVM_INCLUDE_DIRS}
+        PUBLIC
+        ${PROJECT_SOURCE_DIR}/external/glm
+)
 
 target_link_libraries(taichi_ui PRIVATE taichi_common)
 
@@ -35,11 +42,11 @@ if(TI_WITH_GGUI)
   add_definitions(-DIMGUI_IMPL_VULKAN_NO_PROTOTYPES)
   set(IMGUI_DIR ${PROJECT_SOURCE_DIR}/external/imgui)
   file(GLOB TAICHI_IMGUI_SOURCE
-    ${IMGUI_DIR}/backends/imgui_impl_vulkan.cpp
-    ${IMGUI_DIR}/imgui.cpp
-    ${IMGUI_DIR}/imgui_draw.cpp
-    ${IMGUI_DIR}/imgui_tables.cpp
-    ${IMGUI_DIR}/imgui_widgets.cpp
+          ${IMGUI_DIR}/backends/imgui_impl_vulkan.cpp
+          ${IMGUI_DIR}/imgui.cpp
+          ${IMGUI_DIR}/imgui_draw.cpp
+          ${IMGUI_DIR}/imgui_tables.cpp
+          ${IMGUI_DIR}/imgui_widgets.cpp
   )
   if (${CMAKE_SYSTEM_NAME} MATCHES "Darwin")
     list(APPEND TAICHI_IMGUI_SOURCE ${IMGUI_DIR}/backends/imgui_impl_metal.mm)

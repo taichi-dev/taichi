@@ -24,6 +24,7 @@ UBUNTU_PACKAGES = {
     "liblz4-dev",
     "libpng-dev",
     "libssl-dev",
+    "libncurses-dev",
     "libtinfo-dev",
     "libwayland-dev",
     "libx11-xcb-dev",

@@ -60,7 +60,7 @@ The language has broad applications spanning real-time physical simulation, nume
   - Vulkan
   - OpenGL (4.3+)
   - Apple Metal
-  - WebAssembly (experiemental)
+  - WebAssembly (experimental)
  </details>
 
 Use Python's package installer **pip** to install Taichi Lang:

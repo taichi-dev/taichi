@@ -120,7 +120,7 @@ jobs:
   #    matrix:
   #      include:
   #        - os: macos-10.15
-  #          python: 3.11
+  #          python: 3.13
   #          with_cpp_tests: ON
   #          wanted_archs: 'cpu,vulkan'
   #  runs-on:
@@ -203,7 +203,7 @@ jobs:
     - ${{ matrix.driver }}
     - ${{ matrix.extra_markers == 'sm70' && 'sm70' || 'Linux' }}
     env:
-      PY: '3.11'
+      PY: '3.13'
       PROJECT_NAME: taichi
       TAICHI_CMAKE_ARGS: >-
         -DTI_WITH_OPENGL:BOOL=ON

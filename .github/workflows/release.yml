@@ -56,11 +56,11 @@ jobs:
       - id: set-matrix
         run: |
           if [ -n "$RELEASE_VERSION" ]; then
-            echo 'matrix={"include":[{"name":"taichi","python":"3.9"},{"name":"taichi","python":"3.10"},{"name":"taichi","python":"3.11"},{"name":"taichi","python":"3.12"}]}"' >> $GITHUB_OUTPUT
-            echo 'matrix_osx={"include":[{"name":"taichi","python":"3.10"},{"name":"taichi","python":"3.11"},{"name":"taichi","python":"3.12"}]}"' >> $GITHUB_OUTPUT
+            echo 'matrix={"include":[{"name":"taichi","python":"3.9"},{"name":"taichi","python":"3.10"},{"name":"taichi","python":"3.11"},{"name":"taichi","python":"3.12"},{"name":"taichi","python":"3.13"}]}"' >> $GITHUB_OUTPUT
+            echo 'matrix_osx={"include":[{"name":"taichi","python":"3.10"},{"name":"taichi","python":"3.11"},{"name":"taichi","python":"3.12"},{"name":"taichi","python":"3.13"}]}"' >> $GITHUB_OUTPUT
           else
-            echo 'matrix={"include":[{"name":"taichi-nightly","python":"3.9"},{"name":"taichi-nightly","python":"3.10"},{"name":"taichi-nightly","python":"3.11"},{"name":"taichi","python":"3.12"}]}"' >> $GITHUB_OUTPUT
-            echo 'matrix_osx={"include":[{"name":"taichi-nightly","python":"3.9"},{"name":"taichi-nightly","python":"3.10"},{"name":"taichi-nightly","python":"3.11"},{"name":"taichi","python":"3.12"}]}"' >> $GITHUB_OUTPUT
+            echo 'matrix={"include":[{"name":"taichi-nightly","python":"3.9"},{"name":"taichi-nightly","python":"3.10"},{"name":"taichi-nightly","python":"3.11"},{"name":"taichi","python":"3.12"},{"name":"taichi","python":"3.13"}]}"' >> $GITHUB_OUTPUT
+            echo 'matrix_osx={"include":[{"name":"taichi-nightly","python":"3.9"},{"name":"taichi-nightly","python":"3.10"},{"name":"taichi-nightly","python":"3.11"},{"name":"taichi","python":"3.12"},{"name":"taichi","python":"3.13"}]}"' >> $GITHUB_OUTPUT
           fi
 
   build_and_test_linux:

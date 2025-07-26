@@ -153,7 +153,7 @@ def download_dep(url, outdir, *, strip=0, force=False, args=None, plain=False, e
     elif name.endswith(".tar.gz") or name.endswith(".tgz"):
         outdir.mkdir(parents=True, exist_ok=True)
         tar("-xzf", local_cached, "-C", outdir, f"--strip-components={strip}")
-    elif name.endswith(".tar.xz"):
+    elif name.endswith(".tar.xz") or name.endswith(".txz"):
         outdir.mkdir(parents=True, exist_ok=True)
         tar("-xJf", local_cached, "-C", outdir, f"--strip-components={strip}")
     elif name.endswith(".sh"):

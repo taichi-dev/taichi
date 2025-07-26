@@ -18,7 +18,7 @@ env:
   TI_SKIP_VERSION_CHECK: 'ON'
   TI_LITE_TEST: ${{ github.event_name == 'pull_request' && ! contains(github.event.pull_request.labels.*.name, 'full-ci') && ! startsWith(github.base_ref, 'rc-') && '1' || '' }}
   TI_TEST_OFFLINE_CACHE: ${{ github.event.schedule == '0 18 * * *' && '1' || '' }}
-  CI_IMAGE_VERSION: '202311231829'
+  CI_IMAGE_VERSION: '202507261706'
   # TI_USE_GIT_CACHE: ${{ vars.TI_USE_GIT_CACHE }}
   TI_USE_GIT_CACHE: '1'  # variables are also not populated on forked PRs
   GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

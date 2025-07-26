@@ -1,5 +1,5 @@
 # Python, numpy, and pybind11
-execute_process(COMMAND ${PYTHON_EXECUTABLE} -m pybind11 --cmake
+execute_process(COMMAND ${PYTHON_EXECUTABLE} -m pybind11 --cmakedir
                 OUTPUT_VARIABLE pybind11_DIR OUTPUT_STRIP_TRAILING_WHITESPACE)
 execute_process(COMMAND ${PYTHON_EXECUTABLE} -c "import numpy;print(numpy.get_include())"
                 OUTPUT_VARIABLE NUMPY_INCLUDE_DIR OUTPUT_STRIP_TRAILING_WHITESPACE)

@@ -70,7 +70,7 @@ vk_debug_callback(VkDebugUtilsMessageSeverityFlagBitsEXT message_severity,
     std::cout << msg.substr(pos + 2);
   }
 
-  if (message_severity > VK_DEBUG_UTILS_MESSAGE_SEVERITY_INFO_BIT_EXT) {
+  if (message_severity > VK_DEBUG_UTILS_MESSAGE_SEVERITY_WARNING_BIT_EXT) {
     char msg_buf[4096];
     snprintf(msg_buf, sizeof(msg_buf), "Vulkan validation layer: %d, %s",
              message_type, p_callback_data->pMessage);

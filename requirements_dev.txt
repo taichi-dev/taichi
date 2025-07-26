@@ -1,4 +1,4 @@
-cmake<4.0.0
+cmake~=3.0
 colorama
 coverage
 Pillow

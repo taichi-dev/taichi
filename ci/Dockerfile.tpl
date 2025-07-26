@@ -134,7 +134,7 @@ BUILD build-amdgpu AS registry.botmaster.tgr/taichi-build-amdgpu:__TIME__
 BUILD build-amdgpu AS registry.botmaster.tgr/taichi-test-amdgpu:__TIME__
 
 # -------
-FROM nvidia/cuda:12.9.1-cudnn-devel-ubuntu22.04 AS build-cuda
+FROM nvidia/cuda:12.4.1-cudnn-devel-ubuntu22.04 AS build-cuda
 ENV NVIDIA_DRIVER_CAPABILITIES compute,graphics,utility
 USE debian-addons
 USE mitm-ca
@@ -146,7 +146,7 @@ USE timezone-patch
 BUILD build-cuda AS registry.botmaster.tgr/taichi-build-cuda:__TIME__
 
 # -------
-FROM nvidia/cuda:12.9.1-cudnn-devel-ubuntu22.04 AS test-cuda
+FROM nvidia/cuda:12.4.1-cudnn-devel-ubuntu22.04 AS test-cuda
 ENV NVIDIA_DRIVER_CAPABILITIES compute,graphics,utility
 USE debian-addons-test
 USE mitm-ca

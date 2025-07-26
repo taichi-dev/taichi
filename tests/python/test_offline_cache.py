@@ -43,7 +43,7 @@ def expected_num_cache_files(num_kernels: int = 0) -> int:
 
 
 def tmp_offline_cache_file_path():
-    return join(OFFLINE_CACHE_TEMP_DIR, str(threading.currentThread().ident))
+    return join(OFFLINE_CACHE_TEMP_DIR, str(threading.current_thread().ident))
 
 
 def current_thread_ext_options():
@@ -399,7 +399,7 @@ def test_offline_cache_with_different_snode_trees(curr_arch):
         def trigger_compile():
             x[0] += 1
 
-        # This case is used for testing SNodeTree storeing order matters (i.e., use a ordered container such as vector instead of unordered_map or unordered_set) when generating kernel offline cache key
+        # This case is used for testing SNodeTree storing order matters (i.e., use a ordered container such as vector instead of unordered_map or unordered_set) when generating kernel offline cache key
         # The multiple `trigger_compile` equalivant to allocate each field to a different SNodeTree
         # i.e.,
         # x = ti.field(float)

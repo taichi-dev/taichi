@@ -17,11 +17,11 @@ class Benchmark : public Unit {
   int64 workload;
   bool returns_time;
 
-  virtual void setup(){};
+  virtual void setup() {};
 
   virtual void iterate() = 0;
 
-  virtual void finalize(){};
+  virtual void finalize() {};
 
  public:
   void initialize(const Config &config) override {

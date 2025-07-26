@@ -2,7 +2,7 @@
 #include "taichi/ir/statements.h"
 #include "taichi/program/program.h"
 
-void autograd() {
+int main() {
   /*
   import taichi as ti, numpy as np
   ti.init()
@@ -41,7 +41,7 @@ void autograd() {
   using namespace taichi;
   using namespace lang;
 
-  auto program = Program(Arch::x64);
+  auto program = Program(host_arch());
   const auto &config = program.compile_config();
 
   int n = 10;

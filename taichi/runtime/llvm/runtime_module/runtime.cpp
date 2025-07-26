@@ -55,10 +55,16 @@ __asm__(".symver expf,expf@GLIBC_2.2.5");
 #endif
 
 // For accessing struct fields
-#define STRUCT_FIELD(S, F)                                             \
-  extern "C" decltype(S::F) S##_get_##F(S *s) { return s->F; }         \
-  extern "C" decltype(S::F) *S##_get_ptr_##F(S *s) { return &(s->F); } \
-  extern "C" void S##_set_##F(S *s, decltype(S::F) f) { s->F = f; }
+#define STRUCT_FIELD(S, F)                              \
+  extern "C" decltype(S::F) S##_get_##F(S *s) {         \
+    return s->F;                                        \
+  }                                                     \
+  extern "C" decltype(S::F) *S##_get_ptr_##F(S *s) {    \
+    return &(s->F);                                     \
+  }                                                     \
+  extern "C" void S##_set_##F(S *s, decltype(S::F) f) { \
+    s->F = f;                                           \
+  }
 
 #define STRUCT_FIELD_ARRAY(S, F)                                             \
   extern "C" std::remove_all_extents_t<decltype(S::F)> S##_get_##F(S *s,     \
@@ -159,9 +165,13 @@ std::size_t taichi_strlen(const char *str) {
   return len;
 }
 
-#define DEFINE_UNARY_REAL_FUNC(F)          \
-  f32 F##_f32(f32 x) { return std::F(x); } \
-  f64 F##_f64(f64 x) { return std::F(x); }
+#define DEFINE_UNARY_REAL_FUNC(F) \
+  f32 F##_f32(f32 x) {            \
+    return std::F(x);             \
+  }                               \
+  f64 F##_f64(f64 x) {            \
+    return std::F(x);             \
+  }
 
 DEFINE_UNARY_REAL_FUNC(exp)
 DEFINE_UNARY_REAL_FUNC(log)

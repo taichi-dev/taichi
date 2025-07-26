@@ -123,7 +123,7 @@ See [Get started](https://docs.taichi-lang.org) for more information.
 
 ### Build from source
 
-If you wish to try our our experimental features or build Taichi Lang for your own environments, see [Developer installation](https://docs.taichi-lang.org/docs/dev_install).
+If you wish to try our experimental features or build Taichi Lang for your own environments, see [Developer installation](https://docs.taichi-lang.org/docs/dev_install).
 
 ## Documentation
 

@@ -51,6 +51,7 @@ AMDGPUDriver::AMDGPUDriver() {
   loader_->load_function("hipGetErrorName", get_error_name);
   loader_->load_function("hipGetErrorString", get_error_string);
   loader_->load_function("hipDriverGetVersion", driver_get_version);
+  loader_->load_function("hipRuntimeGetVersion", runtime_get_version);
 
   int version;
   driver_get_version(&version);

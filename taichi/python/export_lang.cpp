@@ -500,6 +500,7 @@ void export_lang(py::module &m) {
       .def_readwrite("parent", &SNode::parent)
       .def_readonly("type", &SNode::type)
       .def_readonly("id", &SNode::id)
+      .def("get_snode_tree_id", &SNode::get_snode_tree_id)
       .def_readonly("offset", &SNode::index_offsets)
       .def("dense",
            (SNode & (SNode::*)(const std::vector<Axis> &,

@@ -22,7 +22,7 @@ class UnifiedAllocator {
   };
 
  private:
-  static const std::size_t default_allocator_size;
+  static std::size_t default_allocator_size;
 
   UnifiedAllocator();
 
@@ -35,6 +35,7 @@ class UnifiedAllocator {
   std::vector<MemoryChunk> chunks_;
 
   friend class HostMemoryPool;
+  friend class HostMemoryPoolTestHelper;
 };
 
 }  // namespace taichi::lang

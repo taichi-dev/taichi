@@ -1,7 +1,8 @@
-""" phase field model for snow dendrite evolution, which simulates the snow growing from water vapor.
-    space discretization: finite difference method, time integration: Runge-Kutta method
-    repo's link: https://github.com/mo-hanxuan/Snow-PhaseField
-    more details about physical interpretation refer to [Physica D 63(3-4): 410-423]"""
+"""phase field model for snow dendrite evolution, which simulates the snow growing from water vapor.
+space discretization: finite difference method, time integration: Runge-Kutta method
+repo's link: https://github.com/mo-hanxuan/Snow-PhaseField
+more details about physical interpretation refer to [Physica D 63(3-4): 410-423]"""
+
 import numpy as np
 
 import taichi as ti
@@ -45,9 +46,9 @@ class Dendrite:
         self.temperature_equi = 1.0  # temperature of equilibrium state
 
         ### parameters for RK4 method
-        self.dtRatio_rk4 = ti.field(ti.f64, shape=(4))
+        self.dtRatio_rk4 = ti.field(ti.f64, shape=4)
         self.dtRatio_rk4.from_numpy(np.array([0.0, 0.5, 0.5, 1.0]))
-        self.weights_rk4 = ti.field(ti.f64, shape=(4))
+        self.weights_rk4 = ti.field(ti.f64, shape=4)
         self.weights_rk4.from_numpy(np.array([1.0 / 6.0, 1.0 / 3.0, 1.0 / 3.0, 1.0 / 6.0]))
 
         self.showFrameFrequency = int(4 * 1.0e-4 / self.dt)

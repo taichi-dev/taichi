@@ -49,15 +49,15 @@ std::vector<std::string> get_required_instance_extensions() {
 }
 
 std::vector<std::string> get_required_device_extensions() {
-  static std::vector<std::string> extensions {
-    VK_KHR_SWAPCHAIN_EXTENSION_NAME,
+  static std::vector<std::string> extensions{
+      VK_KHR_SWAPCHAIN_EXTENSION_NAME,
 #if TI_WITH_CUDA
-        // so that we can do cuda-vk interop
-        VK_KHR_EXTERNAL_MEMORY_EXTENSION_NAME,
+      // so that we can do cuda-vk interop
+      VK_KHR_EXTERNAL_MEMORY_EXTENSION_NAME,
 #ifdef _WIN64
-        VK_KHR_EXTERNAL_MEMORY_WIN32_EXTENSION_NAME,
+      VK_KHR_EXTERNAL_MEMORY_WIN32_EXTENSION_NAME,
 #else
-        VK_KHR_EXTERNAL_MEMORY_FD_EXTENSION_NAME,
+      VK_KHR_EXTERNAL_MEMORY_FD_EXTENSION_NAME,
 #endif
 #endif  // TI_WITH_CUDA
   };

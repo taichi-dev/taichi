@@ -3,6 +3,7 @@ Generate AOT modules with Taichi nightly (which is definitely an older version
 from this currently building one in development branch) for
 `run_c_api_compat_test.py` to consume.
 """
+
 import glob
 import os
 import pathlib

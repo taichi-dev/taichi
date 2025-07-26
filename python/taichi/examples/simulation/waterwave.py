@@ -31,9 +31,7 @@ def reset():
 
 @ti.func
 def laplacian(i, j):
-    return (-4 * height[i, j] + height[i, j - 1] + height[i, j + 1] + height[i + 1, j] + height[i - 1, j]) / (
-        4 * dx**2
-    )
+    return (-4 * height[i, j] + height[i, j - 1] + height[i, j + 1] + height[i + 1, j] + height[i - 1, j]) / (4 * dx**2)
 
 
 @ti.func

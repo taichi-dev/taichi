@@ -1,6 +1,7 @@
 """
 Given an input image, redraw it with circle packings.
 """
+
 try:
     import cairo
     import cv2

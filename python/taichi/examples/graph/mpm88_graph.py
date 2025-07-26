@@ -104,11 +104,11 @@ def init_particles(
         J[i] = 1
 
 
-F_x = ti.Vector.ndarray(2, ti.f32, shape=(n_particles))
-F_v = ti.Vector.ndarray(2, ti.f32, shape=(n_particles))
+F_x = ti.Vector.ndarray(2, ti.f32, shape=n_particles)
+F_v = ti.Vector.ndarray(2, ti.f32, shape=n_particles)
 
-F_C = ti.Matrix.ndarray(2, 2, ti.f32, shape=(n_particles))
-F_J = ti.ndarray(ti.f32, shape=(n_particles))
+F_C = ti.Matrix.ndarray(2, 2, ti.f32, shape=n_particles)
+F_J = ti.ndarray(ti.f32, shape=n_particles)
 F_grid_v = ti.Vector.ndarray(2, ti.f32, shape=(n_grid, n_grid))
 F_grid_m = ti.ndarray(ti.f32, shape=(n_grid, n_grid))
 

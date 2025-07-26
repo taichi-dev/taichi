@@ -79,6 +79,29 @@ def get_transforms_field_v2(transforms):
 
 
 @kernel
+def copy_to_vbo_vector(
+    vbo: ndarray_type(element_dim=1),
+    attribute: ndarray_type(element_dim=1),
+    offset: template(),
+    size: template(),
+    default: template(),
+):
+    for i in attribute:
+        vbo[i][offset : offset + size] = default
+        vbo[i][offset : offset + attribute.element_shape()[0]] = attribute[i]
+
+
+@kernel
+def copy_to_vbo_scalar(
+    vbo: ndarray_type(element_dim=1),
+    attribute: ndarray_type(element_dim=0),
+    offset: template(),
+):
+    for i in attribute:
+        vbo[i][offset] = attribute[i]
+
+
+@kernel
 def copy_all_to_vbo(
     vbo: ndarray_type(element_dim=1),
     vertex: template(),

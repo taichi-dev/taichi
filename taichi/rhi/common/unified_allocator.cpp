@@ -6,7 +6,7 @@
 
 namespace taichi::lang {
 
-const std::size_t UnifiedAllocator::default_allocator_size =
+std::size_t UnifiedAllocator::default_allocator_size =
     1 << 30;  // 1 GB per allocator
 
 template <typename T>
@@ -35,7 +35,6 @@ void *UnifiedAllocator::allocate(std::size_t size,
 
   // Note: put mutex on MemoryPool instead of Allocator, since Allocators are
   // transparent to user code
-  std::size_t allocation_size = size;
   if (!chunks_.empty() && !exclusive) {
     // Search for a non-exclusive chunk that has enough space
     for (size_t chunk_id = 0; chunk_id < chunks_.size(); chunk_id++) {
@@ -49,7 +48,7 @@ void *UnifiedAllocator::allocate(std::size_t size,
       auto ret = head + alignment - 1 - (head + alignment - 1) % alignment;
       TI_TRACE("UM [data={}] allocate() request={} remain={}", (intptr_t)data,
                size, (tail - head));
-      head = ret + allocation_size;
+      head = ret + size;
       if (head <= tail) {
         // success
         TI_ASSERT(ret % alignment == 0);
@@ -62,6 +61,7 @@ void *UnifiedAllocator::allocate(std::size_t size,
   // Allocate a new chunk
   MemoryChunk chunk;
 
+  std::size_t allocation_size = size;
   if (!exclusive) {
     // Do not allocate large memory chunks for "exclusive" allocation
     // to increate memory & performance efficiency
@@ -74,7 +74,7 @@ void *UnifiedAllocator::allocate(std::size_t size,
   void *ptr =
       HostMemoryPool::get_instance().allocate_raw_memory(allocation_size);
   chunk.data = ptr;
-  chunk.head = chunk.data;
+  chunk.head = (void *)((std::size_t)chunk.data + size);
   chunk.tail = (void *)((std::size_t)chunk.head + allocation_size);
   chunk.is_exclusive = exclusive;
 

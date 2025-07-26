@@ -176,7 +176,7 @@ class TI_DLL_EXPORT PrimitiveType : public Type {
 
 class TI_DLL_EXPORT PointerType : public Type {
  public:
-  PointerType() : Type(TypeKind::Pointer){};
+  PointerType() : Type(TypeKind::Pointer) {};
 
   PointerType(Type *pointee, bool is_bit_pointer)
       : Type(TypeKind::Pointer),
@@ -210,7 +210,7 @@ class TI_DLL_EXPORT PointerType : public Type {
 
 class TI_DLL_EXPORT TensorType : public Type {
  public:
-  TensorType() : Type(TypeKind::Tensor){};
+  TensorType() : Type(TypeKind::Tensor) {};
   TensorType(std::vector<int> shape, Type *element)
       : Type(TypeKind::Tensor), shape_(std::move(shape)), element_(element) {
   }
@@ -263,7 +263,7 @@ struct TI_DLL_EXPORT AbstractDictionaryMember {
 
 class TI_DLL_EXPORT AbstractDictionaryType : public Type {
  public:
-  explicit AbstractDictionaryType(TypeKind type_kind) : Type(type_kind){};
+  explicit AbstractDictionaryType(TypeKind type_kind) : Type(type_kind) {};
   explicit AbstractDictionaryType(
       TypeKind type_kind,
       const std::vector<AbstractDictionaryMember> &elements,
@@ -294,7 +294,7 @@ class TI_DLL_EXPORT AbstractDictionaryType : public Type {
 
 class TI_DLL_EXPORT StructType : public AbstractDictionaryType {
  public:
-  StructType() : AbstractDictionaryType(TypeKind::Struct){};
+  StructType() : AbstractDictionaryType(TypeKind::Struct) {};
   explicit StructType(const std::vector<AbstractDictionaryMember> &elements,
                       const std::string &layout = "none")
       : AbstractDictionaryType(TypeKind::Struct, elements, layout) {
@@ -327,7 +327,7 @@ class TI_DLL_EXPORT StructType : public AbstractDictionaryType {
 
 class TI_DLL_EXPORT ArgPackType : public AbstractDictionaryType {
  public:
-  ArgPackType() : AbstractDictionaryType(TypeKind::ArgPack){};
+  ArgPackType() : AbstractDictionaryType(TypeKind::ArgPack) {};
   explicit ArgPackType(const std::vector<AbstractDictionaryMember> &elements,
                        const std::string &layout = "none")
       : AbstractDictionaryType(TypeKind::ArgPack, elements, layout) {
@@ -344,7 +344,7 @@ class TI_DLL_EXPORT ArgPackType : public AbstractDictionaryType {
 
 class TI_DLL_EXPORT QuantIntType : public Type {
  public:
-  QuantIntType() : Type(TypeKind::QuantInt){};
+  QuantIntType() : Type(TypeKind::QuantInt) {};
   QuantIntType(int num_bits, bool is_signed, Type *compute_type = nullptr);
 
   std::string to_string() const override;
@@ -375,7 +375,7 @@ class TI_DLL_EXPORT QuantIntType : public Type {
 
 class TI_DLL_EXPORT QuantFixedType : public Type {
  public:
-  QuantFixedType() : Type(TypeKind::QuantFixed){};
+  QuantFixedType() : Type(TypeKind::QuantFixed) {};
   QuantFixedType(Type *digits_type, Type *compute_type, float64 scale);
 
   std::string to_string() const override;
@@ -442,7 +442,7 @@ class TI_DLL_EXPORT QuantFloatType : public Type {
 
 class TI_DLL_EXPORT BitStructType : public Type {
  public:
-  BitStructType() : Type(TypeKind::BitStruct){};
+  BitStructType() : Type(TypeKind::BitStruct) {};
   BitStructType(PrimitiveType *physical_type,
                 const std::vector<Type *> &member_types,
                 const std::vector<int> &member_bit_offsets,

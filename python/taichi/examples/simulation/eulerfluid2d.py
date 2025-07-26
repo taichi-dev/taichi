@@ -63,16 +63,16 @@ class TexPair:
         self.cur, self.nxt = self.nxt, self.cur
 
 
-velocityField = ti.Vector.field(2, float, shape=(eulerSimParam["shape"]))
-_new_velocityField = ti.Vector.field(2, float, shape=(eulerSimParam["shape"]))
-colorField = ti.Vector.field(3, float, shape=(eulerSimParam["shape"]))
-_new_colorField = ti.Vector.field(3, float, shape=(eulerSimParam["shape"]))
+velocityField = ti.Vector.field(2, float, shape=eulerSimParam["shape"])
+_new_velocityField = ti.Vector.field(2, float, shape=eulerSimParam["shape"])
+colorField = ti.Vector.field(3, float, shape=eulerSimParam["shape"])
+_new_colorField = ti.Vector.field(3, float, shape=eulerSimParam["shape"])
 
-curlField = ti.field(float, shape=(eulerSimParam["shape"]))
+curlField = ti.field(float, shape=eulerSimParam["shape"])
 
-divField = ti.field(float, shape=(eulerSimParam["shape"]))
-pressField = ti.field(float, shape=(eulerSimParam["shape"]))
-_new_pressField = ti.field(float, shape=(eulerSimParam["shape"]))
+divField = ti.field(float, shape=eulerSimParam["shape"])
+pressField = ti.field(float, shape=eulerSimParam["shape"])
+_new_pressField = ti.field(float, shape=eulerSimParam["shape"])
 
 velocities_pair = TexPair(velocityField, _new_velocityField)
 pressure_pair = TexPair(pressField, _new_pressField)
@@ -96,7 +96,7 @@ def advection(vf: ti.template(), qf: ti.template(), new_qf: ti.template()):
         coord_cur = ti.Vector([i, j]) + ti.Vector([0.5, 0.5])
         vel_cur = vf[i, j]
         coord_prev = coord_cur - vel_cur * eulerSimParam["dt"]
-        q_prev = bilerp(qf, coord_prev[0], coord_prev[1], (eulerSimParam["shape"]))
+        q_prev = bilerp(qf, coord_prev[0], coord_prev[1], eulerSimParam["shape"])
         new_qf[i, j] = q_prev
 
 

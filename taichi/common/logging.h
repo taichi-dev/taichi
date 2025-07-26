@@ -112,11 +112,15 @@ class logger;
 
 #define TI_LOG_SET_PATTERN(x) spdlog::set_pattern(x);
 
-#define TI_FLUSH_LOGGER \
-  { taichi::Logger::get_instance().flush(); };
+#define TI_FLUSH_LOGGER                     \
+  {                                         \
+    taichi::Logger::get_instance().flush(); \
+  };
 
-#define TI_P(x) \
-  { TI_INFO("{}", taichi::TextSerializer::serialize(#x, (x))); }
+#define TI_P(x)                                                \
+  {                                                            \
+    TI_INFO("{}", taichi::TextSerializer::serialize(#x, (x))); \
+  }
 
 namespace taichi {
 

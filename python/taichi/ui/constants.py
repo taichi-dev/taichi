@@ -1,5 +1,4 @@
-"""Key constants for :mod:`~taichi.ui`
-"""
+"""Key constants for :mod:`~taichi.ui`"""
 
 SHIFT = "Shift"
 ALT = "Alt"

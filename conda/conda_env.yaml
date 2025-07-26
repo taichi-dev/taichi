@@ -6,4 +6,4 @@
 
 name: taichi-dev
 dependencies:
-  - python=3.8  # Replace this with your favorite Python version
+  - python=3.11  # Replace this with your favorite Python version

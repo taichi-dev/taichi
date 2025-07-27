@@ -23,7 +23,7 @@ def setup_vulkan():
         os.environ["VULKAN_SDK"] = str(sdk)
         path_prepend("PATH", sdk / "bin")
         path_prepend("LD_LIBRARY_PATH", sdk / "lib")
-        os.environ["VK_LAYER_PATH"] = str(sdk / "etc" / "vulkan" / "explicit_layer.d")
+        os.environ["VK_LAYER_PATH"] = str(sdk / "share" / "vulkan" / "explicit_layer.d")
     # elif (u.system, u.machine) == ("Darwin", "arm64"):
     # elif (u.system, u.machine) == ("Darwin", "x86_64"):
     elif (u.system, u.machine) == ("Windows", "AMD64"):

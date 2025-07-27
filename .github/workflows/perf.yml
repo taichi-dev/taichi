@@ -10,7 +10,7 @@ on:
 env:
   TI_CI: "1"
   TI_SKIP_VERSION_CHECK: "ON"
-  CI_IMAGE_VERSION: '202311231829'
+  CI_IMAGE_VERSION: '202507261736'
 
 jobs:
   gpu_backends:
@@ -43,7 +43,7 @@ jobs:
             /home/dev/taichi/.github/workflows/scripts/build.py
 
         env:
-          PY: '3.11'
+          PY: '3.13'
           PROJECT_NAME: taichi
           TAICHI_CMAKE_ARGS: >-
             -DTI_WITH_OPENGL:BOOL=ON
@@ -82,7 +82,7 @@ jobs:
             /home/dev/taichi/.github/workflows/scripts/unix-perf-mon.sh
 
         env:
-          PY: '3.11'
+          PY: '3.13'
           BENCHMARK_UPLOAD_TOKEN: ${{ secrets.BENCHMARK_UPLOAD_TOKEN }}
           GITHUB_EVENT_ACTION: ${{ github.event.action }}
           GITHUB_TOKEN: ${{ secrets.GARDENER_PAT }}

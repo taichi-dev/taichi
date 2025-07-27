@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.0)
+cmake_minimum_required(VERSION 3.17)
 
 set(TESTS_NAME taichi_cpp_tests)
 if (WIN32)

@@ -74,7 +74,7 @@ jobs:
       PY: ${{ matrix.python }}
       PROJECT_NAME: ${{ matrix.name }}
       TAICHI_CMAKE_ARGS: >-
-        -DTI_WITH_OPENGL:BOOL=ON
+        -DTI_WITH_OPENGL:BOOL=OFF
         -DTI_WITH_VULKAN:BOOL=ON
         -DTI_BUILD_TESTS:BOOL=ON
 
@@ -231,12 +231,12 @@ jobs:
       fail-fast: false
       matrix: ${{ fromJson(needs.matrix_prep.outputs.matrix) }}
     # FIXME: force running on sm70 for now. Should be refactored out
-    runs-on: [self-hosted, windows, cuda, OpenGL, sm70]
+    runs-on: [self-hosted, windows, cuda, sm70]
     env:
       PY: ${{ matrix.python }}
       PROJECT_NAME: ${{ matrix.name }}
       TAICHI_CMAKE_ARGS: >-
-        -DTI_WITH_OPENGL:BOOL=ON
+        -DTI_WITH_OPENGL:BOOL=OFF
         -DTI_WITH_VULKAN:BOOL=ON
         -DTI_WITH_DX11:BOOL=ON
         -DTI_WITH_DX12:BOOL=ON

@@ -206,7 +206,7 @@ jobs:
       PY: '3.13'
       PROJECT_NAME: taichi
       TAICHI_CMAKE_ARGS: >-
-        -DTI_WITH_OPENGL:BOOL=ON
+        -DTI_WITH_OPENGL:BOOL=OFF
         -DTI_WITH_VULKAN:BOOL=ON
         -DTI_WITH_BACKTRACE:BOOL=ON
         -DTI_BUILD_TESTS:BOOL=ON
@@ -352,7 +352,6 @@ jobs:
     - cn
     - windows
     - cuda
-    - OpenGL
     - ${{ matrix.extra_markers == 'sm70' && 'sm70' || 'windows' }}
     timeout-minutes: ${{ github.event.schedule != '0 18 * * *' && 90 || 180 }}
     env:
@@ -643,7 +642,7 @@ jobs:
   #           /home/dev/taichi/.github/workflows/scripts/build.py
   #       env:
   #         TAICHI_CMAKE_ARGS: >-
-  #           -DTI_WITH_OPENGL:BOOL=ON
+  #           -DTI_WITH_OPENGL:BOOL=OFF
   #           -DTI_WITH_VULKAN:BOOL=ON
   #           -DTI_WITH_C_API=OFF
 
@@ -657,7 +656,7 @@ jobs:
   #           /home/dev/taichi/.github/workflows/scripts/build.py android
   #       env:
   #         TAICHI_CMAKE_ARGS: >-
-  #           -DTI_WITH_OPENGL:BOOL=ON
+  #           -DTI_WITH_OPENGL:BOOL=OFF
   #           -DTI_WITH_VULKAN:BOOL=ON
   #           -DTI_WITH_LLVM:BOOL=OFF
   #           -DTI_WITH_C_API:BOOL=ON
@@ -722,7 +721,7 @@ jobs:
   #           /home/dev/taichi/.github/workflows/scripts/build.py
   #       env:
   #         TAICHI_CMAKE_ARGS: >-
-  #           -DTI_WITH_OPENGL:BOOL=ON
+  #           -DTI_WITH_OPENGL:BOOL=OFF
   #           -DTI_WITH_VULKAN:BOOL=ON
   #           -DTI_WITH_C_API=OFF
 
@@ -736,7 +735,7 @@ jobs:
   #           /home/dev/taichi/.github/workflows/scripts/build.py android
   #       env:
   #         TAICHI_CMAKE_ARGS: >-
-  #           -DTI_WITH_OPENGL:BOOL=ON
+  #           -DTI_WITH_OPENGL:BOOL=OFF
   #           -DTI_WITH_VULKAN:BOOL=ON
   #           -DTI_WITH_LLVM:BOOL=OFF
   #           -DTI_WITH_C_API=ON
@@ -800,7 +799,7 @@ jobs:
   #           /home/dev/taichi/.github/workflows/scripts/build.py
   #       env:
   #         TAICHI_CMAKE_ARGS: >-
-  #           -DTI_WITH_OPENGL:BOOL=ON
+  #           -DTI_WITH_OPENGL:BOOL=OFF
   #           -DTI_WITH_VULKAN:BOOL=ON
   #           -DTI_WITH_C_API=OFF
 
@@ -814,7 +813,7 @@ jobs:
   #           /home/dev/taichi/.github/workflows/scripts/build.py android
   #       env:
   #         TAICHI_CMAKE_ARGS: >-
-  #           -DTI_WITH_OPENGL:BOOL=ON
+  #           -DTI_WITH_OPENGL:BOOL=OFF
   #           -DTI_WITH_VULKAN:BOOL=ON
   #           -DTI_WITH_LLVM:BOOL=OFF
   #           -DTI_WITH_C_API=ON

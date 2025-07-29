@@ -114,14 +114,12 @@ else
     run-it cpu    $N
     run-it cuda   8
     run-it vulkan 8
-    run-it opengl 4
     run-it gles   4
     run-it amdgpu 8
 
     run-it cpu    1 "torch"
     run-it cuda   1 "torch"
     run-it vulkan 1 "torch"
-    run-it opengl 1 "torch"
     run-it gles   1 "torch"
     # run-it amdgpu 1 "torch"
 

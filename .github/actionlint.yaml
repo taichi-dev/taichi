@@ -2,7 +2,6 @@ self-hosted-runner:
   labels:
   - cn
   - cuda
-  - OpenGL
   - vulkan
   - m1
   - driver550

@@ -72,7 +72,7 @@ if ("$env:TI_WANTED_ARCHS".Contains("cpu")) {
 }
 
 if ("$env:TI_WANTED_ARCHS".Contains("cuda")) {
-  Invoke pip install --force-reinstall "torch==2.5.1" "torchvision==0.20.1" "torchaudio==2.5.1" --index-url https://download.pytorch.org/whl/cu124
+  Invoke pip install --force-reinstall "torch==2.6.0" "torchvision==0.21.0" "torchaudio==2.6.0" --index-url https://download.pytorch.org/whl/cu124
   RunIt cuda 8
 }
 

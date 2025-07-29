@@ -60,26 +60,21 @@ function RunIt($arch, $parallelism) {
     }
 }
 
-# if ("$env:TI_WANTED_ARCHS".Contains("cpu")) {
-#   # NOTE: Always test CPU with non-CUDA version of PyTorch,
-#   #       since CUDA version of PyTorch will load a lot of CUDA libraries,
-#   #       which inflates required commited memory usage (not physical memory, but still relevant)
-#   #       to 5GiB per test process (compared to 1.4GiB for non-CUDA version).
-#   #       This greatly improves test paralllism.
-#   #       This is a non-issue on Linux, since Linux overcommits.
-#   Invoke pip install "torch==2.5.1" "torchvision==0.20.1" "torchaudio==2.5.1" --index-url https://download.pytorch.org/whl/cpu
-#   RunIt cpu (EstimateNumProcs)
-# }
+if ("$env:TI_WANTED_ARCHS".Contains("cpu")) {
+  # NOTE: Always test CPU with non-CUDA version of PyTorch,
+  #       since CUDA version of PyTorch will load a lot of CUDA libraries,
+  #       which inflates required commited memory usage (not physical memory, but still relevant)
+  #       to 5GiB per test process (compared to 1.4GiB for non-CUDA version).
+  #       This greatly improves test paralllism.
+  #       This is a non-issue on Linux, since Linux overcommits.
+  Invoke pip install "torch==2.6.0" "torchvision==0.21.0" "torchaudio==2.6.0" --index-url https://download.pytorch.org/whl/cpu
+  RunIt cpu (EstimateNumProcs)
+}
 
-# if ("$env:TI_WANTED_ARCHS".Contains("cuda")) {
-#   Invoke pip install --force-reinstall "torch==2.5.1" "torchvision==0.20.1" "torchaudio==2.5.1" --index-url https://download.pytorch.org/whl/cu121
-#   RunIt cuda 8
-# }
-#
-
-Invoke pip install --force-reinstall torch torchvision torchaudio
-RunIt cpu 8
-RunIt cuda 8
+if ("$env:TI_WANTED_ARCHS".Contains("cuda")) {
+  Invoke pip install --force-reinstall "torch==2.5.1" "torchvision==0.20.1" "torchaudio==2.5.1" --index-url https://download.pytorch.org/whl/cu124
+  RunIt cuda 8
+}
 
 RunIt vulkan 8
 

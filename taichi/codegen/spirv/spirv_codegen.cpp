@@ -971,7 +971,8 @@ class TaskCodegen : public IRVisitor {
     ir_->make_inst(spv::OpBranchConditional, cond, then_label, merge_label);
     // then block
     ir_->start_label(then_label);
-    ir_->call_debugprintf(op + " overflow detected in " + tb, {});
+    ir_->call_debugprintf(
+        op + " overflow detected in " + sanitize_format_string(tb), {});
     ir_->make_inst(spv::OpBranch, merge_label);
     // merge label
     ir_->start_label(merge_label);

@@ -12,6 +12,9 @@ jobs:
     - self-hosted
     - Linux
     steps:
+      - uses: actions/setup-python@v4
+        with:
+          python-version: 3.12
       - name: Sync Cache
         run: |
           .github/workflows/scripts/sync-cache.py

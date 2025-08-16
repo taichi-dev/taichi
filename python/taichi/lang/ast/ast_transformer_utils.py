@@ -240,9 +240,14 @@ class ASTTransformerContext:
         return False
 
     def create_variable(self, name, var):
-        if name in self.current_scope():
-            raise TaichiSyntaxError("Recreating variables is not allowed")
+        # if name in self.current_scope():
+        #     raise TaichiSyntaxError("Recreating variables is not allowed")
         self.current_scope()[name] = var
+
+    def hide_variable(self, name, var):
+        for s in reversed(self.local_scopes):
+            if name in s:
+                s[name] = var
 
     def check_loop_var(self, loop_var):
         if self.is_var_declared(loop_var):

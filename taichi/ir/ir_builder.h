@@ -148,7 +148,8 @@ class IRBuilder {
   ArgLoadStmt *create_arg_load(const std::vector<int> &arg_id,
                                DataType dt,
                                bool is_ptr,
-                               int arg_depth);
+                               int arg_depth,
+                               bool create_load = true);
   // Load kernel arguments.
   ArgLoadStmt *create_ndarray_arg_load(const std::vector<int> &arg_id,
                                        DataType dt,

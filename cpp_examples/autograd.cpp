@@ -157,28 +157,30 @@ int main() {
       auto _ = builder.get_loop_guard(loop);
       auto *i = builder.get_loop_index(loop);
 
+      auto dt = TypeFactory::get_instance().get_ndarray_struct_type(
+          get_data_type<float>(), 1);
       auto *ext_a = builder.create_external_ptr(
-          builder.create_arg_load({0}, PrimitiveType::f32, true, 0), {i});
+          builder.create_arg_load({0}, dt, true, 0, false), {i});
       auto *a_grad_i = builder.create_global_load(
           builder.create_global_ptr(a->get_adjoint(), {i}));
       builder.create_global_store(ext_a, a_grad_i);
 
       auto *ext_b = builder.create_external_ptr(
-          builder.create_arg_load({1}, PrimitiveType::f32, true, 0), {i});
+          builder.create_arg_load({1}, dt, true, 0, false), {i});
       auto *b_grad_i = builder.create_global_load(
           builder.create_global_ptr(b->get_adjoint(), {i}));
       builder.create_global_store(ext_b, b_grad_i);
 
       auto *ext_c = builder.create_external_ptr(
-          builder.create_arg_load({2}, PrimitiveType::f32, true, 0), {i});
+          builder.create_arg_load({2}, dt, true, 0, false), {i});
       auto *c_i = builder.create_global_load(builder.create_global_ptr(c, {i}));
       builder.create_global_store(ext_c, c_i);
     }
 
     kernel_ext = std::make_unique<Kernel>(program, builder.extract_ir(), "ext");
-    kernel_ext->insert_arr_param(get_data_type<int>(), /*total_dim=*/1, {n});
-    kernel_ext->insert_arr_param(get_data_type<int>(), /*total_dim=*/1, {n});
-    kernel_ext->insert_arr_param(get_data_type<int>(), /*total_dim=*/1, {n});
+    kernel_ext->insert_ndarray_param(get_data_type<float>(), /*total_dim=*/1);
+    kernel_ext->insert_ndarray_param(get_data_type<float>(), /*total_dim=*/1);
+    kernel_ext->insert_ndarray_param(get_data_type<float>(), /*total_dim=*/1);
     kernel_ext->finalize_params();
   }
 

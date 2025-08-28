@@ -676,7 +676,6 @@ void VulkanDeviceCreator::create_logical_device(bool manual_create) {
   create_info.enabledExtensionCount = enabled_extensions.size();
   create_info.ppEnabledExtensionNames = enabled_extensions.data();
 
-
   // Use physicalDeviceFeatures2 to features enabled by extensions
   VkPhysicalDeviceVariablePointersFeaturesKHR variable_ptr_feature{};
   variable_ptr_feature.sType =
@@ -706,20 +705,19 @@ void VulkanDeviceCreator::create_logical_device(bool manual_create) {
   dynamic_rendering_feature.sType =
       VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DYNAMIC_RENDERING_FEATURES_KHR;
 
-// BEGIN PATCH: enabled feature structs we will pass to vkCreateDevice
-VkPhysicalDevice8BitStorageFeatures shader_8bit_storage_enable{};
-shader_8bit_storage_enable.sType =
-    VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_8BIT_STORAGE_FEATURES;
+  // BEGIN PATCH: enabled feature structs we will pass to vkCreateDevice
+  VkPhysicalDevice8BitStorageFeatures shader_8bit_storage_enable{};
+  shader_8bit_storage_enable.sType =
+      VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_8BIT_STORAGE_FEATURES;
 
-VkPhysicalDevice16BitStorageFeatures shader_16bit_storage_enable{};
-shader_16bit_storage_enable.sType =
-    VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_16BIT_STORAGE_FEATURES;
+  VkPhysicalDevice16BitStorageFeatures shader_16bit_storage_enable{};
+  shader_16bit_storage_enable.sType =
+      VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_16BIT_STORAGE_FEATURES;
 
-VkPhysicalDeviceFloat16Int8FeaturesKHR shader_f16_i8_enable{};
-shader_f16_i8_enable.sType =
-    VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FLOAT16_INT8_FEATURES_KHR;
-// END PATCH
-  
+  VkPhysicalDeviceFloat16Int8FeaturesKHR shader_f16_i8_enable{};
+  shader_f16_i8_enable.sType =
+      VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FLOAT16_INT8_FEATURES_KHR;
+  // END PATCH
 
   if (ti_device_->vk_caps().physical_device_features2) {
     VkPhysicalDeviceFeatures2KHR features2{};
@@ -797,9 +795,8 @@ shader_f16_i8_enable.sType =
       }
       if (shader_f16_i8_feature.shaderInt8) {
         caps.set(DeviceCapability::spirv_has_int8, true);
-        shader_f16_i8_enable.shaderInt8 = VK_TRUE;     // enable if supported
+        shader_f16_i8_enable.shaderInt8 = VK_TRUE;  // enable if supported
       }
-
     }
 
     if (CHECK_VERSION(1, 1) ||
@@ -809,21 +806,24 @@ shader_f16_i8_enable.sType =
 
       // Enable only what the driver supports
       shader_8bit_storage_enable.storageBuffer8BitAccess =
-          shader_8bit_storage_feature.storageBuffer8BitAccess ? VK_TRUE : VK_FALSE;
+          shader_8bit_storage_feature.storageBuffer8BitAccess ? VK_TRUE
+                                                              : VK_FALSE;
       shader_8bit_storage_enable.uniformAndStorageBuffer8BitAccess =
-          shader_8bit_storage_feature.uniformAndStorageBuffer8BitAccess ? VK_TRUE : VK_FALSE;
+          shader_8bit_storage_feature.uniformAndStorageBuffer8BitAccess
+              ? VK_TRUE
+              : VK_FALSE;
       shader_8bit_storage_enable.storagePushConstant8 =
           shader_8bit_storage_feature.storagePushConstant8 ? VK_TRUE : VK_FALSE;
 
-          // 8-bit storage present?
+      // 8-bit storage present?
       const bool has_8bit_storage =
-        (shader_8bit_storage_feature.storageBuffer8BitAccess == VK_TRUE) ||
-        (shader_8bit_storage_feature.uniformAndStorageBuffer8BitAccess == VK_TRUE) ||
-        (shader_8bit_storage_feature.storagePushConstant8 == VK_TRUE);
+          (shader_8bit_storage_feature.storageBuffer8BitAccess == VK_TRUE) ||
+          (shader_8bit_storage_feature.uniformAndStorageBuffer8BitAccess ==
+           VK_TRUE) ||
+          (shader_8bit_storage_feature.storagePushConstant8 == VK_TRUE);
       if (has_8bit_storage) {
         caps.set(DeviceCapability::spirv_has_8bit_storage, true);
       }
-
     }
 
     if (CHECK_VERSION(1, 1) ||
@@ -832,27 +832,31 @@ shader_f16_i8_enable.sType =
       vkGetPhysicalDeviceFeatures2KHR(physical_device_, &features2);
 
       shader_16bit_storage_enable.storageBuffer16BitAccess =
-          shader_16bit_storage_feature.storageBuffer16BitAccess ? VK_TRUE : VK_FALSE;
+          shader_16bit_storage_feature.storageBuffer16BitAccess ? VK_TRUE
+                                                                : VK_FALSE;
       shader_16bit_storage_enable.uniformAndStorageBuffer16BitAccess =
-          shader_16bit_storage_feature.uniformAndStorageBuffer16BitAccess ? VK_TRUE : VK_FALSE;
+          shader_16bit_storage_feature.uniformAndStorageBuffer16BitAccess
+              ? VK_TRUE
+              : VK_FALSE;
       shader_16bit_storage_enable.storagePushConstant16 =
-          shader_16bit_storage_feature.storagePushConstant16 ? VK_TRUE : VK_FALSE;
+          shader_16bit_storage_feature.storagePushConstant16 ? VK_TRUE
+                                                             : VK_FALSE;
       shader_16bit_storage_enable.storageInputOutput16 =
-          shader_16bit_storage_feature.storageInputOutput16 ? VK_TRUE : VK_FALSE;
-
+          shader_16bit_storage_feature.storageInputOutput16 ? VK_TRUE
+                                                            : VK_FALSE;
 
       const bool has_16bit_storage =
           (shader_16bit_storage_feature.storageBuffer16BitAccess == VK_TRUE) ||
-          (shader_16bit_storage_feature.uniformAndStorageBuffer16BitAccess == VK_TRUE) ||
+          (shader_16bit_storage_feature.uniformAndStorageBuffer16BitAccess ==
+           VK_TRUE) ||
           (shader_16bit_storage_feature.storagePushConstant16 == VK_TRUE) ||
           (shader_16bit_storage_feature.storageInputOutput16 == VK_TRUE);
       if (has_16bit_storage) {
-        // Tell Taichi it's OK to use 16-bit *types* (storage), even if shaderInt16 arithmetic is not supported.
+        // Tell Taichi it's OK to use 16-bit *types* (storage), even if
+        // shaderInt16 arithmetic is not supported.
         caps.set(DeviceCapability::spirv_has_16bit_storage, true);
       }
-
     }
-
 
     // Buffer Device Address
     if (CHECK_VERSION(1, 2) ||
@@ -871,7 +875,6 @@ shader_f16_i8_enable.sType =
 #endif
         }
       }
-
     }
 
     // Dynamic rendering
@@ -908,8 +911,10 @@ shader_f16_i8_enable.sType =
 
   // Helper to append under features2_enable
   auto append2 = [&](VkBaseOutStructure *node) {
-    VkBaseOutStructure *tail = reinterpret_cast<VkBaseOutStructure *>(&features2_enable);
-    while (tail->pNext) tail = tail->pNext;
+    VkBaseOutStructure *tail =
+        reinterpret_cast<VkBaseOutStructure *>(&features2_enable);
+    while (tail->pNext)
+      tail = tail->pNext;
     tail->pNext = node;
   };
 
@@ -920,26 +925,30 @@ shader_f16_i8_enable.sType =
   if (shader_8bit_storage_enable.storageBuffer8BitAccess ||
       shader_8bit_storage_enable.uniformAndStorageBuffer8BitAccess ||
       shader_8bit_storage_enable.storagePushConstant8) {
-    append2(reinterpret_cast<VkBaseOutStructure *>(&shader_8bit_storage_enable));
+    append2(
+        reinterpret_cast<VkBaseOutStructure *>(&shader_8bit_storage_enable));
   }
   if (shader_16bit_storage_enable.storageBuffer16BitAccess ||
       shader_16bit_storage_enable.uniformAndStorageBuffer16BitAccess ||
       shader_16bit_storage_enable.storagePushConstant16 ||
       shader_16bit_storage_enable.storageInputOutput16) {
-    append2(reinterpret_cast<VkBaseOutStructure *>(&shader_16bit_storage_enable));
+    append2(
+        reinterpret_cast<VkBaseOutStructure *>(&shader_16bit_storage_enable));
   }
 
-  // Append features2_enable to the TAIL of whatever is already in create_info.pNext (validation etc.)
-  VkBaseOutStructure *tail = reinterpret_cast<VkBaseOutStructure *>(create_info.pNext);
+  // Append features2_enable to the TAIL of whatever is already in
+  // create_info.pNext (validation etc.)
+  VkBaseOutStructure *tail =
+      reinterpret_cast<VkBaseOutStructure *>(create_info.pNext);
   if (!tail) {
     create_info.pNext = &features2_enable;  // no validation chain present
   } else {
-    while (tail->pNext) tail = tail->pNext;
+    while (tail->pNext)
+      tail = tail->pNext;
     tail->pNext = reinterpret_cast<VkBaseOutStructure *>(&features2_enable);
   }
 
   // ---- END: Build VkPhysicalDeviceFeatures2 enable chain ----
-
 
   if (params_.enable_validation_layer) {
     create_info.enabledLayerCount = (uint32_t)kValidationLayers.size();

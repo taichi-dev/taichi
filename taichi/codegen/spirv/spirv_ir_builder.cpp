@@ -83,18 +83,33 @@ void IRBuilder::init_header() {
   // === BEGIN: 8/16-bit storage support (emit only when device supports it) ===
   if (caps_->get(cap::spirv_has_8bit_storage)) {
     // ib_.begin(spv::OpExtension).add("SPV_KHR_8bit_storage").commit(&header_);
-    // Pick only the storage caps your device has; these two are the common ones:
-    ib_.begin(spv::OpCapability).add(spv::CapabilityStorageBuffer8BitAccess).commit(&header_);
-    ib_.begin(spv::OpCapability).add(spv::CapabilityUniformAndStorageBuffer8BitAccess).commit(&header_);
-    ib_.begin(spv::OpCapability).add(spv::CapabilityStoragePushConstant8).commit(&header_);
+    // Pick only the storage caps your device has; these two are the common
+    // ones:
+    ib_.begin(spv::OpCapability)
+        .add(spv::CapabilityStorageBuffer8BitAccess)
+        .commit(&header_);
+    ib_.begin(spv::OpCapability)
+        .add(spv::CapabilityUniformAndStorageBuffer8BitAccess)
+        .commit(&header_);
+    ib_.begin(spv::OpCapability)
+        .add(spv::CapabilityStoragePushConstant8)
+        .commit(&header_);
   }
 
   if (caps_->get(cap::spirv_has_16bit_storage)) {
     ib_.begin(spv::OpExtension).add("SPV_KHR_16bit_storage").commit(&header_);
-    ib_.begin(spv::OpCapability).add(spv::CapabilityStorageBuffer16BitAccess).commit(&header_);
-    ib_.begin(spv::OpCapability).add(spv::CapabilityUniformAndStorageBuffer16BitAccess).commit(&header_);
-    ib_.begin(spv::OpCapability).add(spv::CapabilityStoragePushConstant16).commit(&header_);
-    ib_.begin(spv::OpCapability).add(spv::CapabilityStorageInputOutput16).commit(&header_);
+    ib_.begin(spv::OpCapability)
+        .add(spv::CapabilityStorageBuffer16BitAccess)
+        .commit(&header_);
+    ib_.begin(spv::OpCapability)
+        .add(spv::CapabilityUniformAndStorageBuffer16BitAccess)
+        .commit(&header_);
+    ib_.begin(spv::OpCapability)
+        .add(spv::CapabilityStoragePushConstant16)
+        .commit(&header_);
+    ib_.begin(spv::OpCapability)
+        .add(spv::CapabilityStorageInputOutput16)
+        .commit(&header_);
   }
   // === END: 8/16-bit storage support ===
 
@@ -172,13 +187,15 @@ void IRBuilder::init_pre_defs() {
 
   t_bool_ = declare_primitive_type(get_data_type<bool>());
   // 8-bit integers: declare if arithmetic *or* storage is available
-  if (caps_->get(cap::spirv_has_int8) || caps_->get(cap::spirv_has_8bit_storage)) {
-    t_int8_  = declare_primitive_type(get_data_type<int8>());
+  if (caps_->get(cap::spirv_has_int8) ||
+      caps_->get(cap::spirv_has_8bit_storage)) {
+    t_int8_ = declare_primitive_type(get_data_type<int8>());
     t_uint8_ = declare_primitive_type(get_data_type<uint8>());
   }
   // 16-bit integers: declare if arithmetic *or* storage is available
-  if (caps_->get(cap::spirv_has_int16) || caps_->get(cap::spirv_has_16bit_storage)) {
-    t_int16_  = declare_primitive_type(get_data_type<int16>());
+  if (caps_->get(cap::spirv_has_int16) ||
+      caps_->get(cap::spirv_has_16bit_storage)) {
+    t_int16_ = declare_primitive_type(get_data_type<int16>());
     t_uint16_ = declare_primitive_type(get_data_type<uint16>());
   }
   t_int32_ = declare_primitive_type(get_data_type<int32>());
@@ -333,11 +350,13 @@ SType IRBuilder::get_primitive_type(const DataType &dt) const {
       TI_ERROR("Type {} not supported.", dt->to_string());
     return t_int64_;
   } else if (dt->is_primitive(PrimitiveTypeID::u8)) {
-    if (!caps_->get(cap::spirv_has_int8) && !caps_->get(cap::spirv_has_8bit_storage))
+    if (!caps_->get(cap::spirv_has_int8) &&
+        !caps_->get(cap::spirv_has_8bit_storage))
       TI_ERROR("Type {} not supported.", dt->to_string());
     return t_uint8_;
   } else if (dt->is_primitive(PrimitiveTypeID::u16)) {
-    if (!caps_->get(cap::spirv_has_int16) && !caps_->get(cap::spirv_has_16bit_storage))
+    if (!caps_->get(cap::spirv_has_int16) &&
+        !caps_->get(cap::spirv_has_16bit_storage))
       TI_ERROR("Type {} not supported.", dt->to_string());
     return t_uint16_;
   } else if (dt->is_primitive(PrimitiveTypeID::u32)) {

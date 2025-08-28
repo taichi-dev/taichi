@@ -53,7 +53,7 @@ def setup_llvm() -> None:
         raise RuntimeError(f"Unsupported platform: {u.system} {u.machine}")
 
     # We should use LLVM toolchains shipped with OS.
-    # path_prepend('PATH', out / 'bin')
+     #path_prepend('PATH', out / 'bin')
     if (u.system, u.machine) not in (("Linux", "arm64"), ("Linux", "aarch64")):
         os.environ["LLVM_DIR"] = "/usr/lib/llvm-20/cmake"
         os.environ["CUDA_HOME"] = "/usr/local/cuda"

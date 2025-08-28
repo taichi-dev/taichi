@@ -39,8 +39,6 @@
 #include "llvm/Linker/Linker.h"
 #include "llvm/Demangle/Demangle.h"
 #include "llvm/Bitcode/BitcodeWriter.h"
-#include "llvm/Transforms/IPO/StripDeadPrototypes.h"
-#include "llvm/Passes/PassBuilder.h"
 
 #include "taichi/util/lang_util.h"
 #include "taichi/jit/jit_session.h"
@@ -323,16 +321,6 @@ static void remove_useless_cuda_libdevice_functions(llvm::Module *module) {
       "lgammaf",
       "tgamma",
       "lgamma",
-      "erff",
-      "erfinvf",
-      "erfcf",
-      "erfcxf",
-      "erfcinvf",
-      "erf",
-      "erfinv",
-      "erfcx",
-      "erfcinv",
-      "erfc",
   };
   for (auto fn : function_name_list) {
     module->getFunction("__nv_" + fn)->eraseFromParent();
@@ -341,21 +329,17 @@ static void remove_useless_cuda_libdevice_functions(llvm::Module *module) {
 }
 
 // Note: runtime_module = init_module < struct_module
+std::unique_ptr<llvm::Module> TaichiLLVMContext::clone_runtime_module() {
+  TI_AUTO_PROF
+  auto *mod = get_this_thread_runtime_module();
 
-std::unique_ptr<llvm::Module> TaichiLLVMContext::clone_runtime_module(
-    const std::string &name) {
-  TI_AUTO_PROF;
-  auto cloned = llvm::CloneModule(*runtime_module_.get());
-  cloned->setModuleIdentifier(name);
+  std::unique_ptr<llvm::Module> cloned;
+  {
+    TI_PROFILER("clone module");
+    cloned = llvm::CloneModule(*mod);
+  }
 
-  llvm::PassBuilder PB;
-  llvm::ModuleAnalysisManager MAM;
-  PB.registerModuleAnalyses(MAM);
-
-  llvm::ModulePassManager MPM;
-  MPM.addPass(llvm::StripDeadPrototypesPass());
-
-  MPM.run(*cloned, MAM);
+  TI_ASSERT(cloned != nullptr);
 
   return cloned;
 }

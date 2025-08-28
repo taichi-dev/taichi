@@ -672,11 +672,10 @@ void VulkanDeviceCreator::create_logical_device(bool manual_create) {
     }
   }
 
-  create_info.pEnabledFeatures = &device_features;
+  create_info.pEnabledFeatures = nullptr;
   create_info.enabledExtensionCount = enabled_extensions.size();
   create_info.ppEnabledExtensionNames = enabled_extensions.data();
 
-  void **pNextEnd = (void **)&create_info.pNext;
 
   // Use physicalDeviceFeatures2 to features enabled by extensions
   VkPhysicalDeviceVariablePointersFeaturesKHR variable_ptr_feature{};
@@ -707,6 +706,21 @@ void VulkanDeviceCreator::create_logical_device(bool manual_create) {
   dynamic_rendering_feature.sType =
       VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DYNAMIC_RENDERING_FEATURES_KHR;
 
+// BEGIN PATCH: enabled feature structs we will pass to vkCreateDevice
+VkPhysicalDevice8BitStorageFeatures shader_8bit_storage_enable{};
+shader_8bit_storage_enable.sType =
+    VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_8BIT_STORAGE_FEATURES;
+
+VkPhysicalDevice16BitStorageFeatures shader_16bit_storage_enable{};
+shader_16bit_storage_enable.sType =
+    VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_16BIT_STORAGE_FEATURES;
+
+VkPhysicalDeviceFloat16Int8FeaturesKHR shader_f16_i8_enable{};
+shader_f16_i8_enable.sType =
+    VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FLOAT16_INT8_FEATURES_KHR;
+// END PATCH
+  
+
   if (ti_device_->vk_caps().physical_device_features2) {
     VkPhysicalDeviceFeatures2KHR features2{};
     features2.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2;
@@ -730,8 +744,6 @@ void VulkanDeviceCreator::create_logical_device(bool manual_create) {
           variable_ptr_feature.variablePointersStorageBuffer) {
         caps.set(DeviceCapability::spirv_has_variable_ptr, true);
       }
-      *pNextEnd = &variable_ptr_feature;
-      pNextEnd = &variable_ptr_feature.pNext;
     }
 
     // Atomic float
@@ -750,8 +762,6 @@ void VulkanDeviceCreator::create_logical_device(bool manual_create) {
       if (shader_atomic_float_feature.shaderBufferFloat64Atomics) {
         caps.set(DeviceCapability::spirv_has_atomic_float64, true);
       }
-      *pNextEnd = &shader_atomic_float_feature;
-      pNextEnd = &shader_atomic_float_feature.pNext;
     }
 
     // Atomic float 2
@@ -773,8 +783,6 @@ void VulkanDeviceCreator::create_logical_device(bool manual_create) {
       if (shader_atomic_float_2_feature.shaderBufferFloat64AtomicMinMax) {
         caps.set(DeviceCapability::spirv_has_atomic_float64_minmax, true);
       }
-      *pNextEnd = &shader_atomic_float_2_feature;
-      pNextEnd = &shader_atomic_float_2_feature.pNext;
     }
 
     // F16 / I8
@@ -785,12 +793,13 @@ void VulkanDeviceCreator::create_logical_device(bool manual_create) {
 
       if (shader_f16_i8_feature.shaderFloat16) {
         caps.set(DeviceCapability::spirv_has_float16, true);
+        shader_f16_i8_enable.shaderFloat16 = VK_TRUE;  // enable if supported
       }
       if (shader_f16_i8_feature.shaderInt8) {
         caps.set(DeviceCapability::spirv_has_int8, true);
+        shader_f16_i8_enable.shaderInt8 = VK_TRUE;     // enable if supported
       }
-      *pNextEnd = &shader_f16_i8_feature;
-      pNextEnd = &shader_f16_i8_feature.pNext;
+
     }
 
     if (CHECK_VERSION(1, 1) ||
@@ -798,17 +807,52 @@ void VulkanDeviceCreator::create_logical_device(bool manual_create) {
       features2.pNext = &shader_8bit_storage_feature;
       vkGetPhysicalDeviceFeatures2KHR(physical_device_, &features2);
 
-      *pNextEnd = &shader_8bit_storage_feature;
-      pNextEnd = &shader_8bit_storage_feature.pNext;
+      // Enable only what the driver supports
+      shader_8bit_storage_enable.storageBuffer8BitAccess =
+          shader_8bit_storage_feature.storageBuffer8BitAccess ? VK_TRUE : VK_FALSE;
+      shader_8bit_storage_enable.uniformAndStorageBuffer8BitAccess =
+          shader_8bit_storage_feature.uniformAndStorageBuffer8BitAccess ? VK_TRUE : VK_FALSE;
+      shader_8bit_storage_enable.storagePushConstant8 =
+          shader_8bit_storage_feature.storagePushConstant8 ? VK_TRUE : VK_FALSE;
+
+          // 8-bit storage present?
+      const bool has_8bit_storage =
+        (shader_8bit_storage_feature.storageBuffer8BitAccess == VK_TRUE) ||
+        (shader_8bit_storage_feature.uniformAndStorageBuffer8BitAccess == VK_TRUE) ||
+        (shader_8bit_storage_feature.storagePushConstant8 == VK_TRUE);
+      if (has_8bit_storage) {
+        caps.set(DeviceCapability::spirv_has_8bit_storage, true);
+      }
+
     }
+
     if (CHECK_VERSION(1, 1) ||
         CHECK_EXTENSION(VK_KHR_16BIT_STORAGE_EXTENSION_NAME)) {
       features2.pNext = &shader_16bit_storage_feature;
       vkGetPhysicalDeviceFeatures2KHR(physical_device_, &features2);
 
-      *pNextEnd = &shader_16bit_storage_feature;
-      pNextEnd = &shader_16bit_storage_feature.pNext;
+      shader_16bit_storage_enable.storageBuffer16BitAccess =
+          shader_16bit_storage_feature.storageBuffer16BitAccess ? VK_TRUE : VK_FALSE;
+      shader_16bit_storage_enable.uniformAndStorageBuffer16BitAccess =
+          shader_16bit_storage_feature.uniformAndStorageBuffer16BitAccess ? VK_TRUE : VK_FALSE;
+      shader_16bit_storage_enable.storagePushConstant16 =
+          shader_16bit_storage_feature.storagePushConstant16 ? VK_TRUE : VK_FALSE;
+      shader_16bit_storage_enable.storageInputOutput16 =
+          shader_16bit_storage_feature.storageInputOutput16 ? VK_TRUE : VK_FALSE;
+
+
+      const bool has_16bit_storage =
+          (shader_16bit_storage_feature.storageBuffer16BitAccess == VK_TRUE) ||
+          (shader_16bit_storage_feature.uniformAndStorageBuffer16BitAccess == VK_TRUE) ||
+          (shader_16bit_storage_feature.storagePushConstant16 == VK_TRUE) ||
+          (shader_16bit_storage_feature.storageInputOutput16 == VK_TRUE);
+      if (has_16bit_storage) {
+        // Tell Taichi it's OK to use 16-bit *types* (storage), even if shaderInt16 arithmetic is not supported.
+        caps.set(DeviceCapability::spirv_has_16bit_storage, true);
+      }
+
     }
+
 
     // Buffer Device Address
     if (CHECK_VERSION(1, 2) ||
@@ -827,8 +871,7 @@ void VulkanDeviceCreator::create_logical_device(bool manual_create) {
 #endif
         }
       }
-      *pNextEnd = &buffer_device_address_feature;
-      pNextEnd = &buffer_device_address_feature.pNext;
+
     }
 
     // Dynamic rendering
@@ -850,6 +893,53 @@ void VulkanDeviceCreator::create_logical_device(bool manual_create) {
 
     // TODO: add atomic min/max feature
   }
+
+  // ---- BEGIN: Build VkPhysicalDeviceFeatures2 enable chain ----
+
+  // Use the Features2 path (not pEnabledFeatures)
+  create_info.pEnabledFeatures = nullptr;
+
+  // Root of the device features2 ENABLE chain
+  VkPhysicalDeviceFeatures2 features2_enable{};
+  features2_enable.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2;
+
+  // Carry over any core features you selected in device_features
+  features2_enable.features = device_features;
+
+  // Helper to append under features2_enable
+  auto append2 = [&](VkBaseOutStructure *node) {
+    VkBaseOutStructure *tail = reinterpret_cast<VkBaseOutStructure *>(&features2_enable);
+    while (tail->pNext) tail = tail->pNext;
+    tail->pNext = node;
+  };
+
+  // We only append an enable-struct if at least one bit was turned on in it
+  if (shader_f16_i8_enable.shaderInt8 || shader_f16_i8_enable.shaderFloat16) {
+    append2(reinterpret_cast<VkBaseOutStructure *>(&shader_f16_i8_enable));
+  }
+  if (shader_8bit_storage_enable.storageBuffer8BitAccess ||
+      shader_8bit_storage_enable.uniformAndStorageBuffer8BitAccess ||
+      shader_8bit_storage_enable.storagePushConstant8) {
+    append2(reinterpret_cast<VkBaseOutStructure *>(&shader_8bit_storage_enable));
+  }
+  if (shader_16bit_storage_enable.storageBuffer16BitAccess ||
+      shader_16bit_storage_enable.uniformAndStorageBuffer16BitAccess ||
+      shader_16bit_storage_enable.storagePushConstant16 ||
+      shader_16bit_storage_enable.storageInputOutput16) {
+    append2(reinterpret_cast<VkBaseOutStructure *>(&shader_16bit_storage_enable));
+  }
+
+  // Append features2_enable to the TAIL of whatever is already in create_info.pNext (validation etc.)
+  VkBaseOutStructure *tail = reinterpret_cast<VkBaseOutStructure *>(create_info.pNext);
+  if (!tail) {
+    create_info.pNext = &features2_enable;  // no validation chain present
+  } else {
+    while (tail->pNext) tail = tail->pNext;
+    tail->pNext = reinterpret_cast<VkBaseOutStructure *>(&features2_enable);
+  }
+
+  // ---- END: Build VkPhysicalDeviceFeatures2 enable chain ----
+
 
   if (params_.enable_validation_layer) {
     create_info.enabledLayerCount = (uint32_t)kValidationLayers.size();

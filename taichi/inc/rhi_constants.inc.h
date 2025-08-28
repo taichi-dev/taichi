@@ -14,6 +14,8 @@ PER_DEVICE_CAPABILITY(spirv_has_int16)
 PER_DEVICE_CAPABILITY(spirv_has_int64)
 PER_DEVICE_CAPABILITY(spirv_has_float16)
 PER_DEVICE_CAPABILITY(spirv_has_float64)
+PER_DEVICE_CAPABILITY(spirv_has_8bit_storage)
+PER_DEVICE_CAPABILITY(spirv_has_16bit_storage)
 PER_DEVICE_CAPABILITY(spirv_has_atomic_int64)
 PER_DEVICE_CAPABILITY(spirv_has_atomic_float16)  // load, store, exchange
 PER_DEVICE_CAPABILITY(spirv_has_atomic_float16_add)

@@ -28,9 +28,7 @@ def setup_vulkan():
         for path in possible_paths:
             if os.path.exists(path):
                 # Find the latest version
-                versions = [
-                    d for d in os.listdir(path) if os.path.isdir(os.path.join(path, d))
-                ]
+                versions = [d for d in os.listdir(path) if os.path.isdir(os.path.join(path, d))]
                 if versions:
                     latest_version = sorted(versions)[-1]
                     vulkan_sdk_path = os.path.join(path, latest_version)

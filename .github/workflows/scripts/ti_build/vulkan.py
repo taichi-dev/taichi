@@ -15,7 +15,7 @@ from .python import path_prepend
 @banner("Setup Vulkan 1.3.296.0")
 def setup_vulkan():
     u = platform.uname()
-    
+
     # Check if Vulkan SDK is already available
     if u.system == "Windows":
         # Check common Vulkan SDK installation paths
@@ -24,11 +24,13 @@ def setup_vulkan():
             "C:\\Program Files\\VulkanSDK",
             "C:\\Program Files (x86)\\VulkanSDK",
         ]
-        
+
         for path in possible_paths:
             if os.path.exists(path):
                 # Find the latest version
-                versions = [d for d in os.listdir(path) if os.path.isdir(os.path.join(path, d))]
+                versions = [
+                    d for d in os.listdir(path) if os.path.isdir(os.path.join(path, d))
+                ]
                 if versions:
                     latest_version = sorted(versions)[-1]
                     vulkan_sdk_path = os.path.join(path, latest_version)
@@ -38,7 +40,7 @@ def setup_vulkan():
                     path_prepend("PATH", os.path.join(vulkan_sdk_path, "Bin"))
                     print(f"Using existing Vulkan SDK at: {vulkan_sdk_path}")
                     return
-    
+
     if u.system == "Linux":
         url = "https://sdk.lunarg.com/sdk/download/1.3.296.0/linux/vulkansdk-linux-x86_64-1.3.296.0.tar.xz"
         prefix = get_cache_home() / "vulkan-1.3.296.0"

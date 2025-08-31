@@ -138,10 +138,11 @@ add_library(${CORE_LIBRARY_NAME} OBJECT ${TAICHI_CORE_SOURCE})
 
 target_include_directories(${CORE_LIBRARY_NAME} PRIVATE ${CMAKE_SOURCE_DIR})
 target_include_directories(${CORE_LIBRARY_NAME} PRIVATE external/include)
-target_include_directories(${CORE_LIBRARY_NAME} PRIVATE external/SPIRV-Tools/include)
 target_include_directories(${CORE_LIBRARY_NAME} PRIVATE external/PicoSHA2)
 target_include_directories(${CORE_LIBRARY_NAME} PRIVATE external/eigen)
 target_include_directories(${CORE_LIBRARY_NAME} PRIVATE external/FP16/include)
+
+target_include_directories(${CORE_LIBRARY_NAME} PRIVATE external/SPIRV-Tools/include)
 
 target_link_libraries(${CORE_LIBRARY_NAME} PUBLIC ti_device_api)
 

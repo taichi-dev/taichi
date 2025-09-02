@@ -17,7 +17,6 @@
 #include "taichi/ir/analysis.h"
 #include "taichi/ir/transforms.h"
 #include "taichi/codegen/codegen_utils.h"
-#include "llvm/Config/llvm-config.h"
 
 namespace taichi::lang {
 
@@ -607,23 +606,30 @@ class TaskCodeGenCUDA : public TaskCodeGenLLVM {
     return true;  // on CUDA, pass the argument by value
   }
 
-  llvm::Value *TaskCodeGenCUDA::create_intrinsic_load(llvm::Value *ptr,
-                                                    llvm::Type *ty) {
-  #if LLVM_VERSION_MAJOR >= 20
-      // ldg intrinsics removed – use normal load from AS(1) + invariant metadata
-      auto *load = builder->CreateLoad(ty, ptr);          // ld.global.ca
-      load->setMetadata(llvm::LLVMContext::MD_invariant_load,
-                        llvm::MDNode::get(*llvm_context, {}));
-      return load;
-  #else
-      auto intrin = ty->isFloatingPointTy()
-                        ? llvm::Intrinsic::nvvm_ldg_global_f
-                        : llvm::Intrinsic::nvvm_ldg_global_i;
-      return builder->CreateIntrinsic(intrin,
-              {ty, llvm::PointerType::get(ty, 0)},
-              {ptr, tlctx->get_constant(ty->getScalarSizeInBits())});
-  #endif
-    }
+  llvm::Value *create_intrinsic_load(llvm::Value *ptr,
+                                     llvm::Type *ty) override {
+    // The llvm.nvvm.ldg.global.* intrinsics have been removed.
+    // They are replaced by a standard load from global address space 1
+    // with !invariant.load metadata.
+
+    // The address space for read-only cache loads is 1 (global).
+    llvm::PointerType *ptr_ty_addrspace_1 = llvm::PointerType::get(ty, 1);
+
+    // Cast the input pointer to the correct address space.
+    llvm::Value *cast_ptr =
+        builder->CreateAddrSpaceCast(ptr, ptr_ty_addrspace_1);
+
+    // Create the load instruction.
+    llvm::LoadInst *load = builder->CreateLoad(ty, cast_ptr);
+
+    // Attach the !invariant.load metadata.
+    llvm::MDNode *invariant_load_metadata =
+        llvm::MDNode::get(builder->getContext(), {});
+    load->setMetadata(llvm::LLVMContext::MD_invariant_load,
+                      invariant_load_metadata);
+
+    return load;
+  }
 
   void visit(GlobalLoadStmt *stmt) override {
     if (auto get_ch = stmt->src->cast<GetChStmt>()) {

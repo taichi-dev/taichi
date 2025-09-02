@@ -4,6 +4,7 @@ Highlights:
       - Drop OpenGL build (#8751) (by **Proton**)
 
 Full changelog:
+   - additional updates for llvm 20 (by **Tiffany Mintz**)
    - additional cuda updates for llvm20; merging from 8ca16de9a24e82baaed1deac80f71bd541c131ca to add2df35782768f5ad243cacef0922ec00890ba5 from johnnynunez/taichi master branch (by **Tiffany Mintz**)
    - removing blackwell updates; restoring window_base.cpp include (by **Tiffany Mintz**)
    - removing updates for blackwell (by **Tiffany Mintz**)

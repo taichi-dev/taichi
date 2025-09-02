@@ -9,7 +9,7 @@
 #include "llvm/IR/Module.h"
 #include "llvm/IR/DataLayout.h"
 #include "llvm/IR/LLVMContext.h"
-// #include "llvm/IR/LegacyPassManager.h"            // Obsolete: Removed
+#include "llvm/IR/LegacyPassManager.h"            // Obsolete: Removed
 #include "llvm/IR/Verifier.h"
 // #include "llvm/Transforms/InstCombine/InstCombine.h"// Obsolete: Handled by NPM PassBuilder
 // #include "llvm/Transforms/Scalar.h"                 // Obsolete: Handled by NPM PassBuilder

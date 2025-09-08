@@ -789,6 +789,8 @@ void VulkanDeviceCreator::create_logical_device(bool manual_create) {
       TI_DEBUG("AMD GPU: Checking VK_KHR_SHADER_FLOAT16_INT8 extension");
       features2.pNext = &shader_f16_i8_feature;
       vkGetPhysicalDeviceFeatures2KHR(physical_device_, &features2);
+      TI_DEBUG("AMD GPU: shader_f16_i8_feature.shaderInt8 = %d", shader_f16_i8_feature.shaderInt8);
+      TI_DEBUG("AMD GPU: shader_f16_i8_feature.shaderFloat16 = %d", shader_f16_i8_feature.shaderFloat16);
 
       if (shader_f16_i8_feature.shaderFloat16) {
         caps.set(DeviceCapability::spirv_has_float16, true);

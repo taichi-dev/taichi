@@ -1,6 +1,7 @@
 Highlights:
 
 Full changelog:
+   - fix: resolve Vulkan build and compatibility issues for AMD GPUs (by **Yunus Berndt**)
    - style(pre-commit): match pinned Black formatting (by **Yunus Berndt**)
    - style(black): reformat ti_build/vulkan.py (by **Yunus Berndt**)
    - Better checks if vulkan SDK already exists (by **Yunus Berndt**)

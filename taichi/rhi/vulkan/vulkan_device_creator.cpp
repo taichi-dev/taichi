@@ -845,6 +845,20 @@ void VulkanDeviceCreator::create_logical_device(bool manual_create) {
           shader_16bit_storage_feature.storageInputOutput16 ? VK_TRUE
                                                             : VK_FALSE;
 
+      // Set granular 16-bit storage capabilities for AMD GPU compatibility
+      if (shader_16bit_storage_feature.storageBuffer16BitAccess == VK_TRUE) {
+        caps.set(DeviceCapability::spirv_has_storage_buffer_16bit_access, true);
+      }
+      if (shader_16bit_storage_feature.uniformAndStorageBuffer16BitAccess == VK_TRUE) {
+        caps.set(DeviceCapability::spirv_has_uniform_and_storage_buffer_16bit_access, true);
+      }
+      if (shader_16bit_storage_feature.storagePushConstant16 == VK_TRUE) {
+        caps.set(DeviceCapability::spirv_has_storage_push_constant_16, true);
+      }
+      if (shader_16bit_storage_feature.storageInputOutput16 == VK_TRUE) {
+        caps.set(DeviceCapability::spirv_has_storage_input_output_16, true);
+      }
+
       const bool has_16bit_storage =
           (shader_16bit_storage_feature.storageBuffer16BitAccess == VK_TRUE) ||
           (shader_16bit_storage_feature.uniformAndStorageBuffer16BitAccess ==

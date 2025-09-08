@@ -16,6 +16,11 @@ PER_DEVICE_CAPABILITY(spirv_has_float16)
 PER_DEVICE_CAPABILITY(spirv_has_float64)
 PER_DEVICE_CAPABILITY(spirv_has_8bit_storage)
 PER_DEVICE_CAPABILITY(spirv_has_16bit_storage)
+// Granular 16-bit storage capabilities for AMD GPU compatibility
+PER_DEVICE_CAPABILITY(spirv_has_storage_buffer_16bit_access)
+PER_DEVICE_CAPABILITY(spirv_has_uniform_and_storage_buffer_16bit_access)
+PER_DEVICE_CAPABILITY(spirv_has_storage_push_constant_16)
+PER_DEVICE_CAPABILITY(spirv_has_storage_input_output_16)
 PER_DEVICE_CAPABILITY(spirv_has_atomic_int64)
 PER_DEVICE_CAPABILITY(spirv_has_atomic_float16)  // load, store, exchange
 PER_DEVICE_CAPABILITY(spirv_has_atomic_float16_add)

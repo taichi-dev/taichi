@@ -90,3 +90,6 @@ imgui.ini
 .do-not-clean
 *.dylib
 *.ply
+/taichi_env/
+/wheel_contents/
+/dist_official/

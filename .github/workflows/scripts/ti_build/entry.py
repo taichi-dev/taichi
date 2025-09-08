@@ -37,6 +37,20 @@ def build_wheel(python: Command, pip: Command) -> None:
     proj_tags = []
     extra = []
 
+    # Explicitly set flags to match official Windows release build EXACTLY
+    # This matches .github/workflows/release.yml lines 238-244
+    cmake_args["TI_WITH_OPENGL"] = True
+    cmake_args["TI_WITH_VULKAN"] = True
+    cmake_args["TI_WITH_DX11"] = True
+    cmake_args["TI_WITH_DX12"] = True
+    cmake_args["TI_BUILD_TESTS"] = True
+    cmake_args["TI_WITH_C_API"] = True
+    
+    # NOTE: Official release does NOT include:
+    # - TI_WITH_GGUI=ON (this adds IMM32.dll dependency)
+    # - TI_WITH_LTO=ON (this affects linker behavior)
+    # - TI_GENERATE_PDB=ON (this affects DLL structure)
+
     cmake_args.writeback()
     if misc.options.tag_local:
         wheel_tag = f"+{misc.options.tag_local}"

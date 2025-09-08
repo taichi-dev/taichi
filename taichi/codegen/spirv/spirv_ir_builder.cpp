@@ -98,18 +98,29 @@ void IRBuilder::init_header() {
 
   if (caps_->get(cap::spirv_has_16bit_storage)) {
     ib_.begin(spv::OpExtension).add("SPV_KHR_16bit_storage").commit(&header_);
-    ib_.begin(spv::OpCapability)
-        .add(spv::CapabilityStorageBuffer16BitAccess)
-        .commit(&header_);
-    ib_.begin(spv::OpCapability)
-        .add(spv::CapabilityUniformAndStorageBuffer16BitAccess)
-        .commit(&header_);
-    ib_.begin(spv::OpCapability)
-        .add(spv::CapabilityStoragePushConstant16)
-        .commit(&header_);
-    ib_.begin(spv::OpCapability)
-        .add(spv::CapabilityStorageInputOutput16)
-        .commit(&header_);
+    
+    // Only enable specific 16-bit storage capabilities that are supported
+    // This fixes AMD GPU compatibility issues where not all 16-bit features are supported
+    if (caps_->get(cap::spirv_has_storage_buffer_16bit_access)) {
+      ib_.begin(spv::OpCapability)
+          .add(spv::CapabilityStorageBuffer16BitAccess)
+          .commit(&header_);
+    }
+    if (caps_->get(cap::spirv_has_uniform_and_storage_buffer_16bit_access)) {
+      ib_.begin(spv::OpCapability)
+          .add(spv::CapabilityUniformAndStorageBuffer16BitAccess)
+          .commit(&header_);
+    }
+    if (caps_->get(cap::spirv_has_storage_push_constant_16)) {
+      ib_.begin(spv::OpCapability)
+          .add(spv::CapabilityStoragePushConstant16)
+          .commit(&header_);
+    }
+    if (caps_->get(cap::spirv_has_storage_input_output_16)) {
+      ib_.begin(spv::OpCapability)
+          .add(spv::CapabilityStorageInputOutput16)
+          .commit(&header_);
+    }
   }
   // === END: 8/16-bit storage support ===
 

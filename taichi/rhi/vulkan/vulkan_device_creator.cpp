@@ -952,8 +952,8 @@ void VulkanDeviceCreator::create_logical_device(bool manual_create) {
 
   // Append features2_enable to the TAIL of whatever is already in
   // create_info.pNext (validation etc.)
-  VkBaseOutStructure *tail =
-      reinterpret_cast<VkBaseOutStructure *>(const_cast<void*>(create_info.pNext));
+  VkBaseOutStructure *tail = reinterpret_cast<VkBaseOutStructure *>(
+      const_cast<void *>(create_info.pNext));
   if (!tail) {
     create_info.pNext = &features2_enable;  // no validation chain present
   } else {

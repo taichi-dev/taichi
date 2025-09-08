@@ -849,8 +849,11 @@ void VulkanDeviceCreator::create_logical_device(bool manual_create) {
       if (shader_16bit_storage_feature.storageBuffer16BitAccess == VK_TRUE) {
         caps.set(DeviceCapability::spirv_has_storage_buffer_16bit_access, true);
       }
-      if (shader_16bit_storage_feature.uniformAndStorageBuffer16BitAccess == VK_TRUE) {
-        caps.set(DeviceCapability::spirv_has_uniform_and_storage_buffer_16bit_access, true);
+      if (shader_16bit_storage_feature.uniformAndStorageBuffer16BitAccess ==
+          VK_TRUE) {
+        caps.set(
+            DeviceCapability::spirv_has_uniform_and_storage_buffer_16bit_access,
+            true);
       }
       if (shader_16bit_storage_feature.storagePushConstant16 == VK_TRUE) {
         caps.set(DeviceCapability::spirv_has_storage_push_constant_16, true);

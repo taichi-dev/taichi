@@ -24,7 +24,7 @@ cmd /c 'call "%ProgramFiles(x86)%\Microsoft Visual Studio\2022\BuildTools\VC\Aux
 
 ## **Critical CMake Flags (matching official release):**
 - **`TI_WITH_OPENGL=ON`** - OpenGL backend
-- **`TI_WITH_VULKAN=ON`** - Vulkan backend  
+- **`TI_WITH_VULKAN=ON`** - Vulkan backend
 - **`TI_WITH_DX11=ON`** - DirectX 11 backend
 - **`TI_WITH_DX12=ON`** - DirectX 12 backend
 - **`TI_BUILD_TESTS=ON`** - Build test suite

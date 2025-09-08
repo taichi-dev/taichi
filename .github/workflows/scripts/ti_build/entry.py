@@ -45,7 +45,7 @@ def build_wheel(python: Command, pip: Command) -> None:
     cmake_args["TI_WITH_DX12"] = True
     cmake_args["TI_BUILD_TESTS"] = True
     cmake_args["TI_WITH_C_API"] = True
-    
+
     # NOTE: Official release does NOT include:
     # - TI_WITH_GGUI=ON (this adds IMM32.dll dependency)
     # - TI_WITH_LTO=ON (this affects linker behavior)
@@ -73,7 +73,9 @@ def build_wheel(python: Command, pip: Command) -> None:
             extra.extend(["-p", "manylinux_2_27_x86_64"])
 
     python("setup.py", "clean")
-    python("misc/make_changelog.py", "--ver", "origin/master", "--repo_dir", "./", "--save")
+    python(
+        "misc/make_changelog.py", "--ver", "origin/master", "--repo_dir", "./", "--save"
+    )
 
     with nice():
         python("setup.py", *proj_tags, "bdist_wheel", *extra)

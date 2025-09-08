@@ -786,6 +786,7 @@ void VulkanDeviceCreator::create_logical_device(bool manual_create) {
     // F16 / I8
     if (CHECK_VERSION(1, 1) ||
         CHECK_EXTENSION(VK_KHR_SHADER_FLOAT16_INT8_EXTENSION_NAME)) {
+      TI_DEBUG("AMD GPU: Checking VK_KHR_SHADER_FLOAT16_INT8 extension");
       features2.pNext = &shader_f16_i8_feature;
       vkGetPhysicalDeviceFeatures2KHR(physical_device_, &features2);
 
@@ -796,6 +797,9 @@ void VulkanDeviceCreator::create_logical_device(bool manual_create) {
       if (shader_f16_i8_feature.shaderInt8) {
         caps.set(DeviceCapability::spirv_has_int8, true);
         shader_f16_i8_enable.shaderInt8 = VK_TRUE;  // enable if supported
+        TI_DEBUG("AMD GPU: shaderInt8 feature detected and enabled");
+      } else {
+        TI_DEBUG("AMD GPU: shaderInt8 feature NOT detected");
       }
     }
 

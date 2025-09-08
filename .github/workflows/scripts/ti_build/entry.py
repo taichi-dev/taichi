@@ -73,9 +73,7 @@ def build_wheel(python: Command, pip: Command) -> None:
             extra.extend(["-p", "manylinux_2_27_x86_64"])
 
     python("setup.py", "clean")
-    python(
-        "misc/make_changelog.py", "--ver", "origin/master", "--repo_dir", "./", "--save"
-    )
+    python("misc/make_changelog.py", "--ver", "origin/master", "--repo_dir", "./", "--save")
 
     with nice():
         python("setup.py", *proj_tags, "bdist_wheel", *extra)

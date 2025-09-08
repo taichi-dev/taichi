@@ -98,9 +98,10 @@ void IRBuilder::init_header() {
 
   if (caps_->get(cap::spirv_has_16bit_storage)) {
     ib_.begin(spv::OpExtension).add("SPV_KHR_16bit_storage").commit(&header_);
-    
+
     // Only enable specific 16-bit storage capabilities that are supported
-    // This fixes AMD GPU compatibility issues where not all 16-bit features are supported
+    // This fixes AMD GPU compatibility issues where not all 16-bit features are
+    // supported
     if (caps_->get(cap::spirv_has_storage_buffer_16bit_access)) {
       ib_.begin(spv::OpCapability)
           .add(spv::CapabilityStorageBuffer16BitAccess)

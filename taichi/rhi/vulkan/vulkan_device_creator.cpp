@@ -784,7 +784,7 @@ void VulkanDeviceCreator::create_logical_device(bool manual_create) {
     }
 
     // F16 / I8
-    if (CHECK_VERSION(1, 2) ||
+    if (CHECK_VERSION(1, 1) ||
         CHECK_EXTENSION(VK_KHR_SHADER_FLOAT16_INT8_EXTENSION_NAME)) {
       features2.pNext = &shader_f16_i8_feature;
       vkGetPhysicalDeviceFeatures2KHR(physical_device_, &features2);

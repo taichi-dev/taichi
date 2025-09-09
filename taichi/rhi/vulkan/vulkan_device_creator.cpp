@@ -787,6 +787,8 @@ void VulkanDeviceCreator::create_logical_device(bool manual_create) {
     if (CHECK_VERSION(1, 1) ||
         CHECK_EXTENSION(VK_KHR_SHADER_FLOAT16_INT8_EXTENSION_NAME)) {
       TI_DEBUG("AMD GPU: Checking VK_KHR_SHADER_FLOAT16_INT8 extension");
+      TI_DEBUG("AMD GPU: Extension enabled: " + std::to_string(CHECK_EXTENSION(VK_KHR_SHADER_FLOAT16_INT8_EXTENSION_NAME)));
+      TI_DEBUG("AMD GPU: Vulkan version check: " + std::to_string(CHECK_VERSION(1, 1)));
       features2.pNext = &shader_f16_i8_feature;
       vkGetPhysicalDeviceFeatures2KHR(physical_device_, &features2);
       TI_DEBUG("AMD GPU: shader_f16_i8_feature.shaderInt8 = " + std::to_string(shader_f16_i8_feature.shaderInt8));

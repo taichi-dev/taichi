@@ -555,6 +555,11 @@ void VulkanDeviceCreator::create_logical_device(bool manual_create) {
     RHI_LOG_DEBUG(msg_buf);
 
     std::string name = std::string(ext.extensionName);
+    
+    // Debug: Check if VK_KHR_SHADER_FLOAT16_INT8 is detected
+    if (name == VK_KHR_SHADER_FLOAT16_INT8_EXTENSION_NAME) {
+      TI_DEBUG("AMD GPU: Found VK_KHR_SHADER_FLOAT16_INT8 extension in device extensions!");
+    }
 
     if (name == "VK_KHR_portability_subset") {
       RHI_LOG_ERROR(

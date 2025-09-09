@@ -385,6 +385,12 @@ void VulkanDeviceCreator::create_instance(uint32_t vk_api_version,
   create_info.enabledExtensionCount = (uint32_t)confirmed_extensions.size();
   create_info.ppEnabledExtensionNames = confirmed_extensions.data();
 
+  // Debug: Show what API version we're requesting
+  TI_DEBUG("AMD GPU: Requesting Vulkan API version: " + 
+           std::to_string(VK_VERSION_MAJOR(vk_api_version)) + "." +
+           std::to_string(VK_VERSION_MINOR(vk_api_version)) + "." +
+           std::to_string(VK_VERSION_PATCH(vk_api_version)));
+
   VkResult res =
       vkCreateInstance(&create_info, kNoVkAllocCallbacks, &instance_);
 
@@ -392,11 +398,18 @@ void VulkanDeviceCreator::create_instance(uint32_t vk_api_version,
     // https://www.khronos.org/registry/vulkan/specs/1.2-extensions/man/html/VkApplicationInfo.html
     // Vulkan 1.0 implementation will return this when api version is not 1.0
     // Vulkan 1.1+ implementation will work with maximum version set
+    TI_DEBUG("AMD GPU: VK_ERROR_INCOMPATIBLE_DRIVER - falling back to Vulkan 1.0");
     ti_device_->vk_caps().vk_api_version = VK_API_VERSION_1_0;
     app_info.apiVersion = VK_API_VERSION_1_0;
 
     res = vkCreateInstance(&create_info, kNoVkAllocCallbacks, &instance_);
+    if (res == VK_SUCCESS) {
+      TI_DEBUG("AMD GPU: Successfully created Vulkan 1.0 instance");
+    } else {
+      TI_DEBUG("AMD GPU: Failed to create Vulkan 1.0 instance with error: " + std::to_string(res));
+    }
   } else {
+    TI_DEBUG("AMD GPU: Successfully created Vulkan instance with requested version");
     ti_device_->vk_caps().vk_api_version = vk_api_version;
   }
 

@@ -225,6 +225,7 @@ size_t get_device_score(VkPhysicalDevice device, VkSurfaceKHR surface) {
       1000;
   score += VK_API_VERSION_MINOR(properties.apiVersion) * 100;
 
+
   return score;
 }
 
@@ -359,14 +360,8 @@ void VulkanDeviceCreator::create_instance(uint32_t vk_api_version,
   vkEnumerateInstanceExtensionProperties(nullptr, &num_instance_extensions,
                                          supported_extensions.data());
 
-  // Debug: Check if VK_KHR_SHADER_FLOAT16_INT8 is available at instance level
-  bool found_shader_float16_int8_instance = false;
   for (auto &ext : supported_extensions) {
     std::string name = ext.extensionName;
-    if (name == VK_KHR_SHADER_FLOAT16_INT8_EXTENSION_NAME) {
-      found_shader_float16_int8_instance = true;
-      TI_DEBUG("AMD GPU: Found VK_KHR_SHADER_FLOAT16_INT8 at instance level!");
-    }
     if (name == VK_KHR_SURFACE_EXTENSION_NAME) {
       extensions.insert(name);
       ti_device_->vk_caps().surface = true;
@@ -381,9 +376,6 @@ void VulkanDeviceCreator::create_instance(uint32_t vk_api_version,
       extensions.insert(name);
     }
   }
-  if (!found_shader_float16_int8_instance) {
-    TI_DEBUG("AMD GPU: VK_KHR_SHADER_FLOAT16_INT8 NOT found at instance level");
-  }
 
   std::vector<const char *> confirmed_extensions;
   confirmed_extensions.reserve(extensions.size());
@@ -394,11 +386,6 @@ void VulkanDeviceCreator::create_instance(uint32_t vk_api_version,
   create_info.enabledExtensionCount = (uint32_t)confirmed_extensions.size();
   create_info.ppEnabledExtensionNames = confirmed_extensions.data();
 
-  // Debug: Show what API version we're requesting
-  TI_DEBUG("AMD GPU: Requesting Vulkan API version: " + 
-           std::to_string(VK_VERSION_MAJOR(vk_api_version)) + "." +
-           std::to_string(VK_VERSION_MINOR(vk_api_version)) + "." +
-           std::to_string(VK_VERSION_PATCH(vk_api_version)));
 
   VkResult res =
       vkCreateInstance(&create_info, kNoVkAllocCallbacks, &instance_);
@@ -407,27 +394,17 @@ void VulkanDeviceCreator::create_instance(uint32_t vk_api_version,
     // https://www.khronos.org/registry/vulkan/specs/1.2-extensions/man/html/VkApplicationInfo.html
     // Vulkan 1.0 implementation will return this when api version is not 1.0
     // Vulkan 1.1+ implementation will work with maximum version set
-    TI_DEBUG("AMD GPU: VK_ERROR_INCOMPATIBLE_DRIVER - trying Vulkan 1.1 fallback");
     ti_device_->vk_caps().vk_api_version = VK_API_VERSION_1_1;
     app_info.apiVersion = VK_API_VERSION_1_1;
 
     res = vkCreateInstance(&create_info, kNoVkAllocCallbacks, &instance_);
-    if (res == VK_SUCCESS) {
-      TI_DEBUG("AMD GPU: Successfully created Vulkan 1.1 instance");
-    } else {
-      TI_DEBUG("AMD GPU: Vulkan 1.1 failed, trying Vulkan 1.0 fallback");
+    if (res != VK_SUCCESS) {
       ti_device_->vk_caps().vk_api_version = VK_API_VERSION_1_0;
       app_info.apiVersion = VK_API_VERSION_1_0;
       
       res = vkCreateInstance(&create_info, kNoVkAllocCallbacks, &instance_);
-      if (res == VK_SUCCESS) {
-        TI_DEBUG("AMD GPU: Successfully created Vulkan 1.0 instance");
-      } else {
-        TI_DEBUG("AMD GPU: Failed to create Vulkan 1.0 instance with error: " + std::to_string(res));
-      }
     }
   } else {
-    TI_DEBUG("AMD GPU: Successfully created Vulkan instance with requested version");
     ti_device_->vk_caps().vk_api_version = vk_api_version;
   }
 
@@ -469,19 +446,12 @@ void VulkanDeviceCreator::pick_physical_device(VkSurfaceKHR test_surface) {
                        i, properties.deviceName);
     RHI_LOG_DEBUG(msg_buf);
     
-    // Debug: Show device properties for AMD GPU debugging
-    TI_DEBUG("AMD GPU: Device " + std::to_string(i) + " - " + std::string(properties.deviceName));
-    TI_DEBUG("AMD GPU: Device " + std::to_string(i) + " - API Version: " + 
-             std::to_string(VK_VERSION_MAJOR(properties.apiVersion)) + "." + 
-             std::to_string(VK_VERSION_MINOR(properties.apiVersion)) + "." + 
-             std::to_string(VK_VERSION_PATCH(properties.apiVersion)));
   }
 
   auto device_id = VulkanLoader::instance().visible_device_id;
   bool has_visible_device{false};
   if (!device_id.empty()) {
     int id = std::stoi(device_id);
-    TI_DEBUG("AMD GPU: TI_VISIBLE_DEVICE set to: " + device_id);
     if (id < 0 || id >= device_count) {
       char msg_buf[128];
       snprintf(msg_buf, sizeof(msg_buf),
@@ -491,7 +461,6 @@ void VulkanDeviceCreator::pick_physical_device(VkSurfaceKHR test_surface) {
     } else if (get_device_score(devices[id], test_surface)) {
       physical_device_ = devices[id];
       has_visible_device = true;
-      TI_DEBUG("AMD GPU: Selected device " + std::to_string(id) + " via TI_VISIBLE_DEVICE");
     }
   }
 
@@ -509,14 +478,6 @@ void VulkanDeviceCreator::pick_physical_device(VkSurfaceKHR test_surface) {
   RHI_ASSERT(physical_device_ != VK_NULL_HANDLE &&
              "failed to find a suitable GPU");
 
-  // Debug: Show final selected device
-  VkPhysicalDeviceProperties final_properties{};
-  vkGetPhysicalDeviceProperties(physical_device_, &final_properties);
-  TI_DEBUG("AMD GPU: Final selected device: " + std::string(final_properties.deviceName));
-  TI_DEBUG("AMD GPU: Final device API version: " + 
-           std::to_string(VK_VERSION_MAJOR(final_properties.apiVersion)) + "." + 
-           std::to_string(VK_VERSION_MINOR(final_properties.apiVersion)) + "." + 
-           std::to_string(VK_VERSION_PATCH(final_properties.apiVersion)));
 
   queue_family_indices_ = find_queue_families(physical_device_, test_surface);
 }
@@ -566,12 +527,6 @@ void VulkanDeviceCreator::create_logical_device(bool manual_create) {
     RHI_LOG_DEBUG(msg_buf);
   }
   
-  // Debug: Show device properties for AMD GPU debugging
-  TI_DEBUG("AMD GPU: Logical device creation - Device: " + std::string(physical_device_properties.deviceName));
-  TI_DEBUG("AMD GPU: Logical device creation - API Version: " + 
-           std::to_string(VK_VERSION_MAJOR(physical_device_properties.apiVersion)) + "." + 
-           std::to_string(VK_VERSION_MINOR(physical_device_properties.apiVersion)) + "." + 
-           std::to_string(VK_VERSION_PATCH(physical_device_properties.apiVersion)));
 
   // (penguinliong) The actual logical device is created with lastest version of
   // Vulkan but we use the device like it has a lower version (if the user
@@ -599,25 +554,11 @@ void VulkanDeviceCreator::create_logical_device(bool manual_create) {
   vkEnumerateDeviceExtensionProperties(
       physical_device_, nullptr, &extension_count, extension_properties.data());
 
+
   bool has_swapchain = false;
 
   [[maybe_unused]] bool portability_subset_enabled = false;
 
-  // Debug: Show total number of extensions detected
-  TI_DEBUG("AMD GPU: Total device extensions detected: " + std::to_string(extension_properties.size()));
-  
-  // Debug: Check if VK_KHR_SHADER_FLOAT16_INT8 is in the device extensions
-  bool found_shader_float16_int8 = false;
-  for (auto &ext : extension_properties) {
-    if (std::string(ext.extensionName) == VK_KHR_SHADER_FLOAT16_INT8_EXTENSION_NAME) {
-      found_shader_float16_int8 = true;
-      TI_DEBUG("AMD GPU: Found VK_KHR_SHADER_FLOAT16_INT8 in device extensions!");
-      break;
-    }
-  }
-  if (!found_shader_float16_int8) {
-    TI_DEBUG("AMD GPU: VK_KHR_SHADER_FLOAT16_INT8 NOT found in device extensions");
-  }
   
   for (auto &ext : extension_properties) {
     char msg_buf[256];
@@ -627,14 +568,6 @@ void VulkanDeviceCreator::create_logical_device(bool manual_create) {
     RHI_LOG_DEBUG(msg_buf);
 
     std::string name = std::string(ext.extensionName);
-    
-    // Debug: Check if VK_KHR_SHADER_FLOAT16_INT8 is detected
-    if (name == VK_KHR_SHADER_FLOAT16_INT8_EXTENSION_NAME) {
-      TI_DEBUG("AMD GPU: Found VK_KHR_SHADER_FLOAT16_INT8 extension in device extensions!");
-    }
-    
-    // Debug: Show all extensions for AMD GPU debugging
-    TI_DEBUG("AMD GPU: Detected extension: " + name);
 
     if (name == "VK_KHR_portability_subset") {
       RHI_LOG_ERROR(
@@ -665,7 +598,6 @@ void VulkanDeviceCreator::create_logical_device(bool manual_create) {
     } else if (name == VK_KHR_VARIABLE_POINTERS_EXTENSION_NAME) {
       enabled_extensions.push_back(ext.extensionName);
     } else if (name == VK_KHR_SHADER_FLOAT16_INT8_EXTENSION_NAME) {
-      TI_DEBUG("AMD GPU: Enabling VK_KHR_SHADER_FLOAT16_INT8 extension!");
       enabled_extensions.push_back(ext.extensionName);
     } else if (name == VK_KHR_GET_MEMORY_REQUIREMENTS_2_EXTENSION_NAME) {
       enabled_extensions.push_back(ext.extensionName);
@@ -699,11 +631,6 @@ void VulkanDeviceCreator::create_logical_device(bool manual_create) {
     ti_device_->vk_caps().present = true;
   }
   
-  // Debug: Show final enabled extensions list
-  TI_DEBUG("AMD GPU: Total enabled extensions: " + std::to_string(enabled_extensions.size()));
-  for (const auto& ext : enabled_extensions) {
-    TI_DEBUG("AMD GPU: Enabled extension: " + std::string(ext));
-  }
 
   VkPhysicalDeviceFeatures device_features{};
 
@@ -816,8 +743,6 @@ void VulkanDeviceCreator::create_logical_device(bool manual_create) {
       enabled_extensions.end()
 
     uint32_t vk_api_version = ti_device_->vk_caps().vk_api_version;
-    TI_DEBUG("AMD GPU: Vulkan API version: " + std::to_string(VK_VERSION_MAJOR(vk_api_version)) + "." + 
-             std::to_string(VK_VERSION_MINOR(vk_api_version)) + "." + std::to_string(VK_VERSION_PATCH(vk_api_version)));
 #define CHECK_VERSION(major, minor) \
   vk_api_version >= VK_MAKE_API_VERSION(0, major, minor, 0)
 
@@ -875,13 +800,8 @@ void VulkanDeviceCreator::create_logical_device(bool manual_create) {
     // F16 / I8
     if (CHECK_VERSION(1, 1) ||
         CHECK_EXTENSION(VK_KHR_SHADER_FLOAT16_INT8_EXTENSION_NAME)) {
-      TI_DEBUG("AMD GPU: Checking VK_KHR_SHADER_FLOAT16_INT8 extension");
-      TI_DEBUG("AMD GPU: Extension enabled: " + std::to_string(CHECK_EXTENSION(VK_KHR_SHADER_FLOAT16_INT8_EXTENSION_NAME)));
-      TI_DEBUG("AMD GPU: Vulkan version check: " + std::to_string(CHECK_VERSION(1, 1)));
       features2.pNext = &shader_f16_i8_feature;
       vkGetPhysicalDeviceFeatures2KHR(physical_device_, &features2);
-      TI_DEBUG("AMD GPU: shader_f16_i8_feature.shaderInt8 = " + std::to_string(shader_f16_i8_feature.shaderInt8));
-      TI_DEBUG("AMD GPU: shader_f16_i8_feature.shaderFloat16 = " + std::to_string(shader_f16_i8_feature.shaderFloat16));
 
       if (shader_f16_i8_feature.shaderFloat16) {
         caps.set(DeviceCapability::spirv_has_float16, true);
@@ -890,9 +810,6 @@ void VulkanDeviceCreator::create_logical_device(bool manual_create) {
       if (shader_f16_i8_feature.shaderInt8) {
         caps.set(DeviceCapability::spirv_has_int8, true);
         shader_f16_i8_enable.shaderInt8 = VK_TRUE;  // enable if supported
-        TI_DEBUG("AMD GPU: shaderInt8 feature detected and enabled");
-      } else {
-        TI_DEBUG("AMD GPU: shaderInt8 feature NOT detected");
       }
     }
 

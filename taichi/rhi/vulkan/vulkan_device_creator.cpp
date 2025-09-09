@@ -225,7 +225,6 @@ size_t get_device_score(VkPhysicalDevice device, VkSurfaceKHR surface) {
       1000;
   score += VK_API_VERSION_MINOR(properties.apiVersion) * 100;
 
-
   return score;
 }
 
@@ -386,7 +385,6 @@ void VulkanDeviceCreator::create_instance(uint32_t vk_api_version,
   create_info.enabledExtensionCount = (uint32_t)confirmed_extensions.size();
   create_info.ppEnabledExtensionNames = confirmed_extensions.data();
 
-
   VkResult res =
       vkCreateInstance(&create_info, kNoVkAllocCallbacks, &instance_);
 
@@ -401,7 +399,7 @@ void VulkanDeviceCreator::create_instance(uint32_t vk_api_version,
     if (res != VK_SUCCESS) {
       ti_device_->vk_caps().vk_api_version = VK_API_VERSION_1_0;
       app_info.apiVersion = VK_API_VERSION_1_0;
-      
+
       res = vkCreateInstance(&create_info, kNoVkAllocCallbacks, &instance_);
     }
   } else {
@@ -445,7 +443,6 @@ void VulkanDeviceCreator::pick_physical_device(VkSurfaceKHR test_surface) {
     RHI_DEBUG_SNPRINTF(msg_buf, sizeof(msg_buf), "Found Vulkan Device %d (%s)",
                        i, properties.deviceName);
     RHI_LOG_DEBUG(msg_buf);
-    
   }
 
   auto device_id = VulkanLoader::instance().visible_device_id;
@@ -477,7 +474,6 @@ void VulkanDeviceCreator::pick_physical_device(VkSurfaceKHR test_surface) {
   }
   RHI_ASSERT(physical_device_ != VK_NULL_HANDLE &&
              "failed to find a suitable GPU");
-
 
   queue_family_indices_ = find_queue_families(physical_device_, test_surface);
 }
@@ -526,7 +522,6 @@ void VulkanDeviceCreator::create_logical_device(bool manual_create) {
         VK_API_VERSION_PATCH(physical_device_properties.apiVersion));
     RHI_LOG_DEBUG(msg_buf);
   }
-  
 
   // (penguinliong) The actual logical device is created with lastest version of
   // Vulkan but we use the device like it has a lower version (if the user
@@ -554,12 +549,10 @@ void VulkanDeviceCreator::create_logical_device(bool manual_create) {
   vkEnumerateDeviceExtensionProperties(
       physical_device_, nullptr, &extension_count, extension_properties.data());
 
-
   bool has_swapchain = false;
 
   [[maybe_unused]] bool portability_subset_enabled = false;
 
-  
   for (auto &ext : extension_properties) {
     char msg_buf[256];
     RHI_DEBUG_SNPRINTF(msg_buf, sizeof(msg_buf),
@@ -630,7 +623,6 @@ void VulkanDeviceCreator::create_logical_device(bool manual_create) {
   if (has_swapchain) {
     ti_device_->vk_caps().present = true;
   }
-  
 
   VkPhysicalDeviceFeatures device_features{};
 

@@ -359,8 +359,14 @@ void VulkanDeviceCreator::create_instance(uint32_t vk_api_version,
   vkEnumerateInstanceExtensionProperties(nullptr, &num_instance_extensions,
                                          supported_extensions.data());
 
+  // Debug: Check if VK_KHR_SHADER_FLOAT16_INT8 is available at instance level
+  bool found_shader_float16_int8_instance = false;
   for (auto &ext : supported_extensions) {
     std::string name = ext.extensionName;
+    if (name == VK_KHR_SHADER_FLOAT16_INT8_EXTENSION_NAME) {
+      found_shader_float16_int8_instance = true;
+      TI_DEBUG("AMD GPU: Found VK_KHR_SHADER_FLOAT16_INT8 at instance level!");
+    }
     if (name == VK_KHR_SURFACE_EXTENSION_NAME) {
       extensions.insert(name);
       ti_device_->vk_caps().surface = true;
@@ -374,6 +380,9 @@ void VulkanDeviceCreator::create_instance(uint32_t vk_api_version,
     } else if (name == VK_EXT_DEBUG_UTILS_EXTENSION_NAME) {
       extensions.insert(name);
     }
+  }
+  if (!found_shader_float16_int8_instance) {
+    TI_DEBUG("AMD GPU: VK_KHR_SHADER_FLOAT16_INT8 NOT found at instance level");
   }
 
   std::vector<const char *> confirmed_extensions;
@@ -596,6 +605,19 @@ void VulkanDeviceCreator::create_logical_device(bool manual_create) {
 
   // Debug: Show total number of extensions detected
   TI_DEBUG("AMD GPU: Total device extensions detected: " + std::to_string(extension_properties.size()));
+  
+  // Debug: Check if VK_KHR_SHADER_FLOAT16_INT8 is in the device extensions
+  bool found_shader_float16_int8 = false;
+  for (auto &ext : extension_properties) {
+    if (std::string(ext.extensionName) == VK_KHR_SHADER_FLOAT16_INT8_EXTENSION_NAME) {
+      found_shader_float16_int8 = true;
+      TI_DEBUG("AMD GPU: Found VK_KHR_SHADER_FLOAT16_INT8 in device extensions!");
+      break;
+    }
+  }
+  if (!found_shader_float16_int8) {
+    TI_DEBUG("AMD GPU: VK_KHR_SHADER_FLOAT16_INT8 NOT found in device extensions");
+  }
   
   for (auto &ext : extension_properties) {
     char msg_buf[256];

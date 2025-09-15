@@ -22,16 +22,21 @@ def setup_llvm() -> None:
     u = platform.uname()
     if (u.system, u.machine) == ("Linux", "x86_64"):
         if cmake_args.get_effective("TI_WITH_AMDGPU"):
-            out = get_cache_home() / "llvm15-amdgpu-005"
-            url = "https://github.com/GaleSeLee/assets/releases/download/v0.0.5/taichi-llvm-15.0.0-linux.zip"
+            # We should use LLVM toolchains shipped with OS.
+            #out = get_cache_home() / "llvm15-amdgpu-005"
+            #url = "https://github.com/GaleSeLee/assets/releases/download/v0.0.5/taichi-llvm-15.0.0-linux.zip"
+            os.environ["LLVM_DIR"] = "/usr/lib/llvm-20/cmake"
+            os.environ["ROCM_PATH"] = "/opt/rocm"
+            os.environ["CPATH"] = "/opt/rocm/include"
         elif is_manylinux2014():
             # FIXME: prebuilt llvm15 on ubuntu didn't work on manylinux2014 image of centos. Once that's fixed, remove this hack.
             out = get_cache_home() / "llvm15-manylinux2014"
             url = "https://github.com/ailzhang/torchhub_example/releases/download/0.3/taichi-llvm-15-linux.zip"
+            download_dep(url, out, strip=1)
         else:
             out = get_cache_home() / "llvm15"
             url = "https://github.com/taichi-dev/taichi_assets/releases/download/llvm15/taichi-llvm-15-linux.zip"
-        download_dep(url, out, strip=1)
+            download_dep(url, out, strip=1)
 
     elif (u.system, u.machine) in (("Linux", "arm64"), ("Linux", "aarch64")):
         out = get_cache_home() / "llvm15-manylinux2014"
@@ -54,7 +59,7 @@ def setup_llvm() -> None:
 
     # We should use LLVM toolchains shipped with OS.
      #path_prepend('PATH', out / 'bin')
-    if (u.system, u.machine) not in (("Linux", "arm64"), ("Linux", "aarch64")):
+    if ((u.system, u.machine) not in (("Linux", "arm64"), ("Linux", "aarch64"))) and not (cmake_args.get_effective("TI_WITH_AMDGPU")):
         os.environ["LLVM_DIR"] = "/usr/lib/llvm-20/cmake"
         os.environ["CUDA_HOME"] = "/usr/local/cuda"
         os.environ["CPATH"] = "/usr/local/cuda/include"

@@ -13,25 +13,23 @@
 #include "llvm/IR/Module.h"
 #include "llvm/IR/DataLayout.h"
 #include "llvm/IR/LLVMContext.h"
-// #include "llvm/IR/LegacyPassManager.h"            // Obsolete: Removed
 #include "llvm/IR/Verifier.h"
-// #include "llvm/Transforms/InstCombine/InstCombine.h"// Obsolete: Handled by NPM PassBuilder
-// #include "llvm/Transforms/Scalar.h"                 // Obsolete: Handled by NPM PassBuilder
-// #include "llvm/Transforms/Scalar/GVN.h"             // Obsolete: Handled by NPM PassBuilder
-// #include "llvm/Transforms/IPO.h"                    // Obsolete: Handled by NPM PassBuilder
-// #include "llvm/Transforms/IPO/PassManagerBuilder.h" // Obsolete: Removed
+#if LLVM_VERSION_MAJOR >= 17
+#include "llvm/Passes/PassBuilder.h"
+#include "llvm/Passes/OptimizationLevel.h"
+#include "llvm/Transforms/IPO/Inliner.h"
+#include "llvm/IR/Module.h"
+#else
+#include "llvm/IR/LegacyPassManager.h"            // Obsolete: Removed
+#include "llvm/Transforms/InstCombine/InstCombine.h"// Obsolete: Handled by NPM PassBuilder
+#include "llvm/Transforms/Scalar.h"                 // Obsolete: Handled by NPM PassBuilder
+#include "llvm/Transforms/Scalar/GVN.h"             // Obsolete: Handled by NPM PassBuilder
+#include "llvm/Transforms/IPO.h"                    // Obsolete: Handled by NPM PassBuilder
+#include "llvm/Transforms/IPO/PassManagerBuilder.h" // Obsolete: Removed
+#endif
 #include "llvm/Analysis/TargetTransformInfo.h"
 #include "llvm/MC/TargetRegistry.h"
-// Note: TargetMachine is already included above
-// #include "llvm/Target/TargetMachine.h"
 #include "llvm/ExecutionEngine/Orc/JITTargetMachineBuilder.h"
-
-// === CHANGED SECTION: HEADER INCLUDES ===
-// Add the main header for the New Pass Manager. This will be needed
-// by the implementation file (jit_amdgpu.cpp) to build the pass pipeline.
-#include "llvm/Passes/PassBuilder.h"
-// === END OF CHANGED SECTION ===
-
 
 #include "taichi/rhi/amdgpu/amdgpu_context.h"
 #include "taichi/rhi/amdgpu/amdgpu_driver.h"

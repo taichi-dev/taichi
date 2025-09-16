@@ -4,6 +4,7 @@ Highlights:
       - Drop OpenGL build (#8751) (by **Proton**)
 
 Full changelog:
+   - updated AMD Instinct GPU jit implementation to llvm 20 (by **Tiffany Mintz**)
    - fix build issues with llvm 20 update (by **Tiffany Mintz**)
    - additional updates for llvm 20 (by **Tiffany Mintz**)
    - additional cuda updates for llvm20; merging from 8ca16de9a24e82baaed1deac80f71bd541c131ca to add2df35782768f5ad243cacef0922ec00890ba5 from johnnynunez/taichi master branch (by **Tiffany Mintz**)

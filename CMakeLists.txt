@@ -156,7 +156,7 @@ if (TI_WITH_CUDA)
 endif()
 
 if (TI_WITH_AMDGPU)
-    set(AMDGPU_ARCH "amdgpu")
+	set(AMDGPU_ARCH "amdgpu")
 endif()
 
 if (TI_WITH_DX12)

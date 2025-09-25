@@ -23,11 +23,8 @@ def setup_llvm() -> None:
     if (u.system, u.machine) == ("Linux", "x86_64"):
         if cmake_args.get_effective("TI_WITH_AMDGPU"):
             # We should use LLVM toolchains shipped with OS.
-            #out = get_cache_home() / "llvm15-amdgpu-005"
-            #url = "https://github.com/GaleSeLee/assets/releases/download/v0.0.5/taichi-llvm-15.0.0-linux.zip"
-            os.environ["LLVM_DIR"] = "/usr/lib/llvm-20/cmake"
-            os.environ["ROCM_PATH"] = "/opt/rocm"
-            os.environ["CPATH"] = "/opt/rocm/include"
+            os.environ["LLVM_DIR"] = os.environ["LLVM_PATH"]+"/lib/cmake"
+            os.environ["CPATH"] = os.environ["ROCM_PATH"]+"/include"
         elif is_manylinux2014():
             # FIXME: prebuilt llvm15 on ubuntu didn't work on manylinux2014 image of centos. Once that's fixed, remove this hack.
             out = get_cache_home() / "llvm15-manylinux2014"

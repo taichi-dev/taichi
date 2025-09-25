@@ -287,7 +287,8 @@ struct AMDGPUConvertFuncParamAddressSpacePass : public ModulePass {
 	  auto &front_bb = new_func->getEntryBlock();
           llvm::Instruction *addrspacecast =
               new AddrSpaceCastInst(I2, I->getType());
-          front_bb.getFirstInsertionPt()->insertAfter(addrspacecast);
+	  addrspacecast->insertAfter(front_bb.getFirstInsertionPt());
+          //front_bb.getFirstInsertionPt()->insertAfter(addrspacecast);
 #else
           auto &front_bb = new_func->getBasicBlockList().front();
           llvm::Instruction *addrspacecast =

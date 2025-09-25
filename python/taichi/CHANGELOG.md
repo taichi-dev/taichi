@@ -4,6 +4,7 @@ Highlights:
       - Drop OpenGL build (#8751) (by **Proton**)
 
 Full changelog:
+   - updating amd gpu kernel code generation to llvm 20 (by **Tiffany Mintz**)
    - updated AMD Instinct GPU jit implementation to llvm 20 (by **Tiffany Mintz**)
    - fix build issues with llvm 20 update (by **Tiffany Mintz**)
    - additional updates for llvm 20 (by **Tiffany Mintz**)

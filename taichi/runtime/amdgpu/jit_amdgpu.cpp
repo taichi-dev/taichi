@@ -221,7 +221,7 @@ std::string JITSessionAMDGPU::compile_module_to_hsaco(
   legacy_pass_manager.add(llvm::createTargetTransformInfoWrapperPass(
       machine->getTargetIRAnalysis()));
   machine->addPassesToEmitFile(legacy_pass_manager, llvm_stream, nullptr,
-                                llvm::CodeGenFileType::AssemblyFile, true);
+                                llvm::CodeGenFileType::ObjectFile, true);
   legacy_pass_manager.run(*llvm_module);
 #else
   machine->addPassesToEmitFile(module_pass_manager, llvm_stream, nullptr,

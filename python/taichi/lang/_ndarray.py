@@ -66,7 +66,7 @@ class Ndarray:
 
         rt = impl.get_runtime()
         if rt is not None and rt.prog is not None:
-           rt.prog.delete_ndarray(self.arr)
+            rt.prog.delete_ndarray(self.arr)
 
     @python_scope
     def fill(self, val):
@@ -250,7 +250,6 @@ class ScalarNdarray(Ndarray):
         )
         self.shape = tuple(self.arr.shape)
         self.element_type = dtype
-
 
     @property
     def element_shape(self):

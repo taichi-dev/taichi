@@ -60,6 +60,14 @@ class Ndarray:
         """
         raise NotImplementedError()
 
+    def __del__(self):
+        if impl is None or self.arr is None:
+            return
+
+        rt = impl.get_runtime()
+        if rt is not None and rt.prog is not None:
+            rt.prog.delete_ndarray(self.arr)
+
     @python_scope
     def fill(self, val):
         """Fills ndarray with a specific scalar value.
@@ -242,10 +250,6 @@ class ScalarNdarray(Ndarray):
         )
         self.shape = tuple(self.arr.shape)
         self.element_type = dtype
-
-    def __del__(self):
-        if impl is not None and impl.get_runtime() is not None and impl.get_runtime().prog is not None:
-            impl.get_runtime().prog.delete_ndarray(self.arr)
 
     @property
     def element_shape(self):

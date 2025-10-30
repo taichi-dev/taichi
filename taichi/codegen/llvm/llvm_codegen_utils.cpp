@@ -25,15 +25,23 @@ bool is_same_type(llvm::Type *a, llvm::Type *b) {
   if (a == b) {
     return true;
   }
+
   if (a->isPointerTy() != b->isPointerTy()) {
     return false;
   }
+
   if (a->isPointerTy()) {
+#if 0
     return is_same_type(a->getPointerElementType(), b->getPointerElementType());
+#else
+    return true;
+#endif
   }
+
   if (a->isFunctionTy() != b->isFunctionTy()) {
     return false;
   }
+
   if (a->isFunctionTy()) {
     auto req_func = llvm::cast<llvm::FunctionType>(a);
     auto prov_func = llvm::cast<llvm::FunctionType>(b);

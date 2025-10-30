@@ -25,6 +25,8 @@ from taichi.lang.ops import (
     sqrt,
     tan,
     tanh,
+    erf,
+    erfc,
 )
 from taichi.types import matrix, template, vector
 from taichi.types.primitive_types import f64, u32, u64
@@ -874,6 +876,8 @@ __all__ = [
     "step",
     "tan",
     "tanh",
+    "erf",
+    "erfc",
     "uvec2",
     "uvec3",
     "uvec4",

@@ -6,7 +6,6 @@
 #include "llvm/Pass.h"
 #include "llvm/IR/Module.h"
 #include "llvm/Transforms/IPO.h"
-#include "llvm/Transforms/IPO/PassManagerBuilder.h"
 #include "llvm/IR/Instructions.h"
 #include "llvm/IR/IRBuilder.h"
 #include "llvm/Support/SourceMgr.h"
@@ -249,13 +248,13 @@ struct AMDGPUConvertFuncParamAddressSpacePass : public ModulePass {
       std::vector<llvm::Type *> new_func_params;
       for (auto &arg : f->args()) {
         if (arg.getType()->getTypeID() == llvm::Type::PointerTyID) {
-          // This is a temporary LLVM interface to handle transition from typed
-          // pointer to opaque pointer In the future, if we only clang++ > 14,
-          // we can compeletely comply to opaque pointer and replace the
-          // following code with llvm::PointerType::get(M.getContext(),
-          // usigned(1))
+#if LLVM_VERSION_MAJOR >= 16
+          auto new_type = llvm::PointerType::get(M.getContext(), unsigned(1));
+#else
           auto new_type = llvm::PointerType::getWithSamePointeeType(
               llvm::dyn_cast<llvm::PointerType>(arg.getType()), unsigned(1));
+#endif
+
 
           new_func_params.push_back(new_type);
         } else {
@@ -274,17 +273,29 @@ struct AMDGPUConvertFuncParamAddressSpacePass : public ModulePass {
       new_func->setComdat(f->getComdat());
       f->getParent()->getFunctionList().insert(f->getIterator(), new_func);
       new_func->takeName(f);
+#if LLVM_VERSION_MAJOR >= 16
+      new_func->splice(new_func->begin(), f);
+#else
       new_func->getBasicBlockList().splice(new_func->begin(),
                                            f->getBasicBlockList());
+#endif
       for (llvm::Function::arg_iterator I = f->arg_begin(), E = f->arg_end(),
                                         I2 = new_func->arg_begin();
            I != E; ++I, ++I2) {
         if (I->getType()->getTypeID() == llvm::Type::PointerTyID) {
+#if LLVM_VERSION_MAJOR >= 16
+	  auto &front_bb = new_func->getEntryBlock();
+          llvm::Instruction *addrspacecast =
+              new AddrSpaceCastInst(I2, I->getType());
+	  addrspacecast->insertAfter(front_bb.getFirstInsertionPt());
+          //front_bb.getFirstInsertionPt()->insertAfter(addrspacecast);
+#else
           auto &front_bb = new_func->getBasicBlockList().front();
           llvm::Instruction *addrspacecast =
               new AddrSpaceCastInst(I2, I->getType());
           front_bb.getInstList().insertAfter(front_bb.getFirstInsertionPt(),
                                              addrspacecast);
+#endif
           I->replaceAllUsesWith(addrspacecast);
           I2->takeName(&*I);
         } else {

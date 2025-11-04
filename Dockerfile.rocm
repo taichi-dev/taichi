@@ -23,10 +23,10 @@ ENV TI_VERSION_PATCH=${TI_VERSION_PATCH}
 ENV DEBIAN_FRONTEND=noninteractive
 ENV SRC_DIR=/src
 ENV TAICHI_SRC=${SRC_DIR}/taichi
-ENV LLVM_DIR=/usr/lib/llvm-${LLVM_VERSION}
-ENV PATH=${LLVM_DIR}/bin:$PATH
+ENV LLVM_PATH=/usr/lib/llvm-${LLVM_VERSION}
+ENV PATH=${LLVM_PATH}/bin:$PATH
 ENV ROCM_PATH=/opt/rocm-${ROCM_VERSION}
-ENV TAICHI_CMAKE_ARGS="-DTI_WITH_VULKAN=OFF -DTI_WITH_OPENGL=OFF -DTI_BUILD_TESTS=OFF -DTI_BUILD_EXAMPLES=OFF -DCMAKE_PREFIX_PATH=${LLVM_DIR}/lib/cmake -DCMAKE_CXX_COMPILER=${LLVM_DIR}/bin/clang++ -DTI_WITH_AMDGPU=ON -DTI_WITH_CUDA=OFF -DTI_AMDGPU_ARCHS=${GPU_TARGETS}"
+ENV TAICHI_CMAKE_ARGS="-DTI_WITH_VULKAN=OFF -DTI_WITH_OPENGL=OFF -DTI_BUILD_TESTS=OFF -DTI_BUILD_EXAMPLES=OFF -DCMAKE_PREFIX_PATH=${LLVM_PATH}/lib/cmake -DCMAKE_CXX_COMPILER=${LLVM_PATH}/bin/clang++ -DTI_WITH_AMDGPU=ON -DTI_WITH_CUDA=OFF -DTI_AMDGPU_ARCHS=${GPU_TARGETS}"
 
 # Install build dependencies
 RUN apt-get update && apt-get install -y --no-install-recommends \
@@ -56,7 +56,7 @@ RUN cd ${TAICHI_SRC} && \
     cd ../.. && \
     ./build.py && \
     mkdir -p /tmp/artifacts && \
-    cp dist/amd_taichi*.whl /tmp/artifacts/ && \
+    cp dist/taichi*.whl /tmp/artifacts/ && \
     tar -czvf /tmp/artifacts/taichi-tests.tar.gz -C /src taichi
 
 # ---------------------------------------------
@@ -67,9 +67,9 @@ FROM ${BASE_IMAGE} as taichi_final
 ARG LLVM_VERSION=20
 ARG ROCM_VERSION=7.0.0
 ENV DEBIAN_FRONTEND=noninteractive
-ENV LLVM_DIR=/usr/lib/llvm-${LLVM_VERSION}
+ENV LLVM_PATH=/usr/lib/llvm-${LLVM_VERSION}
 ENV ROCM_PATH=/opt/rocm-${ROCM_VERSION}
-ENV PATH=${LLVM_DIR}/bin:$PATH
+ENV PATH=${LLVM_PATH}/bin:$PATH
 
 # Install runtime dependencies
 RUN apt-get update && apt-get install -y \
@@ -77,10 +77,10 @@ RUN apt-get update && apt-get install -y \
     apt-get clean && rm -rf /var/lib/apt/lists/*
 
 # Copy and install Taichi wheel
-COPY --from=taichi_build /tmp/artifacts/amd_taichi*.whl /
+COPY --from=taichi_build /tmp/artifacts/taichi*.whl /
 RUN pip3 install --no-cache-dir --upgrade pip setuptools wheel && \
-    pip3 install /amd_taichi*.whl && \
-    rm /amd_taichi*.whl
+    pip3 install /taichi*.whl && \
+    rm /taichi*.whl
 
 # ---------------------------------------------
 # Stage 3: Export raw artifacts to host

@@ -46,7 +46,7 @@ RUN wget https://apt.llvm.org/llvm.sh \
 	&& ./llvm.sh ${LLVM_VERSION} llvm clang lld 
 
 # Copy source code
-COPY . ${SRC_DIR}
+COPY . ${TAICHI_SRC}
 RUN git config --global --add safe.directory "${TAICHI_SRC}"
 
 # Build Taichi and generate artifacts

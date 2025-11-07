@@ -49,13 +49,23 @@ RUN wget https://apt.llvm.org/llvm.sh \
 COPY . .
 # RUN git config --global --add safe.directory "${TAICHI_SRC}"
 
+# Install Python build dependencies
+RUN python3 -m pip config set global.break-system-packages true && \
+    python3 -m pip install -r requirements_dev.txt
+
 # Build Taichi and generate artifacts
 RUN cd external/spdlog && \
     git apply /app/spdlog_fmt.patch && \
     cd /app && \
     ./build.py && \
+    echo "=== Listing dist directory ===" && \
+    ls -la dist/ && \
+    echo "=== Creating artifacts directory ===" && \
     mkdir -p /tmp/artifacts && \
-    cp dist/taichi*.whl /tmp/artifacts/ && \
+    echo "=== Copying wheel files ===" && \
+    cp dist/*.whl /tmp/artifacts/ && \
+    echo "=== Listing artifacts directory ===" && \
+    ls -la /tmp/artifacts/ && \
     tar -czvf /tmp/artifacts/taichi-tests.tar.gz -C /app taichi
 
 # ---------------------------------------------
@@ -91,11 +101,12 @@ RUN wget https://apt.llvm.org/llvm.sh \
     && rm -rf llvm.sh
 
 # Copy and install Taichi wheel
-COPY --from=taichi_build /tmp/artifacts/taichi*.whl /app/
+COPY --from=taichi_build /tmp/artifacts/*.whl /app/
 
 RUN python3 -m pip config set global.break-system-packages true \
-    && python3 -m pip install /app/taichi*.whl \
-    && rm -rf /app/taichi*.whl
+    && ls -la /app/ \
+    && for whl in /app/*.whl; do python3 -m pip install "$whl"; done \
+    && rm -rf /app/*.whl
 
 # ---------------------------------------------
 # Stage 3: Export raw artifacts to host

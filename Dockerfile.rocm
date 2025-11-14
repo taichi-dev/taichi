@@ -57,6 +57,7 @@ RUN python3 -m pip config set global.break-system-packages true && \
 RUN cd external/spdlog && \
     git apply /app/spdlog_fmt.patch && \
     cd /app && \
+    rm -rf /root/.cache/* && \
     ./build.py && \
     echo "=== Listing dist directory ===" && \
     ls -la dist/ && \

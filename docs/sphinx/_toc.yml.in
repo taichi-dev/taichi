@@ -1,0 +1,29 @@
+defaults:
+  numbered: False
+  maxdepth: 6
+root: index
+subtrees:
+- entries:
+  - file: what-is-taichi.rst
+    title: What is Taichi Lang?
+
+- caption: Install
+  entries:
+  - file: install/taichi-install.rst
+    title: Install Taichi Lang
+
+- caption: Examples
+  entries:
+  - file: examples/taichi-get-started.rst 
+    title: Get started with Taichi Lang
+  - file: examples/taichi-examples.rst 
+    title: Run a Taichi Lang example
+
+- caption: About
+  entries:
+  - url: https://rocm.blogs.amd.com/artificial-intelligence/taichi_mi300x/README.html
+    title: ROCm Taichi Lang blog
+  - url: https://rocm.docs.amd.com/en/latest/contribute/contributing.html
+    title: Contribute to Taichi Lang
+  - file: about/license.rst
+    title: License

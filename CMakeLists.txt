@@ -1,9 +1,6 @@
 #*********************************************************************
 # The Taichi Programming Language
 #*********************************************************************
-
-rocm_setup_version(VERSION 1.8.0b2)
-
 cmake_minimum_required(VERSION 3.17)
 
 project(taichi)

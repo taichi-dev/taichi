@@ -145,13 +145,49 @@ void Gui::begin(const std::string &name,
                 float x,
                 float y,
                 float width,
-                float height) {
+                float height,
+                bool movable,
+                bool resizable,
+                bool collapsible) {
   if (!initialized()) {
     return;
   }
-  ImGui::SetNextWindowPos(ImVec2(abs_x(x), abs_y(y)), ImGuiCond_Once);
-  ImGui::SetNextWindowSize(ImVec2(abs_x(width), abs_y(height)), ImGuiCond_Once);
-  ImGui::Begin(name.c_str());
+
+  // Update window dimensions when locked, so programmatic updates use current
+  // window size
+  if ((!movable || !resizable) && app_context_->config.show_window) {
+#ifdef ANDROID
+    widthBeforeDPIScale =
+        (int)ANativeWindow_getWidth(app_context_->taichi_window());
+    heightBeforeDPIScale =
+        (int)ANativeWindow_getHeight(app_context_->taichi_window());
+#else
+    glfwGetWindowSize(app_context_->taichi_window(), &widthBeforeDPIScale,
+                      &heightBeforeDPIScale);
+#endif
+  }
+
+  // Set position: Always if locked, Once if unlocked
+  ImGuiCond pos_cond = movable ? ImGuiCond_Once : ImGuiCond_Always;
+  ImGui::SetNextWindowPos(ImVec2(abs_x(x), abs_y(y)), pos_cond);
+
+  // Set size: Always if locked, Once if unlocked
+  ImGuiCond size_cond = resizable ? ImGuiCond_Once : ImGuiCond_Always;
+  ImGui::SetNextWindowSize(ImVec2(abs_x(width), abs_y(height)), size_cond);
+
+  // Build window flags
+  ImGuiWindowFlags flags = 0;
+  if (!movable) {
+    flags |= ImGuiWindowFlags_NoMove;
+  }
+  if (!resizable) {
+    flags |= ImGuiWindowFlags_NoResize;
+  }
+  if (!collapsible) {
+    flags |= ImGuiWindowFlags_NoCollapse;
+  }
+
+  ImGui::Begin(name.c_str(), nullptr, flags);
   is_empty_ = false;
 }
 void Gui::end() {

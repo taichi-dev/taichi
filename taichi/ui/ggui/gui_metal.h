@@ -27,7 +27,10 @@ class TI_DLL_EXPORT GuiMetal final : public GuiBase {
              float x,
              float y,
              float width,
-             float height) override;
+             float height,
+             bool movable = true,
+             bool resizable = true,
+             bool collapsible = true) override;
   void end() override;
   void text(const std::string &text) override;
   void text(const std::string &text, glm::vec3 color) override;

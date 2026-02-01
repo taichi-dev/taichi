@@ -10,7 +10,10 @@ class GuiBase {
                      float x,
                      float y,
                      float width,
-                     float height) = 0;
+                     float height,
+                     bool movable = true,
+                     bool resizable = true,
+                     bool collapsible = true) = 0;
   virtual void end() = 0;
   virtual void text(const std::string &text) = 0;
   virtual void text(const std::string &text, glm::vec3 color) = 0;

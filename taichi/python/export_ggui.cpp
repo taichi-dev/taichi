@@ -60,8 +60,15 @@ py::array_t<float> mat4_to_nparray(glm::mat4 mat) {
 
 struct PyGui {
   GuiBase *gui;  // not owned
-  void begin(std::string name, float x, float y, float width, float height) {
-    gui->begin(name, x, y, width, height);
+  void begin(std::string name,
+             float x,
+             float y,
+             float width,
+             float height,
+             bool movable = true,
+             bool resizable = true,
+             bool collapsible = true) {
+    gui->begin(name, x, y, width, height, movable, resizable, collapsible);
   }
   void end() {
     gui->end();

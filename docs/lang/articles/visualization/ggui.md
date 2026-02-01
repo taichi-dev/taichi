@@ -437,6 +437,22 @@ with gui.sub_window("Sub Window", x=10, y=10, width=300, height=100):
     color = gui.color_edit_3("name2", color)
 ```
 
+### Locking a subwindow
+
+You can control whether GGUI subwindows dimensions can be manipulated using these flags.
+They all default to `True`:
+
+- `movable`: Allow users to drag the subwindow. If False, position can be updated programmatically.
+- `resizable`: Allow users to resize the subwindow. If `False`, size can be updated programmatically.
+- `collapsible`: Allow users to collapse the subwindow by clicking its title bar.
+
+```python
+# Window that is fully locked
+with gui.sub_window("Locked subwindow", 0.1, 0.1, 0.3, 0.2,
+                    resizable=False, movable=False, collapsible=False):
+    gui.text("Locked!")
+```
+
 ## Show a window
 
 Call `show()` to show a window.

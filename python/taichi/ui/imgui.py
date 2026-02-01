@@ -13,7 +13,7 @@ class Gui:
         self.gui = gui
 
     @contextmanager
-    def sub_window(self, name, x, y, width, height):
+    def sub_window(self, name, x, y, width, height, movable=True, resizable=True, collapsible=True):
         """Creating a context manager for subwindow.
 
         Note:
@@ -26,19 +26,25 @@ class Gui:
                 corner of the subwindow, relative to the full window.
             width (float): The width of the subwindow relative to the full window.
             height (float): The height of the subwindow relative to the full window.
+            movable (bool): Whether the window can be moved by the user. \
+                When False, position can only be changed programmatically.
+            resizable (bool): Whether the window can be resized by the user. \
+                When False, size can only be changed programmatically.
+            collapsible (bool): Whether the window can be collapsed by the user. \
+                When False, the collapse button is disabled.
 
         Example::
 
             >>> with gui.sub_window(name, x, y, width, height) as g:
             >>>     g.text("Hello, World!")
         """
-        self.begin(name, x, y, width, height)
+        self.begin(name, x, y, width, height, movable, resizable, collapsible)
         try:
             yield self
         finally:
             self.end()
 
-    def begin(self, name, x, y, width, height):
+    def begin(self, name, x, y, width, height, movable=True, resizable=True, collapsible=True):
         """Creates a subwindow that holds imgui widgets.
 
         All widget function calls (e.g. `text`, `button`) after the `begin`
@@ -51,8 +57,14 @@ class Gui:
                 corner of the subwindow, relative to the full window.
             width (float): The width of the subwindow relative to the full window.
             height (float): The height of the subwindow relative to the full window.
+            movable (bool): Whether the window can be moved by the user. \
+                When False, position can only be changed programmatically.
+            resizable (bool): Whether the window can be resized by the user. \
+                When False, size can only be changed programmatically.
+            collapsible (bool): Whether the window can be collapsed by the user. \
+                When False, the collapse button is disabled.
         """
-        self.gui.begin(name, x, y, width, height)
+        self.gui.begin(name, x, y, width, height, movable, resizable, collapsible)
 
     def end(self):
         """End the description of the current subwindow."""

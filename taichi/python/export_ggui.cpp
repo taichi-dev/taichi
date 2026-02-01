@@ -648,6 +648,13 @@ struct PyWindow {
     return py::make_tuple(x, y);
   }
 
+  py::tuple py_get_scroll_delta() {
+    auto delta = window->get_scroll_delta();
+    double dx = std::get<0>(delta);
+    double dy = std::get<1>(delta);
+    return py::make_tuple(dx, dy);
+  }
+
   void destroy() {
     if (window) {
       window.reset();
@@ -671,6 +678,7 @@ void export_ggui(py::module &m) {
       .def("get_image_buffer_as_numpy", &PyWindow::get_image_buffer)
       .def("is_pressed", &PyWindow::is_pressed)
       .def("get_cursor_pos", &PyWindow::py_get_cursor_pos)
+      .def("get_scroll_delta", &PyWindow::py_get_scroll_delta)
       .def("is_running", &PyWindow::is_running)
       .def("set_is_running", &PyWindow::set_is_running)
       .def("get_event", &PyWindow::get_event)

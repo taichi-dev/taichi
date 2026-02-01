@@ -112,6 +112,46 @@ struct Keys {
   DEFINE_KEY(LMB);
   DEFINE_KEY(MMB);
   DEFINE_KEY(RMB);
+
+  // Function keys
+  DEFINE_KEY(F1);
+  DEFINE_KEY(F2);
+  DEFINE_KEY(F3);
+  DEFINE_KEY(F4);
+  DEFINE_KEY(F5);
+  DEFINE_KEY(F6);
+  DEFINE_KEY(F7);
+  DEFINE_KEY(F8);
+  DEFINE_KEY(F9);
+  DEFINE_KEY(F10);
+  DEFINE_KEY(F11);
+  DEFINE_KEY(F12);
+
+  // Navigation
+  DEFINE_KEY(Insert);
+  DEFINE_KEY(Delete);
+  DEFINE_KEY(Home);
+  DEFINE_KEY(End);
+  DEFINE_KEY(PageUp);
+  DEFINE_KEY(PageDown);
+
+  // Numpad
+  DEFINE_KEY(Numpad0);
+  DEFINE_KEY(Numpad1);
+  DEFINE_KEY(Numpad2);
+  DEFINE_KEY(Numpad3);
+  DEFINE_KEY(Numpad4);
+  DEFINE_KEY(Numpad5);
+  DEFINE_KEY(Numpad6);
+  DEFINE_KEY(Numpad7);
+  DEFINE_KEY(Numpad8);
+  DEFINE_KEY(Numpad9);
+  DEFINE_KEY(NumpadDecimal);
+  DEFINE_KEY(NumpadDivide);
+  DEFINE_KEY(NumpadMultiply);
+  DEFINE_KEY(NumpadSubtract);
+  DEFINE_KEY(NumpadAdd);
+  DEFINE_KEY(NumpadEnter);
 #undef DEFINE_KEY
 };
 
@@ -132,7 +172,45 @@ inline std::unordered_map<std::string, int> get_keys_map() {
       {Keys::CapsLock, GLFW_KEY_CAPS_LOCK},
       {Keys::LMB, GLFW_MOUSE_BUTTON_LEFT},
       {Keys::MMB, GLFW_MOUSE_BUTTON_MIDDLE},
-      {Keys::RMB, GLFW_MOUSE_BUTTON_RIGHT}};
+      {Keys::RMB, GLFW_MOUSE_BUTTON_RIGHT},
+      // Function keys
+      {Keys::F1, GLFW_KEY_F1},
+      {Keys::F2, GLFW_KEY_F2},
+      {Keys::F3, GLFW_KEY_F3},
+      {Keys::F4, GLFW_KEY_F4},
+      {Keys::F5, GLFW_KEY_F5},
+      {Keys::F6, GLFW_KEY_F6},
+      {Keys::F7, GLFW_KEY_F7},
+      {Keys::F8, GLFW_KEY_F8},
+      {Keys::F9, GLFW_KEY_F9},
+      {Keys::F10, GLFW_KEY_F10},
+      {Keys::F11, GLFW_KEY_F11},
+      {Keys::F12, GLFW_KEY_F12},
+      // Navigation
+      {Keys::Insert, GLFW_KEY_INSERT},
+      {Keys::Delete, GLFW_KEY_DELETE},
+      {Keys::Home, GLFW_KEY_HOME},
+      {Keys::End, GLFW_KEY_END},
+      {Keys::PageUp, GLFW_KEY_PAGE_UP},
+      {Keys::PageDown, GLFW_KEY_PAGE_DOWN},
+      // Numpad
+      {Keys::Numpad0, GLFW_KEY_KP_0},
+      {Keys::Numpad1, GLFW_KEY_KP_1},
+      {Keys::Numpad2, GLFW_KEY_KP_2},
+      {Keys::Numpad3, GLFW_KEY_KP_3},
+      {Keys::Numpad4, GLFW_KEY_KP_4},
+      {Keys::Numpad5, GLFW_KEY_KP_5},
+      {Keys::Numpad6, GLFW_KEY_KP_6},
+      {Keys::Numpad7, GLFW_KEY_KP_7},
+      {Keys::Numpad8, GLFW_KEY_KP_8},
+      {Keys::Numpad9, GLFW_KEY_KP_9},
+      {Keys::NumpadDecimal, GLFW_KEY_KP_DECIMAL},
+      {Keys::NumpadDivide, GLFW_KEY_KP_DIVIDE},
+      {Keys::NumpadMultiply, GLFW_KEY_KP_MULTIPLY},
+      {Keys::NumpadSubtract, GLFW_KEY_KP_SUBTRACT},
+      {Keys::NumpadAdd, GLFW_KEY_KP_ADD},
+      {Keys::NumpadEnter, GLFW_KEY_KP_ENTER},
+  };
   return keys;
 }
 
@@ -155,6 +233,9 @@ inline int buttom_name_to_id(const std::string &name) {
       c = c - ('a' - 'A');
       return (int)c;
     }
+    if (c >= '0' && c <= '9') {
+      return (int)c;  // GLFW_KEY_0-9 are ASCII codes 48-57
+    }
   }
 
   auto keys = get_keys_map();
@@ -173,13 +254,19 @@ inline std::string button_id_to_name(int id) {
     name += c;
     return name;
   }
+  if (id >= '0' && id <= '9') {
+    std::string name;
+    name += (char)id;
+    return name;
+  }
   auto keys = get_inv_keys_map();
 
   if (keys.find(id) != keys.end()) {
     return keys.at(id);
   } else {
-    throw std::runtime_error(std::string("unrecognized id: ") +
-                             std::to_string(id));
+    // Fallback: return "Key_<id>" instead of throwing for unknown keys.
+    // This ensures unmapped keys still generate events that users can match on.
+    return std::string("Key_") + std::to_string(id);
   }
 }
 #endif

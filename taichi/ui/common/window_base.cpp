@@ -22,6 +22,7 @@ void WindowBase::set_callbacks() {
   glfwSetKeyCallback(glfw_window_, key_callback);
   glfwSetCursorPosCallback(glfw_window_, mouse_pos_callback);
   glfwSetMouseButtonCallback(glfw_window_, mouse_button_callback);
+  glfwSetScrollCallback(glfw_window_, scroll_callback);
 
   input_handler_.add_key_callback([&](int key, int action) {
     // Catch exception from button_id_to_name().
@@ -110,6 +111,14 @@ std::pair<float, float> WindowBase::get_cursor_pos() {
   return std::make_pair(x, y);
 }
 
+std::pair<double, double> WindowBase::get_scroll_delta() {
+  CHECK_WINDOW_SHOWING;
+  double dx = input_handler_.scroll_dx();
+  double dy = input_handler_.scroll_dy();
+  input_handler_.reset_scroll();
+  return std::make_pair(dx, dy);
+}
+
 std::vector<Event> WindowBase::get_events(EventType tag) {
   CHECK_WINDOW_SHOWING;
   glfwPollEvents();
@@ -196,6 +205,14 @@ void WindowBase::mouse_button_callback(GLFWwindow *glfw_window,
       reinterpret_cast<WindowBase *>(glfwGetWindowUserPointer(glfw_window));
   window->input_handler_.mouse_button_callback(glfw_window, button, action,
                                                modifier);
+}
+
+void WindowBase::scroll_callback(GLFWwindow *glfw_window,
+                                 double xoffset,
+                                 double yoffset) {
+  auto window =
+      reinterpret_cast<WindowBase *>(glfwGetWindowUserPointer(glfw_window));
+  window->input_handler_.scroll_callback(glfw_window, xoffset, yoffset);
 }
 
 }  // namespace taichi::ui

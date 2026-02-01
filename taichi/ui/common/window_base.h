@@ -30,6 +30,8 @@ class WindowBase {
 
   std::pair<float, float> get_cursor_pos();
 
+  std::pair<double, double> get_scroll_delta();
+
   std::vector<Event> get_events(EventType tag);
 
   bool get_event(EventType tag);
@@ -87,6 +89,10 @@ class WindowBase {
                                     int button,
                                     int action,
                                     int modifier);
+
+  static void scroll_callback(GLFWwindow *glfw_window,
+                              double xoffset,
+                              double yoffset);
 };
 
 }  // namespace taichi::ui

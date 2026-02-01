@@ -87,6 +87,30 @@ class InputHandler {
     user_mouse_button_callbacks_.push_back(f);
   }
 
+  void scroll_callback(GLFWwindow *window, double xoffset, double yoffset) {
+    scroll_dx_ += xoffset;
+    scroll_dy_ += yoffset;
+    for (auto f : user_scroll_callbacks_) {
+      f(xoffset, yoffset);
+    }
+  }
+
+  void add_scroll_callback(std::function<void(double, double)> f) {
+    user_scroll_callbacks_.push_back(f);
+  }
+
+  double scroll_dx() const {
+    return scroll_dx_;
+  }
+  double scroll_dy() const {
+    return scroll_dy_;
+  }
+
+  void reset_scroll() {
+    scroll_dx_ = 0;
+    scroll_dy_ = 0;
+  }
+
   InputHandler() : keys_(1024, false) {
   }
 
@@ -102,6 +126,10 @@ class InputHandler {
   std::vector<std::function<void(int, int)>> user_key_callbacks_;
   std::vector<std::function<void(double, double)>> user_mouse_pos_callbacks_;
   std::vector<std::function<void(int, int)>> user_mouse_button_callbacks_;
+  std::vector<std::function<void(double, double)>> user_scroll_callbacks_;
+
+  double scroll_dx_ = 0;
+  double scroll_dy_ = 0;
 };
 
 }  // namespace taichi::ui

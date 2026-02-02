@@ -1,4 +1,5 @@
 
+#include <unordered_map>
 #include <vector>
 #include "pybind11/pybind11.h"
 #include <pybind11/numpy.h>
@@ -35,12 +36,54 @@ namespace taichi::ui {
 
 using namespace taichi::lang;
 
+glm::vec2 tuple_to_vec2(pybind11::tuple t) {
+  return glm::vec2(t[0].cast<float>(), t[1].cast<float>());
+}
+
 glm::vec3 tuple_to_vec3(pybind11::tuple t) {
   return glm::vec3(t[0].cast<float>(), t[1].cast<float>(), t[2].cast<float>());
 }
 
+glm::vec4 tuple_to_vec4(pybind11::tuple t) {
+  return glm::vec4(t[0].cast<float>(), t[1].cast<float>(), t[2].cast<float>(),
+                   t[3].cast<float>());
+}
+
+glm::ivec2 tuple_to_ivec2(pybind11::tuple t) {
+  return glm::ivec2(t[0].cast<int>(), t[1].cast<int>());
+}
+
+glm::ivec3 tuple_to_ivec3(pybind11::tuple t) {
+  return glm::ivec3(t[0].cast<int>(), t[1].cast<int>(), t[2].cast<int>());
+}
+
+glm::ivec4 tuple_to_ivec4(pybind11::tuple t) {
+  return glm::ivec4(t[0].cast<int>(), t[1].cast<int>(), t[2].cast<int>(),
+                    t[3].cast<int>());
+}
+
+pybind11::tuple vec2_to_tuple(glm::vec2 v) {
+  return pybind11::make_tuple(v.x, v.y);
+}
+
 pybind11::tuple vec3_to_tuple(glm::vec3 v) {
   return pybind11::make_tuple(v.x, v.y, v.z);
+}
+
+pybind11::tuple vec4_to_tuple(glm::vec4 v) {
+  return pybind11::make_tuple(v.x, v.y, v.z, v.w);
+}
+
+pybind11::tuple ivec2_to_tuple(glm::ivec2 v) {
+  return pybind11::make_tuple(v.x, v.y);
+}
+
+pybind11::tuple ivec3_to_tuple(glm::ivec3 v) {
+  return pybind11::make_tuple(v.x, v.y, v.z);
+}
+
+pybind11::tuple ivec4_to_tuple(glm::ivec4 v) {
+  return pybind11::make_tuple(v.x, v.y, v.z, v.w);
 }
 
 // Here we convert the 2d-array to numpy array using pybind. Refs:
@@ -59,7 +102,40 @@ py::array_t<float> mat4_to_nparray(glm::mat4 mat) {
 }
 
 struct PyGui {
-  GuiBase *gui;  // not owned
+  GuiBase *gui = nullptr;  // not owned
+
+  // Cache for string list items (combo, listbox): label -> cached data
+  // Frame-based cleanup removes entries not used since last frame
+  struct StringListCache {
+    py::tuple items_tuple;                 // for identity comparison
+    std::vector<std::string> items_str;    // owns the string data
+    std::vector<const char *> items_cstr;  // points into items_str
+    bool touched = false;                  // used this frame?
+  };
+  std::unordered_map<std::string, StringListCache> string_list_cache_;
+
+  // Get cached C string pointers for a tuple of Python strings.
+  // Rebuilds cache if tuple identity changed; marks entry as touched.
+  const std::vector<const char *> &get_cached_strings_(const std::string &label,
+                                                       py::tuple items_py) {
+    auto it = string_list_cache_.find(label);
+    if (it == string_list_cache_.end() ||
+        !it->second.items_tuple.is(items_py)) {
+      StringListCache cache;
+      cache.items_tuple = items_py;
+      for (auto item : items_py) {
+        cache.items_str.push_back(item.cast<std::string>());
+      }
+      for (const auto &s : cache.items_str) {
+        cache.items_cstr.push_back(s.c_str());
+      }
+      string_list_cache_[label] = std::move(cache);
+      it = string_list_cache_.find(label);
+    }
+    it->second.touched = true;
+    return it->second.items_cstr;
+  }
+
   void begin(std::string name, float x, float y, float width, float height) {
     gui->begin(name, x, y, width, height);
   }
@@ -78,19 +154,247 @@ struct PyGui {
   int slider_int(std::string name, int old_value, int minimum, int maximum) {
     return gui->slider_int(name, old_value, minimum, maximum);
   }
+  py::tuple slider_int2(std::string name,
+                        py::tuple old_value,
+                        int minimum,
+                        int maximum) {
+    return ivec2_to_tuple(
+        gui->slider_int2(name, tuple_to_ivec2(old_value), minimum, maximum));
+  }
+  py::tuple slider_int3(std::string name,
+                        py::tuple old_value,
+                        int minimum,
+                        int maximum) {
+    return ivec3_to_tuple(
+        gui->slider_int3(name, tuple_to_ivec3(old_value), minimum, maximum));
+  }
+  py::tuple slider_int4(std::string name,
+                        py::tuple old_value,
+                        int minimum,
+                        int maximum) {
+    return ivec4_to_tuple(
+        gui->slider_int4(name, tuple_to_ivec4(old_value), minimum, maximum));
+  }
   float slider_float(std::string name,
                      float old_value,
                      float minimum,
                      float maximum) {
     return gui->slider_float(name, old_value, minimum, maximum);
   }
+  py::tuple slider_float2(std::string name,
+                          py::tuple old_value,
+                          float minimum,
+                          float maximum) {
+    return vec2_to_tuple(
+        gui->slider_float2(name, tuple_to_vec2(old_value), minimum, maximum));
+  }
+  py::tuple slider_float3(std::string name,
+                          py::tuple old_value,
+                          float minimum,
+                          float maximum) {
+    return vec3_to_tuple(
+        gui->slider_float3(name, tuple_to_vec3(old_value), minimum, maximum));
+  }
+  py::tuple slider_float4(std::string name,
+                          py::tuple old_value,
+                          float minimum,
+                          float maximum) {
+    return vec4_to_tuple(
+        gui->slider_float4(name, tuple_to_vec4(old_value), minimum, maximum));
+  }
   py::tuple color_edit_3(std::string name, py::tuple old_value) {
     glm::vec3 old_color = tuple_to_vec3(old_value);
     glm::vec3 new_color = gui->color_edit_3(name, old_color);
     return vec3_to_tuple(new_color);
   }
+  py::tuple color_edit_4(std::string name, py::tuple old_value) {
+    glm::vec4 old_color = tuple_to_vec4(old_value);
+    glm::vec4 new_color = gui->color_edit_4(name, old_color);
+    return vec4_to_tuple(new_color);
+  }
+  py::tuple color_picker_3(std::string name, py::tuple old_value) {
+    glm::vec3 old_color = tuple_to_vec3(old_value);
+    glm::vec3 new_color = gui->color_picker_3(name, old_color);
+    return vec3_to_tuple(new_color);
+  }
+  py::tuple color_picker_4(std::string name, py::tuple old_value) {
+    glm::vec4 old_color = tuple_to_vec4(old_value);
+    glm::vec4 new_color = gui->color_picker_4(name, old_color);
+    return vec4_to_tuple(new_color);
+  }
   bool button(std::string name) {
     return gui->button(name);
+  }
+  int input_int(std::string label, int old_value) {
+    return gui->input_int(label, old_value);
+  }
+  py::tuple input_int2(std::string label, py::tuple old_value) {
+    return ivec2_to_tuple(gui->input_int2(label, tuple_to_ivec2(old_value)));
+  }
+  py::tuple input_int3(std::string label, py::tuple old_value) {
+    return ivec3_to_tuple(gui->input_int3(label, tuple_to_ivec3(old_value)));
+  }
+  py::tuple input_int4(std::string label, py::tuple old_value) {
+    return ivec4_to_tuple(gui->input_int4(label, tuple_to_ivec4(old_value)));
+  }
+  float input_float(std::string label, float old_value) {
+    return gui->input_float(label, old_value);
+  }
+  py::tuple input_float2(std::string label, py::tuple old_value) {
+    return vec2_to_tuple(gui->input_float2(label, tuple_to_vec2(old_value)));
+  }
+  py::tuple input_float3(std::string label, py::tuple old_value) {
+    return vec3_to_tuple(gui->input_float3(label, tuple_to_vec3(old_value)));
+  }
+  py::tuple input_float4(std::string label, py::tuple old_value) {
+    return vec4_to_tuple(gui->input_float4(label, tuple_to_vec4(old_value)));
+  }
+  int drag_int(std::string label,
+               int old_value,
+               float speed,
+               int minimum,
+               int maximum) {
+    return gui->drag_int(label, old_value, speed, minimum, maximum);
+  }
+  py::tuple drag_int2(std::string label,
+                      py::tuple old_value,
+                      float speed,
+                      int minimum,
+                      int maximum) {
+    return ivec2_to_tuple(gui->drag_int2(label, tuple_to_ivec2(old_value),
+                                         speed, minimum, maximum));
+  }
+  py::tuple drag_int3(std::string label,
+                      py::tuple old_value,
+                      float speed,
+                      int minimum,
+                      int maximum) {
+    return ivec3_to_tuple(gui->drag_int3(label, tuple_to_ivec3(old_value),
+                                         speed, minimum, maximum));
+  }
+  py::tuple drag_int4(std::string label,
+                      py::tuple old_value,
+                      float speed,
+                      int minimum,
+                      int maximum) {
+    return ivec4_to_tuple(gui->drag_int4(label, tuple_to_ivec4(old_value),
+                                         speed, minimum, maximum));
+  }
+  float drag_float(std::string label,
+                   float old_value,
+                   float speed,
+                   float minimum,
+                   float maximum) {
+    return gui->drag_float(label, old_value, speed, minimum, maximum);
+  }
+  py::tuple drag_float2(std::string label,
+                        py::tuple old_value,
+                        float speed,
+                        float minimum,
+                        float maximum) {
+    return vec2_to_tuple(gui->drag_float2(label, tuple_to_vec2(old_value),
+                                          speed, minimum, maximum));
+  }
+  py::tuple drag_float3(std::string label,
+                        py::tuple old_value,
+                        float speed,
+                        float minimum,
+                        float maximum) {
+    return vec3_to_tuple(gui->drag_float3(label, tuple_to_vec3(old_value),
+                                          speed, minimum, maximum));
+  }
+  py::tuple drag_float4(std::string label,
+                        py::tuple old_value,
+                        float speed,
+                        float minimum,
+                        float maximum) {
+    return vec4_to_tuple(gui->drag_float4(label, tuple_to_vec4(old_value),
+                                          speed, minimum, maximum));
+  }
+  bool tree_node_push(std::string label) {
+    return gui->tree_node_push(label);
+  }
+  void tree_node_pop() {
+    gui->tree_node_pop();
+  }
+  void separator() {
+    gui->separator();
+  }
+  void same_line() {
+    gui->same_line();
+  }
+  void indent() {
+    gui->indent();
+  }
+  void unindent() {
+    gui->unindent();
+  }
+  void progress_bar(float fraction) {
+    gui->progress_bar(fraction);
+  }
+  bool collapsing_header(std::string label) {
+    return gui->collapsing_header(label);
+  }
+  bool selectable(std::string label, bool selected) {
+    return gui->selectable(label, selected);
+  }
+  bool radio_button(std::string label, bool active) {
+    return gui->radio_button(label, active);
+  }
+  bool begin_tab_bar(std::string id) {
+    return gui->begin_tab_bar(id);
+  }
+  void end_tab_bar() {
+    gui->end_tab_bar();
+  }
+  bool begin_tab_item(std::string label) {
+    return gui->begin_tab_item(label);
+  }
+  void end_tab_item() {
+    gui->end_tab_item();
+  }
+  bool begin_table(std::string id, int columns) {
+    return gui->begin_table(id, columns);
+  }
+  void end_table() {
+    gui->end_table();
+  }
+  void table_setup_column(std::string label) {
+    gui->table_setup_column(label);
+  }
+  void table_headers_row() {
+    gui->table_headers_row();
+  }
+  void table_next_row() {
+    gui->table_next_row();
+  }
+  bool table_next_column() {
+    return gui->table_next_column();
+  }
+  int combo(std::string label, int current_item, py::tuple items_py) {
+    const auto &items = get_cached_strings_(label, items_py);
+    return gui->combo(label, current_item, items);
+  }
+
+  int listbox(std::string label,
+              int current_item,
+              py::tuple items_py,
+              int height_in_items) {
+    const auto &items = get_cached_strings_(label, items_py);
+    return gui->listbox(label, current_item, items, height_in_items);
+  }
+
+  // Called at frame end to clean up stale cache entries
+  void frame_end() {
+    for (auto it = string_list_cache_.begin();
+         it != string_list_cache_.end();) {
+      if (!it->second.touched) {
+        it = string_list_cache_.erase(it);
+      } else {
+        it->second.touched = false;
+        ++it;
+      }
+    }
   }
 };
 
@@ -511,6 +815,7 @@ struct PyCanvas {
 
 struct PyWindow {
   std::unique_ptr<WindowBase> window{nullptr};
+  std::unique_ptr<PyGui> py_gui_{nullptr};
 
   PyWindow(Program *prog,
            std::string name,
@@ -596,6 +901,9 @@ struct PyWindow {
 
   void show() {
     window->show();
+    if (py_gui_) {
+      py_gui_->frame_end();
+    }
   }
 
   bool is_pressed(std::string button) {
@@ -635,9 +943,12 @@ struct PyWindow {
     return scene;
   }
 
-  PyGui gui() {
-    PyGui gui = {window->gui()};
-    return gui;
+  PyGui &gui() {
+    if (!py_gui_) {
+      py_gui_ = std::make_unique<PyGui>();
+      py_gui_->gui = window->gui();
+    }
+    return *py_gui_;
   }
 
   // this is so that the GUI class does not need to use any pybind related stuff
@@ -697,9 +1008,56 @@ void export_ggui(py::module &m) {
       .def("text_colored", &PyGui::text_colored)
       .def("checkbox", &PyGui::checkbox)
       .def("slider_int", &PyGui::slider_int)
+      .def("slider_int2", &PyGui::slider_int2)
+      .def("slider_int3", &PyGui::slider_int3)
+      .def("slider_int4", &PyGui::slider_int4)
       .def("slider_float", &PyGui::slider_float)
+      .def("slider_float2", &PyGui::slider_float2)
+      .def("slider_float3", &PyGui::slider_float3)
+      .def("slider_float4", &PyGui::slider_float4)
       .def("color_edit_3", &PyGui::color_edit_3)
-      .def("button", &PyGui::button);
+      .def("color_edit_4", &PyGui::color_edit_4)
+      .def("color_picker_3", &PyGui::color_picker_3)
+      .def("color_picker_4", &PyGui::color_picker_4)
+      .def("button", &PyGui::button)
+      .def("input_int", &PyGui::input_int)
+      .def("input_int2", &PyGui::input_int2)
+      .def("input_int3", &PyGui::input_int3)
+      .def("input_int4", &PyGui::input_int4)
+      .def("input_float", &PyGui::input_float)
+      .def("input_float2", &PyGui::input_float2)
+      .def("input_float3", &PyGui::input_float3)
+      .def("input_float4", &PyGui::input_float4)
+      .def("drag_int", &PyGui::drag_int)
+      .def("drag_int2", &PyGui::drag_int2)
+      .def("drag_int3", &PyGui::drag_int3)
+      .def("drag_int4", &PyGui::drag_int4)
+      .def("drag_float", &PyGui::drag_float)
+      .def("drag_float2", &PyGui::drag_float2)
+      .def("drag_float3", &PyGui::drag_float3)
+      .def("drag_float4", &PyGui::drag_float4)
+      .def("tree_node_push", &PyGui::tree_node_push)
+      .def("tree_node_pop", &PyGui::tree_node_pop)
+      .def("separator", &PyGui::separator)
+      .def("same_line", &PyGui::same_line)
+      .def("indent", &PyGui::indent)
+      .def("unindent", &PyGui::unindent)
+      .def("progress_bar", &PyGui::progress_bar)
+      .def("combo", &PyGui::combo)
+      .def("collapsing_header", &PyGui::collapsing_header)
+      .def("selectable", &PyGui::selectable)
+      .def("radio_button", &PyGui::radio_button)
+      .def("listbox", &PyGui::listbox)
+      .def("begin_tab_bar", &PyGui::begin_tab_bar)
+      .def("end_tab_bar", &PyGui::end_tab_bar)
+      .def("begin_tab_item", &PyGui::begin_tab_item)
+      .def("end_tab_item", &PyGui::end_tab_item)
+      .def("begin_table", &PyGui::begin_table)
+      .def("end_table", &PyGui::end_table)
+      .def("table_setup_column", &PyGui::table_setup_column)
+      .def("table_headers_row", &PyGui::table_headers_row)
+      .def("table_next_row", &PyGui::table_next_row)
+      .def("table_next_column", &PyGui::table_next_column);
 
   py::class_<PyScene>(m, "PyScene")
       .def(py::init<>())

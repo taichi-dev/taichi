@@ -190,6 +190,36 @@ int Gui::slider_int(const std::string &name,
   ImGui::SliderInt(name.c_str(), &old_value, minimum, maximum);
   return old_value;
 }
+glm::ivec2 Gui::slider_int2(const std::string &name,
+                            glm::ivec2 old_value,
+                            int minimum,
+                            int maximum) {
+  if (!initialized()) {
+    return old_value;
+  }
+  ImGui::SliderInt2(name.c_str(), (int *)&old_value, minimum, maximum);
+  return old_value;
+}
+glm::ivec3 Gui::slider_int3(const std::string &name,
+                            glm::ivec3 old_value,
+                            int minimum,
+                            int maximum) {
+  if (!initialized()) {
+    return old_value;
+  }
+  ImGui::SliderInt3(name.c_str(), (int *)&old_value, minimum, maximum);
+  return old_value;
+}
+glm::ivec4 Gui::slider_int4(const std::string &name,
+                            glm::ivec4 old_value,
+                            int minimum,
+                            int maximum) {
+  if (!initialized()) {
+    return old_value;
+  }
+  ImGui::SliderInt4(name.c_str(), (int *)&old_value, minimum, maximum);
+  return old_value;
+}
 float Gui::slider_float(const std::string &name,
                         float old_value,
                         float minimum,
@@ -200,6 +230,36 @@ float Gui::slider_float(const std::string &name,
   ImGui::SliderFloat(name.c_str(), &old_value, minimum, maximum);
   return old_value;
 }
+glm::vec2 Gui::slider_float2(const std::string &name,
+                             glm::vec2 old_value,
+                             float minimum,
+                             float maximum) {
+  if (!initialized()) {
+    return old_value;
+  }
+  ImGui::SliderFloat2(name.c_str(), (float *)&old_value, minimum, maximum);
+  return old_value;
+}
+glm::vec3 Gui::slider_float3(const std::string &name,
+                             glm::vec3 old_value,
+                             float minimum,
+                             float maximum) {
+  if (!initialized()) {
+    return old_value;
+  }
+  ImGui::SliderFloat3(name.c_str(), (float *)&old_value, minimum, maximum);
+  return old_value;
+}
+glm::vec4 Gui::slider_float4(const std::string &name,
+                             glm::vec4 old_value,
+                             float minimum,
+                             float maximum) {
+  if (!initialized()) {
+    return old_value;
+  }
+  ImGui::SliderFloat4(name.c_str(), (float *)&old_value, minimum, maximum);
+  return old_value;
+}
 glm::vec3 Gui::color_edit_3(const std::string &name, glm::vec3 old_value) {
   if (!initialized()) {
     return old_value;
@@ -207,11 +267,359 @@ glm::vec3 Gui::color_edit_3(const std::string &name, glm::vec3 old_value) {
   ImGui::ColorEdit3(name.c_str(), (float *)&old_value);
   return old_value;
 }
+glm::vec4 Gui::color_edit_4(const std::string &name, glm::vec4 old_value) {
+  if (!initialized()) {
+    return old_value;
+  }
+  ImGui::ColorEdit4(name.c_str(), (float *)&old_value);
+  return old_value;
+}
+glm::vec3 Gui::color_picker_3(const std::string &name, glm::vec3 old_value) {
+  if (!initialized()) {
+    return old_value;
+  }
+  ImGui::ColorPicker3(name.c_str(), (float *)&old_value);
+  return old_value;
+}
+glm::vec4 Gui::color_picker_4(const std::string &name, glm::vec4 old_value) {
+  if (!initialized()) {
+    return old_value;
+  }
+  ImGui::ColorPicker4(name.c_str(), (float *)&old_value);
+  return old_value;
+}
 bool Gui::button(const std::string &text) {
   if (!initialized()) {
     return false;
   }
   return ImGui::Button(text.c_str());
+}
+
+int Gui::combo(const std::string &label,
+               int current_item,
+               const std::vector<const char *> &items) {
+  if (!initialized()) {
+    return current_item;
+  }
+  ImGui::Combo(label.c_str(), &current_item, items.data(),
+               static_cast<int>(items.size()));
+  return current_item;
+}
+
+int Gui::input_int(const std::string &label, int old_value) {
+  if (!initialized()) {
+    return old_value;
+  }
+  ImGui::InputInt(label.c_str(), &old_value);
+  return old_value;
+}
+
+glm::ivec2 Gui::input_int2(const std::string &label, glm::ivec2 old_value) {
+  if (!initialized()) {
+    return old_value;
+  }
+  ImGui::InputInt2(label.c_str(), (int *)&old_value);
+  return old_value;
+}
+
+glm::ivec3 Gui::input_int3(const std::string &label, glm::ivec3 old_value) {
+  if (!initialized()) {
+    return old_value;
+  }
+  ImGui::InputInt3(label.c_str(), (int *)&old_value);
+  return old_value;
+}
+
+glm::ivec4 Gui::input_int4(const std::string &label, glm::ivec4 old_value) {
+  if (!initialized()) {
+    return old_value;
+  }
+  ImGui::InputInt4(label.c_str(), (int *)&old_value);
+  return old_value;
+}
+
+float Gui::input_float(const std::string &label, float old_value) {
+  if (!initialized()) {
+    return old_value;
+  }
+  ImGui::InputFloat(label.c_str(), &old_value);
+  return old_value;
+}
+
+glm::vec2 Gui::input_float2(const std::string &label, glm::vec2 old_value) {
+  if (!initialized()) {
+    return old_value;
+  }
+  ImGui::InputFloat2(label.c_str(), (float *)&old_value);
+  return old_value;
+}
+
+glm::vec3 Gui::input_float3(const std::string &label, glm::vec3 old_value) {
+  if (!initialized()) {
+    return old_value;
+  }
+  ImGui::InputFloat3(label.c_str(), (float *)&old_value);
+  return old_value;
+}
+
+glm::vec4 Gui::input_float4(const std::string &label, glm::vec4 old_value) {
+  if (!initialized()) {
+    return old_value;
+  }
+  ImGui::InputFloat4(label.c_str(), (float *)&old_value);
+  return old_value;
+}
+
+int Gui::drag_int(const std::string &label,
+                  int old_value,
+                  float speed,
+                  int minimum,
+                  int maximum) {
+  if (!initialized()) {
+    return old_value;
+  }
+  ImGui::DragInt(label.c_str(), &old_value, speed, minimum, maximum);
+  return old_value;
+}
+
+glm::ivec2 Gui::drag_int2(const std::string &label,
+                          glm::ivec2 old_value,
+                          float speed,
+                          int minimum,
+                          int maximum) {
+  if (!initialized()) {
+    return old_value;
+  }
+  ImGui::DragInt2(label.c_str(), (int *)&old_value, speed, minimum, maximum);
+  return old_value;
+}
+
+glm::ivec3 Gui::drag_int3(const std::string &label,
+                          glm::ivec3 old_value,
+                          float speed,
+                          int minimum,
+                          int maximum) {
+  if (!initialized()) {
+    return old_value;
+  }
+  ImGui::DragInt3(label.c_str(), (int *)&old_value, speed, minimum, maximum);
+  return old_value;
+}
+
+glm::ivec4 Gui::drag_int4(const std::string &label,
+                          glm::ivec4 old_value,
+                          float speed,
+                          int minimum,
+                          int maximum) {
+  if (!initialized()) {
+    return old_value;
+  }
+  ImGui::DragInt4(label.c_str(), (int *)&old_value, speed, minimum, maximum);
+  return old_value;
+}
+
+float Gui::drag_float(const std::string &label,
+                      float old_value,
+                      float speed,
+                      float minimum,
+                      float maximum) {
+  if (!initialized()) {
+    return old_value;
+  }
+  ImGui::DragFloat(label.c_str(), &old_value, speed, minimum, maximum);
+  return old_value;
+}
+
+glm::vec2 Gui::drag_float2(const std::string &label,
+                           glm::vec2 old_value,
+                           float speed,
+                           float minimum,
+                           float maximum) {
+  if (!initialized()) {
+    return old_value;
+  }
+  ImGui::DragFloat2(label.c_str(), (float *)&old_value, speed, minimum,
+                    maximum);
+  return old_value;
+}
+
+glm::vec3 Gui::drag_float3(const std::string &label,
+                           glm::vec3 old_value,
+                           float speed,
+                           float minimum,
+                           float maximum) {
+  if (!initialized()) {
+    return old_value;
+  }
+  ImGui::DragFloat3(label.c_str(), (float *)&old_value, speed, minimum,
+                    maximum);
+  return old_value;
+}
+
+glm::vec4 Gui::drag_float4(const std::string &label,
+                           glm::vec4 old_value,
+                           float speed,
+                           float minimum,
+                           float maximum) {
+  if (!initialized()) {
+    return old_value;
+  }
+  ImGui::DragFloat4(label.c_str(), (float *)&old_value, speed, minimum,
+                    maximum);
+  return old_value;
+}
+
+bool Gui::tree_node_push(const std::string &label) {
+  if (!initialized()) {
+    return false;
+  }
+  return ImGui::TreeNode(label.c_str());
+}
+
+void Gui::tree_node_pop() {
+  if (!initialized()) {
+    return;
+  }
+  ImGui::TreePop();
+}
+
+void Gui::separator() {
+  if (!initialized()) {
+    return;
+  }
+  ImGui::Separator();
+}
+
+void Gui::same_line() {
+  if (!initialized()) {
+    return;
+  }
+  ImGui::SameLine();
+}
+
+void Gui::indent() {
+  if (!initialized()) {
+    return;
+  }
+  ImGui::Indent();
+}
+
+void Gui::unindent() {
+  if (!initialized()) {
+    return;
+  }
+  ImGui::Unindent();
+}
+
+void Gui::progress_bar(float fraction) {
+  if (!initialized()) {
+    return;
+  }
+  ImGui::ProgressBar(fraction);
+}
+
+bool Gui::collapsing_header(const std::string &label) {
+  if (!initialized()) {
+    return false;
+  }
+  return ImGui::CollapsingHeader(label.c_str());
+}
+
+bool Gui::selectable(const std::string &label, bool selected) {
+  if (!initialized()) {
+    return selected;
+  }
+  ImGui::Selectable(label.c_str(), &selected);
+  return selected;
+}
+
+bool Gui::radio_button(const std::string &label, bool active) {
+  if (!initialized()) {
+    return false;
+  }
+  return ImGui::RadioButton(label.c_str(), active);
+}
+
+int Gui::listbox(const std::string &label,
+                 int current_item,
+                 const std::vector<const char *> &items,
+                 int height_in_items) {
+  if (!initialized()) {
+    return current_item;
+  }
+  ImGui::ListBox(label.c_str(), &current_item, items.data(),
+                 static_cast<int>(items.size()), height_in_items);
+  return current_item;
+}
+
+bool Gui::begin_tab_bar(const std::string &id) {
+  if (!initialized()) {
+    return false;
+  }
+  return ImGui::BeginTabBar(id.c_str());
+}
+
+void Gui::end_tab_bar() {
+  if (!initialized()) {
+    return;
+  }
+  ImGui::EndTabBar();
+}
+
+bool Gui::begin_tab_item(const std::string &label) {
+  if (!initialized()) {
+    return false;
+  }
+  return ImGui::BeginTabItem(label.c_str());
+}
+
+void Gui::end_tab_item() {
+  if (!initialized()) {
+    return;
+  }
+  ImGui::EndTabItem();
+}
+
+bool Gui::begin_table(const std::string &id, int columns) {
+  if (!initialized()) {
+    return false;
+  }
+  return ImGui::BeginTable(id.c_str(), columns);
+}
+
+void Gui::end_table() {
+  if (!initialized()) {
+    return;
+  }
+  ImGui::EndTable();
+}
+
+void Gui::table_setup_column(const std::string &label) {
+  if (!initialized()) {
+    return;
+  }
+  ImGui::TableSetupColumn(label.c_str());
+}
+
+void Gui::table_headers_row() {
+  if (!initialized()) {
+    return;
+  }
+  ImGui::TableHeadersRow();
+}
+
+void Gui::table_next_row() {
+  if (!initialized()) {
+    return;
+  }
+  ImGui::TableNextRow();
+}
+
+bool Gui::table_next_column() {
+  if (!initialized()) {
+    return false;
+  }
+  return ImGui::TableNextColumn();
 }
 
 void Gui::draw(taichi::lang::CommandList *cmd_list) {

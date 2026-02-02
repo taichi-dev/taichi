@@ -81,6 +81,10 @@ if (TI_WITH_VULKAN)
     target_link_libraries(${TAICHI_DEVICE_API} PUBLIC vulkan_rhi)
 endif ()
 
+if(TI_WITH_FLAGOS)
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DTI_WITH_FLAGOS")
+endif()
+
 if(TI_WITH_LLVM)
     add_subdirectory(cpu)
     target_link_libraries(${TAICHI_DEVICE_API} PUBLIC cpu_rhi)
@@ -98,6 +102,11 @@ if(TI_WITH_LLVM)
     if (TI_WITH_DX12)
         add_subdirectory(dx12)
         target_link_libraries(${TAICHI_DEVICE_API} PUBLIC dx12_rhi)
+    endif()
+
+    if (TI_WITH_FLAGOS)
+        add_subdirectory(flagos)
+        target_link_libraries(${TAICHI_DEVICE_API} PUBLIC flagos_rhi)
     endif()
 
     add_subdirectory(llvm)

@@ -1,0 +1,355 @@
+# FlagOS 支持 Taichi 集成方案总结
+
+## 项目概述
+
+本文档描述了如何将 **FlagOS**（面向多种 AI 芯片的统一开源系统软件栈）与 **Taichi**（高性能并行编程语言）集成，以实现 Taichi 对多种国产 AI 芯片的支持。
+
+## 架构设计
+
+### 整体架构图
+
+```
+┌─────────────────────────────────────────────────────────────────────┐
+│                         Taichi Frontend                               │
+│                     (Python API / DSL)                                │
+└─────────────────────────────────────────────────────────────────────┘
+                                    │
+                                    ▼
+┌─────────────────────────────────────────────────────────────────────┐
+│                        Taichi Compiler                                │
+│           (AST Transformation / SNode / Optimization)                 │
+└─────────────────────────────────────────────────────────────────────┘
+                                    │
+                                    ▼
+┌─────────────────────────────────────────────────────────────────────┐
+│  ┌─────────┐ ┌─────────┐ ┌─────────┐ ┌──────────────────────────┐   │
+│  │  LLVM   │ │  CUDA   │ │  AMDGPU │ │    FlagOS Backend        │   │
+│  │ (x64)   │ │ (NVIDIA)│ │  (AMD)  │ │  (多芯片统一后端)         │   │
+│  └─────────┘ └─────────┘ └─────────┘ └──────────────────────────┘   │
+│                          Taichi Codegen                               │
+└─────────────────────────────────────────────────────────────────────┘
+                                    │
+                                    ▼
+┌─────────────────────────────────────────────────────────────────────┐
+│                        FlagOS 软件栈                                  │
+│  ┌───────────────────────────────────────────────────────────────┐  │
+│  │                     FlagTree 统一编译器                         │  │
+│  │        (MLIR/LLVM-based Compiler for AI Chips)                 │  │
+│  └───────────────────────────────────────────────────────────────┘  │
+│                                  │                                   │
+│  ┌─────────┐ ┌─────────┐ ┌─────────┐ ┌─────────┐ ┌─────────────┐    │
+│  │  MLU    │ │  Ascend │ │  DCU    │ │  GCU    │ │   ...       │    │
+│  │(寒武纪)  │ │(华为)   │ │(海光)   │ │(燧原)   │ │ 其他芯片     │    │
+│  └─────────┘ └─────────┘ └─────────┘ └─────────┘ └─────────────┘    │
+└─────────────────────────────────────────────────────────────────────┘
+```
+
+## 已完成的实现
+
+### 1. 架构定义 (`taichi/inc/archs.inc.h`)
+
+```cpp
+// 添加 FlagOS 架构支持
+PER_ARCH(flagos)  // FlagOS: Unified AI Chip Backend
+```
+
+### 2. 架构函数 (`taichi/rhi/arch.cpp`)
+
+- 添加 `flagos` 到 `arch_uses_llvm()` 函数
+- 添加 `flagos` 到 `default_simd_width()` 函数
+
+### 3. RHI 设备层 (`taichi/rhi/flagos/`)
+
+| 文件 | 说明 |
+|------|------|
+| `flagos_device.h` | FlagOS 设备头文件，定义 `FlagosDevice` 类 |
+| `flagos_device.cpp` | 设备实现：内存管理、数据传输、内核启动 |
+| `CMakeLists.txt` | 构建配置 |
+
+**关键特性：**
+- 继承 `LlvmDevice`，复用 LLVM 基础设施
+- 支持多种芯片配置（mlu370, ascend910, dcu, gcu 等）
+- 环境变量 `TI_FLAGOS_CHIP` 指定目标芯片
+
+### 4. 代码生成层 (`taichi/codegen/flagos/`)
+
+| 文件 | 说明 |
+|------|------|
+| `codegen_flagos.h` | 代码生成器头文件 |
+| `codegen_flagos.cpp` | LLVM IR 生成实现 |
+| `CMakeLists.txt` | 构建配置 |
+
+**关键特性：**
+- 继承 `TaskCodeGenLLVM`
+- 针对 AI 芯片优化的并行循环生成
+- 支持 FlagOS 特定数学库调用
+
+### 5. 程序实现层 (`taichi/runtime/program_impls/flagos/`)
+
+| 文件 | 说明 |
+|------|------|
+| `flagos_program.h` | 程序实现头文件 |
+| `flagos_program.cpp` | FlagOS 运行时集成 |
+| `CMakeLists.txt` | 构建配置 |
+
+### 6. 编译配置 (`taichi/program/compile_config.h`)
+
+```cpp
+// FlagOS backend options:
+std::string flagos_chip{"generic"};  // Target chip: mlu370, ascend910, dcu, etc.
+```
+
+### 7. Python API (`taichi/python/export_lang.cpp`)
+
+```cpp
+.def_readwrite("flagos_chip", &CompileConfig::flagos_chip);
+```
+
+### 8. CMake 构建系统
+
+**`cmake/TaichiCore.cmake`:**
+```cmake
+option(TI_WITH_FLAGOS "Build with the FlagOS backend" OFF)
+
+if (TI_WITH_FLAGOS)
+    add_subdirectory(taichi/rhi/flagos)
+    add_subdirectory(taichi/codegen/flagos)
+    add_subdirectory(taichi/runtime/program_impls/flagos)
+
+    target_link_libraries(${CORE_LIBRARY_NAME} PRIVATE flagos_rhi)
+    target_link_libraries(${CORE_LIBRARY_NAME} PRIVATE flagos_codegen)
+    target_link_libraries(${CORE_LIBRARY_NAME} PRIVATE flagos_program)
+endif()
+```
+
+### 9. 示例程序 (`examples/flagos/`)
+
+| 文件 | 说明 |
+|------|------|
+| `fractal_flagos.py` | Julia 集合分形计算示例 |
+| `matmul_flagos.py` | 矩阵乘法基准测试 |
+| `README.md` | 使用文档 |
+
+## 使用方式
+
+### 环境变量方式
+
+```bash
+# 设置目标芯片
+export TI_FLAGOS_CHIP=mlu370
+
+# 运行程序
+python my_taichi_program.py
+```
+
+### 代码配置方式
+
+```python
+import taichi as ti
+
+# 初始化 FlagOS 后端
+ti.init(arch=ti.flagos, flagos_chip="mlu370")
+
+# 定义 Taichi 内核
+@ti.kernel
+def my_kernel():
+    for i in range(1000000):
+        # 并行计算
+        pass
+
+my_kernel()
+```
+
+## 支持的芯片列表
+
+| 芯片 | 厂商 | 状态 |
+|------|------|------|
+| MLU370 | 寒武纪 (Cambricon) | 计划支持 |
+| MLU590 | 寒武纪 (Cambricon) | 计划支持 |
+| Ascend910 | 华为 (Huawei) | 计划支持 |
+| Ascend310 | 华为 (Huawei) | 计划支持 |
+| DCU | 海光 (Hygon) | 计划支持 |
+| GCU | 燧原 (Enflame) | 计划支持 |
+| Generic | 通用 | 已实现 (stub) |
+
+## 构建步骤
+
+### 1. 安装依赖
+
+```bash
+# 安装 FlagOS SDK
+# 请参考 FlagOS 官方文档: https://github.com/flagos-ai
+
+# 安装 FlagTree 编译器
+# 请参考 FlagTree 官方文档: https://github.com/flagos-ai/flagtree
+```
+
+### 2. 构建 Taichi
+
+```bash
+# 克隆 Taichi
+git clone https://github.com/taichi-dev/taichi.git
+cd taichi
+
+# 创建构建目录
+mkdir build && cd build
+
+# 配置 CMake
+cmake .. \
+    -DTI_WITH_FLAGOS=ON \
+    -DTI_WITH_LLVM=ON \
+    -DCMAKE_BUILD_TYPE=Release \
+    -DFlagOS_ROOT=/path/to/flagos-sdk  # 如果不在标准路径
+
+# 编译
+make -j$(nproc)
+
+# 安装
+pip install -e ..
+```
+
+### 3. 验证安装
+
+```python
+import taichi as ti
+
+# 检查 FlagOS 是否可用
+print(hasattr(ti, 'flagos'))  # 应该输出 True
+
+# 初始化并运行
+ti.init(arch=ti.flagos, flagos_chip="generic")
+
+@ti.kernel
+def test_kernel():
+    for i in range(100):
+        pass
+
+test_kernel()
+print("FlagOS backend working!")
+```
+
+## 与 FlagOS 组件的集成点
+
+### 1. FlagTree 统一编译器
+
+```cpp
+// FlagTree API 集成示例
+namespace flagos {
+
+class FlagTreeCompiler {
+ public:
+  // 编译 LLVM IR 到目标芯片代码
+  std::vector<uint8_t> compile(const std::string &llvm_ir,
+                               const std::string &target_chip);
+
+  // 获取支持的芯片列表
+  std::vector<std::string> get_supported_chips();
+};
+
+} // namespace flagos
+```
+
+**集成位置：** `taichi/codegen/flagos/codegen_flagos.cpp`
+
+### 2. FlagGems 算子库（可选）
+
+可以使用 FlagGems 提供的高性能算子替换 Taichi 的默认实现。
+
+### 3. FlagCX 通信库（多卡扩展）
+
+未来可以集成 FlagCX 实现多卡并行计算。
+
+## 开发路线图
+
+### Phase 1: 基础架构 ✅ (已完成)
+- [x] 添加 flagos 架构定义
+- [x] 实现基础 FlagosDevice
+- [x] 集成 LLVM 代码生成
+- [x] 构建系统集成
+
+### Phase 2: FlagTree 集成 🔄 (进行中)
+- [ ] 实现 FlagTree 编译器接口
+- [ ] 支持内核编译和加载
+- [ ] 实现基础数学运算
+
+### Phase 3: 芯片支持
+- [ ] 寒武纪 MLU 系列
+- [ ] 华为昇腾 Ascend 系列
+- [ ] 海光 DCU 系列
+- [ ] 燧原 GCU 系列
+
+### Phase 4: 高级特性
+- [ ] 稀疏数据结构 (SNode) 优化
+- [ ] 自动微分支持
+- [ ] AOT (Ahead-of-Time) 编译
+- [ ] 性能分析和调优工具
+
+## 文件清单
+
+### 新创建的文件
+
+```
+taichi/
+├── inc/archs.inc.h (修改)
+├── rhi/
+│   ├── arch.cpp (修改)
+│   └── flagos/
+│       ├── flagos_device.h
+│       ├── flagos_device.cpp
+│       └── CMakeLists.txt
+├── codegen/
+│   └── flagos/
+│       ├── codegen_flagos.h
+│       ├── codegen_flagos.cpp
+│       └── CMakeLists.txt
+├── runtime/program_impls/
+│   └── flagos/
+│       ├── flagos_program.h
+│       ├── flagos_program.cpp
+│       └── CMakeLists.txt
+├── program/
+│   └── compile_config.h (修改)
+└── python/
+    └── export_lang.cpp (修改)
+
+cmake/
+└── TaichiCore.cmake (修改)
+
+examples/flagos/
+├── fractal_flagos.py
+├── matmul_flagos.py
+└── README.md
+
+docs/
+└── flagos_integration_design.md
+```
+
+## 后续工作
+
+### 需要 FlagOS 社区支持
+
+1. **FlagTree C++ API**: 提供稳定的编译器接口
+2. **运行时库**: 提供芯片特定的内存管理和内核启动 API
+3. **数学库**: 提供优化的设备端数学函数
+4. **文档和示例**: 提供芯片特定的优化指南
+
+### 需要 Taichi 社区支持
+
+1. **代码审查**: 审查并合并 FlagOS 后端代码
+2. **CI/CD**: 添加 FlagOS 后端到持续集成系统
+3. **文档**: 更新官方文档添加 FlagOS 使用说明
+4. **测试**: 添加 FlagOS 后端测试用例
+
+## 参考链接
+
+- [FlagOS GitHub](https://github.com/flagos-ai)
+- [FlagTree 编译器](https://github.com/flagos-ai/flagtree)
+- [FlagGems 算子库](https://github.com/flagos-ai/FlagGems)
+- [Taichi 官方文档](https://docs.taichi-lang.org)
+- [Taichi GitHub](https://github.com/taichi-dev/taichi)
+
+## 联系方式
+
+如有问题或建议，请联系：
+- FlagOS 社区: https://github.com/flagos-ai/community
+- Taichi 社区: https://github.com/taichi-dev/taichi/discussions

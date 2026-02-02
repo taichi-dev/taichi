@@ -42,6 +42,10 @@
 #include "taichi/rhi/metal/metal_api.h"
 #endif  // TI_WITH_METAL
 
+#ifdef TI_WITH_FLAGOS
+#include "taichi/runtime/program_impls/flagos/flagos_program.h"
+#endif  // TI_WITH_FLAGOS
+
 #if defined(_M_X64) || defined(__x86_64)
 // For _MM_SET_FLUSH_ZERO_MODE
 #include <xmmintrin.h>
@@ -79,7 +83,14 @@ Program::Program(Arch desired_arch) : snode_rw_accessors_bank_(this) {
   profiler = make_profiler(config.arch, config.kernel_profiler);
   if (arch_uses_llvm(config.arch)) {
 #ifdef TI_WITH_LLVM
-    if (config.arch != Arch::dx12) {
+    if (config.arch == Arch::flagos) {
+#ifdef TI_WITH_FLAGOS
+      program_impl_ =
+          std::make_unique<FlagosProgramImpl>(config, profiler.get());
+#else
+      TI_ERROR("This taichi is not compiled with FlagOS");
+#endif
+    } else if (config.arch != Arch::dx12) {
       program_impl_ = std::make_unique<LlvmProgramImpl>(config, profiler.get());
     } else {
       // NOTE: use Dx12ProgramImpl to avoid using LlvmRuntimeExecutor for dx12.

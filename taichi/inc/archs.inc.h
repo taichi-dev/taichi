@@ -15,3 +15,4 @@ PER_ARCH(opencl)  // OpenCL, N/A
 PER_ARCH(amdgpu)  // AMD GPU
 PER_ARCH(vulkan)  // Vulkan
 PER_ARCH(gles)    // OpenGL ES
+PER_ARCH(flagos)  // FlagOS: Unified AI Chip Backend

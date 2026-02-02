@@ -9,6 +9,7 @@ option(TI_WITH_VULKAN "Build with the Vulkan backend" OFF)      # wheel-tag: vk
 option(TI_WITH_DX11 "Build with the DX11 backend" OFF)          # wheel-tag: dx11
 option(TI_WITH_DX12 "Build with the DX12 backend" OFF)          # wheel-tag: dx12
 option(TI_WITH_GGUI "Build with GGUI" OFF)                      # wheel-tag: ggui
+option(TI_WITH_FLAGOS "Build with the FlagOS backend" OFF)       # wheel-tag: flagos
 
 # Force symbols to be 'hidden' by default so nothing is exported from the Taichi
 # library including the third-party dependencies.
@@ -111,6 +112,11 @@ if (TI_WITH_AMDGPU)
   list(APPEND TAIHI_CORE_SOURCE ${TAICHI_AMDGPU_RUNTIME_SOURCE})
 endif()
 
+if (TI_WITH_FLAGOS)
+  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DTI_WITH_FLAGOS")
+  # FlagOS uses LLVM backend
+endif()
+
 if (TI_WITH_DX12)
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DTI_WITH_DX12")
 endif()
@@ -211,6 +217,16 @@ if(TI_WITH_LLVM)
 
         target_link_libraries(${CORE_LIBRARY_NAME} PRIVATE amdgpu_codegen)
         target_link_libraries(${CORE_LIBRARY_NAME} PRIVATE amdgpu_runtime)
+    endif()
+
+    if (TI_WITH_FLAGOS)
+        add_subdirectory(taichi/rhi/flagos)
+        add_subdirectory(taichi/codegen/flagos)
+        add_subdirectory(taichi/runtime/program_impls/flagos)
+
+        target_link_libraries(${CORE_LIBRARY_NAME} PRIVATE flagos_rhi)
+        target_link_libraries(${CORE_LIBRARY_NAME} PRIVATE flagos_codegen)
+        target_link_libraries(${CORE_LIBRARY_NAME} PRIVATE flagos_program)
     endif()
 
     if (TI_WITH_DX12)

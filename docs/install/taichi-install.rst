@@ -112,7 +112,7 @@ This command will automatically download and install the appropriate ``.whl`` fi
 
 .. code-block:: bash
 
-   pip install amd-taichi==1.8.0b2 --extra-index-url=https://pypi.amd.com/simple
+   pip install amd-taichi==1.8.0b2 --index-url=https://pypi.amd.com/simple
    sudo apt-get update
    sudo apt-get install -y lld
 

@@ -3,7 +3,7 @@ from tests import test_utils
 from types import SimpleNamespace
 
 import numpy as np
-from .basis_functions_ref import(
+from .basis_functions_ref import (
     lagmatrix as np_lagmatrix,
     hermmatrix as np_hermmatrix,
     chebmatrix as np_chebmatrix,
@@ -40,10 +40,8 @@ ti_matrices_eval = SimpleNamespace(
 )
 
 
-
-
 def _test_basis_matrices(dt, family, num_basis_functions, use_orth_weight):
-    
+
     # Numpy logic to get expected values
     np_dt = np.float32 if dt == ti.f32 else np.float64
 
@@ -58,20 +56,22 @@ def _test_basis_matrices(dt, family, num_basis_functions, use_orth_weight):
     ti_basis_func = getattr(ti_matrices_eval, family)
 
     if use_orth_weight is not None:
+
         @ti.kernel
         def basis_test(ti_x: ti.template(), use_orth_weight: ti.template(), ti_matrix: ti.template()):
             ti_basis_func(ti_x, use_orth_weight, ti_matrix)
 
         basis_test(ti_x, use_orth_weight, ti_matrix)
     else:
+
         @ti.kernel
         def basis_test(ti_x: ti.template(), ti_matrix: ti.template()):
             ti_basis_func(ti_x, ti_matrix)
 
         basis_test(ti_x, ti_matrix)
-    
+
     actual = ti_matrix.to_numpy()
-    
+
     # Compare expected and actual values
     tol = 1e-5 if dt == ti.f32 else 1e-12
     np.testing.assert_allclose(actual, expected, rtol=tol, atol=tol)

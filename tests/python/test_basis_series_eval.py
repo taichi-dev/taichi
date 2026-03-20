@@ -40,9 +40,8 @@ ti_series_eval = SimpleNamespace(
 )
 
 
-
 def _test_basis_series_eval(dt, family, degree):
-    
+
     # Numpy logic to get expected values
     np_dt = np.float32 if dt == ti.f32 else np.float64
 

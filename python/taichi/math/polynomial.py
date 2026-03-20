@@ -1,9 +1,10 @@
 """
 Math polynomial module.
 """
+
 from taichi.lang.kernel_impl import func
 from taichi.types import template
-from taichi.lang.ops import (cos, sin, exp, sqrt)
+from taichi.lang.ops import cos, sin, exp, sqrt
 from taichi.lang.impl import static
 
 
@@ -22,7 +23,7 @@ def lagval(x_field: template(), c_field: template()):
 
     This function is intended to be called inside a Taichi kernel,
     much like other math functions in Taichi's math module.
-    The evaluation uses Clenshaw recursion, and closely 
+    The evaluation uses Clenshaw recursion, and closely
     follows the numpy lagval implementation.
 
     Parameters
@@ -47,20 +48,21 @@ def lagval(x_field: template(), c_field: template()):
             x_field[j] = c_field[0]
     elif c_len == 2:
         for j in range(x_field.shape[0]):
-            x_field[j] = c_field[0] + c_field[1]*(1 - x_field[j])
+            x_field[j] = c_field[0] + c_field[1] * (1 - x_field[j])
     else:
         for j in range(x_field.shape[0]):
             nd = c_len
-            c0 = c_field[c_len-2]
-            c1 = c_field[c_len-1]
+            c0 = c_field[c_len - 2]
+            c1 = c_field[c_len - 1]
             for i in range(3, c_len + 1):
                 tmp = c0
                 nd = nd - 1
-                c0 = c_field[c_len-i] - (c1*(nd - 1))/nd
-                c1 = tmp + (c1*((2*nd - 1) - x_field[j]))/nd
-            x_field[j] = c0 + c1*(1 - x_field[j])
+                c0 = c_field[c_len - i] - (c1 * (nd - 1)) / nd
+                c1 = tmp + (c1 * ((2 * nd - 1) - x_field[j])) / nd
+            x_field[j] = c0 + c1 * (1 - x_field[j])
 
     return x_field
+
 
 @func
 def hermval(x_field: template(), c_field: template()):
@@ -77,7 +79,7 @@ def hermval(x_field: template(), c_field: template()):
 
     This function is intended to be called inside a Taichi kernel,
     much like other math functions in Taichi's math module.
-    The evaluation uses Clenshaw recursion, and closely 
+    The evaluation uses Clenshaw recursion, and closely
     follows the numpy hermval implementation.
 
     Parameters
@@ -101,19 +103,20 @@ def hermval(x_field: template(), c_field: template()):
             x_field[j] = c_field[0]
     elif c_len == 2:
         for j in range(x_field.shape[0]):
-            x_field[j] = c_field[0] + c_field[1]*x_field[j]*2
+            x_field[j] = c_field[0] + c_field[1] * x_field[j] * 2
     else:
         for j in range(x_field.shape[0]):
             nd = c_len
-            c0 = c_field[c_len-2]
-            c1 = c_field[c_len-1]
+            c0 = c_field[c_len - 2]
+            c1 = c_field[c_len - 1]
             for i in range(3, c_len + 1):
                 tmp = c0
                 nd = nd - 1
-                c0 = c_field[c_len-i] - c1*(2*(nd - 1))
-                c1 = tmp + c1*x_field[j]*2
-            x_field[j] = c0 + c1*x_field[j]*2
+                c0 = c_field[c_len - i] - c1 * (2 * (nd - 1))
+                c1 = tmp + c1 * x_field[j] * 2
+            x_field[j] = c0 + c1 * x_field[j] * 2
     return x_field
+
 
 @func
 def chebval(x_field: template(), c_field: template()):
@@ -129,7 +132,7 @@ def chebval(x_field: template(), c_field: template()):
 
     This function is intended to be called inside a Taichi kernel,
     much like other math functions in Taichi's math module.
-    The evaluation uses Clenshaw recursion, and closely 
+    The evaluation uses Clenshaw recursion, and closely
     follows the numpy chebval implementation.
 
     Parameters
@@ -154,17 +157,18 @@ def chebval(x_field: template(), c_field: template()):
             x_field[j] = c_field[0]
     elif c_len == 2:
         for j in range(x_field.shape[0]):
-            x_field[j] = c_field[0] + c_field[1]*x_field[j]
+            x_field[j] = c_field[0] + c_field[1] * x_field[j]
     else:
         for j in range(x_field.shape[0]):
-            c0 = c_field[c_len-2]
-            c1 = c_field[c_len-1]
+            c0 = c_field[c_len - 2]
+            c1 = c_field[c_len - 1]
             for i in range(3, c_len + 1):
                 tmp = c0
-                c0 = c_field[c_len-i] - c1
-                c1 = tmp + c1*2*x_field[j]
-            x_field[j] = c0 + c1*x_field[j]
+                c0 = c_field[c_len - i] - c1
+                c1 = tmp + c1 * 2 * x_field[j]
+            x_field[j] = c0 + c1 * x_field[j]
     return x_field
+
 
 @func
 def legval(x_field: template(), c_field: template()):
@@ -180,7 +184,7 @@ def legval(x_field: template(), c_field: template()):
 
     This function is intended to be called inside a Taichi kernel,
     much like other math functions in Taichi's math module.
-    The evaluation uses Clenshaw recursion, and closely 
+    The evaluation uses Clenshaw recursion, and closely
     follows the numpy legval implementation.
 
     Parameters
@@ -205,20 +209,21 @@ def legval(x_field: template(), c_field: template()):
             x_field[j] = c_field[0]
     elif c_len == 2:
         for j in range(x_field.shape[0]):
-            x_field[j] = c_field[0] + c_field[1]*x_field[j]
+            x_field[j] = c_field[0] + c_field[1] * x_field[j]
     else:
         for j in range(x_field.shape[0]):
             nd = c_len
-            c0 = c_field[c_len-2]
-            c1 = c_field[c_len-1]
+            c0 = c_field[c_len - 2]
+            c1 = c_field[c_len - 1]
             for i in range(3, c_len + 1):
                 tmp = c0
                 nd = nd - 1
-                c0 = c_field[c_len-i] - (c1*(nd - 1))/nd
-                c1 = tmp + (c1*x_field[j]*(2*nd - 1))/nd
-            x_field[j] = c0 + c1*x_field[j]
+                c0 = c_field[c_len - i] - (c1 * (nd - 1)) / nd
+                c1 = tmp + (c1 * x_field[j] * (2 * nd - 1)) / nd
+            x_field[j] = c0 + c1 * x_field[j]
 
     return x_field
+
 
 @func
 def polyval(x_field: template(), c_field: template()):
@@ -234,7 +239,7 @@ def polyval(x_field: template(), c_field: template()):
 
     This function is intended to be called inside a Taichi kernel,
     much like other math functions in Taichi's math module.
-    The evaluation uses Horner's method, and closely 
+    The evaluation uses Horner's method, and closely
     follows the numpy polyval implementation.
 
     Parameters
@@ -256,12 +261,13 @@ def polyval(x_field: template(), c_field: template()):
     c_len = c_field.shape[0]
 
     for j in range(x_field.shape[0]):
-        c0 = c_field[c_len-1]
+        c0 = c_field[c_len - 1]
         for i in range(2, c_len + 1):
-            c0 = c_field[c_len-i] + c0*x_field[j]
+            c0 = c_field[c_len - i] + c0 * x_field[j]
         x_field[j] = c0
-    
+
     return x_field
+
 
 @func
 def fourval(x_field: template(), c_field: template()):
@@ -286,7 +292,7 @@ def fourval(x_field: template(), c_field: template()):
     template
         The same container as ``x_field`` after in-place update.
     """
-    
+
     c_len = c_field.shape[0]
 
     if c_len == 1:
@@ -304,9 +310,9 @@ def fourval(x_field: template(), c_field: template()):
             bs2 = 0.0
 
             for k in range(k_max):
-                ia = 2 * (k_max-k)
+                ia = 2 * (k_max - k)
 
-                ak = c_field[ia-1] if (ia - 1) < c_len else 0.0
+                ak = c_field[ia - 1] if (ia - 1) < c_len else 0.0
                 bk = c_field[ia] if ia < c_len else 0.0
 
                 bc0 = ak + 2.0 * cx * bc1 - bc2
@@ -352,19 +358,22 @@ def lagmatrix(x_field: template(), use_orth_weight: template(), matrix_field: te
     template
         The same container as ``matrix_field`` after in-place update.
     """
-    
+
     for i in range(matrix_field.shape[0]):
         if static(use_orth_weight):
             matrix_field[i, 0] = exp(-0.5 * x_field[i])
             matrix_field[i, 1] = matrix_field[i, 0] * (1.0 - x_field[i])
         else:
-           matrix_field[i, 0] = 1.0
-           matrix_field[i, 1] = 1.0 - x_field[i]
+            matrix_field[i, 0] = 1.0
+            matrix_field[i, 1] = 1.0 - x_field[i]
 
         for j in range(2, matrix_field.shape[1]):
-            matrix_field[i, j] = ((2 * j - 1 - x_field[i]) *  matrix_field[i, j-1] - (j - 1) * matrix_field[i, j-2]) / j
+            matrix_field[i, j] = (
+                (2 * j - 1 - x_field[i]) * matrix_field[i, j - 1] - (j - 1) * matrix_field[i, j - 2]
+            ) / j
 
     return matrix_field
+
 
 @func
 def hermmatrix(x_field: template(), use_orth_weight: template(), matrix_field: template()):
@@ -400,9 +409,10 @@ def hermmatrix(x_field: template(), use_orth_weight: template(), matrix_field: t
         matrix_field[i, 1] = matrix_field[i, 0] * (2.0 * x_field[i])
 
         for j in range(2, matrix_field.shape[1]):
-            matrix_field[i, j] = matrix_field[i, j-1] * (2.0 * x_field[i]) - matrix_field[i, j-2] * (2 * (j - 1))
+            matrix_field[i, j] = matrix_field[i, j - 1] * (2.0 * x_field[i]) - matrix_field[i, j - 2] * (2 * (j - 1))
 
     return matrix_field
+
 
 @func
 def chebmatrix(x_field: template(), use_orth_weight: template(), matrix_field: template()):
@@ -447,6 +457,7 @@ def chebmatrix(x_field: template(), use_orth_weight: template(), matrix_field: t
 
     return matrix_field
 
+
 @func
 def legmatrix(x_field: template(), matrix_field: template()):
     """
@@ -478,11 +489,11 @@ def legmatrix(x_field: template(), matrix_field: template()):
 
         for j in range(2, matrix_field.shape[1]):
             matrix_field[i, j] = (
-                matrix_field[i, j - 1] * x_field[i] * (2 * j - 1)
-                - matrix_field[i, j - 2] * (j - 1)
+                matrix_field[i, j - 1] * x_field[i] * (2 * j - 1) - matrix_field[i, j - 2] * (j - 1)
             ) / j
 
     return matrix_field
+
 
 @func
 def polymatrix(x_field: template(), matrix_field: template()):
@@ -518,6 +529,7 @@ def polymatrix(x_field: template(), matrix_field: template()):
 
     return matrix_field
 
+
 @func
 def fourmatrix(x_field: template(), matrix_field: template()):
     """
@@ -551,19 +563,27 @@ def fourmatrix(x_field: template(), matrix_field: template()):
 
         for k in range(2, matrix_field.shape[1] // 2 + 1):
             matrix_field[i, 2 * k - 1] = (
-                matrix_field[i, 2 * k - 3] * matrix_field[i, 1]
-                - matrix_field[i, 2 * k - 2] * matrix_field[i, 2]
+                matrix_field[i, 2 * k - 3] * matrix_field[i, 1] - matrix_field[i, 2 * k - 2] * matrix_field[i, 2]
             )
             if 2 * k < matrix_field.shape[1]:
                 matrix_field[i, 2 * k] = (
-                    matrix_field[i, 2 * k - 2] * matrix_field[i, 1]
-                    + matrix_field[i, 2 * k - 3] * matrix_field[i, 2]
+                    matrix_field[i, 2 * k - 2] * matrix_field[i, 1] + matrix_field[i, 2 * k - 3] * matrix_field[i, 2]
                 )
 
     return matrix_field
 
 
-
-
-
-__all__ = ["lagval", "hermval", "chebval", "legval", "polyval", "fourval", "lagmatrix", "hermmatrix", "chebmatrix", "legmatrix", "polymatrix", "fourmatrix"]
+__all__ = [
+    "lagval",
+    "hermval",
+    "chebval",
+    "legval",
+    "polyval",
+    "fourval",
+    "lagmatrix",
+    "hermmatrix",
+    "chebmatrix",
+    "legmatrix",
+    "polymatrix",
+    "fourmatrix",
+]

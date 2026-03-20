@@ -1,4 +1,3 @@
-
 import numpy as np
 
 # Imports/Code to evaluate basis functions *series* for a defined set of coefficients
@@ -6,6 +5,7 @@ from numpy.polynomial.laguerre import lagval
 from numpy.polynomial.hermite import hermval
 from numpy.polynomial.chebyshev import chebval
 from numpy.polynomial.legendre import legval
+
 
 def fourval(x, coeffs):
     """
@@ -20,9 +20,9 @@ def fourval(x, coeffs):
     """
     coeffs = np.asarray(coeffs)
     F = np.zeros_like(x, dtype=np.result_type(x, coeffs))
-    
-    if coeffs.shape[0] > 0: # We have more than 0 coeffs
-        F = F + 0.5 * coeffs[0] # First term is constant
+
+    if coeffs.shape[0] > 0:  # We have more than 0 coeffs
+        F = F + 0.5 * coeffs[0]  # First term is constant
     for i in range(1, coeffs.shape[0]):
         k = (i + 1) // 2
         if i % 2 == 1:
@@ -30,9 +30,6 @@ def fourval(x, coeffs):
         else:
             F = F + coeffs[i] * np.sin(k * x)
     return F
-
-
-
 
 
 # Code to evaluate (weighted) basis function *matrices*
@@ -52,8 +49,11 @@ def lagmatrix(x, x_length, num_basis_functions, use_orth_weight):
     weight = 1 if not use_orth_weight else np.exp(-x / 2)
     L = np.zeros((x_length, num_basis_functions))  # Create an array for the basis functions
     for i in range(num_basis_functions):
-        L[:, i] = weight * lagval(x, [0] * i + [1])  # Evaluate Laguerre polynomial i. If I remove np.exp(-x/2) * then I get the same Laguerre polynomials as QuantLib.
+        L[:, i] = weight * lagval(
+            x, [0] * i + [1]
+        )  # Evaluate Laguerre polynomial i. If I remove np.exp(-x/2) * then I get the same Laguerre polynomials as QuantLib.
     return L
+
 
 def hermmatrix(x, x_length, num_basis_functions, use_orth_weight):
     """
@@ -68,11 +68,14 @@ def hermmatrix(x, x_length, num_basis_functions, use_orth_weight):
     Returns:
     array - Laguerre basis functions evaluated at x
     """
-    weight = 1 if not use_orth_weight else np.exp(-x**2 / 2)
+    weight = 1 if not use_orth_weight else np.exp(-(x**2) / 2)
     L = np.zeros((x_length, num_basis_functions))  # Create an array for the basis functions
     for i in range(num_basis_functions):
-        L[:, i] =  weight * hermval(x, [0] * i + [1])  # Evaluate Laguerre polynomial i. If I remove np.exp(-x/2) * then I get the same Laguerre polynomials as QuantLib.
+        L[:, i] = weight * hermval(
+            x, [0] * i + [1]
+        )  # Evaluate Laguerre polynomial i. If I remove np.exp(-x/2) * then I get the same Laguerre polynomials as QuantLib.
     return L
+
 
 def chebmatrix(x, x_length, num_basis_functions, use_orth_weight):
     """
@@ -87,11 +90,14 @@ def chebmatrix(x, x_length, num_basis_functions, use_orth_weight):
     Returns:
     array - Laguerre basis functions evaluated at x
     """
-    weight = 1 if not use_orth_weight else (1-x**2)**(-1/4)
+    weight = 1 if not use_orth_weight else (1 - x**2) ** (-1 / 4)
     L = np.zeros((x_length, num_basis_functions))  # Create an array for the basis functions
     for i in range(num_basis_functions):
-        L[:, i] =  weight * chebval(x, [0] * i + [1])  # Evaluate Laguerre polynomial i. If I remove np.exp(-x/2) * then I get the same Laguerre polynomials as QuantLib.
+        L[:, i] = weight * chebval(
+            x, [0] * i + [1]
+        )  # Evaluate Laguerre polynomial i. If I remove np.exp(-x/2) * then I get the same Laguerre polynomials as QuantLib.
     return L
+
 
 def legmatrix(x, x_length, num_basis_functions, _):
     """
@@ -106,8 +112,9 @@ def legmatrix(x, x_length, num_basis_functions, _):
     """
     L = np.zeros((x_length, num_basis_functions))  # Create an array for the basis functions
     for i in range(num_basis_functions):
-        L[:, i] =  legval(x, [0] * i + [1])  
+        L[:, i] = legval(x, [0] * i + [1])
     return L
+
 
 def polymatrix(x, x_length, num_basis_functions, _):
     """
@@ -122,8 +129,9 @@ def polymatrix(x, x_length, num_basis_functions, _):
     """
     L = np.zeros((x_length, num_basis_functions))  # Create an array for the basis functions
     for i in range(num_basis_functions):
-        L[:, i] =  x**i  
+        L[:, i] = x**i
     return L
+
 
 def fourmatrix(x, x_length, num_basis_functions, _):
     """
@@ -159,11 +167,10 @@ def fourmatrix(x, x_length, num_basis_functions, _):
 
     # constant term (first basis function)
     if num_basis_functions > 0:
-        F[:, 0] = 1/2
+        F[:, 0] = 1 / 2
 
     # Subsequent basis: cos/sin pairs
     for i in range(1, num_basis_functions):
-        F[:, i] = fourval(x,  [0] * i + [1])
+        F[:, i] = fourval(x, [0] * i + [1])
 
     return F
-

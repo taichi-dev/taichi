@@ -6,6 +6,7 @@
 #     extra cmake args for C++ taichi_python extension.
 
 import glob
+import inspect
 import multiprocessing
 import os
 import platform
@@ -82,7 +83,7 @@ class Clean(clean):
         super().run()
         self.build_temp = os.path.join(root_dir, "_skbuild")
         if os.path.exists(self.build_temp):
-            remove_tree(self.build_temp, dry_run=self.dry_run)
+            self._remove_tree_compat(self.build_temp)
         generated_folders = (
             "bin",
             "dist",
@@ -95,7 +96,7 @@ class Clean(clean):
         )
         for d in generated_folders:
             if os.path.exists(d):
-                remove_tree(d, dry_run=self.dry_run)
+                self._remove_tree_compat(d)
         generated_files = ["taichi/common/commit_hash.h", "taichi/common/version.h"]
         generated_files += glob.glob("taichi/runtime/llvm/runtime_*.bc")
         generated_files += glob.glob("python/taichi/_lib/core/*.so")
@@ -105,6 +106,13 @@ class Clean(clean):
                 print(f"removing generated file {f}")
                 if not self.dry_run:
                     os.remove(f)
+
+    def _remove_tree_compat(self, path):
+        # setuptools/distutils changed remove_tree() signature across versions.
+        if "dry_run" in inspect.signature(remove_tree).parameters:
+            remove_tree(path, dry_run=self.dry_run)
+        elif not self.dry_run:
+            remove_tree(path)
 
 
 def get_cmake_args():

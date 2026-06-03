@@ -64,12 +64,17 @@ std::string JITSessionAMDGPU::compile_module_to_hsaco(
   options.NoZerosInBSS = 0;
   options.GuaranteedTailCallOpt = 0;
 
+#if LLVM_VERSION_MAJOR >= 18
+  const auto opt_level = llvm::CodeGenOptLevel::Aggressive;
+#else
+  const auto opt_level = llvm::CodeGenOpt::Aggressive;
+#endif
+
   std::unique_ptr<llvm::TargetMachine> machine(target->createTargetMachine(
       triple_str, AMDGPUContext::get_instance().get_mcpu(), "", options,
-      llvm::Reloc::PIC_, llvm::CodeModel::Small, llvm::CodeGenOpt::Aggressive));
+      llvm::Reloc::PIC_, llvm::CodeModel::Small, opt_level));
 
   llvm_module->setDataLayout(machine->createDataLayout());
-
   if (this->config_.print_kernel_amdgcn) {
     // Amdgcn will not generated during generating hsaco file
     // It's an interim impl
@@ -84,11 +89,47 @@ std::string JITSessionAMDGPU::compile_module_to_hsaco(
     // another way
     //    llvm-objdump -d xxxx.hsaco(can ensure that hsaco and gcn correspond to
     //    each other)
-
     auto module_clone = llvm::CloneModule(*llvm_module);
-    llvm::legacy::PassManager module_gen_gcn_pass_manager;
     llvm::SmallString<0> gcnstr;
     llvm::raw_svector_ostream llvm_stream_gcn(gcnstr);
+#if LLVM_VERSION_MAJOR >= 17
+   // Create the new analysis manager
+    llvm::LoopAnalysisManager LAM;
+    llvm::FunctionAnalysisManager FAM;
+    llvm::CGSCCAnalysisManager CGAM;
+    llvm::ModuleAnalysisManager MAM;
+
+  // Create the new pass builder
+    llvm::PipelineTuningOptions PTO;
+    PTO.LoopInterleaving = false;
+    PTO.LoopVectorization = false;
+    PTO.SLPVectorization = true;
+    PTO.LoopUnrolling = false;
+    PTO.ForgetAllSCEVInLoopUnroll = true;
+
+    std::unique_ptr<llvm::TargetMachine> machine_gen_gcn(
+        target->createTargetMachine(
+            triple_str, AMDGPUContext::get_instance().get_mcpu(), "", options,
+            llvm::Reloc::PIC_, llvm::CodeModel::Small,
+            opt_level));
+
+    llvm::PassBuilder module_gen_gcn_pass_manager(machine_gen_gcn.get(), PTO);
+
+    module_gen_gcn_pass_manager.registerModuleAnalyses(MAM);
+    module_gen_gcn_pass_manager.registerCGSCCAnalyses(CGAM);
+    module_gen_gcn_pass_manager.registerFunctionAnalyses(FAM);
+    module_gen_gcn_pass_manager.registerLoopAnalyses(LAM);
+    module_gen_gcn_pass_manager.crossRegisterProxies(LAM, FAM, CGAM, MAM);
+
+    llvm::ModulePassManager builder =
+      module_gen_gcn_pass_manager.buildPerModuleDefaultPipeline(llvm::OptimizationLevel::O3);
+
+    machine_gen_gcn->registerPassBuilderCallbacks(module_gen_gcn_pass_manager);
+
+    builder.run(*module_clone, MAM);
+#else
+
+    llvm::legacy::PassManager module_gen_gcn_pass_manager;
     std::unique_ptr<llvm::TargetMachine> machine_gen_gcn(
         target->createTargetMachine(
             triple_str, AMDGPUContext::get_instance().get_mcpu(), "", options,
@@ -105,11 +146,43 @@ std::string JITSessionAMDGPU::compile_module_to_hsaco(
                                          llvm_stream_gcn, nullptr,
                                          llvm::CGFT_AssemblyFile, true);
     module_gen_gcn_pass_manager.run(*module_clone);
+#endif
     std::string gcn(gcnstr.begin(), gcnstr.end());
     static FileSequenceWriter writer("taichi_kernel_amdgcn_{:04d}.gcn",
                                      "module AMDGCN");
     writer.write(gcn);
   }
+#if LLVM_VERSION_MAJOR >= 17
+
+   // Create the new analysis manager
+    llvm::LoopAnalysisManager LAM;
+    llvm::FunctionAnalysisManager FAM;
+    llvm::CGSCCAnalysisManager CGAM;
+    llvm::ModuleAnalysisManager MAM;
+
+  // Create the new pass builder
+    llvm::PipelineTuningOptions PTO;
+    PTO.LoopInterleaving = false;
+    PTO.LoopVectorization = false;
+    PTO.SLPVectorization = true;
+    PTO.LoopUnrolling = false;
+    PTO.ForgetAllSCEVInLoopUnroll = true;
+    
+    llvm::PassBuilder module_pass_manager(machine.get(), PTO);
+
+    module_pass_manager.registerModuleAnalyses(MAM);
+    module_pass_manager.registerCGSCCAnalyses(CGAM);
+    module_pass_manager.registerFunctionAnalyses(FAM);
+    module_pass_manager.registerLoopAnalyses(LAM);
+    module_pass_manager.crossRegisterProxies(LAM, FAM, CGAM, MAM);
+
+    llvm::ModulePassManager builder =
+      module_pass_manager.buildPerModuleDefaultPipeline(llvm::OptimizationLevel::O3);
+
+    machine->registerPassBuilderCallbacks(module_pass_manager);
+
+    builder.run(*llvm_module, MAM);
+#else
 
   llvm::legacy::FunctionPassManager function_pass_manager(llvm_module.get());
   llvm::legacy::PassManager module_pass_manager;
@@ -126,6 +199,7 @@ std::string JITSessionAMDGPU::compile_module_to_hsaco(
   machine->adjustPassManager(builder);
   builder.populateFunctionPassManager(function_pass_manager);
   builder.populateModulePassManager(module_pass_manager);
+#endif
 
   machine->Options.MCOptions.AsmVerbose = true;
 
@@ -142,6 +216,14 @@ std::string JITSessionAMDGPU::compile_module_to_hsaco(
   llvm::SmallString<0> outstr;
   llvm::raw_svector_ostream llvm_stream(outstr);
 
+#if LLVM_VERSION_MAJOR >= 17
+  llvm::legacy::PassManager legacy_pass_manager;
+  legacy_pass_manager.add(llvm::createTargetTransformInfoWrapperPass(
+      machine->getTargetIRAnalysis()));
+  machine->addPassesToEmitFile(legacy_pass_manager, llvm_stream, nullptr,
+                                llvm::CodeGenFileType::ObjectFile, true);
+  legacy_pass_manager.run(*llvm_module);
+#else
   machine->addPassesToEmitFile(module_pass_manager, llvm_stream, nullptr,
                                llvm::CGFT_ObjectFile, true);
 
@@ -150,6 +232,7 @@ std::string JITSessionAMDGPU::compile_module_to_hsaco(
     function_pass_manager.run(*func);
   function_pass_manager.doFinalization();
   module_pass_manager.run(*llvm_module);
+#endif
 
   std::string obj_str(outstr.begin(), outstr.end());
   std::ofstream(obj_path) << obj_str;

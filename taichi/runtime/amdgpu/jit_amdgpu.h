@@ -1,3 +1,5 @@
+#pragma once // It's good practice to have include guards
+
 #include <memory>
 #include <utility>
 #include <mutex>
@@ -11,16 +13,22 @@
 #include "llvm/IR/Module.h"
 #include "llvm/IR/DataLayout.h"
 #include "llvm/IR/LLVMContext.h"
-#include "llvm/IR/LegacyPassManager.h"
 #include "llvm/IR/Verifier.h"
-#include "llvm/Transforms/InstCombine/InstCombine.h"
-#include "llvm/Transforms/Scalar.h"
-#include "llvm/Transforms/Scalar/GVN.h"
-#include "llvm/Transforms/IPO.h"
-#include "llvm/Transforms/IPO/PassManagerBuilder.h"
+#if LLVM_VERSION_MAJOR >= 17
+#include "llvm/Passes/PassBuilder.h"
+#include "llvm/Passes/OptimizationLevel.h"
+#include "llvm/Transforms/IPO/Inliner.h"
+#include "llvm/IR/Module.h"
+#else
+#include "llvm/IR/LegacyPassManager.h"            // Obsolete: Removed
+#include "llvm/Transforms/InstCombine/InstCombine.h"// Obsolete: Handled by NPM PassBuilder
+#include "llvm/Transforms/Scalar.h"                 // Obsolete: Handled by NPM PassBuilder
+#include "llvm/Transforms/Scalar/GVN.h"             // Obsolete: Handled by NPM PassBuilder
+#include "llvm/Transforms/IPO.h"                    // Obsolete: Handled by NPM PassBuilder
+#include "llvm/Transforms/IPO/PassManagerBuilder.h" // Obsolete: Removed
+#endif
 #include "llvm/Analysis/TargetTransformInfo.h"
 #include "llvm/MC/TargetRegistry.h"
-#include "llvm/Target/TargetMachine.h"
 #include "llvm/ExecutionEngine/Orc/JITTargetMachineBuilder.h"
 
 #include "taichi/rhi/amdgpu/amdgpu_context.h"
@@ -124,7 +132,7 @@ class JITSessionAMDGPU : public JITSession {
                        (std::istreambuf_iterator<char>()));
   }
 
-  uint64 get_random_num() {
+  uint64_t get_random_num() {
     // Note: ROCm is available only on Linux OS.
     static std::random_device device("/dev/urandom");
     static std::mt19937_64 *rng = new std::mt19937_64(device());

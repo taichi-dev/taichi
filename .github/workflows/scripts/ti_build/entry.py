@@ -82,8 +82,8 @@ def setup_basic_build_env():
         setup_clang()
 
     setup_llvm()
-    if u.system in ("Linux", "Windows"):
-        # We support & test Vulkan shader debug printf on Linux && Windows
+    if u.system == "Linux":
+        # We support & test Vulkan shader debug printf on Linux
         # This is done through the validation layer
         from .vulkan import setup_vulkan
 

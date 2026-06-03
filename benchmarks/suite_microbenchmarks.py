@@ -8,9 +8,10 @@ from utils import dump2json
 class MicroBenchmark:
     suite_name = "microbenchmarks"
     config = {
-        "cuda": {"enable": True},
+        "cuda": {"enable": False},
         "vulkan": {"enable": False},
         "opengl": {"enable": False},
+        "amdgpu": {"enable": True},
     }
 
     def __init__(self):
@@ -25,19 +26,34 @@ class MicroBenchmark:
                 arch_list.append(arch)
         info_dict["archs"] = arch_list
         return info_dict
+    
+    def str_to_plan(self, plan_str):
+        match plan_str:
+            case "AtomicOpsPlan":
+                return benchmark_plan_list[0]
+            case "FillPlan":
+                return benchmark_plan_list[1]
+            case "MathOpsPlan":
+                return benchmark_plan_list[2]
+            case "MatrixOpsPlan":
+                return benchmark_plan_list[3]
+            case "MemcpyPlan":
+                return benchmark_plan_list[4]
+            case "SaxpyPlan":
+                return benchmark_plan_list[5]
+            case "Stencil2DPlan":
+                return benchmark_plan_list[6]
 
-    def run(self):
-        for arch, item in self.config.items():
-            if item["enable"] == True:
-                arch_results = {}
-                self._info[arch] = {}
-                for plan in benchmark_plan_list:
-                    plan_impl = plan(arch)
-                    results = plan_impl.run()
-                    self._info[arch][plan_impl.name] = results["info"]
-                    arch_results[plan_impl.name] = results["results"]
+    def run(self, arch, plan_str):
+        arch_results = {}
+        self._info[arch] = {}
+        plan = self.str_to_plan(plan_str)
+        plan_impl = plan(arch)
+        results = plan_impl.run()
+        self._info[arch][plan_impl.name] = results["info"]
+        arch_results[plan_impl.name] = results["results"]
 
-                self._results[arch] = arch_results
+        self._results[arch] = arch_results
 
     def save_as_json(self, suite_dir="./"):
         for arch in self._results:

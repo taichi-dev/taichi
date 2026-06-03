@@ -53,7 +53,7 @@ def get_ti_arch(arch: str):
         "opengl": ti.opengl,
         "metal": ti.metal,
         "x64": ti.x64,
-        "cc": ti.cc,
+        "amdgpu":ti.amdgpu,
     }
     return arch_dict[arch]
 

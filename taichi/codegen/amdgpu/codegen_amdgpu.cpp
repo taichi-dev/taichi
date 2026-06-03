@@ -110,7 +110,11 @@ class TaskCodeGenAMDGPU : public TaskCodeGenLLVM {
         builder->CreateBr(bb_merge);
         bb_oeq_then = builder->GetInsertBlock();
 
+#if LLVM_VERSION_MAJOR >= 17
+	bb_oeq_else->insertInto(func);
+#else
         func->getBasicBlockList().push_back(bb_oeq_else);
+#endif
         builder->SetInsertPoint(bb_oeq_else);
         auto fcmp_olt = builder->CreateFCmpOLT(
             input,
@@ -125,7 +129,11 @@ class TaskCodeGenAMDGPU : public TaskCodeGenLLVM {
         builder->CreateBr(bb_merge);
         bb_olt_then = builder->GetInsertBlock();
 
+#if LLVM_VERSION_MAJOR >= 17
+        bb_olt_else->insertInto(func);
+#else
         func->getBasicBlockList().push_back(bb_olt_else);
+#endif
         builder->SetInsertPoint(bb_olt_else);
         builder->CreateStore(
             llvm::ConstantFP::get(llvm::Type::getFloatTy(*llvm_context), 1),
@@ -133,7 +141,11 @@ class TaskCodeGenAMDGPU : public TaskCodeGenLLVM {
         builder->CreateBr(bb_merge);
         bb_olt_else = builder->GetInsertBlock();
 
+#if LLVM_VERSION_MAJOR >= 17
+	bb_merge->insertInto(func);
+#else
         func->getBasicBlockList().push_back(bb_merge);
+#endif
         builder->SetInsertPoint(bb_merge);
         llvm_val[stmt] =
             builder->CreateLoad(llvm::Type::getFloatTy(*llvm_context), cast);
@@ -161,7 +173,11 @@ class TaskCodeGenAMDGPU : public TaskCodeGenLLVM {
         builder->CreateBr(bb_merge);
         bb_oeq_then = builder->GetInsertBlock();
 
+#if LLVM_VERSION_MAJOR >= 17
+	bb_oeq_else->insertInto(func);
+#else
         func->getBasicBlockList().push_back(bb_oeq_else);
+#endif
         builder->SetInsertPoint(bb_oeq_else);
         auto fcmp_olt = builder->CreateFCmpOLT(
             input,
@@ -176,7 +192,11 @@ class TaskCodeGenAMDGPU : public TaskCodeGenLLVM {
         builder->CreateBr(bb_merge);
         bb_olt_then = builder->GetInsertBlock();
 
+#if LLVM_VERSION_MAJOR >= 17
+	bb_olt_else->insertInto(func);
+#else
         func->getBasicBlockList().push_back(bb_olt_else);
+#endif
         builder->SetInsertPoint(bb_olt_else);
         builder->CreateStore(
             llvm::ConstantFP::get(llvm::Type::getDoubleTy(*llvm_context), 1),
@@ -184,7 +204,11 @@ class TaskCodeGenAMDGPU : public TaskCodeGenLLVM {
         builder->CreateBr(bb_merge);
         bb_olt_else = builder->GetInsertBlock();
 
+#if LLVM_VERSION_MAJOR >= 17
+	bb_merge->insertInto(func);
+#else
         func->getBasicBlockList().push_back(bb_merge);
+#endif
         builder->SetInsertPoint(bb_merge);
         llvm_val[stmt] =
             builder->CreateLoad(llvm::Type::getDoubleTy(*llvm_context), cast);

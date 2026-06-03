@@ -1,2 +1,3 @@
 jsbeautifier
 bokeh
+argparse

@@ -9,6 +9,7 @@ import glob
 import multiprocessing
 import os
 import platform
+import re
 import shutil
 import subprocess
 import sys
@@ -48,6 +49,8 @@ def get_version():
 project_name = os.getenv("PROJECT_NAME", "taichi")
 version = get_version()
 TI_VERSION_MAJOR, TI_VERSION_MINOR, TI_VERSION_PATCH = version.split(".")
+# Strip non-numeric suffix from patch version (e.g., "0b2" -> "0") for AMD compatibility versioning
+TI_VERSION_PATCH = re.sub(r'[^0-9].*$', '', TI_VERSION_PATCH)
 
 data_files = glob.glob("python/_lib/runtime/*")
 print(data_files)

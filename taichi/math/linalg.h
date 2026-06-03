@@ -242,7 +242,9 @@ struct VectorND : public VectorNDBase<dim__, T, ISE> {
   }
 
   TI_FORCE_INLINE VectorND &operator=(const VectorND &o) {
-    memcpy(this, &o, sizeof(*this));
+    for (int i = 0; i < dim; i++) {
+      this->d[i] = o.d[i];
+    }
     return *this;
   }
 

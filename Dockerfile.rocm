@@ -1,0 +1,116 @@
+# ---------------------------------------------
+# Stage 1: Build Taichi and generate artifacts
+# ---------------------------------------------
+ARG BASE_IMAGE=rocm/dev-ubuntu-24.04:7.0-complete
+FROM ${BASE_IMAGE} as taichi_build
+
+ARG LLVM_VERSION=20
+ARG GPU_TARGETS=gfx90a,gfx940,gfx941,gfx942,gfx950
+ARG ROCM_VERSION=7.0.0
+ARG PROJECT_NAME
+ARG RELEASE_VERSION
+ARG TI_VERSION_MAJOR
+ARG TI_VERSION_MINOR
+ARG TI_VERSION_PATCH
+
+ENV PROJECT_NAME=${PROJECT_NAME}
+ENV RELEASE_VERSION=${RELEASE_VERSION}
+ENV TI_VERSION_MAJOR=${TI_VERSION_MAJOR}
+ENV TI_VERSION_MINOR=${TI_VERSION_MINOR}
+ENV TI_VERSION_PATCH=${TI_VERSION_PATCH}
+
+ENV DEBIAN_FRONTEND=noninteractive
+ENV LLVM_PATH=/usr/lib/llvm-${LLVM_VERSION}
+ENV PATH=${LLVM_PATH}/bin:$PATH
+ENV ROCM_PATH=/opt/rocm-${ROCM_VERSION}
+
+ENV TAICHI_CMAKE_ARGS="-DTI_WITH_VULKAN=OFF -DTI_WITH_OPENGL=OFF -DTI_BUILD_TESTS=OFF -DTI_BUILD_EXAMPLES=OFF -DCMAKE_PREFIX_PATH=${LLVM_PATH}/lib/cmake -DCMAKE_CXX_COMPILER=${LLVM_PATH}/bin/clang++ -DTI_WITH_AMDGPU=ON -DTI_WITH_CUDA=OFF -DTI_AMDGPU_ARCHS=${GPU_TARGETS} -DUSE_LLD=ON -DTI_WITH_LLVM=ON"
+
+# Install build dependencies
+RUN apt-get update && apt-get install -y --no-install-recommends \
+	git wget vim git freeglut3-dev libglfw3-dev libglm-dev \
+	libglu1-mesa-dev libjpeg-dev liblz4-dev libpng-dev \
+	libssl-dev libwayland-dev libx11-xcb-dev libxcb-dri3-dev \
+	libxcb-ewmh-dev libxcb-keysyms1-dev libxcb-randr0-dev \
+	libxcursor-dev libxi-dev libxinerama-dev libxrandr-dev \
+	libzstd-dev python3-pip cmake pybind11-dev \
+	ca-certificates python3-venv rocm-llvm-dev \
+    gdb python3-dbg 
+
+WORKDIR /app
+
+RUN wget https://apt.llvm.org/llvm.sh \
+	&& chmod +x llvm.sh \
+	&& apt-get update && apt-get install -y \
+	lsb-release software-properties-common gnupg \
+	&& ./llvm.sh ${LLVM_VERSION} llvm clang lld 
+
+# Copy source code
+COPY . .
+# RUN git config --global --add safe.directory "${TAICHI_SRC}"
+
+# Install Python build dependencies
+RUN python3 -m pip config set global.break-system-packages true && \
+    python3 -m pip install -r requirements_dev.txt
+
+# Build Taichi and generate artifacts
+RUN cd external/spdlog && \
+    git apply /app/spdlog_fmt.patch && \
+    cd /app && \
+    rm -rf /root/.cache/* && \
+    ./build.py && \
+    echo "=== Listing dist directory ===" && \
+    ls -la dist/ && \
+    echo "=== Creating artifacts directory ===" && \
+    mkdir -p /tmp/artifacts && \
+    echo "=== Copying wheel files ===" && \
+    cp dist/*.whl /tmp/artifacts/ && \
+    echo "=== Listing artifacts directory ===" && \
+    ls -la /tmp/artifacts/ && \
+    tar -czvf /tmp/artifacts/taichi-tests.tar.gz -C /app --transform 's,^,taichi/,' --exclude='external' --exclude='_skbuild' .
+
+# ---------------------------------------------
+# Stage 2: Create runtime image with Taichi installed
+# ---------------------------------------------
+FROM ${BASE_IMAGE} as taichi_final
+
+ARG LLVM_VERSION=20
+ARG ROCM_VERSION=7.0.0
+ENV DEBIAN_FRONTEND=noninteractive
+ENV LLVM_PATH=/usr/lib/llvm-${LLVM_VERSION}
+ENV ROCM_PATH=/opt/rocm-${ROCM_VERSION}
+ENV PATH=${LLVM_PATH}/bin:$PATH
+
+# Install runtime dependencies
+RUN apt-get update && apt-get install -y --no-install-recommends \
+	git wget vim git freeglut3-dev libglfw3-dev libglm-dev \
+	libglu1-mesa-dev libjpeg-dev liblz4-dev libpng-dev \
+	libssl-dev libwayland-dev libx11-xcb-dev libxcb-dri3-dev \
+	libxcb-ewmh-dev libxcb-keysyms1-dev libxcb-randr0-dev \
+	libxcursor-dev libxi-dev libxinerama-dev libxrandr-dev \
+	libzstd-dev python3-pip cmake pybind11-dev \
+	ca-certificates python3-venv rocm-llvm-dev \
+    gdb python3-dbg 
+
+WORKDIR /app
+
+RUN wget https://apt.llvm.org/llvm.sh \
+	&& chmod +x llvm.sh \
+	&& apt-get update && apt-get install -y \
+	lsb-release software-properties-common gnupg \
+	&& ./llvm.sh ${LLVM_VERSION} llvm clang lld \
+    && rm -rf llvm.sh
+
+# Copy and install Taichi wheel
+COPY --from=taichi_build /tmp/artifacts/*.whl /app/
+
+RUN python3 -m pip config set global.break-system-packages true \
+    && ls -la /app/ \
+    && for whl in /app/*.whl; do python3 -m pip install "$whl"; done \
+    && rm -rf /app/*.whl
+
+# ---------------------------------------------
+# Stage 3: Export raw artifacts to host
+# ---------------------------------------------
+FROM scratch as taichi_export
+COPY --from=taichi_build /tmp/artifacts/ .

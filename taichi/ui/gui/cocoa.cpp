@@ -41,7 +41,10 @@ std::string str_tolower(std::string s) {
 
 std::optional<std::string> try_get_alnum(ushort keycode) {
 // Can someone tell me the reason why Apple didn't make these consecutive...
-#define CASE(i) {kVK_ANSI_##i, str_tolower(#i)}
+#define CASE(i)                   \
+  {                               \
+    kVK_ANSI_##i, str_tolower(#i) \
+  }
   static const std::unordered_map<ushort, std::string> key2str = {
       CASE(0), CASE(1), CASE(2), CASE(3), CASE(4), CASE(5), CASE(6), CASE(7),
       CASE(8), CASE(9), CASE(A), CASE(B), CASE(C), CASE(D), CASE(E), CASE(F),
@@ -60,7 +63,10 @@ std::optional<std::string> try_get_alnum(ushort keycode) {
 std::optional<std::string> try_get_fnkey(ushort keycode) {
   // Or these...
 #define STRINGIFY(x) #x
-#define CASE(i) {kVK_F##i, STRINGIFY(F##i)}
+#define CASE(i)               \
+  {                           \
+    kVK_F##i, STRINGIFY(F##i) \
+  }
   static const std::unordered_map<ushort, std::string> key2str = {
       CASE(1),  CASE(2),  CASE(3),  CASE(4),  CASE(5),  CASE(6),
       CASE(7),  CASE(8),  CASE(9),  CASE(10), CASE(11), CASE(12),

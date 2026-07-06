@@ -44,9 +44,7 @@ SANE_LANGUAGE_TAGS = {
 
 PRELUDES = {}
 
-PRELUDES[
-    "init"
-] = """
+PRELUDES["init"] = """
 import taichi as ti
 import numpy as np
 import math

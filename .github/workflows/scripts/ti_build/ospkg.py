@@ -12,7 +12,6 @@ import sys
 from .misc import banner, error, info
 from .tinysh import apt
 
-
 # -- code --
 UBUNTU_PACKAGES = {
     "git",

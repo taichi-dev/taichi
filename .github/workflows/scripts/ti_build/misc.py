@@ -13,7 +13,6 @@ import sys
 from .bootstrap import get_cache_home  # noqa, this is a re-export
 from .escapes import escape_codes
 
-
 # -- code --
 options = None
 

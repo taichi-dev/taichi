@@ -2,6 +2,7 @@
 """
 Math functions for glsl-like functions and other stuff.
 """
+
 import math
 
 from taichi.lang import impl, ops

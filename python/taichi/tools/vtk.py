@@ -5,10 +5,8 @@ def write_vtk(scalar_field, filename):
     try:
         from pyevtk.hl import gridToVTK  # pylint: disable=import-outside-toplevel
     except ImportError:
-        raise RuntimeError(
-            "Failed to import pyevtk. Please install it via /\
-        `pip install pyevtk` first. "
-        )
+        raise RuntimeError("Failed to import pyevtk. Please install it via /\
+        `pip install pyevtk` first. ")
 
     scalar_field_np = scalar_field.to_numpy()
     field_shape = scalar_field_np.shape

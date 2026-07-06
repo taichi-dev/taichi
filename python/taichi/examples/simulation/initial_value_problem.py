@@ -24,7 +24,7 @@ locations.from_numpy(locations_np)
 
 @ti.kernel
 def paint(t: float):
-    (o, p) = locations_np.shape
+    o, p = locations_np.shape
     for i in range(0, o):  # Parallelized over all pixels
         x = locations[i, 0]
         y = locations[i, 1]

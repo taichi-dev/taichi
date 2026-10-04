@@ -113,10 +113,29 @@ def test_annotated_vector_tuple_without_scalar_casts(decorator):
 
     @ti.kernel
     def result() -> ti.f32:
-        first, second = values()
+        returned = values()
+        ti.static_assert(isinstance(returned, tuple))
+        first, second = returned
         return first.sum() + second.sum()
 
     assert result() == pytest.approx(15.0)
+
+
+@pytest.mark.parametrize("decorator", [ti.func, ti.pyfunc])
+@test_utils.test()
+def test_annotated_list_return_preserves_container(decorator):
+    @decorator
+    def values() -> tuple[ti.i32, ti.f32]:
+        return [3.75, -2]
+
+    @ti.kernel
+    def result() -> ti.i32:
+        returned = values()
+        ti.static_assert(isinstance(returned, list))
+        integer, real = returned
+        return integer * 10 + ti.cast(real, ti.i32)
+
+    assert result() == 28
 
 
 @pytest.mark.parametrize("decorator", [ti.func, ti.pyfunc])

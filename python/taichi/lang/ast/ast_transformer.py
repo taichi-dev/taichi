@@ -923,11 +923,16 @@ class ASTTransformer(Builder):
             if ctx.func.return_type is not None:
                 if len(ctx.func.return_type) == 1:
                     ctx.return_data = [ctx.return_data]
+                tuple_return = isinstance(ctx.return_data, tuple)
+                if tuple_return:
+                    ctx.return_data = list(ctx.return_data)
                 for i, return_type in enumerate(ctx.func.return_type):
                     if id(return_type) in primitive_types.type_ids:
                         ctx.return_data[i] = ti_ops.cast(ctx.return_data[i], return_type)
                 if len(ctx.func.return_type) == 1:
                     ctx.return_data = ctx.return_data[0]
+                elif tuple_return:
+                    ctx.return_data = tuple(ctx.return_data)
         if not ctx.is_real_function:
             ctx.returned = ReturnStatus.ReturnedValue
         return None

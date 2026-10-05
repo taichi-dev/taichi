@@ -147,7 +147,7 @@ VulkanPipelineCache::VulkanPipelineCache(VulkanDevice *device,
                                         initial_data);
 }
 
-VulkanPipelineCache ::~VulkanPipelineCache() {
+VulkanPipelineCache::~VulkanPipelineCache() {
 }
 
 void *VulkanPipelineCache::data() noexcept {
@@ -492,7 +492,7 @@ void VulkanPipeline::create_graphics_pipeline(
           {TopologyType::Triangles, VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST},
           {TopologyType::Lines, VK_PRIMITIVE_TOPOLOGY_LINE_LIST},
           {TopologyType::Points, VK_PRIMITIVE_TOPOLOGY_POINT_LIST},
-      };
+  };
   input_assembly.topology = topo_types.at(raster_params.prim_topology);
   input_assembly.primitiveRestartEnable = VK_FALSE;
 

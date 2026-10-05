@@ -125,7 +125,7 @@ TEST_P(LlvmOfflineCacheTest, ReadWrite) {
       arg_infos = {
           {{0}, Callable::Parameter{DataType(PrimitiveType::i32), false}},
           {{1}, Callable::Parameter{DataType(PrimitiveType::i32), false}},
-      };
+  };
   auto member1 = AbstractDictionaryMember{PrimitiveType::i32, "a"};
   auto member2 = AbstractDictionaryMember{PrimitiveType::i32, "b"};
   auto struct_type =

@@ -49,7 +49,7 @@ class KernelTemplate:
 
         for arg in kernel.arguments:
             if isinstance(arg.annotation, template):
-                (k, v) = template_args[anno_index]
+                k, v = template_args[anno_index]
                 key_p += k
                 key_p = self.keygen(v, key_p, self._aot_module._fields.items())
                 injected_args.append(v)

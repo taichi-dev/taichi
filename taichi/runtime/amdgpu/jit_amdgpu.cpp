@@ -8,8 +8,8 @@
 namespace taichi {
 namespace lang {
 #if defined(TI_WITH_AMDGPU)
-JITModule *JITSessionAMDGPU ::add_module(std::unique_ptr<llvm::Module> M,
-                                         int max_reg) {
+JITModule *JITSessionAMDGPU::add_module(std::unique_ptr<llvm::Module> M,
+                                        int max_reg) {
   auto hsaco = compile_module_to_hsaco(M);
   TI_TRACE("hsaco size: {:.2f}KB", hsaco.size() / 1024.0);
 

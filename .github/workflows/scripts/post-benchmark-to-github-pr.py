@@ -107,8 +107,7 @@ def main():
     for item in release:
         db.execute("INSERT OR IGNORE INTO release VALUES (?, ?)", flatten_metric(item))
 
-    rs = db.execute(
-        """
+    rs = db.execute("""
         SELECT
             c.name AS name,
             c.value AS cv,
@@ -118,8 +117,7 @@ def main():
             current c
             LEFT JOIN release r ON (r.name = c.name)
         ORDER BY name
-    """
-    )
+    """)
 
     event = json.loads(Path(options.event).read_text())
     sha = event["client_payload"]["pull_request"]["head"]["sha"]

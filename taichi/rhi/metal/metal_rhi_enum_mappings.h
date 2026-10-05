@@ -19,7 +19,7 @@ MTLPrimitiveTopologyClass topotype2mtl(TopologyType type) {
            MTLPrimitiveTopologyClass::MTLPrimitiveTopologyClassLine},
           {TopologyType::Points,
            MTLPrimitiveTopologyClass::MTLPrimitiveTopologyClassPoint},
-      };
+  };
   auto it = map.find(type);
   RHI_ASSERT(it != map.end());
   return it->second;

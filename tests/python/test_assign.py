@@ -18,7 +18,7 @@ def test_assign_basic():
 def test_assign_unpack():
     @ti.kernel
     def func_unpack():
-        (a, b) = (1, 2)
+        a, b = (1, 2)
         assert a == 1
         assert b == 2
 
@@ -40,7 +40,7 @@ def test_assign_chained():
 def test_assign_chained_unpack():
     @ti.kernel
     def func_chained_unpack():
-        (a, b) = (c, d) = (1, 2)
+        a, b = (c, d) = (1, 2)
         assert a == 1
         assert b == 2
         assert c == 1

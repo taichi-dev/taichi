@@ -66,10 +66,8 @@ class Canvas:
             import numpy as np  # pylint: disable=import-outside-toplevel
             from matplotlib import cm  # pylint: disable=import-outside-toplevel
         except ImportError:
-            raise RuntimeError(
-                "Failed to import Numpy and Matplotlib. /\
-            Please install Numpy and Matplotlib before using contour()."
-            )
+            raise RuntimeError("Failed to import Numpy and Matplotlib. /\
+            Please install Numpy and Matplotlib before using contour().")
 
         scalar_field_np = scalar_field.to_numpy()
         field_shape = scalar_field_np.shape

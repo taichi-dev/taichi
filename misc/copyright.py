@@ -48,9 +48,7 @@ Examples:
 {file} .
 {file} --check taichi/common/core.cpp taichi/ir/transforms.h
 {file} benchmarks cmake docs examples misc python taichi tests
-{file} --exts "cpp,py" benchmarks cmake docs examples misc python taichi tests""".format(
-    file=os.path.relpath(__file__)
-)
+{file} --exts "cpp,py" benchmarks cmake docs examples misc python taichi tests""".format(file=os.path.relpath(__file__))
 
 
 class CommentStyle(Enum):

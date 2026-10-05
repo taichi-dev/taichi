@@ -35,13 +35,13 @@ enum class BinaryOpType : int {
 };
 
 inline bool binary_is_bitwise(BinaryOpType t) {
-  return t == BinaryOpType ::bit_and || t == BinaryOpType ::bit_or ||
-         t == BinaryOpType ::bit_xor || t == BinaryOpType ::bit_shl ||
-         t == BinaryOpType ::bit_shr || t == BinaryOpType ::bit_sar;
+  return t == BinaryOpType::bit_and || t == BinaryOpType::bit_or ||
+         t == BinaryOpType::bit_xor || t == BinaryOpType::bit_shl ||
+         t == BinaryOpType::bit_shr || t == BinaryOpType::bit_sar;
 }
 
 inline bool binary_is_logical(BinaryOpType t) {
-  return t == BinaryOpType ::logical_and || t == BinaryOpType ::logical_or;
+  return t == BinaryOpType::logical_and || t == BinaryOpType::logical_or;
 }
 
 std::string binary_op_type_name(BinaryOpType type);

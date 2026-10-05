@@ -18,13 +18,11 @@ import pytest
 
 # Modified from pytest-timeout
 tle_cffi = cffi.FFI()
-tle_cffi.cdef(
-    """
+tle_cffi.cdef("""
     void init(void);
     void set(int seconds, char *message);
     void cancel(void);
-"""
-)
+""")
 
 TLE_WIN32 = r"""
 #include <string.h>

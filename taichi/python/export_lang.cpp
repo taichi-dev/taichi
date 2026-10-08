@@ -35,6 +35,7 @@
 
 #if defined(TI_WITH_CUDA)
 #include "taichi/rhi/cuda/cuda_context.h"
+#include "taichi/runtime/cuda/kernel_launcher.h"
 #endif
 
 namespace taichi {
@@ -485,6 +486,19 @@ void export_lang(py::module &m) {
       .def("compile_kernel", &Program::compile_kernel,
            py::return_value_policy::reference)
       .def("launch_kernel", &Program::launch_kernel)
+#if defined(TI_WITH_CUDA)
+      .def("materialize_cuda_kernel",
+           [](Program &program, const CompiledKernelData &compiled) {
+             TI_ASSERT(program.compile_config().arch == Arch::cuda);
+             TI_ASSERT(compiled.arch() == Arch::cuda);
+             // Emit PTX through the normal JIT path without executing any
+             // offloaded task. Used by compile-only codegen regressions.
+             auto &launcher = dynamic_cast<cuda::KernelLauncher &>(
+                 program.get_program_impl()->get_kernel_launcher());
+             launcher.register_llvm_kernel(
+                 dynamic_cast<const LLVM::CompiledKernelData &>(compiled));
+           })
+#endif
       .def("get_device_caps", &Program::get_device_caps);
 
   py::class_<AotModuleBuilder>(m, "AotModuleBuilder")

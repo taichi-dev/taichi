@@ -1,0 +1,45 @@
+{
+  "method": "heat_conduction",
+  "compile_only": true,
+  "records": [
+    {
+      "file": "00__cell_body.ptx",
+      "body": "FluxLoopKernels._cell_body",
+      "kernel": "separate_array_apply_5_kernel_c136_0",
+      "seconds": 1.2062661809995916,
+      "sha256": "efa92605ba593edc64ffc7721ca7d04a03699c2f41fd18461db232e1a87c3b6c"
+    },
+    {
+      "file": "01__cell_body_with_rk_sum.ptx",
+      "body": "FluxLoopKernels._cell_body_with_rk_sum",
+      "kernel": "separate_array_rk_apply_kernel_c160_0",
+      "seconds": 1.197862890999204,
+      "sha256": "966d238e802ca2c1393bbdcdca3009586fd4867331a4be50e75fa16ea761b5bc"
+    },
+    {
+      "file": "02__cell_body_with_rk_sum_and_timestep.ptx",
+      "body": "FluxLoopKernels._cell_body_with_rk_sum_and_timestep",
+      "kernel": "separate_array_rk_apply_with_dt_kernel_c164_0",
+      "seconds": 1.3689965909998136,
+      "sha256": "6a7b87a19f77403bd9f46c7ebd8e2bafb2073b1a6928ce1696b99e79d1d12a9e"
+    }
+  ],
+  "taichi_commit": "ba0e81dce559fb63a5958bf82feb1d00c55c02fe",
+  "taichi_library": "/tmp/taichi-ptx-regression/baseline/taichi/_lib/core/taichi_python.cpython-313-x86_64-linux-gnu.so",
+  "taichi_library_sha256": "9d936b73e522c5a3a11abd6c910281389ce82fc1675d52ed66e1de49c6415925",
+  "compiler_has_patch": false,
+  "llvm_version": "15.0.4",
+  "cuda_compute_capability": 86,
+  "python_version": "3.13.15",
+  "peak_rss_kib": 833104,
+  "compiler_flags": {
+    "TI_CFG_COMPACT_REACHING": "0",
+    "TI_CFG_COMPACT_LIVE": "0",
+    "TI_CFG_PRECOMPUTED_KILLS": "0",
+    "TI_CSE_INDEXED_USERS": "0",
+    "TI_CFG_VERIFY_REACHING": "0",
+    "TI_CFG_VERIFY_LIVE": "0",
+    "TI_CSE_VERIFY_USERS": "0"
+  },
+  "solver_commit": "d0e815c559afde3c41e16ecdd435f8b1b137bd68"
+}

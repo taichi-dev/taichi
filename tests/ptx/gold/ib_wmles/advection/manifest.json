@@ -1,0 +1,38 @@
+{
+  "method": "advection",
+  "compile_only": false,
+  "records": [
+    {
+      "file": "00__cell_body.ptx",
+      "body": "FluxLoopKernels._cell_body",
+      "kernel": "separate_array_apply_5_kernel_c136_0",
+      "seconds": 183.40766388300017,
+      "sha256": "33eed4f11f1bd5cd88f3f1a6a70cc507decfa2d47afb06ddaf1fef8aa47fa470"
+    },
+    {
+      "file": "01__cell_body_with_timestep.ptx",
+      "body": "FluxLoopKernels._cell_body_with_timestep",
+      "kernel": "separate_array_apply_with_dt_5_kernel_c146_0",
+      "seconds": 184.74350369700005,
+      "sha256": "d20504a70230b49fd8dca55f067d854c35abf97d82c9724e91722a5b415b74fb"
+    }
+  ],
+  "taichi_commit": "ba0e81dce559fb63a5958bf82feb1d00c55c02fe",
+  "taichi_library": "/tmp/taichi-ptx-regression/baseline/taichi/_lib/core/taichi_python.cpython-313-x86_64-linux-gnu.so",
+  "taichi_library_sha256": "5945dbe2796ae34afc8dfd81202ae1c74485fb870c6e1682198e148f101b0a72",
+  "compiler_has_patch": false,
+  "llvm_version": "15.0.4",
+  "cuda_compute_capability": 86,
+  "python_version": "3.13.15",
+  "peak_rss_kib": 3513440,
+  "compiler_flags": {
+    "TI_CFG_COMPACT_REACHING": "0",
+    "TI_CFG_COMPACT_LIVE": "0",
+    "TI_CFG_PRECOMPUTED_KILLS": "0",
+    "TI_CSE_INDEXED_USERS": "0",
+    "TI_CFG_VERIFY_REACHING": "0",
+    "TI_CFG_VERIFY_LIVE": "0",
+    "TI_CSE_VERIFY_USERS": "0"
+  },
+  "solver_commit": "d0e815c559afde3c41e16ecdd435f8b1b137bd68"
+}

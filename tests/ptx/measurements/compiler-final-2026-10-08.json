@@ -1,0 +1,767 @@
+{
+  "date": "2026-10-08",
+  "solver_commit": "d0e815c559afde3c41e16ecdd435f8b1b137bd68",
+  "baseline_behavior_commit": "357325e72439c4eff11948e5b4f23a879a7aa1a4",
+  "source_note": "Both variants use the same final native build; its embedded commit predates the uncommitted compiler changes. Library hashes and flags identify the measured build and paths.",
+  "repeats_per_variant": 2,
+  "order": [
+    "baseline",
+    "candidate",
+    "candidate",
+    "baseline"
+  ],
+  "measurement": "Native Program.compile_kernel only; fresh processes, offline cache disabled, profiling and differential verification disabled",
+  "validation": "Every sample passed all three operator tests and compared all seven complete PTX modules against unchanged gold",
+  "samples": [
+    {
+      "repeat": 0,
+      "variant": "baseline",
+      "results": [
+        {
+          "method": "advection",
+          "compile_only": true,
+          "records": [
+            {
+              "file": "00__cell_body.ptx",
+              "body": "FluxLoopKernels._cell_body",
+              "kernel": "separate_array_apply_5_kernel_c136_0",
+              "seconds": 37.982950504001565,
+              "sha256": "33eed4f11f1bd5cd88f3f1a6a70cc507decfa2d47afb06ddaf1fef8aa47fa470"
+            },
+            {
+              "file": "01__cell_body_with_timestep.ptx",
+              "body": "FluxLoopKernels._cell_body_with_timestep",
+              "kernel": "separate_array_apply_with_dt_5_kernel_c146_0",
+              "seconds": 44.01081413400061,
+              "sha256": "d20504a70230b49fd8dca55f067d854c35abf97d82c9724e91722a5b415b74fb"
+            }
+          ],
+          "taichi_commit": "357325e72439c4eff11948e5b4f23a879a7aa1a4",
+          "taichi_library": "/home/seanbarrett/proj/taichi/python/taichi/_lib/core/taichi_python.cpython-313-x86_64-linux-gnu.so",
+          "taichi_library_sha256": "4d7405f5d4544ad72c479b41f3fb0a257aac81ff8b977ab2d992605c5a1f0d3e",
+          "compiler_has_patch": true,
+          "llvm_version": "15.0.4",
+          "cuda_compute_capability": 86,
+          "python_version": "3.13.15",
+          "peak_rss_kib": 963588,
+          "compiler_flags": {
+            "TI_CFG_COMPACT_REACHING": "1",
+            "TI_CFG_COMPACT_LIVE": "1",
+            "TI_CFG_PRECOMPUTED_KILLS": "1",
+            "TI_CSE_INDEXED_USERS": "1",
+            "TI_CFG_INDEXED_FORWARDING": "1",
+            "TI_CFG_VERIFY_REACHING": "0",
+            "TI_CFG_VERIFY_LIVE": "0",
+            "TI_CSE_VERIFY_USERS": "0",
+            "TI_CFG_VERIFY_FORWARDING": "0"
+          }
+        },
+        {
+          "method": "heat_conduction",
+          "compile_only": true,
+          "records": [
+            {
+              "file": "00__cell_body.ptx",
+              "body": "FluxLoopKernels._cell_body",
+              "kernel": "separate_array_apply_5_kernel_c136_0",
+              "seconds": 0.663000780999937,
+              "sha256": "efa92605ba593edc64ffc7721ca7d04a03699c2f41fd18461db232e1a87c3b6c"
+            },
+            {
+              "file": "01__cell_body_with_rk_sum.ptx",
+              "body": "FluxLoopKernels._cell_body_with_rk_sum",
+              "kernel": "separate_array_rk_apply_kernel_c160_0",
+              "seconds": 0.677175109000018,
+              "sha256": "966d238e802ca2c1393bbdcdca3009586fd4867331a4be50e75fa16ea761b5bc"
+            },
+            {
+              "file": "02__cell_body_with_rk_sum_and_timestep.ptx",
+              "body": "FluxLoopKernels._cell_body_with_rk_sum_and_timestep",
+              "kernel": "separate_array_rk_apply_with_dt_kernel_c164_0",
+              "seconds": 0.7362660519993369,
+              "sha256": "6a7b87a19f77403bd9f46c7ebd8e2bafb2073b1a6928ce1696b99e79d1d12a9e"
+            }
+          ],
+          "taichi_commit": "357325e72439c4eff11948e5b4f23a879a7aa1a4",
+          "taichi_library": "/home/seanbarrett/proj/taichi/python/taichi/_lib/core/taichi_python.cpython-313-x86_64-linux-gnu.so",
+          "taichi_library_sha256": "4d7405f5d4544ad72c479b41f3fb0a257aac81ff8b977ab2d992605c5a1f0d3e",
+          "compiler_has_patch": true,
+          "llvm_version": "15.0.4",
+          "cuda_compute_capability": 86,
+          "python_version": "3.13.15",
+          "peak_rss_kib": 653032,
+          "compiler_flags": {
+            "TI_CFG_COMPACT_REACHING": "1",
+            "TI_CFG_COMPACT_LIVE": "1",
+            "TI_CFG_PRECOMPUTED_KILLS": "1",
+            "TI_CSE_INDEXED_USERS": "1",
+            "TI_CFG_INDEXED_FORWARDING": "1",
+            "TI_CFG_VERIFY_REACHING": "0",
+            "TI_CFG_VERIFY_LIVE": "0",
+            "TI_CSE_VERIFY_USERS": "0",
+            "TI_CFG_VERIFY_FORWARDING": "0"
+          }
+        },
+        {
+          "method": "viscosity",
+          "compile_only": true,
+          "records": [
+            {
+              "file": "00__cell_body.ptx",
+              "body": "FluxLoopKernels._cell_body",
+              "kernel": "separate_array_apply_5_kernel_c136_0",
+              "seconds": 5.608175678000407,
+              "sha256": "e07e9045cd127daf812c08a3fc737fc7c74a4b7ee3dd29a3fa78c907071ba1c9"
+            },
+            {
+              "file": "01__cell_body_with_timestep.ptx",
+              "body": "FluxLoopKernels._cell_body_with_timestep",
+              "kernel": "separate_array_apply_with_dt_5_kernel_c146_0",
+              "seconds": 5.990667314999882,
+              "sha256": "21dffe0e2de4ceee3922cf72bc821b35dadb3f76fa90ddff5870a15b2cf4a956"
+            }
+          ],
+          "taichi_commit": "357325e72439c4eff11948e5b4f23a879a7aa1a4",
+          "taichi_library": "/home/seanbarrett/proj/taichi/python/taichi/_lib/core/taichi_python.cpython-313-x86_64-linux-gnu.so",
+          "taichi_library_sha256": "4d7405f5d4544ad72c479b41f3fb0a257aac81ff8b977ab2d992605c5a1f0d3e",
+          "compiler_has_patch": true,
+          "llvm_version": "15.0.4",
+          "cuda_compute_capability": 86,
+          "python_version": "3.13.15",
+          "peak_rss_kib": 753852,
+          "compiler_flags": {
+            "TI_CFG_COMPACT_REACHING": "1",
+            "TI_CFG_COMPACT_LIVE": "1",
+            "TI_CFG_PRECOMPUTED_KILLS": "1",
+            "TI_CSE_INDEXED_USERS": "1",
+            "TI_CFG_INDEXED_FORWARDING": "1",
+            "TI_CFG_VERIFY_REACHING": "0",
+            "TI_CFG_VERIFY_LIVE": "0",
+            "TI_CSE_VERIFY_USERS": "0",
+            "TI_CFG_VERIFY_FORWARDING": "0"
+          }
+        }
+      ]
+    },
+    {
+      "repeat": 0,
+      "variant": "candidate",
+      "results": [
+        {
+          "method": "advection",
+          "compile_only": true,
+          "records": [
+            {
+              "file": "00__cell_body.ptx",
+              "body": "FluxLoopKernels._cell_body",
+              "kernel": "separate_array_apply_5_kernel_c136_0",
+              "seconds": 13.294848409999759,
+              "sha256": "33eed4f11f1bd5cd88f3f1a6a70cc507decfa2d47afb06ddaf1fef8aa47fa470"
+            },
+            {
+              "file": "01__cell_body_with_timestep.ptx",
+              "body": "FluxLoopKernels._cell_body_with_timestep",
+              "kernel": "separate_array_apply_with_dt_5_kernel_c146_0",
+              "seconds": 13.468707959000312,
+              "sha256": "d20504a70230b49fd8dca55f067d854c35abf97d82c9724e91722a5b415b74fb"
+            }
+          ],
+          "taichi_commit": "357325e72439c4eff11948e5b4f23a879a7aa1a4",
+          "taichi_library": "/home/seanbarrett/proj/taichi/python/taichi/_lib/core/taichi_python.cpython-313-x86_64-linux-gnu.so",
+          "taichi_library_sha256": "4d7405f5d4544ad72c479b41f3fb0a257aac81ff8b977ab2d992605c5a1f0d3e",
+          "compiler_has_patch": true,
+          "llvm_version": "15.0.4",
+          "cuda_compute_capability": 86,
+          "python_version": "3.13.15",
+          "peak_rss_kib": 989744,
+          "compiler_flags": {
+            "TI_CFG_COMPACT_REACHING": "1",
+            "TI_CFG_COMPACT_LIVE": "1",
+            "TI_CFG_PRECOMPUTED_KILLS": "1",
+            "TI_CSE_INDEXED_USERS": "1",
+            "TI_CFG_INDEXED_FORWARDING": "1",
+            "TI_CFG_VERIFY_REACHING": "0",
+            "TI_CFG_VERIFY_LIVE": "0",
+            "TI_CSE_VERIFY_USERS": "0",
+            "TI_CFG_VERIFY_FORWARDING": "0",
+            "TI_CSE_LOCAL_REPAIR": "1",
+            "TI_AST_SKIP_UNUSED_REPLACE": "1",
+            "TI_CFG_LAZY_FORWARDING_INDEX": "1",
+            "TI_CFG_SHARED_FORWARDING_INDEX": "1"
+          }
+        },
+        {
+          "method": "heat_conduction",
+          "compile_only": true,
+          "records": [
+            {
+              "file": "00__cell_body.ptx",
+              "body": "FluxLoopKernels._cell_body",
+              "kernel": "separate_array_apply_5_kernel_c136_0",
+              "seconds": 0.26672152699939033,
+              "sha256": "efa92605ba593edc64ffc7721ca7d04a03699c2f41fd18461db232e1a87c3b6c"
+            },
+            {
+              "file": "01__cell_body_with_rk_sum.ptx",
+              "body": "FluxLoopKernels._cell_body_with_rk_sum",
+              "kernel": "separate_array_rk_apply_kernel_c160_0",
+              "seconds": 0.2758772439992754,
+              "sha256": "966d238e802ca2c1393bbdcdca3009586fd4867331a4be50e75fa16ea761b5bc"
+            },
+            {
+              "file": "02__cell_body_with_rk_sum_and_timestep.ptx",
+              "body": "FluxLoopKernels._cell_body_with_rk_sum_and_timestep",
+              "kernel": "separate_array_rk_apply_with_dt_kernel_c164_0",
+              "seconds": 0.3136961729996983,
+              "sha256": "6a7b87a19f77403bd9f46c7ebd8e2bafb2073b1a6928ce1696b99e79d1d12a9e"
+            }
+          ],
+          "taichi_commit": "357325e72439c4eff11948e5b4f23a879a7aa1a4",
+          "taichi_library": "/home/seanbarrett/proj/taichi/python/taichi/_lib/core/taichi_python.cpython-313-x86_64-linux-gnu.so",
+          "taichi_library_sha256": "4d7405f5d4544ad72c479b41f3fb0a257aac81ff8b977ab2d992605c5a1f0d3e",
+          "compiler_has_patch": true,
+          "llvm_version": "15.0.4",
+          "cuda_compute_capability": 86,
+          "python_version": "3.13.15",
+          "peak_rss_kib": 654728,
+          "compiler_flags": {
+            "TI_CFG_COMPACT_REACHING": "1",
+            "TI_CFG_COMPACT_LIVE": "1",
+            "TI_CFG_PRECOMPUTED_KILLS": "1",
+            "TI_CSE_INDEXED_USERS": "1",
+            "TI_CFG_INDEXED_FORWARDING": "1",
+            "TI_CFG_VERIFY_REACHING": "0",
+            "TI_CFG_VERIFY_LIVE": "0",
+            "TI_CSE_VERIFY_USERS": "0",
+            "TI_CFG_VERIFY_FORWARDING": "0",
+            "TI_CSE_LOCAL_REPAIR": "1",
+            "TI_AST_SKIP_UNUSED_REPLACE": "1",
+            "TI_CFG_LAZY_FORWARDING_INDEX": "1",
+            "TI_CFG_SHARED_FORWARDING_INDEX": "1"
+          }
+        },
+        {
+          "method": "viscosity",
+          "compile_only": true,
+          "records": [
+            {
+              "file": "00__cell_body.ptx",
+              "body": "FluxLoopKernels._cell_body",
+              "kernel": "separate_array_apply_5_kernel_c136_0",
+              "seconds": 1.9125528619988472,
+              "sha256": "e07e9045cd127daf812c08a3fc737fc7c74a4b7ee3dd29a3fa78c907071ba1c9"
+            },
+            {
+              "file": "01__cell_body_with_timestep.ptx",
+              "body": "FluxLoopKernels._cell_body_with_timestep",
+              "kernel": "separate_array_apply_with_dt_5_kernel_c146_0",
+              "seconds": 1.955026284998894,
+              "sha256": "21dffe0e2de4ceee3922cf72bc821b35dadb3f76fa90ddff5870a15b2cf4a956"
+            }
+          ],
+          "taichi_commit": "357325e72439c4eff11948e5b4f23a879a7aa1a4",
+          "taichi_library": "/home/seanbarrett/proj/taichi/python/taichi/_lib/core/taichi_python.cpython-313-x86_64-linux-gnu.so",
+          "taichi_library_sha256": "4d7405f5d4544ad72c479b41f3fb0a257aac81ff8b977ab2d992605c5a1f0d3e",
+          "compiler_has_patch": true,
+          "llvm_version": "15.0.4",
+          "cuda_compute_capability": 86,
+          "python_version": "3.13.15",
+          "peak_rss_kib": 749928,
+          "compiler_flags": {
+            "TI_CFG_COMPACT_REACHING": "1",
+            "TI_CFG_COMPACT_LIVE": "1",
+            "TI_CFG_PRECOMPUTED_KILLS": "1",
+            "TI_CSE_INDEXED_USERS": "1",
+            "TI_CFG_INDEXED_FORWARDING": "1",
+            "TI_CFG_VERIFY_REACHING": "0",
+            "TI_CFG_VERIFY_LIVE": "0",
+            "TI_CSE_VERIFY_USERS": "0",
+            "TI_CFG_VERIFY_FORWARDING": "0",
+            "TI_CSE_LOCAL_REPAIR": "1",
+            "TI_AST_SKIP_UNUSED_REPLACE": "1",
+            "TI_CFG_LAZY_FORWARDING_INDEX": "1",
+            "TI_CFG_SHARED_FORWARDING_INDEX": "1"
+          }
+        }
+      ]
+    },
+    {
+      "repeat": 1,
+      "variant": "candidate",
+      "results": [
+        {
+          "method": "advection",
+          "compile_only": true,
+          "records": [
+            {
+              "file": "00__cell_body.ptx",
+              "body": "FluxLoopKernels._cell_body",
+              "kernel": "separate_array_apply_5_kernel_c136_0",
+              "seconds": 13.091424711999935,
+              "sha256": "33eed4f11f1bd5cd88f3f1a6a70cc507decfa2d47afb06ddaf1fef8aa47fa470"
+            },
+            {
+              "file": "01__cell_body_with_timestep.ptx",
+              "body": "FluxLoopKernels._cell_body_with_timestep",
+              "kernel": "separate_array_apply_with_dt_5_kernel_c146_0",
+              "seconds": 13.155969707000622,
+              "sha256": "d20504a70230b49fd8dca55f067d854c35abf97d82c9724e91722a5b415b74fb"
+            }
+          ],
+          "taichi_commit": "357325e72439c4eff11948e5b4f23a879a7aa1a4",
+          "taichi_library": "/home/seanbarrett/proj/taichi/python/taichi/_lib/core/taichi_python.cpython-313-x86_64-linux-gnu.so",
+          "taichi_library_sha256": "4d7405f5d4544ad72c479b41f3fb0a257aac81ff8b977ab2d992605c5a1f0d3e",
+          "compiler_has_patch": true,
+          "llvm_version": "15.0.4",
+          "cuda_compute_capability": 86,
+          "python_version": "3.13.15",
+          "peak_rss_kib": 1033348,
+          "compiler_flags": {
+            "TI_CFG_COMPACT_REACHING": "1",
+            "TI_CFG_COMPACT_LIVE": "1",
+            "TI_CFG_PRECOMPUTED_KILLS": "1",
+            "TI_CSE_INDEXED_USERS": "1",
+            "TI_CFG_INDEXED_FORWARDING": "1",
+            "TI_CFG_VERIFY_REACHING": "0",
+            "TI_CFG_VERIFY_LIVE": "0",
+            "TI_CSE_VERIFY_USERS": "0",
+            "TI_CFG_VERIFY_FORWARDING": "0",
+            "TI_CSE_LOCAL_REPAIR": "1",
+            "TI_AST_SKIP_UNUSED_REPLACE": "1",
+            "TI_CFG_LAZY_FORWARDING_INDEX": "1",
+            "TI_CFG_SHARED_FORWARDING_INDEX": "1"
+          }
+        },
+        {
+          "method": "heat_conduction",
+          "compile_only": true,
+          "records": [
+            {
+              "file": "00__cell_body.ptx",
+              "body": "FluxLoopKernels._cell_body",
+              "kernel": "separate_array_apply_5_kernel_c136_0",
+              "seconds": 0.2828259199995955,
+              "sha256": "efa92605ba593edc64ffc7721ca7d04a03699c2f41fd18461db232e1a87c3b6c"
+            },
+            {
+              "file": "01__cell_body_with_rk_sum.ptx",
+              "body": "FluxLoopKernels._cell_body_with_rk_sum",
+              "kernel": "separate_array_rk_apply_kernel_c160_0",
+              "seconds": 0.25390552200042293,
+              "sha256": "966d238e802ca2c1393bbdcdca3009586fd4867331a4be50e75fa16ea761b5bc"
+            },
+            {
+              "file": "02__cell_body_with_rk_sum_and_timestep.ptx",
+              "body": "FluxLoopKernels._cell_body_with_rk_sum_and_timestep",
+              "kernel": "separate_array_rk_apply_with_dt_kernel_c164_0",
+              "seconds": 0.2884933919995092,
+              "sha256": "6a7b87a19f77403bd9f46c7ebd8e2bafb2073b1a6928ce1696b99e79d1d12a9e"
+            }
+          ],
+          "taichi_commit": "357325e72439c4eff11948e5b4f23a879a7aa1a4",
+          "taichi_library": "/home/seanbarrett/proj/taichi/python/taichi/_lib/core/taichi_python.cpython-313-x86_64-linux-gnu.so",
+          "taichi_library_sha256": "4d7405f5d4544ad72c479b41f3fb0a257aac81ff8b977ab2d992605c5a1f0d3e",
+          "compiler_has_patch": true,
+          "llvm_version": "15.0.4",
+          "cuda_compute_capability": 86,
+          "python_version": "3.13.15",
+          "peak_rss_kib": 655468,
+          "compiler_flags": {
+            "TI_CFG_COMPACT_REACHING": "1",
+            "TI_CFG_COMPACT_LIVE": "1",
+            "TI_CFG_PRECOMPUTED_KILLS": "1",
+            "TI_CSE_INDEXED_USERS": "1",
+            "TI_CFG_INDEXED_FORWARDING": "1",
+            "TI_CFG_VERIFY_REACHING": "0",
+            "TI_CFG_VERIFY_LIVE": "0",
+            "TI_CSE_VERIFY_USERS": "0",
+            "TI_CFG_VERIFY_FORWARDING": "0",
+            "TI_CSE_LOCAL_REPAIR": "1",
+            "TI_AST_SKIP_UNUSED_REPLACE": "1",
+            "TI_CFG_LAZY_FORWARDING_INDEX": "1",
+            "TI_CFG_SHARED_FORWARDING_INDEX": "1"
+          }
+        },
+        {
+          "method": "viscosity",
+          "compile_only": true,
+          "records": [
+            {
+              "file": "00__cell_body.ptx",
+              "body": "FluxLoopKernels._cell_body",
+              "kernel": "separate_array_apply_5_kernel_c136_0",
+              "seconds": 1.804677897000147,
+              "sha256": "e07e9045cd127daf812c08a3fc737fc7c74a4b7ee3dd29a3fa78c907071ba1c9"
+            },
+            {
+              "file": "01__cell_body_with_timestep.ptx",
+              "body": "FluxLoopKernels._cell_body_with_timestep",
+              "kernel": "separate_array_apply_with_dt_5_kernel_c146_0",
+              "seconds": 1.776768188999995,
+              "sha256": "21dffe0e2de4ceee3922cf72bc821b35dadb3f76fa90ddff5870a15b2cf4a956"
+            }
+          ],
+          "taichi_commit": "357325e72439c4eff11948e5b4f23a879a7aa1a4",
+          "taichi_library": "/home/seanbarrett/proj/taichi/python/taichi/_lib/core/taichi_python.cpython-313-x86_64-linux-gnu.so",
+          "taichi_library_sha256": "4d7405f5d4544ad72c479b41f3fb0a257aac81ff8b977ab2d992605c5a1f0d3e",
+          "compiler_has_patch": true,
+          "llvm_version": "15.0.4",
+          "cuda_compute_capability": 86,
+          "python_version": "3.13.15",
+          "peak_rss_kib": 752160,
+          "compiler_flags": {
+            "TI_CFG_COMPACT_REACHING": "1",
+            "TI_CFG_COMPACT_LIVE": "1",
+            "TI_CFG_PRECOMPUTED_KILLS": "1",
+            "TI_CSE_INDEXED_USERS": "1",
+            "TI_CFG_INDEXED_FORWARDING": "1",
+            "TI_CFG_VERIFY_REACHING": "0",
+            "TI_CFG_VERIFY_LIVE": "0",
+            "TI_CSE_VERIFY_USERS": "0",
+            "TI_CFG_VERIFY_FORWARDING": "0",
+            "TI_CSE_LOCAL_REPAIR": "1",
+            "TI_AST_SKIP_UNUSED_REPLACE": "1",
+            "TI_CFG_LAZY_FORWARDING_INDEX": "1",
+            "TI_CFG_SHARED_FORWARDING_INDEX": "1"
+          }
+        }
+      ]
+    },
+    {
+      "repeat": 1,
+      "variant": "baseline",
+      "results": [
+        {
+          "method": "advection",
+          "compile_only": true,
+          "records": [
+            {
+              "file": "00__cell_body.ptx",
+              "body": "FluxLoopKernels._cell_body",
+              "kernel": "separate_array_apply_5_kernel_c136_0",
+              "seconds": 45.98384473400074,
+              "sha256": "33eed4f11f1bd5cd88f3f1a6a70cc507decfa2d47afb06ddaf1fef8aa47fa470"
+            },
+            {
+              "file": "01__cell_body_with_timestep.ptx",
+              "body": "FluxLoopKernels._cell_body_with_timestep",
+              "kernel": "separate_array_apply_with_dt_5_kernel_c146_0",
+              "seconds": 46.30725944999904,
+              "sha256": "d20504a70230b49fd8dca55f067d854c35abf97d82c9724e91722a5b415b74fb"
+            }
+          ],
+          "taichi_commit": "357325e72439c4eff11948e5b4f23a879a7aa1a4",
+          "taichi_library": "/home/seanbarrett/proj/taichi/python/taichi/_lib/core/taichi_python.cpython-313-x86_64-linux-gnu.so",
+          "taichi_library_sha256": "4d7405f5d4544ad72c479b41f3fb0a257aac81ff8b977ab2d992605c5a1f0d3e",
+          "compiler_has_patch": true,
+          "llvm_version": "15.0.4",
+          "cuda_compute_capability": 86,
+          "python_version": "3.13.15",
+          "peak_rss_kib": 964972,
+          "compiler_flags": {
+            "TI_CFG_COMPACT_REACHING": "1",
+            "TI_CFG_COMPACT_LIVE": "1",
+            "TI_CFG_PRECOMPUTED_KILLS": "1",
+            "TI_CSE_INDEXED_USERS": "1",
+            "TI_CFG_INDEXED_FORWARDING": "1",
+            "TI_CFG_VERIFY_REACHING": "0",
+            "TI_CFG_VERIFY_LIVE": "0",
+            "TI_CSE_VERIFY_USERS": "0",
+            "TI_CFG_VERIFY_FORWARDING": "0"
+          }
+        },
+        {
+          "method": "heat_conduction",
+          "compile_only": true,
+          "records": [
+            {
+              "file": "00__cell_body.ptx",
+              "body": "FluxLoopKernels._cell_body",
+              "kernel": "separate_array_apply_5_kernel_c136_0",
+              "seconds": 0.669769329000701,
+              "sha256": "efa92605ba593edc64ffc7721ca7d04a03699c2f41fd18461db232e1a87c3b6c"
+            },
+            {
+              "file": "01__cell_body_with_rk_sum.ptx",
+              "body": "FluxLoopKernels._cell_body_with_rk_sum",
+              "kernel": "separate_array_rk_apply_kernel_c160_0",
+              "seconds": 0.6670961370000441,
+              "sha256": "966d238e802ca2c1393bbdcdca3009586fd4867331a4be50e75fa16ea761b5bc"
+            },
+            {
+              "file": "02__cell_body_with_rk_sum_and_timestep.ptx",
+              "body": "FluxLoopKernels._cell_body_with_rk_sum_and_timestep",
+              "kernel": "separate_array_rk_apply_with_dt_kernel_c164_0",
+              "seconds": 0.7306637090005097,
+              "sha256": "6a7b87a19f77403bd9f46c7ebd8e2bafb2073b1a6928ce1696b99e79d1d12a9e"
+            }
+          ],
+          "taichi_commit": "357325e72439c4eff11948e5b4f23a879a7aa1a4",
+          "taichi_library": "/home/seanbarrett/proj/taichi/python/taichi/_lib/core/taichi_python.cpython-313-x86_64-linux-gnu.so",
+          "taichi_library_sha256": "4d7405f5d4544ad72c479b41f3fb0a257aac81ff8b977ab2d992605c5a1f0d3e",
+          "compiler_has_patch": true,
+          "llvm_version": "15.0.4",
+          "cuda_compute_capability": 86,
+          "python_version": "3.13.15",
+          "peak_rss_kib": 653916,
+          "compiler_flags": {
+            "TI_CFG_COMPACT_REACHING": "1",
+            "TI_CFG_COMPACT_LIVE": "1",
+            "TI_CFG_PRECOMPUTED_KILLS": "1",
+            "TI_CSE_INDEXED_USERS": "1",
+            "TI_CFG_INDEXED_FORWARDING": "1",
+            "TI_CFG_VERIFY_REACHING": "0",
+            "TI_CFG_VERIFY_LIVE": "0",
+            "TI_CSE_VERIFY_USERS": "0",
+            "TI_CFG_VERIFY_FORWARDING": "0"
+          }
+        },
+        {
+          "method": "viscosity",
+          "compile_only": true,
+          "records": [
+            {
+              "file": "00__cell_body.ptx",
+              "body": "FluxLoopKernels._cell_body",
+              "kernel": "separate_array_apply_5_kernel_c136_0",
+              "seconds": 5.861946517999968,
+              "sha256": "e07e9045cd127daf812c08a3fc737fc7c74a4b7ee3dd29a3fa78c907071ba1c9"
+            },
+            {
+              "file": "01__cell_body_with_timestep.ptx",
+              "body": "FluxLoopKernels._cell_body_with_timestep",
+              "kernel": "separate_array_apply_with_dt_5_kernel_c146_0",
+              "seconds": 5.743178427001112,
+              "sha256": "21dffe0e2de4ceee3922cf72bc821b35dadb3f76fa90ddff5870a15b2cf4a956"
+            }
+          ],
+          "taichi_commit": "357325e72439c4eff11948e5b4f23a879a7aa1a4",
+          "taichi_library": "/home/seanbarrett/proj/taichi/python/taichi/_lib/core/taichi_python.cpython-313-x86_64-linux-gnu.so",
+          "taichi_library_sha256": "4d7405f5d4544ad72c479b41f3fb0a257aac81ff8b977ab2d992605c5a1f0d3e",
+          "compiler_has_patch": true,
+          "llvm_version": "15.0.4",
+          "cuda_compute_capability": 86,
+          "python_version": "3.13.15",
+          "peak_rss_kib": 755464,
+          "compiler_flags": {
+            "TI_CFG_COMPACT_REACHING": "1",
+            "TI_CFG_COMPACT_LIVE": "1",
+            "TI_CFG_PRECOMPUTED_KILLS": "1",
+            "TI_CSE_INDEXED_USERS": "1",
+            "TI_CFG_INDEXED_FORWARDING": "1",
+            "TI_CFG_VERIFY_REACHING": "0",
+            "TI_CFG_VERIFY_LIVE": "0",
+            "TI_CSE_VERIFY_USERS": "0",
+            "TI_CFG_VERIFY_FORWARDING": "0"
+          }
+        }
+      ]
+    }
+  ],
+  "summary": {
+    "advection": {
+      "baseline": {
+        "median_seconds": 87.14243441100098,
+        "min_seconds": 81.99376463800218,
+        "max_seconds": 92.29110418399978
+      },
+      "candidate": {
+        "median_seconds": 26.505475394000314,
+        "min_seconds": 26.247394419000557,
+        "max_seconds": 26.76355636900007
+      },
+      "speedup": 3.287714448265517
+    },
+    "viscosity": {
+      "baseline": {
+        "median_seconds": 11.601983969000685,
+        "min_seconds": 11.59884299300029,
+        "max_seconds": 11.60512494500108
+      },
+      "candidate": {
+        "median_seconds": 3.7245126164989415,
+        "min_seconds": 3.581446086000142,
+        "max_seconds": 3.867579146997741
+      },
+      "speedup": 3.1150341436906186
+    },
+    "heat_conduction": {
+      "baseline": {
+        "median_seconds": 2.0719855585002733,
+        "min_seconds": 2.0675291750012548,
+        "max_seconds": 2.076441941999292
+      },
+      "candidate": {
+        "median_seconds": 0.8407598889989458,
+        "min_seconds": 0.8252248339995276,
+        "max_seconds": 0.856294943998364
+      },
+      "speedup": 2.464420086651959
+    },
+    "total": {
+      "baseline": {
+        "median_seconds": 100.81640393850194,
+        "min_seconds": 95.66904957300176,
+        "max_seconds": 105.96375830400211
+      },
+      "candidate": {
+        "median_seconds": 31.0707478994982,
+        "min_seconds": 30.654065339000226,
+        "max_seconds": 31.487430459996176
+      },
+      "speedup": 3.2447369553061236
+    }
+  },
+  "separate_validation": {
+    "ptx_with_forwarding_differential": {
+      "passed_tests": 3,
+      "ptx_modules": 7,
+      "pytest_seconds": 176.4,
+      "results": [
+        {
+          "method": "advection",
+          "compile_only": true,
+          "records": [
+            {
+              "file": "00__cell_body.ptx",
+              "body": "FluxLoopKernels._cell_body",
+              "kernel": "separate_array_apply_5_kernel_c136_0",
+              "seconds": 50.16159673600123,
+              "sha256": "33eed4f11f1bd5cd88f3f1a6a70cc507decfa2d47afb06ddaf1fef8aa47fa470"
+            },
+            {
+              "file": "01__cell_body_with_timestep.ptx",
+              "body": "FluxLoopKernels._cell_body_with_timestep",
+              "kernel": "separate_array_apply_with_dt_5_kernel_c146_0",
+              "seconds": 49.90085322300001,
+              "sha256": "d20504a70230b49fd8dca55f067d854c35abf97d82c9724e91722a5b415b74fb"
+            }
+          ],
+          "taichi_commit": "357325e72439c4eff11948e5b4f23a879a7aa1a4",
+          "taichi_library": "/home/seanbarrett/proj/taichi/python/taichi/_lib/core/taichi_python.cpython-313-x86_64-linux-gnu.so",
+          "taichi_library_sha256": "4d7405f5d4544ad72c479b41f3fb0a257aac81ff8b977ab2d992605c5a1f0d3e",
+          "compiler_has_patch": true,
+          "llvm_version": "15.0.4",
+          "cuda_compute_capability": 86,
+          "python_version": "3.13.15",
+          "peak_rss_kib": 1024228,
+          "compiler_flags": {
+            "TI_CFG_COMPACT_REACHING": "1",
+            "TI_CFG_COMPACT_LIVE": "1",
+            "TI_CFG_PRECOMPUTED_KILLS": "1",
+            "TI_CSE_INDEXED_USERS": "1",
+            "TI_CFG_INDEXED_FORWARDING": "1",
+            "TI_CFG_VERIFY_REACHING": "0",
+            "TI_CFG_VERIFY_LIVE": "0",
+            "TI_CSE_VERIFY_USERS": "0",
+            "TI_CFG_VERIFY_FORWARDING": "1",
+            "TI_CSE_LOCAL_REPAIR": "1",
+            "TI_AST_SKIP_UNUSED_REPLACE": "1",
+            "TI_CFG_LAZY_FORWARDING_INDEX": "1",
+            "TI_CFG_SHARED_FORWARDING_INDEX": "1"
+          }
+        },
+        {
+          "method": "heat_conduction",
+          "compile_only": true,
+          "records": [
+            {
+              "file": "00__cell_body.ptx",
+              "body": "FluxLoopKernels._cell_body",
+              "kernel": "separate_array_apply_5_kernel_c136_0",
+              "seconds": 0.5743882360002317,
+              "sha256": "efa92605ba593edc64ffc7721ca7d04a03699c2f41fd18461db232e1a87c3b6c"
+            },
+            {
+              "file": "01__cell_body_with_rk_sum.ptx",
+              "body": "FluxLoopKernels._cell_body_with_rk_sum",
+              "kernel": "separate_array_rk_apply_kernel_c160_0",
+              "seconds": 0.5999192800009041,
+              "sha256": "966d238e802ca2c1393bbdcdca3009586fd4867331a4be50e75fa16ea761b5bc"
+            },
+            {
+              "file": "02__cell_body_with_rk_sum_and_timestep.ptx",
+              "body": "FluxLoopKernels._cell_body_with_rk_sum_and_timestep",
+              "kernel": "separate_array_rk_apply_with_dt_kernel_c164_0",
+              "seconds": 0.6821742169995559,
+              "sha256": "6a7b87a19f77403bd9f46c7ebd8e2bafb2073b1a6928ce1696b99e79d1d12a9e"
+            }
+          ],
+          "taichi_commit": "357325e72439c4eff11948e5b4f23a879a7aa1a4",
+          "taichi_library": "/home/seanbarrett/proj/taichi/python/taichi/_lib/core/taichi_python.cpython-313-x86_64-linux-gnu.so",
+          "taichi_library_sha256": "4d7405f5d4544ad72c479b41f3fb0a257aac81ff8b977ab2d992605c5a1f0d3e",
+          "compiler_has_patch": true,
+          "llvm_version": "15.0.4",
+          "cuda_compute_capability": 86,
+          "python_version": "3.13.15",
+          "peak_rss_kib": 650192,
+          "compiler_flags": {
+            "TI_CFG_COMPACT_REACHING": "1",
+            "TI_CFG_COMPACT_LIVE": "1",
+            "TI_CFG_PRECOMPUTED_KILLS": "1",
+            "TI_CSE_INDEXED_USERS": "1",
+            "TI_CFG_INDEXED_FORWARDING": "1",
+            "TI_CFG_VERIFY_REACHING": "0",
+            "TI_CFG_VERIFY_LIVE": "0",
+            "TI_CSE_VERIFY_USERS": "0",
+            "TI_CFG_VERIFY_FORWARDING": "1",
+            "TI_CSE_LOCAL_REPAIR": "1",
+            "TI_AST_SKIP_UNUSED_REPLACE": "1",
+            "TI_CFG_LAZY_FORWARDING_INDEX": "1",
+            "TI_CFG_SHARED_FORWARDING_INDEX": "1"
+          }
+        },
+        {
+          "method": "viscosity",
+          "compile_only": true,
+          "records": [
+            {
+              "file": "00__cell_body.ptx",
+              "body": "FluxLoopKernels._cell_body",
+              "kernel": "separate_array_apply_5_kernel_c136_0",
+              "seconds": 6.75653954200061,
+              "sha256": "e07e9045cd127daf812c08a3fc737fc7c74a4b7ee3dd29a3fa78c907071ba1c9"
+            },
+            {
+              "file": "01__cell_body_with_timestep.ptx",
+              "body": "FluxLoopKernels._cell_body_with_timestep",
+              "kernel": "separate_array_apply_with_dt_5_kernel_c146_0",
+              "seconds": 7.072050143999149,
+              "sha256": "21dffe0e2de4ceee3922cf72bc821b35dadb3f76fa90ddff5870a15b2cf4a956"
+            }
+          ],
+          "taichi_commit": "357325e72439c4eff11948e5b4f23a879a7aa1a4",
+          "taichi_library": "/home/seanbarrett/proj/taichi/python/taichi/_lib/core/taichi_python.cpython-313-x86_64-linux-gnu.so",
+          "taichi_library_sha256": "4d7405f5d4544ad72c479b41f3fb0a257aac81ff8b977ab2d992605c5a1f0d3e",
+          "compiler_has_patch": true,
+          "llvm_version": "15.0.4",
+          "cuda_compute_capability": 86,
+          "python_version": "3.13.15",
+          "peak_rss_kib": 743776,
+          "compiler_flags": {
+            "TI_CFG_COMPACT_REACHING": "1",
+            "TI_CFG_COMPACT_LIVE": "1",
+            "TI_CFG_PRECOMPUTED_KILLS": "1",
+            "TI_CSE_INDEXED_USERS": "1",
+            "TI_CFG_INDEXED_FORWARDING": "1",
+            "TI_CFG_VERIFY_REACHING": "0",
+            "TI_CFG_VERIFY_LIVE": "0",
+            "TI_CSE_VERIFY_USERS": "0",
+            "TI_CFG_VERIFY_FORWARDING": "1",
+            "TI_CSE_LOCAL_REPAIR": "1",
+            "TI_AST_SKIP_UNUSED_REPLACE": "1",
+            "TI_CFG_LAZY_FORWARDING_INDEX": "1",
+            "TI_CFG_SHARED_FORWARDING_INDEX": "1"
+          }
+        }
+      ]
+    },
+    "native_tests": {
+      "passed": 82,
+      "verification": "Forwarding, liveness and CSE user differential checks enabled; compact reaching kept active to exercise shared forwarding"
+    },
+    "new_native_tests_with_optimizations_disabled": {
+      "passed": 7
+    }
+  }
+}

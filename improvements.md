@@ -166,3 +166,117 @@ and heat from 636.9–638.0 versus 637.2–637.6 MiB.
 Individual samples, summary statistics and native-library hashes are retained in
 [`tests/ptx/measurements/forwarding-2026-10-08.json`](tests/ptx/measurements/forwarding-2026-10-08.json).
 The test and benchmark additions are committed separately as `0bee6b05e`.
+
+## Repairing CSE users after branch hoisting
+
+The original indexed CSE path invalidated its user map after hoisting common
+statements out of an `if`. Every later elimination in that sweep then reverted
+to whole-IR searches. `TI_CSE_REPAIR_USERS=1` instead rebuilds the index lazily
+before the next elimination. This preserves the reference traversal's view of
+the IR, including excluding extracted statements awaiting delayed insertion.
+
+`TI_CSE_LOCAL_REPAIR=1` improves that repair further. Before hoisting, it removes
+operand edges belonging to the extracted true-branch subtree and the affected
+false branch. After the original replacement and erasure operations, it adds
+the false branch's current edges back. Users elsewhere in the IR are preserved.
+This avoids rebuilding the entire graph after each hoist. The full index is
+still rebuilt at the start of each CSE sweep, and lazy whole-index repair remains
+available if the index is invalid. Local repair implies repair is enabled.
+
+In independent screening, whole-index repair reduced aggregate scoped CSE time
+from 22.771 to 5.119 seconds. With the AST improvement below enabled, local repair
+then reduced CSE from 5.923 to 3.894 seconds; subtree maintenance itself took
+0.007 seconds. All screening PTX comparisons passed. These are individual pass
+measurements, not repeated end-to-end speedup estimates.
+
+## Avoiding unused AST replacement scans
+
+`TI_AST_SKIP_UNUSED_REPLACE=1` maintains a conservative set of statements used
+as operands while lowering the frontend AST. Most replaced frontend statements
+have no registered statement users, but previously each replacement still
+traversed the IR looking for them. The new path skips that traversal when the
+old statement is absent from the referenced set.
+
+The set is initialized from the entire input IR and updated with operands from
+newly lowered statements, including their subtrees. Replacement targets are
+marked as referenced when existing users are redirected to them. Entries are
+never removed: stale entries can only cause an unnecessary original traversal,
+not a missed replacement. The existing replacement scope and ordering are
+unchanged when users may exist. A native regression deliberately mixes frontend
+allocation and existing backend users to exercise that fallback.
+
+Independent screening reduced scoped AST-lowering time from 24.923 to 1.167
+seconds, with all seven PTX modules unchanged. Unlike removing optimization
+passes, this removes searches that cannot change any operands.
+
+The full experiment record, including rejected approaches and preserved
+prototype patches, is in [`tests/ptx/experiments/README.md`](tests/ptx/experiments/README.md).
+
+## Lazy and shared forwarding indexes
+
+Profiling exposed a cost hidden inside store forwarding: building each node's
+address index took 18.495 seconds in one CSE/AST-optimized run.
+`TI_CFG_LAZY_FORWARDING_INDEX=1` defers construction until the first scalar-local
+cross-block query. Queries satisfied by the latest store in the same node never
+need it. This reduced index construction to 15.239 seconds and the sampled total
+from 48.916 to 45.807 seconds, preserving all PTX bytes.
+
+`TI_CFG_SHARED_FORWARDING_INDEX=1` removes most of the remaining duplication.
+The graph builds one address index from the compact reaching-definition
+universe. Each node filters its address bucket through its own `reach_in`
+membership test, instead of constructing another copy of the index. The bucket
+order is the universe's order, exactly matching compact-set iteration, so
+filtering preserves which equivalent visible definition is selected first.
+Generated definitions remain indexed locally in their original order.
+
+Sharing is restricted to compact reaching sets. When the analysis uses hash
+sets, including after differential reaching-analysis verification, it falls back
+to the original per-node index to preserve that representation's iteration order.
+The shared index lasts for one forwarding pass. It indexes scalar allocation
+identities; stored values are still read from the live statements at query time,
+and the original alias, equality and visibility predicates remain in use.
+
+In screening on top of local CSE repair, AST pruning and lazy construction,
+sharing reduced index construction from 14.623 seconds to 0.041 seconds
+(0.020 shared plus 0.021 local). Total forwarding time fell from 20.769 to 4.580
+seconds, and native compilation from 45.927 to 29.433 seconds. All seven PTX
+modules remained byte-identical. Repeated final measurements are recorded below.
+
+## Final repeated comparison (2026-10-08)
+
+The final comparison uses one native build, switching the new optimizations off
+for the control and on for the candidate. Both retain the original compact CFG,
+KILL-mask, indexed CSE and scalar-forwarding improvements. The candidate adds
+local CSE repair, AST replacement pruning, and lazy/shared forwarding indexes.
+Each variant runs twice in fresh processes, in control/candidate/candidate/control
+order, with offline caching, profiling and differential verification disabled.
+Times cover native `Program.compile_kernel` for the operator-unfused kernels.
+
+| Operator | Control median (s) | Candidate median (s) | Speedup |
+| --- | ---: | ---: | ---: |
+| Advection | 87.142 | 26.505 | 3.29× |
+| Viscosity | 11.602 | 3.725 | 3.12× |
+| Heat conduction | 2.072 | 0.841 | 2.46× |
+| Total | 100.816 | 31.071 | 3.24× |
+
+This is a 69.2% reduction in compilation time relative to the compiler at the
+start of this experiment round. Control totals ranged from 95.669 to 105.964
+seconds; candidate totals ranged from 30.654 to 31.487 seconds. Two repetitions
+establish the large improvement but are insufficient for a precise noise model.
+Do not multiply this ratio by earlier measurements made under different conditions.
+All four runs matched all seven original PTX modules byte for byte.
+
+The [measurement record](tests/ptx/measurements/compiler-final-2026-10-08.json)
+includes individual kernel timings, compiler flags, native-library hashes and
+peak process RSS. The improvements remain opt-in; reproduce the candidate with
+`--ptx-mode optimized --ptx-experiment cse-local --ptx-experiment ast-unused
+--ptx-experiment lazy-forwarding --ptx-experiment shared-forwarding`.
+
+Final validation also passed all three operator tests with forwarding differential
+verification enabled (seven unchanged PTX modules). This used optimized mode plus
+`--ptx-verify-forwarding`, so compact reaching sets and the shared index remained
+active. The broader verify mode rebuilds reaching sets in the reference hash
+representation and therefore exercises the per-node fallback instead. Separately,
+82 native tests passed with the retained features and forwarding, liveness and
+CSE-user checks enabled; all seven new native tests also passed with the
+optimizations disabled. No target transport kernels were numerically executed.

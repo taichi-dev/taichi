@@ -16,6 +16,12 @@ namespace {
 
 using CFGKillMasks = std::unordered_map<CFGNode *, ReachingDefinitionSet>;
 
+bool cfg_experiment(const char *name) {
+  auto value = std::getenv(name);
+  return value && value[0] == '1';
+}
+
+
 CFGKillMasks build_kill_masks(
     const std::vector<std::unique_ptr<CFGNode>> &nodes,
     const std::shared_ptr<ReachingDefinitionUniverse> &universe,
@@ -86,7 +92,9 @@ CFGKillMasks build_kill_masks(
 struct ScalarStoreForwardingIndex {
   std::unordered_map<Stmt *, Stmt *> latest;
   using Definitions = std::unordered_map<Stmt *, std::vector<Stmt *>>;
-  Definitions incoming, generated;
+  mutable Definitions incoming, generated;
+  mutable bool initialized{false};
+  const ScalarStoreForwardingIndex *shared{nullptr};
 
   static bool eligible(Stmt *address) {
     return address->is<AllocaStmt>() &&
@@ -116,6 +124,15 @@ struct ScalarStoreForwardingIndex {
       }
     }
     return result;
+  }
+
+  void prepare(const ReachingDefinitionSet &reach_in,
+               const std::unordered_set<Stmt *> &reach_gen) const {
+    if (initialized) return;
+    TI_PROFILER("forwarding_index");
+    if (!shared) incoming = by_address(reach_in);
+    generated = by_address(reach_gen);
+    initialized = true;
   }
 
   static const std::vector<Stmt *> &lookup(const Definitions &definitions,
@@ -402,6 +419,7 @@ Stmt *CFGNode::get_store_forwarding_data(
 
   // [Cross-block search]
   // Search for store to the same dest_addr in reach_in and reach_gen
+  if (indexed_scalar) index->prepare(reach_in, reach_gen);
   Stmt *result = nullptr;
   bool result_visible = false;
   auto visible = [&](Stmt *stmt) {
@@ -452,6 +470,7 @@ Stmt *CFGNode::get_store_forwarding_data(
   last_def_position = -1;
   auto search_incoming = [&](const auto &definitions) {
     for (auto stmt : definitions) {
+      if (indexed_scalar && index->shared && reach_in.find(stmt) == reach_in.end()) continue;
       // var == stmt is for the case that a global ptr is never stored.
       // In this case, stmt is from nodes[start_node]->reach_gen.
       if (var == stmt || may_contain_address(stmt, var)) {
@@ -465,7 +484,8 @@ Stmt *CFGNode::get_store_forwarding_data(
   };
   if (!(indexed_scalar
             ? search_incoming(
-                  ScalarStoreForwardingIndex::lookup(index->incoming, var))
+                  ScalarStoreForwardingIndex::lookup(
+                      index->shared ? index->shared->incoming : index->incoming, var))
             : search_incoming(reach_in))) {
     return nullptr;
   }
@@ -559,7 +579,8 @@ void CFGNode::reaching_definition_analysis(bool after_lower_access) {
 }
 
 bool CFGNode::store_to_load_forwarding(bool after_lower_access,
-                                       bool autodiff_enabled) {
+                                       bool autodiff_enabled,
+                                       const ScalarStoreForwardingIndex *shared_index) {
   // Contains two separate parts:
   // 1. Store-to-load Forwarding: for each load stmt, find the closest previous
   // store stmt
@@ -574,10 +595,8 @@ bool CFGNode::store_to_load_forwarding(bool after_lower_access,
   setting = std::getenv("TI_CFG_VERIFY_FORWARDING");
   const bool verify = indexed && setting && setting[0] == '1';
   ScalarStoreForwardingIndex index;
-  if (indexed) {
-    index.incoming = ScalarStoreForwardingIndex::by_address(reach_in);
-    index.generated = ScalarStoreForwardingIndex::by_address(reach_gen);
-  }
+  index.shared = shared_index;
+  if (indexed && !cfg_experiment("TI_CFG_LAZY_FORWARDING_INDEX")) index.prepare(reach_in, reach_gen);
   auto forwarding_data = [&](Stmt *var, int position) {
     auto result = get_store_forwarding_data(
         var, position, indexed ? &index : nullptr);
@@ -1531,10 +1550,21 @@ bool ControlFlowGraph::store_to_load_forwarding(bool after_lower_access,
   TI_AUTO_PROF;
   reaching_definition_analysis(after_lower_access);
   const int num_nodes = size();
+  ScalarStoreForwardingIndex shared_index;
+  const auto &universe = nodes[start_node]->reach_in.universe();
+  const bool share = universe && cfg_experiment("TI_CFG_INDEXED_FORWARDING") &&
+                     cfg_experiment("TI_CFG_SHARED_FORWARDING_INDEX");
+  if (share) {
+    TI_PROFILER("shared_forwarding_index");
+    // Compact IN sets iterate in this universe's order. Filtering these
+    // address buckets by membership therefore preserves candidate selection.
+    shared_index.incoming = ScalarStoreForwardingIndex::by_address(universe->values);
+  }
   bool modified = false;
   for (int i = 0; i < num_nodes; i++) {
     if (nodes[i]->store_to_load_forwarding(after_lower_access,
-                                           autodiff_enabled))
+                                           autodiff_enabled,
+                                           share ? &shared_index : nullptr))
       modified = true;
   }
   return modified;

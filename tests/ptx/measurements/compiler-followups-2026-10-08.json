@@ -1,0 +1,457 @@
+{
+  "date": "2026-10-08",
+  "baseline_commit": "357325e72",
+  "stage": "followups",
+  "note": "Single-run screening with controls; profile times are scoped elapsed seconds, not independent end-to-end samples. PTX gold unchanged.",
+  "runs": [
+    {
+      "variant": "cse-repair+ast-unused",
+      "passed": true,
+      "native_seconds": 51.21399500999905,
+      "operators": {
+        "advection": {
+          "native_seconds": 41.46052901300027,
+          "peak_rss_kib": 1040244,
+          "taichi_library_sha256": "dd1a496e9748139efd6c308dd4eb8dc627e57aeb536ae4adfd12471c03c413d8",
+          "compiler_flags": {
+            "TI_CFG_COMPACT_REACHING": "1",
+            "TI_CFG_COMPACT_LIVE": "1",
+            "TI_CFG_PRECOMPUTED_KILLS": "1",
+            "TI_CSE_INDEXED_USERS": "1",
+            "TI_CFG_INDEXED_FORWARDING": "1",
+            "TI_CFG_VERIFY_REACHING": "0",
+            "TI_CFG_VERIFY_LIVE": "0",
+            "TI_CSE_VERIFY_USERS": "0",
+            "TI_CFG_VERIFY_FORWARDING": "0",
+            "TI_CSE_REPAIR_USERS": "1",
+            "TI_AST_SKIP_UNUSED_REPLACE": "1"
+          },
+          "profile_seconds": {
+            "lower_ast": 0.8380000000000001,
+            "whole_kernel_cse": 4.320237226000001,
+            "refresh_users": 2.1362880549999996,
+            "update_subtree_users": 0,
+            "store_to_load_forwarding": 20.011581922,
+            "reaching_definition_analysis": 0.23030802499999997,
+            "live_variable_analysis": 0.17716497
+          }
+        },
+        "heat_conduction": {
+          "native_seconds": 1.3550700119994872,
+          "peak_rss_kib": 658016,
+          "taichi_library_sha256": "dd1a496e9748139efd6c308dd4eb8dc627e57aeb536ae4adfd12471c03c413d8",
+          "compiler_flags": {
+            "TI_CFG_COMPACT_REACHING": "1",
+            "TI_CFG_COMPACT_LIVE": "1",
+            "TI_CFG_PRECOMPUTED_KILLS": "1",
+            "TI_CSE_INDEXED_USERS": "1",
+            "TI_CFG_INDEXED_FORWARDING": "1",
+            "TI_CFG_VERIFY_REACHING": "0",
+            "TI_CFG_VERIFY_LIVE": "0",
+            "TI_CSE_VERIFY_USERS": "0",
+            "TI_CFG_VERIFY_FORWARDING": "0",
+            "TI_CSE_REPAIR_USERS": "1",
+            "TI_AST_SKIP_UNUSED_REPLACE": "1"
+          },
+          "profile_seconds": {
+            "lower_ast": 0.082277,
+            "whole_kernel_cse": 0.15100997900000002,
+            "refresh_users": 0.09801969699999999,
+            "update_subtree_users": 0,
+            "store_to_load_forwarding": 0.612437699,
+            "reaching_definition_analysis": 0.017075676999999997,
+            "live_variable_analysis": 0.013486755
+          }
+        },
+        "viscosity": {
+          "native_seconds": 8.398395984999297,
+          "peak_rss_kib": 752644,
+          "taichi_library_sha256": "dd1a496e9748139efd6c308dd4eb8dc627e57aeb536ae4adfd12471c03c413d8",
+          "compiler_flags": {
+            "TI_CFG_COMPACT_REACHING": "1",
+            "TI_CFG_COMPACT_LIVE": "1",
+            "TI_CFG_PRECOMPUTED_KILLS": "1",
+            "TI_CSE_INDEXED_USERS": "1",
+            "TI_CFG_INDEXED_FORWARDING": "1",
+            "TI_CFG_VERIFY_REACHING": "0",
+            "TI_CFG_VERIFY_LIVE": "0",
+            "TI_CSE_VERIFY_USERS": "0",
+            "TI_CFG_VERIFY_FORWARDING": "0",
+            "TI_CSE_REPAIR_USERS": "1",
+            "TI_AST_SKIP_UNUSED_REPLACE": "1"
+          },
+          "profile_seconds": {
+            "lower_ast": 0.193,
+            "whole_kernel_cse": 1.451998723,
+            "refresh_users": 1.179453816,
+            "update_subtree_users": 0,
+            "store_to_load_forwarding": 4.569817836,
+            "reaching_definition_analysis": 0.064698037,
+            "live_variable_analysis": 0.043410725
+          }
+        }
+      }
+    },
+    {
+      "variant": "cse-local+ast-unused",
+      "passed": true,
+      "native_seconds": 49.15298785400046,
+      "operators": {
+        "advection": {
+          "native_seconds": 40.519502494000335,
+          "peak_rss_kib": 1044884,
+          "taichi_library_sha256": "dd1a496e9748139efd6c308dd4eb8dc627e57aeb536ae4adfd12471c03c413d8",
+          "compiler_flags": {
+            "TI_CFG_COMPACT_REACHING": "1",
+            "TI_CFG_COMPACT_LIVE": "1",
+            "TI_CFG_PRECOMPUTED_KILLS": "1",
+            "TI_CSE_INDEXED_USERS": "1",
+            "TI_CFG_INDEXED_FORWARDING": "1",
+            "TI_CFG_VERIFY_REACHING": "0",
+            "TI_CFG_VERIFY_LIVE": "0",
+            "TI_CSE_VERIFY_USERS": "0",
+            "TI_CFG_VERIFY_FORWARDING": "0",
+            "TI_CSE_LOCAL_REPAIR": "1",
+            "TI_AST_SKIP_UNUSED_REPLACE": "1"
+          },
+          "profile_seconds": {
+            "lower_ast": 0.866,
+            "whole_kernel_cse": 3.371172853,
+            "refresh_users": 1.193289664,
+            "update_subtree_users": 0.0,
+            "store_to_load_forwarding": 20.285290967999998,
+            "reaching_definition_analysis": 0.23753912300000002,
+            "live_variable_analysis": 0.174825149
+          }
+        },
+        "heat_conduction": {
+          "native_seconds": 1.265246479999405,
+          "peak_rss_kib": 657868,
+          "taichi_library_sha256": "dd1a496e9748139efd6c308dd4eb8dc627e57aeb536ae4adfd12471c03c413d8",
+          "compiler_flags": {
+            "TI_CFG_COMPACT_REACHING": "1",
+            "TI_CFG_COMPACT_LIVE": "1",
+            "TI_CFG_PRECOMPUTED_KILLS": "1",
+            "TI_CSE_INDEXED_USERS": "1",
+            "TI_CFG_INDEXED_FORWARDING": "1",
+            "TI_CFG_VERIFY_REACHING": "0",
+            "TI_CFG_VERIFY_LIVE": "0",
+            "TI_CSE_VERIFY_USERS": "0",
+            "TI_CFG_VERIFY_FORWARDING": "0",
+            "TI_CSE_LOCAL_REPAIR": "1",
+            "TI_AST_SKIP_UNUSED_REPLACE": "1"
+          },
+          "profile_seconds": {
+            "lower_ast": 0.07982099999999999,
+            "whole_kernel_cse": 0.078397607,
+            "refresh_users": 0.03309589,
+            "update_subtree_users": 0.001951,
+            "store_to_load_forwarding": 0.603030488,
+            "reaching_definition_analysis": 0.017070393,
+            "live_variable_analysis": 0.013162774000000002
+          }
+        },
+        "viscosity": {
+          "native_seconds": 7.3682388800007175,
+          "peak_rss_kib": 756196,
+          "taichi_library_sha256": "dd1a496e9748139efd6c308dd4eb8dc627e57aeb536ae4adfd12471c03c413d8",
+          "compiler_flags": {
+            "TI_CFG_COMPACT_REACHING": "1",
+            "TI_CFG_COMPACT_LIVE": "1",
+            "TI_CFG_PRECOMPUTED_KILLS": "1",
+            "TI_CSE_INDEXED_USERS": "1",
+            "TI_CFG_INDEXED_FORWARDING": "1",
+            "TI_CFG_VERIFY_REACHING": "0",
+            "TI_CFG_VERIFY_LIVE": "0",
+            "TI_CSE_VERIFY_USERS": "0",
+            "TI_CFG_VERIFY_FORWARDING": "0",
+            "TI_CSE_LOCAL_REPAIR": "1",
+            "TI_AST_SKIP_UNUSED_REPLACE": "1"
+          },
+          "profile_seconds": {
+            "lower_ast": 0.192,
+            "whole_kernel_cse": 0.44412587400000003,
+            "refresh_users": 0.19738524000000002,
+            "update_subtree_users": 0.004659,
+            "store_to_load_forwarding": 4.582935943999999,
+            "reaching_definition_analysis": 0.065032054,
+            "live_variable_analysis": 0.043751896
+          }
+        }
+      }
+    },
+    {
+      "variant": "cse-local+ast-unused+store-candidates",
+      "passed": true,
+      "native_seconds": 50.79509933800364,
+      "operators": {
+        "advection": {
+          "native_seconds": 42.0845426900014,
+          "peak_rss_kib": 1043036,
+          "taichi_library_sha256": "dd1a496e9748139efd6c308dd4eb8dc627e57aeb536ae4adfd12471c03c413d8",
+          "compiler_flags": {
+            "TI_CFG_COMPACT_REACHING": "1",
+            "TI_CFG_COMPACT_LIVE": "1",
+            "TI_CFG_PRECOMPUTED_KILLS": "1",
+            "TI_CSE_INDEXED_USERS": "1",
+            "TI_CFG_INDEXED_FORWARDING": "1",
+            "TI_CFG_VERIFY_REACHING": "0",
+            "TI_CFG_VERIFY_LIVE": "0",
+            "TI_CSE_VERIFY_USERS": "0",
+            "TI_CFG_VERIFY_FORWARDING": "0",
+            "TI_CSE_LOCAL_REPAIR": "1",
+            "TI_AST_SKIP_UNUSED_REPLACE": "1",
+            "TI_CFG_STORE_CANDIDATES": "1"
+          },
+          "profile_seconds": {
+            "lower_ast": 0.449,
+            "whole_kernel_cse": 3.3382336500000003,
+            "refresh_users": 1.1982952999999998,
+            "update_subtree_users": 0.0,
+            "store_to_load_forwarding": 21.892280857000003,
+            "reaching_definition_analysis": 0.226158787,
+            "live_variable_analysis": 0.152721215
+          }
+        },
+        "heat_conduction": {
+          "native_seconds": 1.3148927050006023,
+          "peak_rss_kib": 659060,
+          "taichi_library_sha256": "dd1a496e9748139efd6c308dd4eb8dc627e57aeb536ae4adfd12471c03c413d8",
+          "compiler_flags": {
+            "TI_CFG_COMPACT_REACHING": "1",
+            "TI_CFG_COMPACT_LIVE": "1",
+            "TI_CFG_PRECOMPUTED_KILLS": "1",
+            "TI_CSE_INDEXED_USERS": "1",
+            "TI_CFG_INDEXED_FORWARDING": "1",
+            "TI_CFG_VERIFY_REACHING": "0",
+            "TI_CFG_VERIFY_LIVE": "0",
+            "TI_CSE_VERIFY_USERS": "0",
+            "TI_CFG_VERIFY_FORWARDING": "0",
+            "TI_CSE_LOCAL_REPAIR": "1",
+            "TI_AST_SKIP_UNUSED_REPLACE": "1",
+            "TI_CFG_STORE_CANDIDATES": "1"
+          },
+          "profile_seconds": {
+            "lower_ast": 0.084328,
+            "whole_kernel_cse": 0.08121320000000001,
+            "refresh_users": 0.034455869,
+            "update_subtree_users": 0.002137,
+            "store_to_load_forwarding": 0.61445962,
+            "reaching_definition_analysis": 0.017182585,
+            "live_variable_analysis": 0.013782151
+          }
+        },
+        "viscosity": {
+          "native_seconds": 7.395663943001637,
+          "peak_rss_kib": 760828,
+          "taichi_library_sha256": "dd1a496e9748139efd6c308dd4eb8dc627e57aeb536ae4adfd12471c03c413d8",
+          "compiler_flags": {
+            "TI_CFG_COMPACT_REACHING": "1",
+            "TI_CFG_COMPACT_LIVE": "1",
+            "TI_CFG_PRECOMPUTED_KILLS": "1",
+            "TI_CSE_INDEXED_USERS": "1",
+            "TI_CFG_INDEXED_FORWARDING": "1",
+            "TI_CFG_VERIFY_REACHING": "0",
+            "TI_CFG_VERIFY_LIVE": "0",
+            "TI_CSE_VERIFY_USERS": "0",
+            "TI_CFG_VERIFY_FORWARDING": "0",
+            "TI_CSE_LOCAL_REPAIR": "1",
+            "TI_AST_SKIP_UNUSED_REPLACE": "1",
+            "TI_CFG_STORE_CANDIDATES": "1"
+          },
+          "profile_seconds": {
+            "lower_ast": 0.193,
+            "whole_kernel_cse": 0.453382887,
+            "refresh_users": 0.20559385600000002,
+            "update_subtree_users": 0.0053419999999999995,
+            "store_to_load_forwarding": 4.568125552,
+            "reaching_definition_analysis": 0.064805157,
+            "live_variable_analysis": 0.044106016000000005
+          }
+        }
+      }
+    },
+    {
+      "variant": "cse-local+cse-buckets+ast-unused+store-candidates",
+      "passed": true,
+      "native_seconds": 51.835883884001305,
+      "operators": {
+        "advection": {
+          "native_seconds": 43.19482356700064,
+          "peak_rss_kib": 1055236,
+          "taichi_library_sha256": "dd1a496e9748139efd6c308dd4eb8dc627e57aeb536ae4adfd12471c03c413d8",
+          "compiler_flags": {
+            "TI_CFG_COMPACT_REACHING": "1",
+            "TI_CFG_COMPACT_LIVE": "1",
+            "TI_CFG_PRECOMPUTED_KILLS": "1",
+            "TI_CSE_INDEXED_USERS": "1",
+            "TI_CFG_INDEXED_FORWARDING": "1",
+            "TI_CFG_VERIFY_REACHING": "0",
+            "TI_CFG_VERIFY_LIVE": "0",
+            "TI_CSE_VERIFY_USERS": "0",
+            "TI_CFG_VERIFY_FORWARDING": "0",
+            "TI_CSE_LOCAL_REPAIR": "1",
+            "TI_CSE_SNODE_BUCKETS": "1",
+            "TI_AST_SKIP_UNUSED_REPLACE": "1",
+            "TI_CFG_STORE_CANDIDATES": "1"
+          },
+          "profile_seconds": {
+            "lower_ast": 0.868,
+            "whole_kernel_cse": 3.4791826279999998,
+            "refresh_users": 1.206317147,
+            "update_subtree_users": 0.0,
+            "store_to_load_forwarding": 22.509210762000002,
+            "reaching_definition_analysis": 0.239119686,
+            "live_variable_analysis": 0.16004094900000002
+          }
+        },
+        "heat_conduction": {
+          "native_seconds": 1.3102253480010404,
+          "peak_rss_kib": 661772,
+          "taichi_library_sha256": "dd1a496e9748139efd6c308dd4eb8dc627e57aeb536ae4adfd12471c03c413d8",
+          "compiler_flags": {
+            "TI_CFG_COMPACT_REACHING": "1",
+            "TI_CFG_COMPACT_LIVE": "1",
+            "TI_CFG_PRECOMPUTED_KILLS": "1",
+            "TI_CSE_INDEXED_USERS": "1",
+            "TI_CFG_INDEXED_FORWARDING": "1",
+            "TI_CFG_VERIFY_REACHING": "0",
+            "TI_CFG_VERIFY_LIVE": "0",
+            "TI_CSE_VERIFY_USERS": "0",
+            "TI_CFG_VERIFY_FORWARDING": "0",
+            "TI_CSE_LOCAL_REPAIR": "1",
+            "TI_CSE_SNODE_BUCKETS": "1",
+            "TI_AST_SKIP_UNUSED_REPLACE": "1",
+            "TI_CFG_STORE_CANDIDATES": "1"
+          },
+          "profile_seconds": {
+            "lower_ast": 0.08386600000000001,
+            "whole_kernel_cse": 0.083509275,
+            "refresh_users": 0.034765075,
+            "update_subtree_users": 0.002039,
+            "store_to_load_forwarding": 0.617646814,
+            "reaching_definition_analysis": 0.01771457,
+            "live_variable_analysis": 0.013568921999999997
+          }
+        },
+        "viscosity": {
+          "native_seconds": 7.330834968999625,
+          "peak_rss_kib": 760396,
+          "taichi_library_sha256": "dd1a496e9748139efd6c308dd4eb8dc627e57aeb536ae4adfd12471c03c413d8",
+          "compiler_flags": {
+            "TI_CFG_COMPACT_REACHING": "1",
+            "TI_CFG_COMPACT_LIVE": "1",
+            "TI_CFG_PRECOMPUTED_KILLS": "1",
+            "TI_CSE_INDEXED_USERS": "1",
+            "TI_CFG_INDEXED_FORWARDING": "1",
+            "TI_CFG_VERIFY_REACHING": "0",
+            "TI_CFG_VERIFY_LIVE": "0",
+            "TI_CSE_VERIFY_USERS": "0",
+            "TI_CFG_VERIFY_FORWARDING": "0",
+            "TI_CSE_LOCAL_REPAIR": "1",
+            "TI_CSE_SNODE_BUCKETS": "1",
+            "TI_AST_SKIP_UNUSED_REPLACE": "1",
+            "TI_CFG_STORE_CANDIDATES": "1"
+          },
+          "profile_seconds": {
+            "lower_ast": 0.20400000000000001,
+            "whole_kernel_cse": 0.43671497699999995,
+            "refresh_users": 0.19731697599999998,
+            "update_subtree_users": 0.0046879999999999995,
+            "store_to_load_forwarding": 4.540361,
+            "reaching_definition_analysis": 0.06270596,
+            "live_variable_analysis": 0.044067112
+          }
+        }
+      }
+    },
+    {
+      "variant": "cse-repair+ast-unused",
+      "passed": true,
+      "native_seconds": 51.53084833199864,
+      "operators": {
+        "advection": {
+          "native_seconds": 41.68415620199994,
+          "peak_rss_kib": 995284,
+          "taichi_library_sha256": "dd1a496e9748139efd6c308dd4eb8dc627e57aeb536ae4adfd12471c03c413d8",
+          "compiler_flags": {
+            "TI_CFG_COMPACT_REACHING": "1",
+            "TI_CFG_COMPACT_LIVE": "1",
+            "TI_CFG_PRECOMPUTED_KILLS": "1",
+            "TI_CSE_INDEXED_USERS": "1",
+            "TI_CFG_INDEXED_FORWARDING": "1",
+            "TI_CFG_VERIFY_REACHING": "0",
+            "TI_CFG_VERIFY_LIVE": "0",
+            "TI_CSE_VERIFY_USERS": "0",
+            "TI_CFG_VERIFY_FORWARDING": "0",
+            "TI_CSE_REPAIR_USERS": "1",
+            "TI_AST_SKIP_UNUSED_REPLACE": "1"
+          },
+          "profile_seconds": {
+            "lower_ast": 0.864,
+            "whole_kernel_cse": 4.328175714,
+            "refresh_users": 2.1118048089999997,
+            "update_subtree_users": 0,
+            "store_to_load_forwarding": 20.352133074,
+            "reaching_definition_analysis": 0.230715938,
+            "live_variable_analysis": 0.17759891
+          }
+        },
+        "heat_conduction": {
+          "native_seconds": 1.376639565000005,
+          "peak_rss_kib": 657084,
+          "taichi_library_sha256": "dd1a496e9748139efd6c308dd4eb8dc627e57aeb536ae4adfd12471c03c413d8",
+          "compiler_flags": {
+            "TI_CFG_COMPACT_REACHING": "1",
+            "TI_CFG_COMPACT_LIVE": "1",
+            "TI_CFG_PRECOMPUTED_KILLS": "1",
+            "TI_CSE_INDEXED_USERS": "1",
+            "TI_CFG_INDEXED_FORWARDING": "1",
+            "TI_CFG_VERIFY_REACHING": "0",
+            "TI_CFG_VERIFY_LIVE": "0",
+            "TI_CSE_VERIFY_USERS": "0",
+            "TI_CFG_VERIFY_FORWARDING": "0",
+            "TI_CSE_REPAIR_USERS": "1",
+            "TI_AST_SKIP_UNUSED_REPLACE": "1"
+          },
+          "profile_seconds": {
+            "lower_ast": 0.08354600000000001,
+            "whole_kernel_cse": 0.15324361,
+            "refresh_users": 0.098168757,
+            "update_subtree_users": 0,
+            "store_to_load_forwarding": 0.6165369660000001,
+            "reaching_definition_analysis": 0.017856176,
+            "live_variable_analysis": 0.013623812
+          }
+        },
+        "viscosity": {
+          "native_seconds": 8.470052564998696,
+          "peak_rss_kib": 755296,
+          "taichi_library_sha256": "dd1a496e9748139efd6c308dd4eb8dc627e57aeb536ae4adfd12471c03c413d8",
+          "compiler_flags": {
+            "TI_CFG_COMPACT_REACHING": "1",
+            "TI_CFG_COMPACT_LIVE": "1",
+            "TI_CFG_PRECOMPUTED_KILLS": "1",
+            "TI_CSE_INDEXED_USERS": "1",
+            "TI_CFG_INDEXED_FORWARDING": "1",
+            "TI_CFG_VERIFY_REACHING": "0",
+            "TI_CFG_VERIFY_LIVE": "0",
+            "TI_CSE_VERIFY_USERS": "0",
+            "TI_CFG_VERIFY_FORWARDING": "0",
+            "TI_CSE_REPAIR_USERS": "1",
+            "TI_AST_SKIP_UNUSED_REPLACE": "1"
+          },
+          "profile_seconds": {
+            "lower_ast": 0.199,
+            "whole_kernel_cse": 1.4360605290000001,
+            "refresh_users": 1.164381994,
+            "update_subtree_users": 0,
+            "store_to_load_forwarding": 4.610990835000001,
+            "reaching_definition_analysis": 0.06671013,
+            "live_variable_analysis": 0.043121958
+          }
+        }
+      }
+    }
+  ]
+}

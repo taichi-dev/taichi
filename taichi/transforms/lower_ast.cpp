@@ -7,12 +7,31 @@
 #include "taichi/system/profiler.h"
 
 #include <unordered_set>
+#include <cstdlib>
 
 namespace taichi::lang {
 
 namespace {
 
 using FlattenContext = Expression::FlattenContext;
+
+class GatherASTOperands : public BasicStmtVisitor {
+ public:
+  using BasicStmtVisitor::visit;
+  explicit GatherASTOperands(std::unordered_set<Stmt *> &referenced)
+      : referenced_(referenced) {
+    allow_undefined_visitor = true;
+    invoke_default_visitor = true;
+  }
+  void visit(Stmt *stmt) override {
+    for (auto operand : stmt->get_operands()) {
+      if (operand) referenced_.insert(operand);
+    }
+  }
+  void preprocess_container_stmt(Stmt *stmt) override { visit(stmt); }
+ private:
+  std::unordered_set<Stmt *> &referenced_;
+};
 
 template <typename Vec>
 std::vector<typename Vec::value_type::pointer> make_raw_pointer_list(
@@ -34,6 +53,25 @@ class LowerAST : public IRVisitor {
   std::unordered_set<Stmt *> detected_fors_with_break_;
   Block *current_block_;
   int current_block_depth_;
+  bool skip_unused_replacements_{false};
+  std::unordered_set<Stmt *> referenced_;
+
+  template <typename Statements>
+  void replace_lowered(Stmt *old_stmt, Statements &&lowered) {
+    VecStatement statements(std::forward<Statements>(lowered));
+    bool replace = true;
+    if (skip_unused_replacements_) {
+      // This is a conservative, monotonically growing set: stale entries only
+      // trigger an unnecessary reference traversal, never a missed replacement.
+      GatherASTOperands gather(referenced_);
+      for (auto &stmt : statements.stmts) stmt->accept(&gather);
+      replace = referenced_.count(old_stmt) != 0;
+      if (replace && !statements.stmts.empty()) {
+        referenced_.insert(statements.back().get());
+      }
+    }
+    old_stmt->parent->replace_with(old_stmt, std::move(statements), replace);
+  }
 
   FlattenContext make_flatten_ctx() {
     FlattenContext fctx;
@@ -74,11 +112,11 @@ class LowerAST : public IRVisitor {
           tensor_type->get_shape(), tensor_type->get_element_type(),
           stmt->is_shared);
       block->local_var_to_stmt.insert(std::make_pair(ident, lowered.get()));
-      stmt->parent->replace_with(stmt, std::move(lowered));
+      replace_lowered(stmt, std::move(lowered));
     } else {
       auto lowered = std::make_unique<AllocaStmt>(alloca_type);
       block->local_var_to_stmt.insert(std::make_pair(ident, lowered.get()));
-      stmt->parent->replace_with(stmt, std::move(lowered));
+      replace_lowered(stmt, std::move(lowered));
     }
   }
 
@@ -91,7 +129,7 @@ class LowerAST : public IRVisitor {
       args.push_back(flatten_rvalue(arg, &fctx));
     }
     auto lowered = fctx.push_back<FuncCallStmt>(stmt->func, args);
-    stmt->parent->replace_with(stmt, std::move(fctx.stmts));
+    replace_lowered(stmt, std::move(fctx.stmts));
     if (const auto &ident = stmt->ident) {
       TI_ASSERT(block->local_var_to_stmt.find(ident.value()) ==
                 block->local_var_to_stmt.end());
@@ -113,7 +151,7 @@ class LowerAST : public IRVisitor {
     }
     auto pif = new_if.get();
     fctx.push_back(std::move(new_if));
-    stmt->parent->replace_with(stmt, std::move(fctx.stmts));
+    replace_lowered(stmt, std::move(fctx.stmts));
     pif->accept(this);
   }
 
@@ -142,7 +180,7 @@ class LowerAST : public IRVisitor {
       }
     }
     fctx.push_back<PrintStmt>(new_contents, stmt->formats);
-    stmt->parent->replace_with(stmt, std::move(fctx.stmts));
+    replace_lowered(stmt, std::move(fctx.stmts));
   }
 
   void visit(FrontendBreakStmt *stmt) override {
@@ -150,11 +188,11 @@ class LowerAST : public IRVisitor {
     VecStatement stmts;
     auto const_true = stmts.push_back<ConstStmt>(TypedConstant((int32)0));
     stmts.push_back<WhileControlStmt>(while_stmt->mask, const_true);
-    stmt->parent->replace_with(stmt, std::move(stmts));
+    replace_lowered(stmt, std::move(stmts));
   }
 
   void visit(FrontendContinueStmt *stmt) override {
-    stmt->parent->replace_with(stmt, Stmt::make<ContinueStmt>());
+    replace_lowered(stmt, Stmt::make<ContinueStmt>());
   }
 
   void visit(FrontendWhileStmt *stmt) override {
@@ -181,7 +219,7 @@ class LowerAST : public IRVisitor {
     stmt->insert_before_me(
         std::make_unique<LocalStoreStmt>(new_while->mask, const_stmt_ptr));
     auto pwhile = new_while.get();
-    stmt->parent->replace_with(stmt, std::move(new_while));
+    replace_lowered(stmt, std::move(new_while));
     pwhile->accept(this);
     // insert an alloca for the mask
   }
@@ -370,7 +408,7 @@ class LowerAST : public IRVisitor {
       }
     }
     auto pfor = fctx.stmts.back().get();
-    stmt->parent->replace_with(stmt, std::move(fctx.stmts));
+    replace_lowered(stmt, std::move(fctx.stmts));
     pfor->accept(this);
   }
 
@@ -403,7 +441,7 @@ class LowerAST : public IRVisitor {
       return_ele.push_back(flatten_rvalue(x, &fctx));
     }
     fctx.push_back<ReturnStmt>(return_ele);
-    stmt->parent->replace_with(stmt, std::move(fctx.stmts));
+    replace_lowered(stmt, std::move(fctx.stmts));
   }
 
   void visit(FrontendAssignStmt *assign) override {
@@ -441,7 +479,7 @@ class LowerAST : public IRVisitor {
       fctx.push_back<GlobalStoreStmt>(dest_stmt, expr_stmt);
     }
     fctx.stmts.back()->dbg_info = assign->dbg_info;
-    assign->parent->replace_with(assign, std::move(fctx.stmts));
+    replace_lowered(assign, std::move(fctx.stmts));
   }
 
   void visit(FrontendSNodeOpStmt *stmt) override {
@@ -479,7 +517,7 @@ class LowerAST : public IRVisitor {
       TI_NOT_IMPLEMENTED
     }
 
-    stmt->parent->replace_with(stmt, std::move(fctx.stmts));
+    replace_lowered(stmt, std::move(fctx.stmts));
   }
 
   void visit(FrontendAssertStmt *stmt) override {
@@ -497,13 +535,13 @@ class LowerAST : public IRVisitor {
     }
     fctx.push_back<AssertStmt>(val_stmt, stmt->text, args_stmts,
                                stmt->dbg_info);
-    stmt->parent->replace_with(stmt, std::move(fctx.stmts));
+    replace_lowered(stmt, std::move(fctx.stmts));
   }
 
   void visit(FrontendExprStmt *stmt) override {
     auto fctx = make_flatten_ctx();
     flatten_rvalue(stmt->val, &fctx);
-    stmt->parent->replace_with(stmt, std::move(fctx.stmts));
+    replace_lowered(stmt, std::move(fctx.stmts));
   }
 
   void visit(FrontendExternalFuncStmt *stmt) override {
@@ -538,11 +576,17 @@ class LowerAST : public IRVisitor {
           ExternalFuncCallStmt::BITCODE, nullptr, "", stmt->bc_filename,
           stmt->bc_funcname, arg_statements, output_statements));
     }
-    stmt->parent->replace_with(stmt, std::move(ctx.stmts));
+    replace_lowered(stmt, std::move(ctx.stmts));
   }
 
   static void run(IRNode *node) {
     LowerAST inst(irpass::analysis::detect_fors_with_break(node));
+    auto setting = std::getenv("TI_AST_SKIP_UNUSED_REPLACE");
+    inst.skip_unused_replacements_ = setting && setting[0] == '1';
+    if (inst.skip_unused_replacements_) {
+      GatherASTOperands gather(inst.referenced_);
+      node->accept(&gather);
+    }
     node->accept(&inst);
   }
 };

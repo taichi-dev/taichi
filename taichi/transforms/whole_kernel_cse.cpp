@@ -73,6 +73,8 @@ class WholeKernelCSE : public BasicStmtVisitor {
   bool users_valid_{false};
   bool indexed_{false};
   bool verify_users_{false};
+  bool repair_users_{false};
+  bool local_repair_{false};
 
  public:
   using BasicStmtVisitor::visit;
@@ -84,14 +86,32 @@ class WholeKernelCSE : public BasicStmtVisitor {
     indexed_ = setting && setting[0] == '1';
     setting = std::getenv("TI_CSE_VERIFY_USERS");
     verify_users_ = setting && setting[0] == '1';
+    setting = std::getenv("TI_CSE_REPAIR_USERS");
+    repair_users_ = setting && setting[0] == '1';
+    setting = std::getenv("TI_CSE_LOCAL_REPAIR");
+    local_repair_ = setting && setting[0] == '1';
+    repair_users_ |= local_repair_;
   }
 
   void refresh_users(IRNode *root) {
     if (!indexed_) return;
+    TI_AUTO_PROF;
     GatherStatementUsers gather;
     root->get_ir_root()->accept(&gather);
     users_ = std::move(gather.users);
     users_valid_ = true;
+  }
+
+  void update_subtree_users(IRNode *root, bool add) {
+    TI_AUTO_PROF;
+    GatherStatementUsers gather;
+    root->accept(&gather);
+    for (const auto &[operand, users] : gather.users) {
+      for (auto user : users) {
+        if (add) users_[operand].insert(user);
+        else users_[operand].erase(user);
+      }
+    }
   }
 
   static bool replacement_visits(Stmt *user, Block *scope) {
@@ -204,6 +224,9 @@ class WholeKernelCSE : public BasicStmtVisitor {
     for (auto &scope : visible_stmts_) {
       for (auto &prev_stmt : scope[hash_value]) {
         if (common_statement_eliminable(stmt, prev_stmt)) {
+          // A hoist invalidates the index, but need not force all subsequent
+          // replacements in this sweep to traverse the entire IR.
+          if (indexed_ && repair_users_ && !users_valid_) refresh_users(stmt);
           if (users_valid_) {
             replace_indexed(stmt, prev_stmt);
           } else {
@@ -251,13 +274,18 @@ class WholeKernelCSE : public BasicStmtVisitor {
         // Directly modify this because it won't invalidate any iterators.
         // Hoisting also destroys statements immediately. Revert to the original
         // traversal until the next sweep rebuilds the index after IR mutation.
-        users_valid_ = false;
+        const bool repair = users_valid_ && local_repair_;
+        if (repair) {
+          update_subtree_users(true_clause->statements[0].get(), false);
+          update_subtree_users(false_clause.get(), false);
+        } else users_valid_ = false;
         auto common_stmt = true_clause->extract(0);
         irpass::replace_all_usages_with(false_clause.get(),
                                         false_clause->statements[0].get(),
                                         common_stmt.get());
         modifier_.insert_before(if_stmt, std::move(common_stmt));
         false_clause->erase(0);
+        if (repair) update_subtree_users(false_clause.get(), true);
       }
       if (!true_clause->statements.empty() &&
           !false_clause->statements.empty() &&
@@ -265,13 +293,18 @@ class WholeKernelCSE : public BasicStmtVisitor {
               true_clause->statements.back().get(),
               false_clause->statements.back().get())) {
         // Directly modify this because it won't invalidate any iterators.
-        users_valid_ = false;
+        const bool repair = users_valid_ && local_repair_;
+        if (repair) {
+          update_subtree_users(true_clause->statements.back().get(), false);
+          update_subtree_users(false_clause.get(), false);
+        } else users_valid_ = false;
         auto common_stmt = true_clause->extract((int)true_clause->size() - 1);
         irpass::replace_all_usages_with(false_clause.get(),
                                         false_clause->statements.back().get(),
                                         common_stmt.get());
         modifier_.insert_after(if_stmt, std::move(common_stmt));
         false_clause->erase((int)false_clause->size() - 1);
+        if (repair) update_subtree_users(false_clause.get(), true);
       }
     }
 

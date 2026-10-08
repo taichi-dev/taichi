@@ -125,6 +125,7 @@ class ReachingDefinitionSet {
                ? Iterator(this, index) : end();
   }
   bool empty() const { return begin() == end(); }
+  const Universe &universe() const { return universe_; }
   bool operator!=(const ReachingDefinitionSet &other) const {
     return universe_ ? words_ != other.words_ : hash_ != other.hash_;
   }

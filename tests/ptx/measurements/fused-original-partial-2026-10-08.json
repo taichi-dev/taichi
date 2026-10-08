@@ -1,0 +1,42 @@
+{
+  "date": "2026-10-08",
+  "status": "Partial comparison accepted by user after WSL crashed during the third original-compiler variant; no rerun requested",
+  "baseline_source_commit": "ba0e81dce559fb63a5958bf82feb1d00c55c02fe",
+  "optimized_source_commit": "af45e5b4f",
+  "solver_commit": "d0e815c559afde3c41e16ecdd435f8b1b137bd68",
+  "provenance": "Original timings and SHA-256 hashes recovered from CAPTURED lines returned by tool calls before the crash. Temporary files under /tmp were lost. Optimized measurements come from the previously committed fused-2026-10-08.json; the fresh optimized A/B reruns had not started.",
+  "measurement": "Native Program.compile_kernel seconds; original one completed sample per variant, optimized median of two earlier cold samples; all retained optimizations enabled for optimized samples; offline caching disabled; target kernels not launched",
+  "validation": "Recorded SHA-256 hashes match between original and optimized outputs for both completed variants. Full byte-comparison step did not execute before the crash. No conclusion for the third original-compiler variant.",
+  "variants": [
+    {
+      "body": "FluxLoopKernels._cell_body",
+      "original_seconds": 501.8923378010004,
+      "original_samples": 1,
+      "optimized_seconds": [
+        21.877831391000655,
+        21.28561919600179
+      ],
+      "optimized_median_seconds": 21.581725293501222,
+      "speedup": 23.255431666166757,
+      "matching_ptx_sha256": "360bcebe8f9a7d5c31c9fb46955bb0e6713d264c90ac6990460379681fc11eb0"
+    },
+    {
+      "body": "FluxLoopKernels._cell_body_with_rk_sum",
+      "original_seconds": 545.9792942109998,
+      "original_samples": 1,
+      "optimized_seconds": [
+        23.63981653800147,
+        21.32968866900046
+      ],
+      "optimized_median_seconds": 22.484752603500965,
+      "speedup": 24.282201536253,
+      "matching_ptx_sha256": "e5dc327986ab6fa2a7a0d75af9b438a213754e751cb3a422320375f94ae60035"
+    }
+  ],
+  "completed_variants_total": {
+    "original_seconds": 1047.8716320120002,
+    "optimized_median_seconds": 44.06647789700219,
+    "speedup": 23.779337083876317,
+    "reduction_percent": 95.79466830184238
+  }
+}

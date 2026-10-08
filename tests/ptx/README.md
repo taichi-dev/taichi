@@ -158,3 +158,9 @@ timestep variants, records native timings in `result.json`, and saves three PTX
 modules without launching the target kernels. This mode does not compare against
 the operator-unfused gold. [Measured fused results](measurements/fused-2026-10-08.json)
 include two cold runs and their identical PTX hashes.
+
+An [original-versus-optimized fused comparison](measurements/fused-original-partial-2026-10-08.json)
+completed the first two original-compiler variants before WSL crashed on the
+third. Their recorded PTX hashes match the optimized outputs. The user accepted
+these partial results without a rerun; the record distinguishes the original
+single samples from the earlier two optimized samples.

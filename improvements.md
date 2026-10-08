@@ -358,3 +358,30 @@ repeatability evidence, not a pre/post-patch fused PTX equivalence check.
 [Full fused measurement records](tests/ptx/measurements/fused-2026-10-08.json)
 include individual timings, PTX hashes, feature switches and library provenance.
 The compile worker now accepts `--method fused` for this measurement.
+
+## Original versus optimized fused compilation (partial)
+
+The original compiler completed two fused variants before WSL crashed while
+compiling the third. At the user's request, the completed measurements are
+accepted without rerunning the third variant. The original timings below are
+single cold measurements; the optimized values are medians of the two earlier
+cold measurements above. The planned fresh optimized A/B runs had not started,
+so this is not a completed alternating A/B benchmark.
+
+| Fused variant | Original (s) | Optimized median (s) | Speedup |
+| --- | ---: | ---: | ---: |
+| Base update | 501.892 | 21.582 | 23.26× |
+| Update with RK sum | 545.979 | 22.485 | 24.28× |
+| Completed variants total | 1047.872 | 44.066 | 23.78× |
+
+For these two variants, native compilation fell from **17 minutes 28 seconds to
+44.07 seconds**, a **95.8% reduction**. The captured original PTX SHA-256 hashes
+match the optimized hashes for both variants. Temporary files were lost in the
+crash; the timings and hashes are recovered from tool output already captured
+in the conversation. The full byte-comparison step of the interrupted runner
+had not executed. The third original-compiler timing and PTX comparison are
+unavailable; no complete three-variant speedup is claimed, and the crash's cause
+was not established.
+
+The [partial measurement record](tests/ptx/measurements/fused-original-partial-2026-10-08.json)
+contains the exact recovered timings, matching hashes and comparison provenance.

@@ -1,4 +1,5 @@
 #include "offline_cache_util.h"
+#include <cstdlib>
 
 #include "taichi/common/core.h"
 #include "taichi/common/serialization.h"
@@ -192,6 +193,17 @@ std::string get_hashed_offline_cache_key(const CompileConfig &config,
   hasher.process(kernel_rets_string.begin(), kernel_rets_string.end());
   hasher.process(kernel_body_string.begin(), kernel_body_string.end());
   hasher.process(autodiff_mode.begin(), autodiff_mode.end());
+  // Prevent experimental modes sharing native or disk cache entries. Each
+  // Python benchmark mode also owns distinct C++ Kernel objects.
+  std::string experiment_key = "hybrid-cfg-cse-2026-10-07-v3:";
+  for (const char *name : {"TI_CFG_COMPACT_REACHING", "TI_CFG_COMPACT_LIVE",
+                           "TI_CSE_INDEXED_USERS", "TI_CFG_VERIFY_REACHING",
+                           "TI_CFG_VERIFY_LIVE", "TI_CSE_VERIFY_USERS",
+                           "TI_CFG_PRECOMPUTED_KILLS"}) {
+    const char *value = std::getenv(name);
+    experiment_key += value && value[0] == '1' ? '1' : '0';
+  }
+  hasher.process(experiment_key.begin(), experiment_key.end());
   hasher.finish();
 
   auto res = picosha2::get_hash_hex_string(hasher);

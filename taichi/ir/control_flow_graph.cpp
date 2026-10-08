@@ -2,6 +2,7 @@
 
 #include <queue>
 #include <unordered_set>
+#include <cstdlib>
 
 #include "taichi/common/exceptions.h"
 #include "taichi/ir/analysis.h"
@@ -10,6 +11,77 @@
 #include "taichi/program/function.h"
 
 namespace taichi::lang {
+
+namespace {
+
+using CFGKillMasks = std::unordered_map<CFGNode *, ReachingDefinitionSet>;
+
+CFGKillMasks build_kill_masks(
+    const std::vector<std::unique_ptr<CFGNode>> &nodes,
+    const std::shared_ptr<ReachingDefinitionUniverse> &universe,
+    bool reaching) {
+  // Alias analysis treats scalar allocas and AD stacks as definitely equal
+  // only to themselves. Index these exact destinations directly; retain the
+  // original alias predicate for every remaining address kind.
+  auto exact_only = [](Stmt *address) {
+    return address->is<AllocaStmt>() || address->is<AdStackAllocaStmt>();
+  };
+  std::unordered_map<Stmt *, std::vector<std::size_t>> definitions_by_address;
+  std::vector<std::size_t> address_counts(universe->values.size());
+  for (std::size_t id = 0; id < universe->values.size(); ++id) {
+    auto stmt = universe->values[id];
+    std::vector<Stmt *> addresses;
+    if (reaching) {
+      for (auto address : irpass::analysis::get_store_destination(stmt)) {
+        addresses.push_back(address);
+      }
+    }
+    if (addresses.empty()) addresses.push_back(stmt);
+    address_counts[id] = addresses.size();
+    for (auto address : addresses) definitions_by_address[address].push_back(id);
+  }
+  std::vector<Stmt *> nonlocal_addresses;
+  for (const auto &[address, definitions] : definitions_by_address) {
+    if (!exact_only(address)) nonlocal_addresses.push_back(address);
+  }
+
+  CFGKillMasks masks;
+  masks.reserve(nodes.size());
+  std::vector<std::size_t> seen(universe->values.size(), nodes.size());
+  std::vector<std::size_t> killed_count(universe->values.size());
+  for (std::size_t node_id = 0; node_id < nodes.size(); ++node_id) {
+    auto node = nodes[node_id].get();
+    auto &mask = masks[node];
+    mask.reset(universe);
+    const auto &kills = reaching ? node->reach_kill : node->live_kill;
+    auto mark_address = [&](Stmt *address) {
+      auto found = definitions_by_address.find(address);
+      if (found == definitions_by_address.end()) return;
+      for (auto id : found->second) {
+        if (seen[id] != node_id) {
+          seen[id] = node_id;
+          killed_count[id] = 0;
+        }
+        if (++killed_count[id] == address_counts[id]) {
+          mask.insert(universe->values[id]);
+        }
+      }
+    };
+    bool has_nonlocal_kill = false;
+    for (auto address : kills) {
+      if (exact_only(address)) mark_address(address);
+      else has_nonlocal_kill = true;
+    }
+    if (has_nonlocal_kill) {
+      for (auto address : nonlocal_addresses) {
+        if (CFGNode::contain_variable(kills, address)) mark_address(address);
+      }
+    }
+  }
+  return masks;
+}
+
+}  // namespace
 
 CFGNode::CFGNode(Block *block,
                  int begin_location,
@@ -154,6 +226,16 @@ bool CFGNode::may_contain_variable(const std::unordered_set<Stmt *> &var_set,
 bool CFGNode::reach_kill_variable(Stmt *var) const {
   // Does this node (definitely) kill a definition of var?
   return contain_variable(reach_kill, var);
+}
+
+bool CFGNode::may_contain_variable(const ReachingDefinitionSet &var_set,
+                                   Stmt *var) {
+  if (var_set.find(var) != var_set.end()) return true;
+  if (var->is<AllocaStmt>() || var->is<AdStackAllocaStmt>()) return false;
+  for (auto set_var : var_set) {
+    if (irpass::analysis::maybe_same_address(var, set_var)) return true;
+  }
+  return false;
 }
 
 // var: dest_addr
@@ -1013,6 +1095,11 @@ void ControlFlowGraph::reaching_definition_analysis(bool after_lower_access) {
   // cross-block use-define chain
 
   TI_AUTO_PROF;
+  static thread_local bool reference_run = false;
+  const char *compact_setting = std::getenv("TI_CFG_COMPACT_REACHING");
+  const bool compact = !reference_run && compact_setting && compact_setting[0] == '1';
+  const char *transfer_setting = std::getenv("TI_CFG_PRECOMPUTED_KILLS");
+  const bool precomputed = compact && transfer_setting && transfer_setting[0] == '1';
   const int num_nodes = size();
   std::queue<CFGNode *> to_visit;
   std::unordered_map<CFGNode *, bool> in_queue;
@@ -1046,12 +1133,28 @@ void ControlFlowGraph::reaching_definition_analysis(bool after_lower_access) {
     if (i != start_node) {
       nodes[i]->reaching_definition_analysis(after_lower_access);
     }
+  }
+  std::shared_ptr<ReachingDefinitionUniverse> universe;
+  if (compact) {
+    universe = std::make_shared<ReachingDefinitionUniverse>();
+    for (const auto &node : nodes) {
+      for (auto stmt : node->reach_gen) {
+        if (universe->indices.emplace(stmt, universe->values.size()).second) {
+          universe->values.push_back(stmt);
+        }
+      }
+    }
+  }
+  for (int i = 0; i < num_nodes; i++) {
+    nodes[i]->reach_in.reset(universe);
+    nodes[i]->reach_out.reset(universe);
     nodes[i]->reach_in.clear();
     nodes[i]->reach_out = nodes[i]->reach_gen;
     to_visit.push(nodes[i].get());
     in_queue[nodes[i].get()] = true;
   }
 
+  auto kill_masks = precomputed ? build_kill_masks(nodes, universe, true) : CFGKillMasks{};
   // [The worklist algorithm]
   // Determines reach_in and reach_out for each node iteratively.
   while (!to_visit.empty()) {
@@ -1061,12 +1164,13 @@ void ControlFlowGraph::reaching_definition_analysis(bool after_lower_access) {
 
     now->reach_in.clear();
     for (auto prev_node : now->prev) {
-      now->reach_in.insert(prev_node->reach_out.begin(),
-                           prev_node->reach_out.end());
+      now->reach_in.unite(prev_node->reach_out);
     }
     auto old_out = std::move(now->reach_out);
     now->reach_out = now->reach_gen;
-    for (auto stmt : now->reach_in) {
+    if (precomputed) {
+      now->reach_out.unite_without(now->reach_in, kill_masks.at(now));
+    } else for (auto stmt : now->reach_in) {
       auto store_ptrs = irpass::analysis::get_store_destination(stmt);
       bool killed;
       if (store_ptrs.empty()) {  // the case of a global pointer
@@ -1094,6 +1198,26 @@ void ControlFlowGraph::reaching_definition_analysis(bool after_lower_access) {
       }
     }
   }
+  const char *verify_setting = std::getenv("TI_CFG_VERIFY_REACHING");
+  if (compact && verify_setting && verify_setting[0] == '1') {
+    // Differential validation before either representation changes the IR.
+    std::vector<std::unordered_set<Stmt *>> incoming(num_nodes), outgoing(num_nodes);
+    for (int i = 0; i < num_nodes; ++i) {
+      for (auto stmt : nodes[i]->reach_in) incoming[i].insert(stmt);
+      for (auto stmt : nodes[i]->reach_out) outgoing[i].insert(stmt);
+    }
+    reference_run = true;
+    reaching_definition_analysis(after_lower_access);
+    reference_run = false;
+    for (int i = 0; i < num_nodes; ++i) {
+      std::unordered_set<Stmt *> actual_in, actual_out;
+      for (auto stmt : nodes[i]->reach_in) actual_in.insert(stmt);
+      for (auto stmt : nodes[i]->reach_out) actual_out.insert(stmt);
+      TI_ASSERT(actual_in == incoming[i]);
+      TI_ASSERT(actual_out == outgoing[i]);
+    }
+    TI_INFO("Reaching-definition differential check passed: {} nodes", num_nodes);
+  }
 }
 
 void ControlFlowGraph::live_variable_analysis(
@@ -1107,6 +1231,11 @@ void ControlFlowGraph::live_variable_analysis(
   // live_in: live_gen + (live_out - live_kill)
   // live_out: collection of all the live_in of next nodes
   TI_AUTO_PROF;
+  static thread_local bool reference_run = false;
+  const char *compact_setting = std::getenv("TI_CFG_COMPACT_LIVE");
+  const bool compact = !reference_run && compact_setting && compact_setting[0] == '1';
+  const char *transfer_setting = std::getenv("TI_CFG_PRECOMPUTED_KILLS");
+  const bool precomputed = compact && transfer_setting && transfer_setting[0] == '1';
   const int num_nodes = size();
   std::queue<CFGNode *> to_visit;
   std::unordered_map<CFGNode *, bool> in_queue;
@@ -1149,12 +1278,28 @@ void ControlFlowGraph::live_variable_analysis(
     if (i != final_node) {
       nodes[i]->live_variable_analysis(after_lower_access);
     }
+  }
+  std::shared_ptr<ReachingDefinitionUniverse> universe;
+  if (compact) {
+    universe = std::make_shared<ReachingDefinitionUniverse>();
+    for (const auto &node : nodes) {
+      for (auto stmt : node->live_gen) {
+        if (universe->indices.emplace(stmt, universe->values.size()).second) {
+          universe->values.push_back(stmt);
+        }
+      }
+    }
+  }
+  for (int i = num_nodes - 1; i >= 0; i--) {
+    nodes[i]->live_in.reset(universe);
+    nodes[i]->live_out.reset(universe);
     nodes[i]->live_out.clear();
     nodes[i]->live_in = nodes[i]->live_gen;
     to_visit.push(nodes[i].get());
     in_queue[nodes[i].get()] = true;
   }
 
+  auto kill_masks = precomputed ? build_kill_masks(nodes, universe, false) : CFGKillMasks{};
   // The worklist algorithm.
   while (!to_visit.empty()) {
     auto now = to_visit.front();
@@ -1163,12 +1308,13 @@ void ControlFlowGraph::live_variable_analysis(
 
     now->live_out.clear();
     for (auto next_node : now->next) {
-      now->live_out.insert(next_node->live_in.begin(),
-                           next_node->live_in.end());
+      now->live_out.unite(next_node->live_in);
     }
     auto old_in = std::move(now->live_in);
     now->live_in = now->live_gen;
-    for (auto stmt : now->live_out) {
+    if (precomputed) {
+      now->live_in.unite_without(now->live_out, kill_masks.at(now));
+    } else for (auto stmt : now->live_out) {
       if (!CFGNode::contain_variable(now->live_kill, stmt)) {
         now->live_in.insert(stmt);
       }
@@ -1182,6 +1328,25 @@ void ControlFlowGraph::live_variable_analysis(
         }
       }
     }
+  }
+  const char *verify_setting = std::getenv("TI_CFG_VERIFY_LIVE");
+  if (compact && verify_setting && verify_setting[0] == '1') {
+    std::vector<std::unordered_set<Stmt *>> incoming(num_nodes), outgoing(num_nodes);
+    for (int i = 0; i < num_nodes; ++i) {
+      for (auto stmt : nodes[i]->live_in) incoming[i].insert(stmt);
+      for (auto stmt : nodes[i]->live_out) outgoing[i].insert(stmt);
+    }
+    reference_run = true;
+    live_variable_analysis(after_lower_access, config_opt);
+    reference_run = false;
+    for (int i = 0; i < num_nodes; ++i) {
+      std::unordered_set<Stmt *> actual_in, actual_out;
+      for (auto stmt : nodes[i]->live_in) actual_in.insert(stmt);
+      for (auto stmt : nodes[i]->live_out) actual_out.insert(stmt);
+      TI_ASSERT(actual_in == incoming[i]);
+      TI_ASSERT(actual_out == outgoing[i]);
+    }
+    TI_INFO("Liveness differential check passed: {} nodes", num_nodes);
   }
 }
 

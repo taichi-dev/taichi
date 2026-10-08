@@ -6,8 +6,27 @@
 #include "taichi/system/profiler.h"
 
 #include <typeindex>
+#include <cstdlib>
 
 namespace taichi::lang {
+
+using StatementUsers = std::unordered_map<Stmt *, std::unordered_set<Stmt *>>;
+
+class GatherStatementUsers : public BasicStmtVisitor {
+ public:
+  using BasicStmtVisitor::visit;
+  StatementUsers users;
+  GatherStatementUsers() {
+    allow_undefined_visitor = true;
+    invoke_default_visitor = true;
+  }
+  void visit(Stmt *stmt) override {
+    for (auto operand : stmt->get_operands()) {
+      if (operand) users[operand].insert(stmt);
+    }
+  }
+  void preprocess_container_stmt(Stmt *stmt) override { visit(stmt); }
+};
 
 // A helper class to maintain WholeKernelCSE::visited
 class MarkUndone : public BasicStmtVisitor {
@@ -50,6 +69,10 @@ class WholeKernelCSE : public BasicStmtVisitor {
   std::vector<std::unordered_map<std::size_t, std::unordered_set<Stmt *> > >
       visible_stmts_;
   DelayedIRModifier modifier_;
+  StatementUsers users_;
+  bool users_valid_{false};
+  bool indexed_{false};
+  bool verify_users_{false};
 
  public:
   using BasicStmtVisitor::visit;
@@ -57,6 +80,53 @@ class WholeKernelCSE : public BasicStmtVisitor {
   WholeKernelCSE() {
     allow_undefined_visitor = true;
     invoke_default_visitor = true;
+    const char *setting = std::getenv("TI_CSE_INDEXED_USERS");
+    indexed_ = setting && setting[0] == '1';
+    setting = std::getenv("TI_CSE_VERIFY_USERS");
+    verify_users_ = setting && setting[0] == '1';
+  }
+
+  void refresh_users(IRNode *root) {
+    if (!indexed_) return;
+    GatherStatementUsers gather;
+    root->get_ir_root()->accept(&gather);
+    users_ = std::move(gather.users);
+    users_valid_ = true;
+  }
+
+  static bool replacement_visits(Stmt *user, Block *scope) {
+    // Match StatementUsageReplace: descend through the original scope, then
+    // visit only direct statements in its ancestors. Certain containers expose
+    // their bodies but do not replace their own operands in the descending walk.
+    for (auto block = user->parent; block; block = block->parent_block()) {
+      if (block == scope) {
+        return !user->is<StructForStmt>() && !user->is<MeshForStmt>() &&
+               !user->is<OffloadedStmt>();
+      }
+    }
+    for (auto block = scope->parent_block(); block; block = block->parent_block()) {
+      if (user->parent == block) return true;
+    }
+    return false;
+  }
+
+  void replace_indexed(Stmt *old_stmt, Stmt *new_stmt) {
+    if (verify_users_) {
+      GatherStatementUsers reference;
+      old_stmt->get_ir_root()->accept(&reference);
+      TI_ASSERT(reference.users[old_stmt] == users_[old_stmt]);
+    }
+    auto affected = std::move(users_[old_stmt]);
+    users_.erase(old_stmt);
+    for (auto user : affected) {
+      visited_.erase(user->instance_id);
+      if (replacement_visits(user, old_stmt->parent)) {
+        user->replace_operand_with(old_stmt, new_stmt);
+        users_[new_stmt].insert(user);
+      } else {
+        users_[old_stmt].insert(user);
+      }
+    }
   }
 
   bool is_done(Stmt *stmt) {
@@ -134,8 +204,12 @@ class WholeKernelCSE : public BasicStmtVisitor {
     for (auto &scope : visible_stmts_) {
       for (auto &prev_stmt : scope[hash_value]) {
         if (common_statement_eliminable(stmt, prev_stmt)) {
-          MarkUndone::run(&visited_, stmt);
-          stmt->replace_usages_with(prev_stmt);
+          if (users_valid_) {
+            replace_indexed(stmt, prev_stmt);
+          } else {
+            MarkUndone::run(&visited_, stmt);
+            stmt->replace_usages_with(prev_stmt);
+          }
           modifier_.erase(stmt);
           return;
         }
@@ -175,6 +249,9 @@ class WholeKernelCSE : public BasicStmtVisitor {
               true_clause->statements[0].get(),
               false_clause->statements[0].get())) {
         // Directly modify this because it won't invalidate any iterators.
+        // Hoisting also destroys statements immediately. Revert to the original
+        // traversal until the next sweep rebuilds the index after IR mutation.
+        users_valid_ = false;
         auto common_stmt = true_clause->extract(0);
         irpass::replace_all_usages_with(false_clause.get(),
                                         false_clause->statements[0].get(),
@@ -188,6 +265,7 @@ class WholeKernelCSE : public BasicStmtVisitor {
               true_clause->statements.back().get(),
               false_clause->statements.back().get())) {
         // Directly modify this because it won't invalidate any iterators.
+        users_valid_ = false;
         auto common_stmt = true_clause->extract((int)true_clause->size() - 1);
         irpass::replace_all_usages_with(false_clause.get(),
                                         false_clause->statements.back().get(),
@@ -207,6 +285,7 @@ class WholeKernelCSE : public BasicStmtVisitor {
     WholeKernelCSE eliminator;
     bool modified = false;
     while (true) {
+      eliminator.refresh_users(node);
       node->accept(&eliminator);
       if (eliminator.modifier_.modify_ir())
         modified = true;

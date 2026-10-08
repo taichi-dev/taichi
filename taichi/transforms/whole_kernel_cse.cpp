@@ -73,7 +73,6 @@ class WholeKernelCSE : public BasicStmtVisitor {
   bool users_valid_{false};
   bool indexed_{false};
   bool verify_users_{false};
-  bool repair_users_{false};
   bool local_repair_{false};
 
  public:
@@ -86,11 +85,8 @@ class WholeKernelCSE : public BasicStmtVisitor {
     indexed_ = setting && setting[0] == '1';
     setting = std::getenv("TI_CSE_VERIFY_USERS");
     verify_users_ = setting && setting[0] == '1';
-    setting = std::getenv("TI_CSE_REPAIR_USERS");
-    repair_users_ = setting && setting[0] == '1';
     setting = std::getenv("TI_CSE_LOCAL_REPAIR");
     local_repair_ = setting && setting[0] == '1';
-    repair_users_ |= local_repair_;
   }
 
   void refresh_users(IRNode *root) {
@@ -224,9 +220,6 @@ class WholeKernelCSE : public BasicStmtVisitor {
     for (auto &scope : visible_stmts_) {
       for (auto &prev_stmt : scope[hash_value]) {
         if (common_statement_eliminable(stmt, prev_stmt)) {
-          // A hoist invalidates the index, but need not force all subsequent
-          // replacements in this sweep to traverse the entire IR.
-          if (indexed_ && repair_users_ && !users_valid_) refresh_users(stmt);
           if (users_valid_) {
             replace_indexed(stmt, prev_stmt);
           } else {

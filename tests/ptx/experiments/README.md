@@ -17,7 +17,7 @@ effect from timing variation elsewhere in the compiler.
 | Variant | Native total (s) | Relevant scoped measurement | Decision |
 | --- | ---: | --- | --- |
 | Opening control | 90.503 | AST 24.923 s; CSE 22.771 s; reaching + liveness 0.519 s | Reference |
-| Repair CSE index after hoisting | 73.640 | CSE 5.119 s | Retained; improved further below |
+| Repair CSE index after hoisting | 73.640 | CSE 5.119 s | Superseded by local repair |
 | CSE buckets by SNode | 93.294 | CSE 23.561 s | Not retained |
 | Skip unused AST replacement scans | 67.867 | AST 1.167 s | Retained |
 | Precomputed GEN and reusable transfer buffers | 95.667 | Reaching + liveness 0.518 s | Not retained |
@@ -122,3 +122,13 @@ differential verification while compact/shared indexing remained enabled,
 82 native tests with the retained features and differential checks, and seven
 new native tests with optimizations disabled. The final measurement JSON includes
 the separate forwarding-verification records.
+
+The final retained-only compiler removes the superseded whole-index CSE repair
+path as well as all unsuccessful prototypes. Historical switches remain in the
+test harness solely for reproducing archived results; unsupported switches fail
+against the current native build.
+
+The subsequent [pre-all-patches A/B comparison](../measurements/all-patches-ab-2026-10-08.json)
+measured 333.126 → 30.460 seconds (10.94×) after this cleanup, using two cold
+runs per build. All seven PTX modules matched in all four samples; all 82 native
+tests passed again. See [the methodology and per-operator results](../../../improvements.md#pre-all-patches-versus-retained-all-patches-ab).

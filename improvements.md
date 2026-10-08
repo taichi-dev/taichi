@@ -171,17 +171,15 @@ The test and benchmark additions are committed separately as `0bee6b05e`.
 
 The original indexed CSE path invalidated its user map after hoisting common
 statements out of an `if`. Every later elimination in that sweep then reverted
-to whole-IR searches. `TI_CSE_REPAIR_USERS=1` instead rebuilds the index lazily
-before the next elimination. This preserves the reference traversal's view of
-the IR, including excluding extracted statements awaiting delayed insertion.
-
-`TI_CSE_LOCAL_REPAIR=1` improves that repair further. Before hoisting, it removes
+to whole-IR searches. `TI_CSE_LOCAL_REPAIR=1` maintains the index across hoists,
+preserving the reference traversal's view of the IR, including excluding
+extracted statements awaiting delayed insertion. Before hoisting, it removes
 operand edges belonging to the extracted true-branch subtree and the affected
 false branch. After the original replacement and erasure operations, it adds
 the false branch's current edges back. Users elsewhere in the IR are preserved.
 This avoids rebuilding the entire graph after each hoist. The full index is
-still rebuilt at the start of each CSE sweep, and lazy whole-index repair remains
-available if the index is invalid. Local repair implies repair is enabled.
+still rebuilt at the start of each CSE sweep. The superseded whole-index repair
+prototype was removed; only local repair remains in the compiler.
 
 In independent screening, whole-index repair reduced aggregate scoped CSE time
 from 22.771 to 5.119 seconds. With the AST improvement below enabled, local repair
@@ -280,3 +278,56 @@ representation and therefore exercises the per-node fallback instead. Separately
 82 native tests passed with the retained features and forwarding, liveness and
 CSE-user checks enabled; all seven new native tests also passed with the
 optimizations disabled. No target transport kernels were numerically executed.
+
+## Pre-all-patches versus retained-all-patches A/B
+
+The final cleanup removes the superseded whole-index CSE repair path and its
+cache switch. Unsuccessful prototypes were already absent from compiler source;
+their archived patches and measurements remain solely as an experiment record.
+The retained compiler passed all 82 focused native tests again after cleanup.
+
+The baseline is the preserved native build of `ba0e81dce559fb63a5958bf82feb1d00c55c02fe`
+with only the compile-only test binding, before any compiler optimization patches.
+Its SHA-256 is `9d936b73e522c5a3a11abd6c910281389ce82fc1675d52ed66e1de49c6415925`,
+matching the compile-only gold provenance. The candidate is the rebuilt compiler
+with all retained optimizations enabled. Both builds use LLVM 15.0.4, Clang 15,
+Release configuration, Python 3.13.15, target sm_86 and identical runtime bitcode.
+The solver remains pinned to the same development commit and operator-unfused
+fixture. No gold was regenerated.
+
+The A/B comparison runs serially in baseline/candidate/candidate/baseline order,
+with two fresh-process samples per build. Offline caching, scoped profiling and
+differential verification are disabled for timing. Each sample validates all
+seven complete PTX modules. Timings measure native compilation only, excluding
+solver setup, Python AST expansion and PTX materialization. Target transport
+kernels are not launched.
+
+Reproduce with the solver's Python environment and separately built packages:
+
+```sh
+python tests/ptx/benchmark.py \
+  --baseline-pythonpath /path/to/unpatched/python --baseline-mode reference \
+  --candidate-pythonpath "$PWD/python" --candidate-mode optimized \
+  --candidate-experiment cse-local --candidate-experiment ast-unused \
+  --candidate-experiment lazy-forwarding --candidate-experiment shared-forwarding \
+  --simfinity-repo ../simfinity-mono \
+  --output /tmp/ib-wmles-all-patches-ab --repeats 2
+```
+
+| Operator | Pre-all-patches median (s) | Retained-all-patches median (s) | Speedup |
+| --- | ---: | ---: | ---: |
+| Advection | 269.170 | 26.227 | 10.26× |
+| Viscosity | 60.047 | 3.471 | 17.30× |
+| Heat conduction | 3.909 | 0.762 | 5.13× |
+| Total | 333.126 | 30.460 | 10.94× |
+
+This directly measured comparison gives **10.94× faster compilation (90.9% less
+time)** for the complete retained set. Baseline totals were 335.229 and 331.022
+seconds; candidate totals were 30.740 and 30.179 seconds. Every sample passed
+all three tests and all seven byte-exact PTX comparisons. Two repetitions per
+build establish the large effect but do not provide a precise noise model or
+evidence for operator-fused kernels. This result does not multiply ratios from
+the earlier experiment rounds.
+
+[Individual samples, flags, library hashes and summary statistics](tests/ptx/measurements/all-patches-ab-2026-10-08.json)
+are preserved for review.

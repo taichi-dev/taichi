@@ -195,12 +195,12 @@ std::string get_hashed_offline_cache_key(const CompileConfig &config,
   hasher.process(autodiff_mode.begin(), autodiff_mode.end());
   // Prevent experimental modes sharing native or disk cache entries. Each
   // Python benchmark mode also owns distinct C++ Kernel objects.
-  std::string experiment_key = "hybrid-cfg-cse-2026-10-08-v5:";
+  std::string experiment_key = "hybrid-cfg-cse-2026-10-08-v6:";
   for (const char *name : {"TI_CFG_COMPACT_REACHING", "TI_CFG_COMPACT_LIVE",
                            "TI_CSE_INDEXED_USERS", "TI_CFG_VERIFY_REACHING",
                            "TI_CFG_VERIFY_LIVE", "TI_CSE_VERIFY_USERS",
                            "TI_CFG_PRECOMPUTED_KILLS", "TI_CFG_INDEXED_FORWARDING",
-                           "TI_CFG_VERIFY_FORWARDING", "TI_CSE_REPAIR_USERS",
+                           "TI_CFG_VERIFY_FORWARDING",
                            "TI_AST_SKIP_UNUSED_REPLACE", "TI_CSE_LOCAL_REPAIR",
                            "TI_CFG_LAZY_FORWARDING_INDEX", "TI_CFG_SHARED_FORWARDING_INDEX"}) {
     const char *value = std::getenv(name);

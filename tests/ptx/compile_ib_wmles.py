@@ -51,6 +51,16 @@ def main():
     assert Path(simfinity_solver.__file__).is_relative_to(args.solver_root / "src")
     library = Path(core.__file__)
     library_bytes = library.read_bytes()
+    for flag in (
+        "TI_CSE_REPAIR_USERS", "TI_CSE_LOCAL_REPAIR", "TI_CSE_SNODE_BUCKETS", "TI_CFG_REUSE_TRANSFER",
+        "TI_CFG_DENSE_WORKLIST", "TI_CFG_RPO_WORKLIST", "TI_AST_SKIP_UNUSED_REPLACE",
+        "TI_CFG_STORE_CANDIDATES",
+        "TI_CFG_UNKNOWN_INPUT_FASTPATH",
+        "TI_CFG_LAZY_FORWARDING_INDEX",
+        "TI_CFG_SHARED_FORWARDING_INDEX",
+    ):
+        if os.environ.get(flag) == "1":
+            assert flag.encode() in library_bytes, f"Compiler does not implement {flag}: {library}"
     if os.environ.get("TI_CFG_COMPACT_REACHING") == "1":
         for flag in (
             b"TI_CFG_COMPACT_REACHING",
@@ -245,7 +255,7 @@ def main():
         "cuda_compute_capability": core.query_int64("cuda_compute_capability"),
         "python_version": platform.python_version(),
         "peak_rss_kib": resource.getrusage(resource.RUSAGE_SELF).ru_maxrss,
-        "compiler_flags": {key: value for key, value in os.environ.items() if key.startswith(("TI_CFG_", "TI_CSE_"))},
+        "compiler_flags": {key: value for key, value in os.environ.items() if key.startswith(("TI_CFG_", "TI_CSE_", "TI_AST_"))},
     }
     Path("result.json").write_text(json.dumps(result, indent=2) + "\n")
 

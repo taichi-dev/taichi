@@ -80,5 +80,45 @@ TEST(StoreForwarding, TensorElementRetainsAliasHandling) {
   EXPECT_EQ(result->as<ReturnStmt>()->values[0], two);
 }
 
+TEST(StoreForwarding, CrossNodeAliasScanIncludesBlockPrefix) {
+  IRBuilder builder;
+  auto condition = builder.create_arg_load({0}, PrimitiveType::i32, false, 0);
+  auto tensor = TypeFactory::get_instance().get_tensor_type({2}, PrimitiveType::i32);
+  auto a = builder.create_local_var(tensor);
+  auto other = builder.create_local_var(PrimitiveType::i32);
+  auto one = builder.get_int32(1);
+  auto two = builder.get_int32(2);
+  auto values = builder.create_matrix_init({one, two});
+  values->ret_type = tensor;
+  builder.create_local_store(a, values);
+  auto branch = builder.create_if(condition);
+  {
+    auto guard = builder.get_if_guard(branch, true);
+    builder.create_local_store(other, one);
+  }
+  auto ir = builder.extract_ir();
+  auto element = ir->push_back<MatrixPtrStmt>(a, one);
+  auto load = ir->push_back<LocalLoadStmt>(element);
+  auto result = ir->push_back<ReturnStmt>(std::vector<Stmt *>{load});
+  forward_stores(ir.get());
+  // The existing conservative cross-node alias check sees the allocation in
+  // the prefix of this Block, before the current CFG node starts.
+  EXPECT_EQ(result->as<ReturnStmt>()->values[0], load);
+}
+
+TEST(StoreForwarding, UnknownIncomingValueDoesNotHideLocalStore) {
+  for (bool stored : {false, true}) {
+    auto ir = std::make_unique<Block>();
+    auto pointer_type = TypeFactory::get_instance().get_pointer_type(PrimitiveType::i32);
+    auto address = ir->push_back<GlobalTemporaryStmt>(0, pointer_type);
+    auto seven = ir->push_back<ConstStmt>(TypedConstant(7));
+    if (stored) ir->push_back<GlobalStoreStmt>(address, seven);
+    auto load = ir->push_back<GlobalLoadStmt>(address);
+    auto result = ir->push_back<ReturnStmt>(std::vector<Stmt *>{load});
+    forward_stores(ir.get());
+    EXPECT_EQ(result->as<ReturnStmt>()->values[0], stored ? seven : load);
+  }
+}
+
 }  // namespace
 }  // namespace taichi::lang

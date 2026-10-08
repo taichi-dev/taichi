@@ -78,6 +78,27 @@ and writes medians, ranges and speedup ratios to `summary.json`. The output
 directory must be new. It records performance without imposing a noisy fixed
 wall-time threshold.
 
+Additional compiler experiments use repeated `--ptx-experiment` options. The
+retained CSE and AST changes are `cse-local` and `ast-unused`; forwarding-index
+variants are `lazy-forwarding` and `shared-forwarding`. For example:
+
+```sh
+PYTHONPATH="$PWD/python" python -m pytest tests/ptx -v \
+  --simfinity-repo ../simfinity-mono \
+  --ptx-experiment cse-local --ptx-experiment ast-unused \
+  --ptx-experiment lazy-forwarding --ptx-experiment shared-forwarding
+```
+
+`cse-repair` selects the earlier whole-index repair variant instead of local
+repair. `sweep.py` screens variants serially, retaining failures and profiles.
+The [experiment record](experiments/README.md) includes rejected prototypes and
+their measured results. Historical experiment names remain usable with the
+archived compiler builds; unsupported switches fail explicitly.
+
+For a repeated comparison of switches within one build, pass the same package
+path to both `benchmark.py` package options and add repeated
+`--candidate-experiment` options. `--baseline-experiment` is also supported.
+
 Before applying a compiler change, explicitly record gold with an **unpatched**
 native build:
 

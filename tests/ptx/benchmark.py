@@ -22,6 +22,8 @@ def main():
     parser.add_argument("--simfinity-repo", type=Path, required=True)
     parser.add_argument("--output", type=Path, required=True)
     parser.add_argument("--repeats", type=int, default=3)
+    parser.add_argument("--baseline-experiment", action="append", default=[])
+    parser.add_argument("--candidate-experiment", action="append", default=[])
     args = parser.parse_args()
     if args.repeats < 2:
         parser.error("--repeats must be at least 2")
@@ -43,6 +45,9 @@ def main():
                 "--simfinity-repo", str(args.simfinity_repo.resolve()),
                 "--ptx-mode", "optimized", "--basetemp", str(destination),
             ]
+            experiments = args.baseline_experiment if variant == "baseline" else args.candidate_experiment
+            for experiment in experiments:
+                command += ["--ptx-experiment", experiment]
             with (output / f"{repeat}-{variant}.log").open("w") as log:
                 subprocess.run(command, env=env, stdout=log, stderr=subprocess.STDOUT, check=True)
             paths = sorted({path.resolve() for path in destination.glob("test_*/result.json")})

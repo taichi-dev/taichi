@@ -29,6 +29,19 @@ VERIFICATION = (
     "TI_CSE_VERIFY_USERS",
     "TI_CFG_VERIFY_FORWARDING",
 )
+EXPERIMENTS = {
+    "cse-repair": "TI_CSE_REPAIR_USERS",
+    "cse-local": "TI_CSE_LOCAL_REPAIR",
+    "cse-buckets": "TI_CSE_SNODE_BUCKETS",
+    "gen-transfer": "TI_CFG_REUSE_TRANSFER",
+    "dense-worklist": "TI_CFG_DENSE_WORKLIST",
+    "rpo-worklist": "TI_CFG_RPO_WORKLIST",
+    "ast-unused": "TI_AST_SKIP_UNUSED_REPLACE",
+    "store-candidates": "TI_CFG_STORE_CANDIDATES",
+    "unknown-input": "TI_CFG_UNKNOWN_INPUT_FASTPATH",
+    "lazy-forwarding": "TI_CFG_LAZY_FORWARDING_INDEX",
+    "shared-forwarding": "TI_CFG_SHARED_FORWARDING_INDEX",
+}
 
 
 @pytest.fixture(scope="session")
@@ -47,6 +60,9 @@ def solver_source(request, tmp_path_factory):
 def test_ib_wmles_ptx(method, solver_source, request, tmp_path):
     mode = request.config.getoption("--ptx-mode")
     record = request.config.getoption("--record-ptx-gold")
+    experiments = request.config.getoption("--ptx-experiment")
+    if experiments and (record or mode == "reference"):
+        pytest.fail("Experiments require optimized or verify mode with fixed gold")
     verify_forwarding = request.config.getoption("--ptx-verify-forwarding")
     if verify_forwarding and mode == "reference":
         pytest.fail("--ptx-verify-forwarding requires optimized or verify mode")
@@ -60,6 +76,7 @@ def test_ib_wmles_ptx(method, solver_source, request, tmp_path):
             del env[key]
     env.update({key: str(int(mode != "reference")) for key in OPTIMIZATIONS})
     env.update({key: str(int(mode == "verify")) for key in VERIFICATION})
+    env.update({EXPERIMENTS[name]: "1" for name in experiments})
     if verify_forwarding:
         env["TI_CFG_VERIFY_FORWARDING"] = "1"
     env.update(TI_OFFLINE_CACHE="0", PYTHONHASHSEED="0", PYTHONUNBUFFERED="1")

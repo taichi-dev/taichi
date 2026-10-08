@@ -331,3 +331,30 @@ the earlier experiment rounds.
 
 [Individual samples, flags, library hashes and summary statistics](tests/ptx/measurements/all-patches-ab-2026-10-08.json)
 are preserved for review.
+
+## Fully fused compilation timing
+
+With the retained compiler (`af45e5b4f`), the same pinned solver development
+configuration also compiles with advection, viscosity and heat conduction in one
+kernel group. Directions, RK sums and timestep collection remain fused. The RK3
+schedule materializes three distinct variants. Two fresh-process measurements,
+with offline caching and verification disabled, gave:
+
+| Fused variant | Median native compile time (s) |
+| --- | ---: |
+| Base update | 21.582 |
+| Update with RK sum | 22.485 |
+| Update with RK sum and timestep | 24.243 |
+| Total | 68.309 |
+
+Native totals were 71.693 and 64.926 seconds. Complete process wall times were
+108.619 and 93.586 seconds (median 101.103 seconds), including setup, Python AST
+expansion and PTX materialization. The native total is about 2.24 times the earlier
+30.460-second operator-unfused total; this is a comparison of separate measurement
+runs, not an interleaved fusion A/B experiment. No target transport kernels ran.
+All three fused PTX modules were byte-identical between repetitions. This is
+repeatability evidence, not a pre/post-patch fused PTX equivalence check.
+
+[Full fused measurement records](tests/ptx/measurements/fused-2026-10-08.json)
+include individual timings, PTX hashes, feature switches and library provenance.
+The compile worker now accepts `--method fused` for this measurement.

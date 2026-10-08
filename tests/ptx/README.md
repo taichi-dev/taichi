@@ -146,3 +146,15 @@ For pre-all-patches versus post-all-patches measurements, point
 `--baseline-pythonpath` at the original native package and pass
 `--baseline-mode reference`. Leave `--candidate-mode optimized` and enable the
 four retained candidate experiments above. Each sample still checks fixed gold.
+
+## Fully fused timing
+
+The compile worker also accepts `--method fused` with `--solver-root` pointing to
+an archive of the pinned development solver. Run it in a fresh output directory,
+using the solver's Python environment, the desired Taichi `PYTHONPATH`,
+`TI_OFFLINE_CACHE=0` and the same nine optimization switches as the retained
+candidate in the measurement JSON. It compiles the base, RK-sum and RK-sum-plus-
+timestep variants, records native timings in `result.json`, and saves three PTX
+modules without launching the target kernels. This mode does not compare against
+the operator-unfused gold. [Measured fused results](measurements/fused-2026-10-08.json)
+include two cold runs and their identical PTX hashes.

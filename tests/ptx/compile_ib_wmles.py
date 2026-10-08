@@ -1,4 +1,4 @@
-"""Compile one operator of development's ONERA IB-WMLES configuration.
+"""Compile an operator group of development's ONERA IB-WMLES configuration.
 
 Invoked in a fresh process by test_ib_wmles.py. The small immersed sphere and
 single octree level limit setup cost; transport, wall model and RK policies come
@@ -21,7 +21,7 @@ from dataclasses import replace
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--solver-root", type=Path, required=True)
-    parser.add_argument("--method", choices=("advection", "viscosity", "heat_conduction"), required=True)
+    parser.add_argument("--method", choices=("advection", "viscosity", "heat_conduction", "fused"), required=True)
     parser.add_argument("--profile", action="store_true")
     args = parser.parse_args()
     sys.path.insert(0, str(args.solver_root / "src"))
@@ -107,14 +107,16 @@ def main():
         ViscosityPhysicsMethod(config.dns_viscosity_operator_config, numerics=production[1]),
         HeatConductionPhysicsMethod(config.heat_conduction_operator_config, numerics=production[2]),
     )
-    method = next(method for method in methods if method.name == args.method)
-    group_index = methods.index(method)
+    fused = args.method == "fused"
+    selected_methods = methods if fused else (next(method for method in methods if method.name == args.method),)
+    kernel_groups = (tuple(item.name for item in methods),) if fused else tuple((item.name,) for item in methods)
+    group_index = 0 if fused else methods.index(selected_methods[0])
     operator = IntegrationGroupOperatorFactory.create(
         methods,
         integrator=TimeIntegratorKind.RK3,
         execution_policy=ExecutionPolicy(
             loop_ownership=LoopOwnership.CELL,
-            kernel_groups=tuple((item.name,) for item in methods),
+            kernel_groups=kernel_groups,
             direction_fusion=Fusion.FUSED,
             timestep_fusion=Fusion.FUSED,
             rk_sum_fusion=Fusion.FUSED,
@@ -123,9 +125,9 @@ def main():
         grid_type=type(solver.grid),
         bc_applier=solver.bc_applier,
         input_preparer=preparer,
-        operator_name="ptx_operator_unfused",
+        operator_name="ptx_operator_fused" if fused else "ptx_operator_unfused",
     )
-    if args.method == "viscosity":
+    if fused or args.method == "viscosity":
         assert operator.get_wall_model_sampler() is not None
     ti.sync()
     # Keep setup PTX separate from the transport modules under test.
@@ -210,8 +212,9 @@ def main():
             operator._reset_inverse_timesteps()
             operator._prepare_input(solver.grid, 0.0, solver.grid.current, solver.material_properties, 1.0e-7)
             for stage, (reference_weight, euler_weight) in enumerate(((0.0, 1.0), (0.75, 0.25), (1 / 3, 2 / 3))):
-                method.reset_update_status()
-                method.configure_recovery(euler_weight=euler_weight, calculate_timestep=stage == 2)
+                for method in selected_methods:
+                    method.reset_update_status()
+                    method.configure_recovery(euler_weight=euler_weight, calculate_timestep=stage == 2)
                 operator._apply_kernel_group(
                     solver.grid,
                     operator._update_specs[group_index],
@@ -222,7 +225,7 @@ def main():
                     1.0e-7,
                     calculate_timestep=stage == 2,
                     timestep_kernels=operator._update_with_timestep_specs[group_index],
-                    apply_rk_sum=stage > 0 and group_index == len(methods) - 1,
+                    apply_rk_sum=stage > 0 and group_index == len(kernel_groups) - 1,
                     rk_sum_kernels=operator._update_with_rk_sum_specs[group_index],
                     rk_sum_timestep_kernels=operator._update_with_rk_sum_and_timestep_specs[group_index],
                     reference_handle=solver.grid.current if stage > 0 else None,
@@ -236,7 +239,7 @@ def main():
         core.Program.compile_kernel = original_compile
         core.Program.launch_kernel = original_launch
     expected = ["FluxLoopKernels._cell_body", "FluxLoopKernels._cell_body_with_timestep"]
-    if group_index == len(methods) - 1:
+    if group_index == len(kernel_groups) - 1:
         expected = [
             "FluxLoopKernels._cell_body",
             "FluxLoopKernels._cell_body_with_rk_sum",
@@ -245,6 +248,7 @@ def main():
     assert [item["body"] for item in records] == expected, records
     result = {
         "method": args.method,
+        "kernel_groups": kernel_groups,
         "compile_only": True,
         "records": records,
         "taichi_commit": core.get_commit_hash(),

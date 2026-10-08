@@ -22,6 +22,7 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--solver-root", type=Path, required=True)
     parser.add_argument("--method", choices=("advection", "viscosity", "heat_conduction"), required=True)
+    parser.add_argument("--profile", action="store_true")
     args = parser.parse_args()
     sys.path.insert(0, str(args.solver_root / "src"))
     sys.path.insert(0, str(args.solver_root / "dev_scripts/sbarrett/ONERA_wing_slater_example"))
@@ -57,6 +58,9 @@ def main():
             b"TI_CFG_PRECOMPUTED_KILLS",
             b"TI_CSE_INDEXED_USERS",
         ):
+            assert flag in library_bytes, f"Compiler does not implement {flag.decode()}: {library}"
+    if os.environ.get("TI_CFG_VERIFY_FORWARDING") == "1":
+        for flag in (b"TI_CFG_INDEXED_FORWARDING", b"TI_CFG_VERIFY_FORWARDING"):
             assert flag in library_bytes, f"Compiler does not implement {flag.decode()}: {library}"
     wing = importlib.import_module("run_onera_m6_wing")
     mesh = trimesh.creation.icosphere(subdivisions=2, radius=0.3)
@@ -147,9 +151,15 @@ def main():
 
     def compile_kernel(program, cfg, caps, kernel):
         name = kernels.get(id(kernel))
+        profile = args.profile and bodies.get(name, "").startswith("FluxLoopKernels._cell_body")
+        if profile:
+            ti.profiler.clear_scoped_profiler_info()
         start = time.perf_counter()
         value = original_compile(program, cfg, caps, kernel)
         timings[name] = time.perf_counter() - start
+        if profile:
+            print("NATIVE PROFILE", bodies[name], flush=True)
+            ti.profiler.print_scoped_profiler_info()
         compiled[id(value)] = name
         return value
 

@@ -21,8 +21,14 @@ OPTIMIZATIONS = (
     "TI_CFG_COMPACT_LIVE",
     "TI_CFG_PRECOMPUTED_KILLS",
     "TI_CSE_INDEXED_USERS",
+    "TI_CFG_INDEXED_FORWARDING",
 )
-VERIFICATION = ("TI_CFG_VERIFY_REACHING", "TI_CFG_VERIFY_LIVE", "TI_CSE_VERIFY_USERS")
+VERIFICATION = (
+    "TI_CFG_VERIFY_REACHING",
+    "TI_CFG_VERIFY_LIVE",
+    "TI_CSE_VERIFY_USERS",
+    "TI_CFG_VERIFY_FORWARDING",
+)
 
 
 @pytest.fixture(scope="session")
@@ -41,6 +47,9 @@ def solver_source(request, tmp_path_factory):
 def test_ib_wmles_ptx(method, solver_source, request, tmp_path):
     mode = request.config.getoption("--ptx-mode")
     record = request.config.getoption("--record-ptx-gold")
+    verify_forwarding = request.config.getoption("--ptx-verify-forwarding")
+    if verify_forwarding and mode == "reference":
+        pytest.fail("--ptx-verify-forwarding requires optimized or verify mode")
     if record and mode != "reference":
         pytest.fail("Gold may only be recorded with --ptx-mode=reference on an unpatched build")
     env = dict(os.environ)
@@ -51,6 +60,8 @@ def test_ib_wmles_ptx(method, solver_source, request, tmp_path):
             del env[key]
     env.update({key: str(int(mode != "reference")) for key in OPTIMIZATIONS})
     env.update({key: str(int(mode == "verify")) for key in VERIFICATION})
+    if verify_forwarding:
+        env["TI_CFG_VERIFY_FORWARDING"] = "1"
     env.update(TI_OFFLINE_CACHE="0", PYTHONHASHSEED="0", PYTHONUNBUFFERED="1")
     with (tmp_path / "compile.log").open("w") as log:
         process = subprocess.run(
@@ -61,6 +72,7 @@ def test_ib_wmles_ptx(method, solver_source, request, tmp_path):
                 str(solver_source),
                 "--method",
                 method,
+                *(["--profile"] if request.config.getoption("--ptx-profile") else []),
             ],
             cwd=tmp_path,
             env=env,

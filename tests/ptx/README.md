@@ -46,12 +46,37 @@ PYTHONPATH="$PWD/python" uv run --no-sync --project ../simfinity-mono/apps/solve
   tests/ptx -v --simfinity-repo ../simfinity-mono --ptx-mode optimized
 ```
 
-`optimized` enables all four patch flags: compact reaching definitions, compact
-liveness, precomputed kill masks, and indexed CSE users. The worker checks that
+`optimized` enables compact reaching definitions, compact liveness, precomputed
+kill masks, indexed CSE users, and indexed scalar-local forwarding. The last
+feature is a follow-up to the original four-flag patch. The worker checks that
 the loaded native library actually contains these switches. `reference` disables
 them, while `verify` additionally enables the patch's internal differential
 checks. Verification reruns the reference CFG analyses and is not a performance
 measurement.
+
+`--ptx-profile` prints scoped compiler-pass timings for each target compilation
+into its `compile.log`. `--ptx-verify-forwarding` compares every indexed forwarding
+lookup against the original search without enabling the other, more expensive
+verification modes. Use verification separately from performance measurements.
+
+To compare two built packages repeatedly, preserve each package with its native
+extension and matching runtime bitcode, then run:
+
+```sh
+python tests/ptx/benchmark.py \
+  --baseline-pythonpath /path/to/baseline/python \
+  --candidate-pythonpath "$PWD/python" \
+  --simfinity-repo ../simfinity-mono \
+  --output /tmp/ib-wmles-comparison --repeats 3
+```
+
+Use the solver's Python environment. Both packages run in optimized mode; the
+original patch build ignores the follow-up's additional switch. Every sample
+checks all seven gold modules. The runner alternates baseline/candidate order,
+records native-library hashes, individual timings and peak RSS in `samples.json`,
+and writes medians, ranges and speedup ratios to `summary.json`. The output
+directory must be new. It records performance without imposing a noisy fixed
+wall-time threshold.
 
 Before applying a compiler change, explicitly record gold with an **unpatched**
 native build:

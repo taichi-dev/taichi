@@ -9,6 +9,7 @@
 namespace taichi::lang {
 
 class Function;
+struct ScalarStoreForwardingIndex;
 /**
  * A basic block in control-flow graph.
  * A CFGNode contains a reference to a part of the CHI IR, or more precisely,
@@ -93,7 +94,10 @@ class CFGNode {
       const std::unordered_map<Stmt *, UseDefineStatus> &var_set,
       Stmt *var);
   bool reach_kill_variable(Stmt *var) const;
-  Stmt *get_store_forwarding_data(Stmt *var, int position) const;
+  Stmt *get_store_forwarding_data(
+      Stmt *var,
+      int position,
+      const ScalarStoreForwardingIndex *index = nullptr) const;
 
   // Analyses and optimizations inside a CFGNode.
   void reaching_definition_analysis(bool after_lower_access);

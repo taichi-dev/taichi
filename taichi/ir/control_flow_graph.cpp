@@ -83,6 +83,49 @@ CFGKillMasks build_kill_masks(
 
 }  // namespace
 
+struct ScalarStoreForwardingIndex {
+  std::unordered_map<Stmt *, Stmt *> latest;
+  using Definitions = std::unordered_map<Stmt *, std::vector<Stmt *>>;
+  Definitions incoming, generated;
+
+  static bool eligible(Stmt *address) {
+    return address->is<AllocaStmt>() &&
+           !address->ret_type.ptr_removed()->is<TensorType>() &&
+           !is_quant(address->ret_type.ptr_removed());
+  }
+
+  template <typename Set>
+  static Definitions by_address(const Set &definitions) {
+    Definitions result;
+    for (Stmt *stmt : definitions) {
+      auto add = [&](Stmt *address) {
+        if (eligible(address)) {
+          auto &bucket = result[address];
+          // Preserve the original set's iteration order, including which
+          // visible, equivalent value wins. Multi-destination stores occur once.
+          if (bucket.empty() || bucket.back() != stmt) bucket.push_back(stmt);
+        }
+      };
+      add(stmt);  // The original search also accepts var == stmt.
+      for (auto dest : irpass::analysis::get_store_destination(stmt)) {
+        add(dest);
+        if (auto matrix = dest->cast<MatrixPtrStmt>()) {
+          // may_contain_address also checks a matrix pointer's origin.
+          add(matrix->origin);
+        }
+      }
+    }
+    return result;
+  }
+
+  static const std::vector<Stmt *> &lookup(const Definitions &definitions,
+                                         Stmt *address) {
+    static const std::vector<Stmt *> empty;
+    auto found = definitions.find(address);
+    return found == definitions.end() ? empty : found->second;
+  }
+};
+
 CFGNode::CFGNode(Block *block,
                  int begin_location,
                  int end_location,
@@ -239,12 +282,24 @@ bool CFGNode::may_contain_variable(const ReachingDefinitionSet &var_set,
 }
 
 // var: dest_addr
-Stmt *CFGNode::get_store_forwarding_data(Stmt *var, int position) const {
+Stmt *CFGNode::get_store_forwarding_data(
+    Stmt *var,
+    int position,
+    const ScalarStoreForwardingIndex *index) const {
   // Return the stored data if all definitions in the UD-chain of |var| at
   // this position store the same data.
   // [Intra-block Search]
+  const bool indexed_scalar = index && ScalarStoreForwardingIndex::eligible(var);
+  if (indexed_scalar) {
+    auto found = index->latest.find(var);
+    if (found != index->latest.end()) {
+      // Scalar allocas are definitely equal only to themselves. The original
+      // search also skips intervening alias checks for these addresses.
+      return irpass::analysis::get_store_data(found->second);
+    }
+  }
   int last_def_position = -1;
-  for (int i = position - 1; i >= begin_location; i--) {
+  for (int i = position - 1; !indexed_scalar && i >= begin_location; i--) {
     // Find previous store stmt to the same dest_addr, stop at the closest one.
     // store_ptr: prev-store dest_addr
     for (auto store_ptr :
@@ -395,28 +450,46 @@ Stmt *CFGNode::get_store_forwarding_data(Stmt *var, int position) const {
   // test whether there's a store to the same dest_addr in a previous block.
   // if the store values are the same, then return the value
   last_def_position = -1;
-  for (auto stmt : reach_in) {
-    // var == stmt is for the case that a global ptr is never stored.
-    // In this case, stmt is from nodes[start_node]->reach_gen.
-    if (var == stmt || may_contain_address(stmt, var)) {
-      if (!update_result(stmt))
-        return nullptr;
-      else
-        last_def_position = 0;
+  auto search_incoming = [&](const auto &definitions) {
+    for (auto stmt : definitions) {
+      // var == stmt is for the case that a global ptr is never stored.
+      // In this case, stmt is from nodes[start_node]->reach_gen.
+      if (var == stmt || may_contain_address(stmt, var)) {
+        if (!update_result(stmt))
+          return false;
+        else
+          last_def_position = 0;
+      }
     }
+    return true;
+  };
+  if (!(indexed_scalar
+            ? search_incoming(
+                  ScalarStoreForwardingIndex::lookup(index->incoming, var))
+            : search_incoming(reach_in))) {
+    return nullptr;
   }
 
   // test whether there's a store to the same dest_addr before this stmt (in
   // reach_gen)
   //  if the store values are the same, then return the value
-  for (auto stmt : reach_gen) {
-    if (may_contain_address(stmt, var) &&
-        stmt->parent->locate(stmt) < position) {
-      if (!update_result(stmt))
-        return nullptr;
-      else
-        last_def_position = stmt->parent->locate(stmt);
+  auto search_generated = [&](const auto &definitions) {
+    for (auto stmt : definitions) {
+      if (may_contain_address(stmt, var) &&
+          stmt->parent->locate(stmt) < position) {
+        if (!update_result(stmt))
+          return false;
+        else
+          last_def_position = stmt->parent->locate(stmt);
+      }
     }
+    return true;
+  };
+  if (!(indexed_scalar
+            ? search_generated(
+                  ScalarStoreForwardingIndex::lookup(index->generated, var))
+            : search_generated(reach_gen))) {
+    return nullptr;
   }
   if (!result) {
     // The UD-chain is empty.
@@ -496,8 +569,35 @@ bool CFGNode::store_to_load_forwarding(bool after_lower_access,
   // previous store stmt
   //        that stores to the same address as the store stmt. If the "val"s
   //        are the same, then remove the store stmt.
+  const char *setting = std::getenv("TI_CFG_INDEXED_FORWARDING");
+  const bool indexed = setting && setting[0] == '1';
+  setting = std::getenv("TI_CFG_VERIFY_FORWARDING");
+  const bool verify = indexed && setting && setting[0] == '1';
+  ScalarStoreForwardingIndex index;
+  if (indexed) {
+    index.incoming = ScalarStoreForwardingIndex::by_address(reach_in);
+    index.generated = ScalarStoreForwardingIndex::by_address(reach_gen);
+  }
+  auto forwarding_data = [&](Stmt *var, int position) {
+    auto result = get_store_forwarding_data(
+        var, position, indexed ? &index : nullptr);
+    if (verify) {
+      TI_ASSERT(result == get_store_forwarding_data(var, position));
+    }
+    return result;
+  };
   bool modified = false;
   for (int i = begin_location; i < end_location; i++) {
+    if (indexed && i > begin_location) {
+      // Index only the previous retained statement, after it has been
+      // simplified. Erased stores must never become forwarding candidates.
+      auto previous = block->statements[i - 1].get();
+      for (auto dest : irpass::analysis::get_store_destination(previous)) {
+        if (ScalarStoreForwardingIndex::eligible(dest)) {
+          index.latest[dest] = previous;
+        }
+      }
+    }
     // Store-to-load forwarding
     auto stmt = block->statements[i].get();
 
@@ -510,11 +610,11 @@ bool CFGNode::store_to_load_forwarding(bool after_lower_access,
     // stmt
     Stmt *load_src = nullptr;
     if (auto local_load = stmt->cast<LocalLoadStmt>()) {
-      result = get_store_forwarding_data(local_load->src, i);
+      result = forwarding_data(local_load->src, i);
       load_src = local_load->src;
     } else if (auto global_load = stmt->cast<GlobalLoadStmt>()) {
       if (!after_lower_access && !autodiff_enabled) {
-        result = get_store_forwarding_data(global_load->src, i);
+        result = forwarding_data(global_load->src, i);
         load_src = global_load->src;
       }
     }
@@ -561,7 +661,7 @@ bool CFGNode::store_to_load_forwarding(bool after_lower_access,
     // 3. (one value at a time) closest to the current store stmt but before the
     // current store stmt then erase the current store stmt
     if (auto local_store = stmt->cast<LocalStoreStmt>()) {
-      result = get_store_forwarding_data(local_store->dest, i);
+      result = forwarding_data(local_store->dest, i);
       if (result && result->is<AllocaStmt>() && !autodiff_enabled) {
         // TensorType does not apply to this special case
         if (result->ret_type.ptr_removed()->is<TensorType>()) {
@@ -586,7 +686,7 @@ bool CFGNode::store_to_load_forwarding(bool after_lower_access,
       }
     } else if (auto global_store = stmt->cast<GlobalStoreStmt>()) {
       if (!after_lower_access) {
-        result = get_store_forwarding_data(global_store->dest, i);
+        result = forwarding_data(global_store->dest, i);
         if (irpass::analysis::same_value(result, global_store->val)) {
           erase(i);  // This causes end_location--
           i--;       // to cancel i++ in the for loop

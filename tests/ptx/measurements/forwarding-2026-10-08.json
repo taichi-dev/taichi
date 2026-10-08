@@ -1,0 +1,146 @@
+{
+  "date": "2026-10-08",
+  "solver_commit": "d0e815c559afde3c41e16ecdd435f8b1b137bd68",
+  "baseline_source_commit": "96bbee769",
+  "repeats_per_build": 2,
+  "order": [
+    "baseline",
+    "candidate",
+    "candidate",
+    "baseline"
+  ],
+  "measurement": "Native Program.compile_kernel only; fresh process, offline cache disabled, verification disabled",
+  "validation": "Each sample passed all three tests and compared all seven complete PTX modules against unchanged gold",
+  "library_sha256": {
+    "baseline": "3163dc5fb76976c409cce6752c34e2690d07a365577378854fdbe85151508116",
+    "candidate": "54b140f4f77047b835c67930f7887c8cb0c34a209a6a0cc016693ecb570020f8"
+  },
+  "samples": [
+    {
+      "repeat": 0,
+      "variant": "baseline",
+      "operators": {
+        "advection": {
+          "native_seconds": 101.91562072700071,
+          "peak_process_rss_kib": 962464
+        },
+        "heat_conduction": {
+          "native_seconds": 1.9598822790012491,
+          "peak_process_rss_kib": 653356
+        },
+        "viscosity": {
+          "native_seconds": 11.531111406999116,
+          "peak_process_rss_kib": 752660
+        }
+      }
+    },
+    {
+      "repeat": 0,
+      "variant": "candidate",
+      "operators": {
+        "advection": {
+          "native_seconds": 83.63833954800066,
+          "peak_process_rss_kib": 1006984
+        },
+        "heat_conduction": {
+          "native_seconds": 2.088503523998952,
+          "peak_process_rss_kib": 652480
+        },
+        "viscosity": {
+          "native_seconds": 10.905020948997844,
+          "peak_process_rss_kib": 751052
+        }
+      }
+    },
+    {
+      "repeat": 1,
+      "variant": "candidate",
+      "operators": {
+        "advection": {
+          "native_seconds": 84.14111523099928,
+          "peak_process_rss_kib": 1004544
+        },
+        "heat_conduction": {
+          "native_seconds": 2.0072179150010925,
+          "peak_process_rss_kib": 652888
+        },
+        "viscosity": {
+          "native_seconds": 10.651441878000696,
+          "peak_process_rss_kib": 746240
+        }
+      }
+    },
+    {
+      "repeat": 1,
+      "variant": "baseline",
+      "operators": {
+        "advection": {
+          "native_seconds": 92.4118216989973,
+          "peak_process_rss_kib": 1008768
+        },
+        "heat_conduction": {
+          "native_seconds": 1.9005996390005748,
+          "peak_process_rss_kib": 652136
+        },
+        "viscosity": {
+          "native_seconds": 11.512492969999585,
+          "peak_process_rss_kib": 742460
+        }
+      }
+    }
+  ],
+  "summary": {
+    "advection": {
+      "baseline": {
+        "median_seconds": 97.16372121299901,
+        "min_seconds": 92.4118216989973,
+        "max_seconds": 101.91562072700071
+      },
+      "candidate": {
+        "median_seconds": 83.88972738949997,
+        "min_seconds": 83.63833954800066,
+        "max_seconds": 84.14111523099928
+      },
+      "speedup": 1.1582314573734147
+    },
+    "viscosity": {
+      "baseline": {
+        "median_seconds": 11.52180218849935,
+        "min_seconds": 11.512492969999585,
+        "max_seconds": 11.531111406999116
+      },
+      "candidate": {
+        "median_seconds": 10.77823141349927,
+        "min_seconds": 10.651441878000696,
+        "max_seconds": 10.905020948997844
+      },
+      "speedup": 1.0689881991278076
+    },
+    "heat_conduction": {
+      "baseline": {
+        "median_seconds": 1.930240959000912,
+        "min_seconds": 1.9005996390005748,
+        "max_seconds": 1.9598822790012491
+      },
+      "candidate": {
+        "median_seconds": 2.0478607195000222,
+        "min_seconds": 2.0072179150010925,
+        "max_seconds": 2.088503523998952
+      },
+      "speedup": 0.9425645702468346
+    },
+    "total": {
+      "baseline": {
+        "median_seconds": 110.61576436049927,
+        "min_seconds": 105.82491430799746,
+        "max_seconds": 115.40661441300108
+      },
+      "candidate": {
+        "median_seconds": 96.71581952249926,
+        "min_seconds": 96.63186402099745,
+        "max_seconds": 96.79977502400106
+      },
+      "speedup": 1.1437194546520533
+    }
+  }
+}

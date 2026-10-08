@@ -2,7 +2,7 @@
 
 Run with the solver's Python environment. Package paths are PYTHONPATH roots,
 each containing a taichi package with its native extension and runtime bitcode.
-Both builds use the optimized compiler mode. Every sample runs in fresh child
+Each build selects reference or optimized compiler mode. Every sample runs in fresh child
 processes with offline caching disabled; candidate/control order alternates.
 """
 
@@ -22,6 +22,8 @@ def main():
     parser.add_argument("--simfinity-repo", type=Path, required=True)
     parser.add_argument("--output", type=Path, required=True)
     parser.add_argument("--repeats", type=int, default=3)
+    parser.add_argument("--baseline-mode", choices=("reference", "optimized"), default="optimized")
+    parser.add_argument("--candidate-mode", choices=("reference", "optimized"), default="optimized")
     parser.add_argument("--baseline-experiment", action="append", default=[])
     parser.add_argument("--candidate-experiment", action="append", default=[])
     args = parser.parse_args()
@@ -43,7 +45,8 @@ def main():
             command = [
                 sys.executable, "-m", "pytest", str(tests), "-v",
                 "--simfinity-repo", str(args.simfinity_repo.resolve()),
-                "--ptx-mode", "optimized", "--basetemp", str(destination),
+                "--ptx-mode", args.baseline_mode if variant == "baseline" else args.candidate_mode,
+                "--basetemp", str(destination),
             ]
             experiments = args.baseline_experiment if variant == "baseline" else args.candidate_experiment
             for experiment in experiments:

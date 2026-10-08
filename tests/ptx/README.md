@@ -70,8 +70,8 @@ python tests/ptx/benchmark.py \
   --output /tmp/ib-wmles-comparison --repeats 3
 ```
 
-Use the solver's Python environment. Both packages run in optimized mode; the
-original patch build ignores the follow-up's additional switch. Every sample
+Use the solver's Python environment. Both packages default to optimized mode;
+use `--baseline-mode reference` for an unpatched baseline. Every sample
 checks all seven gold modules. The runner alternates baseline/candidate order,
 records native-library hashes, individual timings and peak RSS in `samples.json`,
 and writes medians, ranges and speedup ratios to `summary.json`. The output
@@ -89,8 +89,8 @@ PYTHONPATH="$PWD/python" python -m pytest tests/ptx -v \
   --ptx-experiment lazy-forwarding --ptx-experiment shared-forwarding
 ```
 
-`cse-repair` selects the earlier whole-index repair variant instead of local
-repair. `sweep.py` screens variants serially, retaining failures and profiles.
+`cse-repair` selects the archived whole-index repair prototype; the current
+compiler retains only the faster local repair. `sweep.py` screens variants serially, retaining failures and profiles.
 The [experiment record](experiments/README.md) includes rejected prototypes and
 their measured results. Historical experiment names remain usable with the
 archived compiler builds; unsupported switches fail explicitly.
@@ -141,3 +141,8 @@ The patched native library SHA-256 was
 `3163dc5fb76976c409cce6752c34e2690d07a365577378854fdbe85151508116`.
 The advection gold was captured using the original first-launch API; viscosity
 and heat gold, and all final patched comparisons, used materialization only.
+
+For pre-all-patches versus post-all-patches measurements, point
+`--baseline-pythonpath` at the original native package and pass
+`--baseline-mode reference`. Leave `--candidate-mode optimized` and enable the
+four retained candidate experiments above. Each sample still checks fixed gold.
